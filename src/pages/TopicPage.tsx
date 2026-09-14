@@ -3,8 +3,6 @@ import { getSection } from '@/content/registry';
 import { getTopic, sectionNeighbors } from '@/lib/content';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
-const REPO_URL = 'https://github.com/enbattle/til';
-
 export function TopicPage() {
   const { section: sectionSlug, slug } = useParams<{ section: string; slug: string }>();
   const section = sectionSlug ? getSection(sectionSlug) : undefined;
@@ -31,16 +29,8 @@ export function TopicPage() {
 
       <MarkdownRenderer content={topic.body} />
 
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6 text-sm">
-        <a
-          href={`${REPO_URL}/blob/main/src/content/${section.slug}/${topic.slug}.md`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-text-tertiary hover:text-accent"
-        >
-          Edit on GitHub
-        </a>
-        <nav className="flex gap-4">
+      {(prev || next) && (
+        <nav className="flex flex-wrap justify-between gap-4 border-t border-border pt-6 text-sm">
           {prev && (
             <Link
               to={`/${section.slug}/${prev.slug}`}
@@ -52,13 +42,13 @@ export function TopicPage() {
           {next && (
             <Link
               to={`/${section.slug}/${next.slug}`}
-              className="text-text-secondary hover:text-accent"
+              className="ml-auto text-text-secondary hover:text-accent"
             >
               {next.title} →
             </Link>
           )}
         </nav>
-      </div>
+      )}
     </article>
   );
 }
