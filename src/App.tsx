@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
 import { SearchDialog } from '@/components/SearchDialog';
 import { HomePage } from '@/pages/HomePage';
@@ -50,20 +51,25 @@ function AppShell() {
     <div className="min-h-screen bg-bg-primary">
       <Header onOpenSearch={() => setSearchOpen(true)} />
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/not-found" element={<NotFoundPage />} />
-          <Route path="/:section" element={<SectionPage />} />
-          <Route
-            path="/:section/:slug"
-            element={
-              <Suspense fallback={null}>
-                <TopicPage />
-              </Suspense>
-            }
-          />
-          <Route path="*" element={<Navigate to="/not-found" replace />} />
-        </Routes>
+        {/* Keyed on pathname so navigating away from a page that errored
+            remounts a fresh boundary instead of staying stuck on the
+            fallback for the rest of the session. */}
+        <ErrorBoundary key={pathname}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/not-found" element={<NotFoundPage />} />
+            <Route path="/:section" element={<SectionPage />} />
+            <Route
+              path="/:section/:slug"
+              element={
+                <Suspense fallback={null}>
+                  <TopicPage />
+                </Suspense>
+              }
+            />
+            <Route path="*" element={<Navigate to="/not-found" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
       {searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} />}
     </div>
