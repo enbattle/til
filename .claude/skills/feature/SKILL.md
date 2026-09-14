@@ -160,9 +160,15 @@ Instruction, close to verbatim:
 > user-facing UI surface, also start the dev server and actually drive it
 > in a browser — click through the real flow, not just the happy path,
 > check both themes and a mobile-width viewport, check the console for
-> errors, and hold it to docs/DESIGN.md's accessibility checklist. Do not
-> write or edit any code — review only. Report findings ranked by
-> severity, or say explicitly that you found nothing worth flagging.
+> errors, and hold it to docs/DESIGN.md's accessibility checklist. If this
+> change adds or edits topic content (a file under `src/content/`), also
+> hold the prose itself to CLAUDE.md's Writing Standard section — terms
+> defined before use, built from first principles rather than an assumed
+> mental model, concrete examples over abstract description, and written
+> so a reader with zero prior background on the subject actually follows
+> it, not just someone who already knows the topic. Do not write or edit
+> any code — review only. Report findings ranked by severity, or say
+> explicitly that you found nothing worth flagging.
 
 UI verification lives here rather than as its own stage: it exists for
 the same reason as code review (fresh eyes catching what the implementer's
