@@ -3,7 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "A running, searchable log of things learned across programming, tech, and AI.",
   "homepage": "https://enbattle.github.io/til",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enbattle/til.git"
+  },
+  "author": "Steven Li",
+  "license": "MIT",
   "engines": {
     "node": ">=22.12.0"
   },
