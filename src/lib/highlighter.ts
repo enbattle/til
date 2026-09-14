@@ -3,12 +3,12 @@ import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
 
 /**
  * A small, fixed set of languages covering the code seen in topic bodies so
- * far, imported individually — shiki's "fine-grained bundle" approach.
- * `createHighlighter`'s convenience API pulls in every language shiki
- * supports regardless of which ones are actually referenced (confirmed by
- * inspecting the production build output), so this is the version that
- * actually keeps the bundle to just what's used. Add a language here when a
- * topic needs it.
+ * far, each importable individually — shiki's "fine-grained bundle"
+ * approach. `createHighlighter`'s convenience API pulls in every language
+ * shiki supports regardless of which ones are actually referenced
+ * (confirmed by inspecting the production build output). Registered with
+ * the highlighter lazily, one at a time, as each is actually needed — see
+ * `ensureLanguageLoaded` below. Add a language here when a topic needs it.
  */
 const LANGUAGE_IMPORTS = {
   typescript: () => import('shiki/langs/typescript.mjs'),
@@ -47,6 +47,7 @@ let highlighterPromise: Promise<HighlighterCore> | null = null;
  * Loaded lazily, so pages that never render a code block (the home page,
  * section listings) never pay for shiki at all — only a topic page does,
  * and only once per session (the JS regex engine avoids a WASM asset too).
+ * Registered with *no* languages up front — see `ensureLanguageLoaded`.
  */
 function getHighlighter(): Promise<HighlighterCore> {
   if (!highlighterPromise) {
@@ -55,7 +56,7 @@ function getHighlighter(): Promise<HighlighterCore> {
         import('shiki/themes/vitesse-light.mjs'),
         import('shiki/themes/vitesse-dark.mjs'),
       ],
-      langs: Object.values(LANGUAGE_IMPORTS).map((load) => load()),
+      langs: [],
       engine: createJavaScriptRegexEngine(),
     });
   }
@@ -69,6 +70,22 @@ function resolveLanguage(lang: string | undefined): SupportedLanguage | 'text' {
   return ALIASES[lang] ?? 'text';
 }
 
+/**
+ * Loads one language's grammar into the highlighter the first time it's
+ * actually needed, instead of loading all ten up front. A typical topic
+ * page uses one or two languages — fetching the other eight every time
+ * only wastes bandwidth, it also means a single flaky chunk fetch (a real
+ * failure seen in production) breaks every code block on the page, not
+ * just the one that needed it.
+ */
+async function ensureLanguageLoaded(
+  highlighter: HighlighterCore,
+  language: SupportedLanguage,
+): Promise<void> {
+  if (highlighter.getLoadedLanguages().includes(language)) return;
+  await highlighter.loadLanguage(LANGUAGE_IMPORTS[language]());
+}
+
 /** Highlights `code` as `lang` (falling back to plain text for an unsupported language). */
 export async function highlightCode(
   code: string,
@@ -76,8 +93,12 @@ export async function highlightCode(
   theme: 'light' | 'dark',
 ): Promise<string> {
   const highlighter = await getHighlighter();
+  const resolved = resolveLanguage(lang);
+  if (resolved !== 'text') {
+    await ensureLanguageLoaded(highlighter, resolved);
+  }
   return highlighter.codeToHtml(code, {
-    lang: resolveLanguage(lang),
+    lang: resolved,
     theme: theme === 'dark' ? DARK_THEME : LIGHT_THEME,
   });
 }

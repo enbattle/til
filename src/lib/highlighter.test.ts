@@ -26,4 +26,21 @@ describe('highlightCode', () => {
     const dark = await highlightCode('const x = 1;', 'javascript', 'dark');
     expect(light).not.toBe(dark);
   });
+
+  // Regression test: a real production error ("Failed to fetch dynamically
+  // imported module") traced back to loading all ten languages up front on
+  // the first code block, regardless of which one it actually needed.
+  // Highlighting several distinct, never-before-used languages in sequence
+  // must each succeed independently — a lazily-loaded language shouldn't
+  // interfere with, or depend on, any other.
+  it('highlights several different languages independently on demand', async () => {
+    const python = await highlightCode('def f(): pass', 'python', 'light');
+    const css = await highlightCode('.a { color: red; }', 'css', 'light');
+    const html = await highlightCode('<div></div>', 'html', 'light');
+
+    for (const result of [python, css, html]) {
+      expect(result).toContain('<pre');
+      expect(result).toContain('<span');
+    }
+  });
 });

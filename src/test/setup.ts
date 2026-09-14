@@ -1,4 +1,13 @@
+import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+
+// Testing Library's own findBy/waitFor timeout (1000ms) is independent of
+// Vitest's per-test timeout, and too short for the first test in a file to
+// touch the lazy-loaded TopicPage route — that cold import (react-markdown,
+// remark-gfm, shiki/core, the JS regex engine) can take longer than that to
+// transform and evaluate the first time, which is a test-environment cost,
+// not a real slowdown users hit (that chunk is prebuilt and cached in prod).
+configure({ asyncUtilTimeout: 5000 });
 
 // jsdom doesn't implement scrollTo — App.tsx calls it on every route change.
 window.scrollTo = () => {};
