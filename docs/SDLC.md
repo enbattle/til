@@ -93,3 +93,17 @@ Every feature that went through this process leaves a spec file behind —
 a running record of what was built and why, independent of git history
 (which shows _what_ changed, not the requirements and alternatives that
 were weighed to get there).
+
+## Verifying the process itself
+
+Everything above describes how a session is supposed to build a change.
+None of it checks whether that actually keeps happening — a session can
+build something well while still having picked the wrong process for it,
+and that kind of drift is invisible until someone checks for it directly.
+`evals/` holds scenario-based checks for exactly that: given a task
+description, does a fresh session route it to `/feature`, `add-topic`, or
+a direct edit, the way this document and `CLAUDE.md` intend? See
+`evals/README.md`. It's run manually/periodically, not on every commit —
+most usefully right after editing this file, `CLAUDE.md`, or any
+`SKILL.md`, which is also when `.claude/hooks/nudge-sdlc.js` reminds a
+session to check it.
