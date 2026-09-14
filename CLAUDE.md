@@ -60,9 +60,15 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
 
 ## Adding a topic to an existing section
 
-Drop a new `.md` file into that section's folder with the frontmatter
-above. Nothing else needs to change — `src/lib/content.ts` loads every
-file under `src/content/**/*.md` automatically via `import.meta.glob`.
+Use the `add-topic` skill — see
+[`.claude/skills/add-topic/SKILL.md`](.claude/skills/add-topic/SKILL.md).
+Mechanically, a new topic is just a `.md` file dropped into that
+section's folder with the frontmatter above (`src/lib/content.ts` loads
+every file under `src/content/**/*.md` automatically via
+`import.meta.glob`, no registry change needed) — but the skill also runs
+one independent review pass against the Writing Standard below before
+calling it done, since this is the most frequent change in the repo and
+otherwise the easiest one to skip review on entirely.
 
 ## Adding a new section
 

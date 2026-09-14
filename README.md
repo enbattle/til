@@ -8,9 +8,10 @@ sections, deployed as a static site.
 
 ## Features
 
-- **Sections** — every topic lives under one top-level section (Engineering
-  Practices, AI & Machine Learning, Languages & Runtimes, Tools & Workflow,
-  and more as they're added). The home page and each section page browse by
+- **Sections** — every topic lives under one top-level section (see
+  [`src/content/registry.ts`](src/content/registry.ts) for the current
+  list). The home page, each section page, and a persistent left-side
+  navigation (a collapsible overlay on narrow viewports) all browse by
   this grouping.
 - **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's title, summary,
   and body ([Fuse.js](https://www.fusejs.io)).
@@ -45,6 +46,7 @@ npm run format            # Prettier write
 npm run format:check      # Prettier check
 npm run test              # Vitest, watch mode
 npm run test:run          # Vitest, run once (CI mode)
+npm run size              # Check built JS chunks against size-limit budgets
 ```
 
 ## Adding content
@@ -61,6 +63,8 @@ accessibility checklist behind the UI.
 
 ## Development process
 
-Features and nontrivial changes go through a spec → TDD → implementation →
-adversarial review → UI check → docs pipeline — see
-[docs/SDLC.md](docs/SDLC.md).
+Features and nontrivial app changes go through a spec → TDD →
+implementation → adversarial review → UI check → docs pipeline — see
+[docs/SDLC.md](docs/SDLC.md). Adding a topic gets a lighter, separate
+process instead (draft → one independent review pass) — see the
+`add-topic` skill referenced in [CLAUDE.md](CLAUDE.md).
