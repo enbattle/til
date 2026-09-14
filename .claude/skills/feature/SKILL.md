@@ -166,8 +166,15 @@ Instruction, close to verbatim:
 > defined before use, built from first principles rather than an assumed
 > mental model, concrete examples over abstract description, and written
 > so a reader with zero prior background on the subject actually follows
-> it, not just someone who already knows the topic. Do not write or edit
-> any code — review only. Report findings ranked by severity, or say
+> it, not just someone who already knows the topic. Also check whether
+> this diff makes any documentation elsewhere in the repo (CLAUDE.md,
+> README.md, docs/**, other SKILL.md files) inaccurate or incomplete —
+> a convention this change establishes that isn't written down anywhere,
+> a fact (a command, a file list, a section name) that a doc now states
+> incorrectly. The implementer was already asked to update docs as part
+> of Stage 3; verify that independently rather than trusting it was done
+> correctly, the same way you verify the code itself. Do not write or
+> edit any code — review only. Report findings ranked by severity, or say
 > explicitly that you found nothing worth flagging.
 
 UI verification lives here rather than as its own stage: it exists for

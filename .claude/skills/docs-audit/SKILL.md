@@ -1,0 +1,81 @@
+---
+name: docs-audit
+description: Audit every documentation file in this repo (CLAUDE.md, README.md, docs/**, evals/**, every SKILL.md) against the current code, config, and process for staleness — a fact that's no longer true, a convention nothing describes, a reference to something removed. Use when asked to check for stale docs, after a batch of changes has landed, or when nudged by the nudge-precommit hook before a commit/push.
+---
+
+# Docs audit
+
+Manual/periodic, same cadence philosophy as the `evals/` suite — not run
+on every commit (`.claude/hooks/nudge-precommit.js` reminds a session to
+_consider_ it before shipping, it doesn't run it automatically, because a
+full-repo audit is too slow and too much to review to fire on every
+commit without it becoming noise people start ignoring).
+
+## Why an independent read, not a self-check
+
+Whoever just made a change is the worst-positioned person to notice a
+doc gap it left behind — they already hold the new state in mind, so an
+omission looks unremarkable to them the same way a typo you just typed is
+invisible to your own proofreading. That's exactly the bias a fresh
+`general-purpose` agent (never `fork`) removes: no memory of what was
+just built, so a stale claim reads as wrong on sight instead of "obviously
+fine, I was just there."
+
+## Stage 1 — Enumerate the documentation surface
+
+List every file this audit covers (do this yourself, mechanical, no bias
+risk):
+
+- `CLAUDE.md`, `README.md`
+- everything under `docs/` (`DESIGN.md`, `SDLC.md`, `specs/*.md`)
+- everything under `evals/` (`README.md`, `skill-routing/*.md`)
+- every `SKILL.md` under `.claude/skills/`
+
+## Stage 2 — Independent audit
+
+Spawn a **fresh** `general-purpose` agent. Give it the file list from
+Stage 1 and this instruction, close to verbatim:
+
+> Read every file listed below in full. For each one, extract every
+> checkable claim it makes — a specific file/folder path, a specific
+> command, a specific list (section names, skill names, npm scripts), a
+> cross-reference to another doc or skill, a description of a process or
+> convention — and verify it against the actual current state of the
+> repository (read the referenced files, check `package.json`'s scripts,
+> check `src/content/registry.ts`, list `.claude/skills/`, etc. — don't
+> assume, check). Report every claim that's now inaccurate, incomplete,
+> or references something that no longer exists, with: which file, the
+> claim as written, what's actually true now, and a suggested fix. Also
+> flag any doc that hardcodes a fact that's really owned by code
+> elsewhere (a duplicated list, a copied value) as a candidate to instead
+> reference the source, the same way `README.md`'s Features section
+> points at `registry.ts` instead of naming sections directly — that
+> class of fix prevents the same staleness from recurring, not just
+> patches it once. Do not edit anything — audit only. Report findings
+> ranked by how misleading they'd be to someone reading the doc cold, or
+> say explicitly you found nothing worth flagging.
+>
+> Files to audit: <Stage 1's list>
+
+## Stage 3 — Apply fixes
+
+Confirmed findings are low-risk text edits (not behavioral code), so
+apply them yourself directly — no separate fix agent needed, the
+independent audit in Stage 2 already was the check. For a finding you
+disagree with or that needs a judgment call the audit agent couldn't
+make (e.g. which of two conflicting descriptions is actually correct),
+resolve it yourself or ask the user rather than applying it blindly.
+
+## Stage 4 — Final gate
+
+```bash
+npm run format:check
+```
+
+(Add `npm run typecheck && npm run lint && npm run test:run && npm run build`
+too if any fix touched actual code rather than only documentation.)
+
+Summarize for the user: what was audited, what was found, what was
+fixed, and anything left open for their judgment. Ask before committing
+or pushing, same as always — this skill leaves the working tree ready,
+it doesn't ship it.
