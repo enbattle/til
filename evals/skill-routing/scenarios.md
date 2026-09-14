@@ -138,3 +138,16 @@ read of every doc against current repo state.
 by the same session with no independent audit pass — that defeats the
 skill's actual design premise (see its `SKILL.md`: whoever just made a
 change is the worst-positioned person to notice what it left stale).
+
+---
+
+### SR-10 — skill-routing-eval routing
+
+> Can you run the skill-routing eval to make sure everything's still
+> working after these changes?
+
+**Expected:** `skill-routing-eval`
+**Why:** Exact match for the skill's stated purpose.
+**Fails if:** routed to `docs-audit` (a different concern — doc staleness,
+not routing correctness) or done as an ad-hoc check that skips the actual
+fresh-subagent-per-scenario procedure the skill exists to standardize.

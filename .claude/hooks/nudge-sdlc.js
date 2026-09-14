@@ -13,9 +13,9 @@ const ROUTING_REMINDER =
 const EVALS_REMINDER =
   "Reminder (docs/SDLC.md): you're editing this repo's SDLC tooling " +
   'itself (CLAUDE.md, docs/SDLC.md, a skill, or a hook). Consider running ' +
-  'or updating the skill-routing eval at evals/skill-routing/ afterward ' +
-  '(see evals/README.md) — routing drift from a wording change here is ' +
-  'otherwise invisible until it shows up in real use.';
+  'the skill-routing-eval skill afterward (see evals/README.md) — ' +
+  'routing drift from a wording change here is otherwise invisible ' +
+  'until it shows up in real use.';
 
 function isAppCodeOrSpec(path) {
   return /(^|\/)src\//.test(path) || /(^|\/)docs\/specs\//.test(path);

@@ -101,9 +101,9 @@ None of it checks whether that actually keeps happening — a session can
 build something well while still having picked the wrong process for it,
 and that kind of drift is invisible until someone checks for it directly.
 `evals/` holds scenario-based checks for exactly that: given a task
-description, does a fresh session route it to `/feature`, `add-topic`, or
-a direct edit, the way this document and `CLAUDE.md` intend? See
-`evals/README.md`. It's run manually/periodically, not on every commit —
-most usefully right after editing this file, `CLAUDE.md`, or any
-`SKILL.md`, which is also when `.claude/hooks/nudge-sdlc.js` reminds a
-session to check it.
+description, does a fresh session route it to `/feature`, `add-topic`,
+`docs-audit`, or a direct edit, the way this document and `CLAUDE.md`
+intend? Run via the `skill-routing-eval` skill — see `evals/README.md`.
+It's run manually/periodically, not on every commit — most usefully right
+after editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also
+when `.claude/hooks/nudge-sdlc.js` reminds a session to check it.

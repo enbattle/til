@@ -24,12 +24,22 @@ fine, I was just there."
 ## Stage 1 — Enumerate the documentation surface
 
 List every file this audit covers (do this yourself, mechanical, no bias
-risk):
+risk) — re-glob at run time rather than trusting this list to have stayed
+complete, since a category being missing here is itself exactly the kind
+of staleness this skill exists to catch:
 
 - `CLAUDE.md`, `README.md`
 - everything under `docs/` (`DESIGN.md`, `SDLC.md`, `specs/*.md`)
-- everything under `evals/` (`README.md`, `skill-routing/*.md`)
+- everything under `evals/` (`README.md`, every scenario/how-to-run file)
 - every `SKILL.md` under `.claude/skills/`
+- explanatory comments in `.github/workflows/*.yml` and
+  `.github/dependabot.yml` — these describe _why_ a CI/CD choice was
+  made, which goes stale exactly like prose documentation does
+- the descriptive text duplicated across `package.json`'s `description`,
+  `index.html`'s meta tags, and `README.md`'s intro line — these repeat
+  the same fact in multiple places by necessity (SEO/social-preview tags
+  can't reference another file), so check they still agree with each
+  other rather than just checking each is internally plausible
 
 ## Stage 2 — Independent audit
 

@@ -17,16 +17,19 @@ notebook than a product. The UI follows that:
   rather than a generic interface blue.
 - **Layout**: a persistent left-side section/topic nav (`SectionNav`)
   alongside a centered content column (`max-w-3xl`), inside a wider
-  `max-w-5xl` shell. Above the `lg` breakpoint the nav is a fixed panel
-  next to the content; below it, the panel is replaced by a text "Menu"
-  button in the header that opens the same nav tree in a dismissible
-  left-edge overlay (`MobileNav`) — exactly one of the two is present at
-  a time. This was added ahead of any real growth in section/topic
-  counts — the opposite of the content trend that originally motivated
-  skipping it — because direct jump access from anywhere on the site is
-  worth the added chrome even at today's small scale, and the
-  persistent/overlay pattern is cheap to build correctly now versus
-  retrofitting it once a sidebar is easier to postpone.
+  `max-w-5xl` shell. Above the `lg` breakpoint the nav is a sticky panel
+  that scrolls with the page and then holds in place once it reaches its
+  offset, with its own independent scroll region so it stays reachable
+  on a long page instead of scrolling out of view; below it, the panel
+  is replaced by a text "Menu" button in the header that opens the same
+  nav tree in a dismissible left-edge overlay (`MobileNav`) — exactly one
+  of the two is present at a time. This was added ahead of any real
+  growth in section/topic counts — the opposite of the content trend
+  that originally motivated skipping it — because direct jump access
+  from anywhere on the site is worth the added chrome even at today's
+  small scale, and the persistent/overlay pattern is cheap to build
+  correctly now versus retrofitting it once a sidebar is easier to
+  postpone.
 
 ## Tokens
 

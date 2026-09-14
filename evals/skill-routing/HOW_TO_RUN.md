@@ -1,5 +1,11 @@
 # How to run the skill-routing eval
 
+Use the `skill-routing-eval` skill to actually run this — it wraps the
+procedure below as an invokable skill for the same discoverability reason
+`docs-audit` is a skill rather than passive documentation. What follows
+is the underlying procedure the skill automates, useful if you're running
+a single scenario by hand or checking exactly what the skill does.
+
 ## Procedure
 
 For each scenario in `scenarios.md`:

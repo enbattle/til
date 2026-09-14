@@ -16,11 +16,12 @@ the workflow file, not just that the code it builds still compiles.
 
 - `skill-routing/` — does a fresh session, given a task description,
   correctly decide whether to invoke `/feature`, `add-topic`,
-  `docs-audit`, or just make the change directly per `CLAUDE.md`'s own
-  carve-out? This is the first eval category, chosen because routing is
-  the thing most likely to silently drift as `CLAUDE.md` and the skills
-  themselves change over time — a session can build something _well_
-  while still having picked the wrong process for it.
+  `docs-audit`, `skill-routing-eval`, or just make the change directly
+  per `CLAUDE.md`'s own carve-out? This is the first eval category,
+  chosen because routing is the thing most likely to silently drift as
+  `CLAUDE.md` and the skills themselves change over time — a session can
+  build something _well_ while still having picked the wrong process
+  for it. Run via the `skill-routing-eval` skill rather than by hand.
 
 Future categories worth adding once routing is stable: does the
 `/feature` review stage actually catch known-bad injected bugs; does
@@ -34,8 +35,9 @@ means starting a fresh session (or, as a practical stand-in, a fresh
 subagent with no prior context) with no memory of this repo's history and
 observing what it actually does, which costs real time and tokens per
 scenario. That's a deliberate, judged expense for a personal site, not
-something to run on every commit. See `skill-routing/HOW_TO_RUN.md` for
-the exact procedure.
+something to run on every commit. Use the `skill-routing-eval` skill to
+run it — see `skill-routing/HOW_TO_RUN.md` for the underlying procedure
+the skill wraps.
 
 **Re-run whenever it matters**, not on a fixed schedule: after editing
 `CLAUDE.md`, any `SKILL.md`, or `docs/SDLC.md` — the same trigger the
