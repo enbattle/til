@@ -4,6 +4,8 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
 import { SearchDialog } from '@/components/SearchDialog';
+import { SectionNav } from '@/components/SectionNav';
+import { MobileNav } from '@/components/MobileNav';
 import { HomePage } from '@/pages/HomePage';
 import { SectionPage } from '@/pages/SectionPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -19,19 +21,22 @@ const TopicPage = lazy(() =>
 
 function AppShell() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const { pathname } = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // Defense in depth: a search result click already closes the dialog
-  // itself before navigating, but this also covers a route change from
-  // anything else (browser back/forward) while it happens to be open, so a
-  // stale dialog is never left mounted over a different page. Focus
-  // restoration on close is handled inside SearchDialog (useFocusTrap).
+  // Defense in depth: a search result click (and a nav link click) already
+  // closes its own overlay before navigating, but this also covers a route
+  // change from anything else (browser back/forward) while one happens to be
+  // open, so a stale overlay is never left mounted over a different page.
+  // Focus restoration on close is handled inside SearchDialog/MobileNav
+  // (useFocusTrap).
   useEffect(() => {
     setSearchOpen(false);
+    setNavOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -40,6 +45,7 @@ function AppShell() {
         (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
       if (isSearchShortcut) {
         event.preventDefault();
+        setNavOpen(false);
         setSearchOpen(true);
       }
     }
@@ -49,29 +55,39 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-bg-primary">
-      <Header onOpenSearch={() => setSearchOpen(true)} />
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        {/* Keyed on pathname so navigating away from a page that errored
-            remounts a fresh boundary instead of staying stuck on the
-            fallback for the rest of the session. */}
-        <ErrorBoundary key={pathname}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/not-found" element={<NotFoundPage />} />
-            <Route path="/:section" element={<SectionPage />} />
-            <Route
-              path="/:section/:slug"
-              element={
-                <Suspense fallback={null}>
-                  <TopicPage />
-                </Suspense>
-              }
-            />
-            <Route path="*" element={<Navigate to="/not-found" replace />} />
-          </Routes>
-        </ErrorBoundary>
-      </main>
+      <Header
+        onOpenSearch={() => setSearchOpen(true)}
+        onOpenNav={() => {
+          setSearchOpen(false);
+          setNavOpen(true);
+        }}
+      />
+      <div className="mx-auto flex max-w-5xl gap-8 px-4">
+        <SectionNav className="sticky top-[68px] hidden max-h-[calc(100vh-68px)] w-56 shrink-0 self-start overflow-y-auto py-10 lg:block" />
+        <main className="max-w-3xl flex-1 py-10">
+          {/* Keyed on pathname so navigating away from a page that errored
+              remounts a fresh boundary instead of staying stuck on the
+              fallback for the rest of the session. */}
+          <ErrorBoundary key={pathname}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/not-found" element={<NotFoundPage />} />
+              <Route path="/:section" element={<SectionPage />} />
+              <Route
+                path="/:section/:slug"
+                element={
+                  <Suspense fallback={null}>
+                    <TopicPage />
+                  </Suspense>
+                }
+              />
+              <Route path="*" element={<Navigate to="/not-found" replace />} />
+            </Routes>
+          </ErrorBoundary>
+        </main>
+      </div>
       {searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} />}
+      {navOpen && <MobileNav onClose={() => setNavOpen(false)} />}
     </div>
   );
 }

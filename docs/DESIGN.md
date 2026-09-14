@@ -15,12 +15,18 @@ notebook than a product. The UI follows that:
   background in light mode, a warm charcoal (not pure black) in dark mode
   — with a warm amber/ochre accent standing in for a highlighter pen
   rather than a generic interface blue.
-- **Layout**: a single centered content column (`max-w-3xl`), no
-  persistent sidebar. At the current content volume, the home page and
-  section pages already function as navigation — a sidebar would be extra
-  chrome with nothing yet to justify it. Revisit this once section/topic
-  counts grow enough that jumping between sections while reading becomes
-  common.
+- **Layout**: a persistent left-side section/topic nav (`SectionNav`)
+  alongside a centered content column (`max-w-3xl`), inside a wider
+  `max-w-5xl` shell. Above the `lg` breakpoint the nav is a fixed panel
+  next to the content; below it, the panel is replaced by a text "Menu"
+  button in the header that opens the same nav tree in a dismissible
+  left-edge overlay (`MobileNav`) — exactly one of the two is present at
+  a time. This was added ahead of any real growth in section/topic
+  counts — the opposite of the content trend that originally motivated
+  skipping it — because direct jump access from anywhere on the site is
+  worth the added chrome even at today's small scale, and the
+  persistent/overlay pattern is cheap to build correctly now versus
+  retrofitting it once a sidebar is easier to postpone.
 
 ## Tokens
 
