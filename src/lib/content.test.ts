@@ -24,12 +24,12 @@ describe('content loader', () => {
   });
 
   it('finds a known topic by section and slug', () => {
-    const topic = getTopic('tools-and-workflow', 'git-worktrees');
-    expect(topic?.title).toContain('Worktrees');
+    const topic = getTopic('ai-and-ml', 'prompt-engineering');
+    expect(topic?.title).toContain('Prompt Engineering');
   });
 
   it('returns undefined for an unknown topic', () => {
-    expect(getTopic('tools-and-workflow', 'does-not-exist')).toBeUndefined();
+    expect(getTopic('ai-and-ml', 'does-not-exist')).toBeUndefined();
   });
 
   it('groups topics by section in registry order, omitting empty sections', () => {

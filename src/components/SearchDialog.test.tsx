@@ -18,12 +18,12 @@ describe('SearchDialog', () => {
   it('shows matching results as the query is typed', async () => {
     const user = userEvent.setup();
     renderDialog();
-    await user.type(screen.getByPlaceholderText(/search topics/i), 'worktrees');
-    // Role-scoped, not a plain text match — "Git Worktrees" is also a
+    await user.type(screen.getByPlaceholderText(/search topics/i), 'prompt engineering');
+    // Role-scoped, not a plain text match — "Prompt Engineering" is also a
     // substring of several text-containing ancestors (the <li>, the <ul>,
     // the dialog panel), which makes a plain findByText ambiguous.
     expect(
-      await screen.findByRole('button', { name: /Git Worktrees/i }),
+      await screen.findByRole('button', { name: /Prompt Engineering/i }),
     ).toBeInTheDocument();
   });
 

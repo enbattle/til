@@ -8,12 +8,12 @@ describe('searchTopics', () => {
   });
 
   it('finds a topic by a distinctive word in its title', () => {
-    const results = searchTopics('worktrees');
-    expect(results.some((topic) => topic.slug === 'git-worktrees')).toBe(true);
+    const results = searchTopics('prompt engineering');
+    expect(results.some((topic) => topic.slug === 'prompt-engineering')).toBe(true);
   });
 
   it('finds a topic by a distinctive phrase in its body', () => {
-    const results = searchTopics('microtask queue');
-    expect(results.some((topic) => topic.slug === 'javascript-event-loop')).toBe(true);
+    const results = searchTopics('thin vertical slice');
+    expect(results.some((topic) => topic.slug === 'plan-before-you-build')).toBe(true);
   });
 });

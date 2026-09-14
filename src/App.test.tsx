@@ -19,9 +19,9 @@ describe('App routing', () => {
   });
 
   it('renders a section page for a known section', () => {
-    renderAt('/tools-and-workflow');
+    renderAt('/ai-and-ml');
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Tools & Workflow' }),
+      screen.getByRole('heading', { level: 1, name: 'AI & Machine Learning' }),
     ).toBeInTheDocument();
   });
 
@@ -31,16 +31,16 @@ describe('App routing', () => {
   });
 
   it('redirects an unknown topic slug under a real section to not-found', async () => {
-    renderAt('/tools-and-workflow/nonexistent-topic');
+    renderAt('/ai-and-ml/nonexistent-topic');
     expect(
       await screen.findByRole('heading', { name: /page not found/i }),
     ).toBeInTheDocument();
   });
 
   it('renders a real topic end-to-end through the lazy-loaded TopicPage, code block included', async () => {
-    renderAt('/tools-and-workflow/git-worktrees');
+    renderAt('/ai-and-ml/prompt-engineering');
     expect(
-      await screen.findByRole('heading', { level: 1, name: /Git Worktrees/i }),
+      await screen.findByRole('heading', { level: 1, name: /Prompt Engineering/i }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /copy/i }).length).toBeGreaterThan(0);
   });
@@ -49,8 +49,10 @@ describe('App routing', () => {
   // `.prose` (only the markdown body is), so they rely on the base `a`
   // style actually applying `underline`, not just a color change.
   it('renders the section breadcrumb as an underlined link, not color-only', async () => {
-    renderAt('/tools-and-workflow/git-worktrees');
-    const breadcrumb = await screen.findByRole('link', { name: /Tools & Workflow/i });
+    renderAt('/ai-and-ml/prompt-engineering');
+    const breadcrumb = await screen.findByRole('link', {
+      name: /AI & Machine Learning/i,
+    });
     expect(breadcrumb).not.toHaveClass('no-underline');
   });
 
@@ -93,12 +95,12 @@ describe('App routing', () => {
     const user = userEvent.setup();
     renderAt('/');
     await user.click(screen.getByRole('button', { name: /search/i }));
-    await user.type(screen.getByPlaceholderText(/search topics/i), 'worktrees');
-    await user.click(await screen.findByRole('button', { name: /Git Worktrees/i }));
+    await user.type(screen.getByPlaceholderText(/search topics/i), 'prompt engineering');
+    await user.click(await screen.findByRole('button', { name: /Prompt Engineering/i }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { level: 1, name: /Git Worktrees/i }),
+      await screen.findByRole('heading', { level: 1, name: /Prompt Engineering/i }),
     ).toBeInTheDocument();
   });
 });

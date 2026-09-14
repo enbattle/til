@@ -23,12 +23,17 @@ the same handful of techniques do most of the work:
   aim at.
 - **Give context the model doesn't otherwise have.** Who's the audience?
   What's already been tried? What does "good" look like here? A model has
-  no memory of your project beyond what's in the prompt (see
-  [tokens and context windows](/ai-and-ml/tokens-and-context-windows)) —
+  no memory of your project beyond what's actually in the prompt —
   anything you haven't stated, it has to guess.
 - **Specify the output format.** If you need a bulleted list, a table, or
   a specific structure, say so explicitly rather than hoping the model
-  infers it.
+  infers it. For a production integration this often means showing the
+  exact shape you want back:
+
+  ```json
+  { "sentiment": "positive", "confidence": 0.92 }
+  ```
+
 - **Show examples for anything subtle.** A style, a tone, or an edge case
   that's hard to describe in words is often much easier to demonstrate
   with one or two examples (sometimes called "few-shot" examples) than to

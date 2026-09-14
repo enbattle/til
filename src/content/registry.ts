@@ -23,18 +23,6 @@ export const SECTIONS: Section[] = [
     description:
       'How language models work under the hood, and how to actually get good results out of them.',
   },
-  {
-    slug: 'languages-and-runtimes',
-    label: 'Languages & Runtimes',
-    description:
-      'How programming languages and the runtimes underneath them actually behave.',
-  },
-  {
-    slug: 'tools-and-workflow',
-    label: 'Tools & Workflow',
-    description:
-      'Git, the command line, and the everyday tools that make development smoother.',
-  },
 ];
 
 export function getSection(slug: string): Section | undefined {
