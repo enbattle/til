@@ -1,0 +1,33 @@
+import '@testing-library/jest-dom/vitest';
+
+// jsdom doesn't implement scrollTo — App.tsx calls it on every route change.
+window.scrollTo = () => {};
+
+// jsdom doesn't implement matchMedia — ThemeContext calls it to read the
+// system color-scheme preference, so any test rendering ThemeProvider needs
+// this polyfilled or it throws.
+if (!window.matchMedia) {
+  window.matchMedia = (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+}
+
+// jsdom does no real layout, so `offsetParent` is always null — code that
+// uses it as an "is this actually visible" check (useFocusTrap's focusable-
+// elements filter) would otherwise see every element as hidden. Not a
+// faithful polyfill of real offsetParent semantics, just enough for an
+// attached element to read as non-null.
+Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+  get() {
+    return this.parentElement;
+  },
+  configurable: true,
+});

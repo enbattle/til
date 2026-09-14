@@ -1,0 +1,121 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/*
+ * Tailwind v4's `dark:` variant matches `prefers-color-scheme` by default.
+ * Theme switching here is manual (light/dark/system, toggled via a `.dark`
+ * class on <html> — see ThemeContext), so `dark:` is repointed at that class
+ * instead. Only used for the typography plugin's `dark:prose-invert` below;
+ * every other color in the app reads a CSS variable that `.dark` already
+ * redefines, so it never needs a `dark:` prefix at all.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Raw tokens live as plain CSS custom properties (not inside @theme) so
+ * `.dark` can redefine them at runtime — `@theme inline` below just exposes
+ * each one as a Tailwind color/font so classes like `bg-bg-primary` or
+ * `text-accent` pick up whichever value is active, without any `dark:`
+ * variant needed anywhere in the app.
+ */
+:root {
+  --color-bg-primary: #faf6f0;
+  --color-bg-secondary: #f2ebe0;
+  --color-bg-tertiary: #ece2d3;
+  --color-text-primary: #2b2420;
+  --color-text-secondary: #5c5147;
+  --color-text-tertiary: #857a6d;
+  --color-border: #ddd1bf;
+  --color-accent: #92400e;
+  --color-accent-hover: #7c3609;
+  --color-accent-soft: #f3e3c8;
+}
+
+.dark {
+  --color-bg-primary: #201a14;
+  --color-bg-secondary: #2a231b;
+  --color-bg-tertiary: #342c22;
+  --color-text-primary: #f2e9dc;
+  --color-text-secondary: #c9bba6;
+  --color-text-tertiary: #9c8f7a;
+  --color-border: #3d3428;
+  --color-accent: #f0a83c;
+  --color-accent-hover: #f7bb5c;
+  --color-accent-soft: #3d2f16;
+}
+
+@theme inline {
+  --color-bg-primary: var(--color-bg-primary);
+  --color-bg-secondary: var(--color-bg-secondary);
+  --color-bg-tertiary: var(--color-bg-tertiary);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-tertiary: var(--color-text-tertiary);
+  --color-border: var(--color-border);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-soft: var(--color-accent-soft);
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Lora', ui-serif, Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply bg-bg-primary text-text-primary font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-serif;
+  }
+
+  /* Tailwind's preflight sets `a { text-decoration: inherit }`, so a link is
+     only actually underlined if something says so explicitly — links must
+     stay identifiable by more than color alone. A card/nav-style link that
+     wants to look like a button opts out with the `no-underline` utility. */
+  a {
+    @apply text-accent underline underline-offset-2;
+  }
+
+  a:hover {
+    @apply text-accent-hover;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* Rendered markdown bodies use the typography plugin, re-themed onto our tokens
+   instead of its default gray palette — kept in sync for both `.prose` and
+   `.prose-invert` since dark mode is class-driven, not the plugin's own logic. */
+.prose,
+.prose-invert {
+  --tw-prose-body: var(--color-text-secondary);
+  --tw-prose-headings: var(--color-text-primary);
+  --tw-prose-lead: var(--color-text-secondary);
+  --tw-prose-links: var(--color-accent);
+  --tw-prose-bold: var(--color-text-primary);
+  --tw-prose-counters: var(--color-text-tertiary);
+  --tw-prose-bullets: var(--color-text-tertiary);
+  --tw-prose-hr: var(--color-border);
+  --tw-prose-quotes: var(--color-text-primary);
+  --tw-prose-quote-borders: var(--color-border);
+  --tw-prose-captions: var(--color-text-tertiary);
+  --tw-prose-code: var(--color-text-primary);
+  --tw-prose-th-borders: var(--color-border);
+  --tw-prose-td-borders: var(--color-border);
+}

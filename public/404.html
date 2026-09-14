@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>til</title>
+    <script>
+      // GitHub Pages serves this file for any unknown path under /til/, since
+      // it has no server-side router. Stash the path the visitor actually
+      // wanted and bounce to the real app shell, which restores it (see the
+      // inline script in index.html) before React Router reads the URL.
+      sessionStorage.setItem(
+        'til-redirect-path',
+        location.pathname + location.search + location.hash,
+      );
+      location.replace('/til/');
+    </script>
+  </head>
+  <body></body>
+</html>
