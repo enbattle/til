@@ -23,6 +23,12 @@ export const SECTIONS: Section[] = [
     description:
       'How language models work under the hood, and how to actually get good results out of them.',
   },
+  {
+    slug: 'focus-and-attention',
+    label: 'Focus & Attention',
+    description:
+      'How attention and dopamine actually work, why modern digital environments make focus hard, and what actually helps you concentrate and retain what you learn.',
+  },
 ];
 
 export function getSection(slug: string): Section | undefined {

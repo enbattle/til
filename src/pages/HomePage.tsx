@@ -15,9 +15,9 @@ export function HomePage() {
           til
         </h1>
         <p className="mt-3 max-w-xl text-text-secondary">
-          A running, searchable log of things learned across programming, tech, and AI —{' '}
-          {totalTopics} {totalTopics === 1 ? 'topic' : 'topics'} so far, grouped into
-          sections below.
+          A running, searchable log of things learned across programming, tech, AI, and
+          how to focus and learn well — {totalTopics}{' '}
+          {totalTopics === 1 ? 'topic' : 'topics'} so far, grouped into sections below.
         </p>
       </section>
 

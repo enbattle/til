@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "A running, searchable log of things learned across programming, tech, and AI.",
+  "description": "A running, searchable log of things learned across programming, tech, AI, and how to focus and learn well.",
   "homepage": "https://enbattle.github.io/til",
   "repository": {
     "type": "git",

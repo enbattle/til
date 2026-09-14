@@ -1,8 +1,8 @@
 # til
 
-A running, searchable log of things learned across programming, tech, and
-AI — short-to-long write-ups grouped into sections, deployed as a static
-site.
+A running, searchable log of things learned across programming, tech, AI,
+and how to focus and learn well — short-to-long write-ups grouped into
+sections, deployed as a static site.
 
 **[enbattle.github.io/til](https://enbattle.github.io/til)**
 
