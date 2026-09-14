@@ -23,8 +23,21 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "size": "size-limit"
   },
+  "size-limit": [
+    {
+      "name": "Main chunk (app shell, no topic content)",
+      "path": "dist/assets/index-*.js",
+      "limit": "105 KB"
+    },
+    {
+      "name": "TopicPage chunk (markdown + syntax highlighting)",
+      "path": "dist/assets/TopicPage-*.js",
+      "limit": "95 KB"
+    }
+  ],
   "dependencies": {
     "fuse.js": "^7.5.0",
     "react": "^19.3.0",
@@ -35,6 +48,7 @@
     "shiki": "^4.4.3"
   },
   "devDependencies": {
+    "@size-limit/file": "^13.1.1",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
@@ -47,6 +61,7 @@
     "jsdom": "^26.1.0",
     "oxlint": "^1.82.0",
     "prettier": "^3.9.6",
+    "size-limit": "^13.1.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.0",

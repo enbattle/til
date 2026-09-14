@@ -105,8 +105,15 @@ only if a real need shows up, not speculatively.
 npm run typecheck && npm run lint && npm run format:check
 npm run test:run
 npm run build
+npm run size
 ```
 
 `npm run dev` for manual checking: click through the home page, a section,
 and a topic; toggle the theme; open search (`Ctrl`/`Cmd`+K) and confirm a
 topic is findable by title and by a body phrase.
+
+`npm run size` checks the built JS chunks against the budgets in
+`package.json`'s `size-limit` field — a change that pulls in a heavy new
+dependency should fail this rather than silently regressing page-load
+size. If a change legitimately needs more room, raise the specific
+chunk's limit deliberately rather than letting it drift unnoticed.
