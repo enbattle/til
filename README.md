@@ -11,8 +11,10 @@ sections, deployed as a static site.
 - **Sections** — every topic lives under one top-level section (see
   [`src/content/registry.ts`](src/content/registry.ts) for the current
   list). The home page, each section page, and a persistent left-side
-  navigation (a collapsible overlay on narrow viewports) all browse by
-  this grouping.
+  navigation (opened as a dismissible overlay on narrow viewports) all
+  browse by this grouping — the navigation's own section groups expand
+  and collapse independently as you move between them (see
+  [docs/DESIGN.md](docs/DESIGN.md)).
 - **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's title, summary,
   and body ([Fuse.js](https://www.fusejs.io)).
 - **Markdown content** — fenced code blocks are syntax-highlighted (via
