@@ -203,6 +203,12 @@ describe('App routing', () => {
     renderAt('/');
     await user.click(screen.getByRole('button', { name: /menu/i }));
     const dialog = screen.getByRole('dialog', { name: /navigation/i });
+    // The home page starts with every section collapsed (section-nav
+    // redesign) — expand AI & Machine Learning before its topic link is
+    // queryable.
+    await user.click(
+      within(dialog).getByRole('button', { name: /AI & Machine Learning/i }),
+    );
     const topicLink = within(dialog).getByRole('link', { name: /Prompt Engineering/i });
     await user.click(topicLink);
 
@@ -242,5 +248,15 @@ describe('App routing', () => {
       .getAllByRole('link')
       .filter((link) => link.hasAttribute('aria-current'));
     expect(currentLinks).toHaveLength(0);
+  });
+
+  // Acceptance criterion 9 (section-nav redesign): the desktop sidebar's
+  // scroll wrapper is on-theme and thin rather than the default browser
+  // scrollbar. App.tsx applies `scrollbar-thin` directly to the className
+  // it passes into SectionNav's own <nav> element (its scroll container).
+  it('applies the scrollbar-thin utility to the desktop sidebar’s scroll wrapper', () => {
+    renderAt('/');
+    const nav = screen.getByRole('navigation', { name: 'Sections' });
+    expect(nav).toHaveClass('scrollbar-thin');
   });
 });

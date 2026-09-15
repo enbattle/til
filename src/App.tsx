@@ -63,7 +63,7 @@ function AppShell() {
         }}
       />
       <div className="mx-auto flex max-w-5xl gap-8 px-4">
-        <SectionNav className="sticky top-[68px] hidden max-h-[calc(100vh-68px)] w-56 shrink-0 self-start overflow-y-auto py-10 lg:block" />
+        <SectionNav className="scrollbar-thin sticky top-[68px] hidden max-h-[calc(100vh-68px)] w-56 shrink-0 self-start overflow-y-auto overflow-x-hidden py-10 lg:block" />
         <main className="max-w-3xl flex-1 py-10">
           {/* Keyed on pathname so navigating away from a page that errored
               remounts a fresh boundary instead of staying stuck on the

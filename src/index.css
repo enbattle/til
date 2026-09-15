@@ -99,6 +99,17 @@
   }
 }
 
+/* Thin, on-theme scrollbar for the nav's own scroll regions (the desktop
+   sidebar wrapper in App.tsx and MobileNav's panel). Styled rather than
+   hidden — a fully hidden scrollbar removes the "this is scrollable"
+   affordance, which accessibility guidance advises against. Standard
+   properties, well-supported across current browsers; built from the
+   existing `--color-border` token, no new colors. */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
 /* Rendered markdown bodies use the typography plugin, re-themed onto our tokens
    instead of its default gray palette — kept in sync for both `.prose` and
    `.prose-invert` since dark mode is class-driven, not the plugin's own logic. */

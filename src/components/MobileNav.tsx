@@ -50,7 +50,7 @@ export function MobileNav({ onClose }: MobileNavProps) {
     >
       <div
         ref={panelRef}
-        className="h-full w-72 max-w-[80vw] overflow-y-auto border-r border-border bg-bg-primary p-6 shadow-2xl"
+        className="scrollbar-thin h-full w-72 max-w-[80vw] overflow-y-auto overflow-x-hidden border-r border-border bg-bg-primary p-6 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <SectionNav onNavigate={onClose} />

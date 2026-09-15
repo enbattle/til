@@ -1,18 +1,24 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { topicsBySection } from '@/lib/content';
 import { MobileNav } from './MobileNav';
 
-function renderMobileNav() {
+function renderMobileNav(initialPath = '/') {
   const onClose = vi.fn();
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialPath]}>
       <MobileNav onClose={onClose} />
     </MemoryRouter>,
   );
   return onClose;
+}
+
+// Accessible name for the disclosure button isn't specified beyond
+// "includes the section's label" — match on the label only.
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 describe('MobileNav', () => {
@@ -22,12 +28,31 @@ describe('MobileNav', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true');
   });
 
-  it('renders the section/topic nav inside the dialog, using real registry/content data', () => {
+  it('renders the section nav inside the dialog, using real registry/content data', () => {
     renderMobileNav();
-    const [{ section, topics }] = topicsBySection();
+    const [{ section }] = topicsBySection();
     const dialog = screen.getByRole('dialog', { name: /navigation/i });
     expect(screen.getByRole('navigation', { name: 'Sections' })).toBeInTheDocument();
     expect(dialog).toContainElement(screen.getByRole('link', { name: section.label }));
+  });
+
+  // Acceptance criterion 2 (via the mobile overlay): the home page starts
+  // fully collapsed, so a section's topics aren't queryable until its
+  // disclosure button is expanded.
+  it('reveals a section’s topics inside the dialog once its disclosure button is expanded', async () => {
+    const user = userEvent.setup();
+    renderMobileNav();
+    const [{ section, topics }] = topicsBySection();
+    const dialog = screen.getByRole('dialog', { name: /navigation/i });
+
+    expect(screen.queryByRole('link', { name: topics[0].title })).not.toBeInTheDocument();
+
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: new RegExp(escapeRegExp(section.label), 'i'),
+      }),
+    );
+
     expect(dialog).toContainElement(screen.getByRole('link', { name: topics[0].title }));
   });
 
@@ -75,8 +100,21 @@ describe('MobileNav', () => {
   it('closes when a topic link inside the nav is clicked (via onNavigate)', async () => {
     const user = userEvent.setup();
     const onClose = renderMobileNav();
-    const [{ topics }] = topicsBySection();
+    const [{ section, topics }] = topicsBySection();
+    const dialog = screen.getByRole('dialog', { name: /navigation/i });
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: new RegExp(escapeRegExp(section.label), 'i'),
+      }),
+    );
     await user.click(screen.getByRole('link', { name: topics[0].title }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // --- Acceptance criterion 9 (mobile overlay panel) ---
+  it('applies the scrollbar-thin utility to the overlay panel', () => {
+    renderMobileNav();
+    const nav = screen.getByRole('navigation', { name: 'Sections' });
+    expect(nav.parentElement).toHaveClass('scrollbar-thin');
   });
 });

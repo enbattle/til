@@ -26,10 +26,38 @@ notebook than a product. The UI follows that:
   of the two is present at a time. This was added ahead of any real
   growth in section/topic counts — the opposite of the content trend
   that originally motivated skipping it — because direct jump access
-  from anywhere on the site is worth the added chrome even at today's
-  small scale, and the persistent/overlay pattern is cheap to build
-  correctly now versus retrofitting it once a sidebar is easier to
-  postpone.
+  from anywhere on the site was judged worth the added chrome even while
+  the site was still small, and building the persistent/overlay pattern
+  correctly then meant it didn't need retrofitting once the site actually
+  did grow (it has since — see "Collapsible sections" below).
+- **Collapsible sections**: once the site grew past a handful of topics,
+  `SectionNav` (shared by the desktop sidebar and `MobileNav`) switched
+  from always-fully-expanded to collapsible — only the section containing
+  the current page starts open, everything else starts collapsed. Each
+  section header is a `flex items-center justify-between` row: the
+  existing label `<Link>` (still just navigation, unchanged) plus a
+  sibling disclosure `<button>` (`aria-expanded`, `aria-controls`
+  pointing at that section's topic `<ul>` id, an `aria-label` naming the
+  section) that toggles expansion only. The topic `<ul>` stays in the DOM
+  always and toggles via the `hidden` attribute — not conditional
+  rendering, not CSS-only — so a collapsed section's topics are actually
+  removed from the accessibility tree, not just hidden visually.
+  Navigating into a different section (search, a cross-link, browser
+  back/forward) auto-expands that section without collapsing one the
+  user already opened manually. Long topic titles wrap onto multiple
+  lines rather than being truncated — a UX and accessibility tradeoff:
+  ellipsis-plus-tooltip patterns are unreliable for touch/keyboard users,
+  so titles get `leading-snug` and vertical padding on each link instead
+  so wrapped and single-line items read as one consistent list.
+- **Thin, on-theme scrollbar**: both nav scroll containers (the desktop
+  sidebar wrapper in `App.tsx` and `MobileNav`'s panel) use a
+  `.scrollbar-thin` utility (`src/index.css`) built from the standard
+  `scrollbar-width: thin` / `scrollbar-color` properties, colored from the
+  existing `--color-border` token. Deliberately styled rather than hidden
+  outright — a fully hidden scrollbar removes the "this is scrollable"
+  affordance, which accessibility guidance specifically warns against; a
+  thin on-theme bar keeps that affordance while fitting the site's warm,
+  understated look.
 
 ## Tokens
 
