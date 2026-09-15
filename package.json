@@ -28,9 +28,9 @@
   },
   "size-limit": [
     {
-      "name": "Main chunk (app shell, no topic content)",
+      "name": "Main chunk (app shell + search index over all topic text)",
       "path": "dist/assets/index-*.js",
-      "limit": "105 KB"
+      "limit": "155 KB"
     },
     {
       "name": "TopicPage chunk (markdown + syntax highlighting)",

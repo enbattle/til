@@ -29,6 +29,18 @@ export const SECTIONS: Section[] = [
     description:
       'How attention and dopamine actually work, why modern digital environments make focus hard, and what actually helps you concentrate and retain what you learn.',
   },
+  {
+    slug: 'security',
+    label: 'Security',
+    description:
+      'Common vulnerabilities and the authentication patterns that guard against them — worth understanding before you ship anything that touches user data.',
+  },
+  {
+    slug: 'systems-and-infrastructure',
+    label: 'Systems & Infrastructure',
+    description:
+      'The distributed-systems and database fundamentals behind anything running at real scale — tradeoffs worth knowing before you hit them in production.',
+  },
 ];
 
 export function getSection(slug: string): Section | undefined {
