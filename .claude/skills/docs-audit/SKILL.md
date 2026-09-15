@@ -32,6 +32,9 @@ of staleness this skill exists to catch:
 - everything under `docs/` (`DESIGN.md`, `SDLC.md`, `specs/*.md`)
 - everything under `evals/` (`README.md`, every scenario/how-to-run file)
 - every `SKILL.md` under `.claude/skills/`
+- (explicitly **not** in scope: `src/content/**` — the published topic
+  files themselves. Their prose quality against the Writing Standard is
+  `content-audit`'s job, not this skill's.)
 - explanatory comments in `.github/workflows/*.yml` and
   `.github/dependabot.yml` — these describe _why_ a CI/CD choice was
   made, which goes stale exactly like prose documentation does

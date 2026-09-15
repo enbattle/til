@@ -16,12 +16,13 @@ the workflow file, not just that the code it builds still compiles.
 
 - `skill-routing/` — does a fresh session, given a task description,
   correctly decide whether to invoke `/feature`, `add-topic`,
-  `docs-audit`, `skill-routing-eval`, or just make the change directly
-  per `CLAUDE.md`'s own carve-out? This is the first eval category,
-  chosen because routing is the thing most likely to silently drift as
-  `CLAUDE.md` and the skills themselves change over time — a session can
-  build something _well_ while still having picked the wrong process
-  for it. Run via the `skill-routing-eval` skill rather than by hand.
+  `docs-audit`, `content-audit`, `skill-routing-eval`, or just make the
+  change directly per `CLAUDE.md`'s own carve-out? This is the first
+  eval category, chosen because routing is the thing most likely to
+  silently drift as `CLAUDE.md` and the skills themselves change over
+  time — a session can build something _well_ while still having picked
+  the wrong process for it. Run via the `skill-routing-eval` skill
+  rather than by hand.
 
 Future categories worth adding once routing is stable: does the
 `/feature` review stage actually catch known-bad injected bugs; does

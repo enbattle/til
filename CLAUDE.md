@@ -96,6 +96,23 @@ pass on denser subjects, not assumed on the first read. Concretely:
 - The `summary` frontmatter field is a one-sentence scannable hook — it's
   the only place terseness is the goal. The body is a teaching write-up,
   not a short "gotcha" note.
+- Prose reads like something a knowledgeable person actually wrote, not
+  a generically AI-patterned draft: avoid stock rhetorical crutches
+  ("not just X — it's Y," "that's the real/actual X" as a closer),
+  bullet lists where every item follows an identical rhythm with no
+  variation, filler intensifiers stacked for emphasis ("genuinely,"
+  "actually," "real"), a header's point immediately restated
+  almost verbatim in the sentence right under it, meta-commentary about
+  the explanation itself ("here's the interesting part," "the key
+  insight is"), and exhaustive, evenly-weighted lists that read as
+  trying to cover every angle rather than a selective, opinionated take.
+- A figurative or casual phrase (an analogy, a shorthand term like
+  "dopamine detox") is used naturally and trusted to land — not
+  over-explained or defended against a literal misreading nobody would
+  actually make.
+- Every substantive technical claim is independently verified against
+  real knowledge of the subject before publishing, not assumed correct
+  because it reads confidently.
 
 ## What's deliberately not built here
 

@@ -1,6 +1,6 @@
 ---
 name: skill-routing-eval
-description: Run this repo's skill-routing eval — checks whether a fresh session correctly routes task descriptions to /feature, add-topic, docs-audit, or a direct edit, per CLAUDE.md's own carve-out. Use when asked to run/check the skill-routing eval, after editing CLAUDE.md/a SKILL.md/docs/SDLC.md (what nudge-sdlc.js reminds about), or after adding a new skill (add a scenario for it first).
+description: Run this repo's skill-routing eval — checks whether a fresh session correctly routes task descriptions to /feature, add-topic, docs-audit, content-audit, or a direct edit, per CLAUDE.md's own carve-out. Use when asked to run/check the skill-routing eval, after editing CLAUDE.md/a SKILL.md/docs/SDLC.md (what nudge-sdlc.js reminds about), or after adding a new skill (add a scenario for it first).
 ---
 
 # Skill-routing eval
@@ -41,8 +41,8 @@ only the scenario's prompt, verbatim, plus this instruction:
 > request: "<scenario prompt>". Do NOT implement anything yet, and do
 > NOT read anything under the evals/ directory (irrelevant and would
 > bias you). Your only job: decide which skill, if any, you'd invoke —
-> /feature, add-topic, docs-audit, or neither (direct). Explore the
-> codebase as needed to inform that judgment. Report your routing
+> /feature, add-topic, docs-audit, content-audit, or neither (direct).
+> Explore the codebase as needed to inform that judgment. Report your routing
 > decision and a one-sentence reason why. Keep it under 100 words.
 
 Run independent scenarios in parallel (one message, multiple `Agent`

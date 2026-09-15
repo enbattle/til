@@ -71,7 +71,13 @@ Instruction, close to verbatim:
 > the reader may not have, does it use concrete examples rather than
 > staying abstract, would a reader with zero prior background on this
 > subject actually follow it, and is the frontmatter `summary` a single
-> scannable sentence rather than a restated paragraph. Also check it isn't
+> scannable sentence rather than a restated paragraph. Also check it
+> against the Writing Standard's tone, figurative-language, and
+> technical-correctness criteria — does the prose read as generically
+> AI-patterned rather than something a knowledgeable person actually
+> wrote, is any analogy or casual phrase over-explained instead of
+> trusted to land, and is every substantive technical claim actually
+> verified rather than just confidently stated. Also check it isn't
 > a near-duplicate of an existing topic in this section (listed below). Do
 > not edit the file — review only. Report findings ranked by severity, or
 > say explicitly you found nothing worth flagging.

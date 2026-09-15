@@ -151,3 +151,31 @@ change is the worst-positioned person to notice what it left stale).
 **Fails if:** routed to `docs-audit` (a different concern — doc staleness,
 not routing correctness) or done as an ad-hoc check that skips the actual
 fresh-subagent-per-scenario procedure the skill exists to standardize.
+
+---
+
+### SR-11 — corpus-wide content-quality sweep
+
+> Can you go through all the existing topics in the site and check
+> whether any of them read like they were obviously written by AI,
+> over-explain their analogies instead of trusting the reader to get
+> them, or state technical claims that might actually be wrong? I want
+> a sweep across everything we've already published, not just anything
+> new.
+
+**Expected:** `content-audit`
+**Why:** Exactly this skill's stated purpose — an independent, fresh-eyes
+read of every topic under `src/content/**` against the Writing Standard's
+AI-patterned-prose, over-explained-figurative-language, and
+unverified-technical-claim criteria. It's a full-corpus sweep of
+published topic content, which is a different axis from both neighbors:
+`docs-audit` covers meta-documentation (`CLAUDE.md`, `docs/`, `evals/`,
+`SKILL.md` files) staleness against current repo state, not the prose
+quality of topics under `src/content/`; `add-topic` reviews exactly one
+new topic file as part of writing it, not the entire existing corpus.
+**Fails if:** routed to `docs-audit` (wrong scope — meta-docs staleness,
+not topic-content quality), routed to `add-topic` (that skill's review
+pass covers a single new topic it's writing, not a sweep of everything
+already published), or done as an ad-hoc read-through by the same session
+with no independent per-batch audit pass — that defeats the same design
+premise `docs-audit` already establishes for this repo.
