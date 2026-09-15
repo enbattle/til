@@ -22,19 +22,19 @@ things you can build:
 
 - **Passive, always-loaded context.** A file the agent reads
   automatically at the start of every session, without anyone asking for
-  it — project conventions, architecture, house style. Its defining
-  property: it's _always there_, whether or not it's relevant to the
-  current task.
+  it — project conventions, architecture, house style. It's _always
+  there_, whether or not it's relevant to the current task.
 - **An invokable, on-demand procedure.** Something with a name, surfaced
   in a list of "things you can ask for," that runs only when explicitly
   triggered — by a person typing a command, or by the agent recognizing
-  the situation calls for it. Its defining property: it exists
-  _conditionally_, and has to be _found and chosen_, not just read.
+  the situation calls for it. It exists _conditionally_, and has to be
+  _found and chosen_, not just read.
 - **An event-triggered automation.** Something that fires on its own
   when a specific action happens — a file gets edited, a command gets
-  run — with no one needing to remember to trigger it. Its defining
-  property: it requires _zero recall_ from whoever's working, because
-  it's wired to the event itself, not to someone's memory of a rule.
+  run — with no one needing to remember to trigger it. What sets this
+  one apart is that it requires _zero recall_ from whoever's working,
+  because it's wired to the event itself, not to someone's memory of a
+  rule.
 
 ## The decision test
 
@@ -90,14 +90,13 @@ not any single platform's own vocabulary. It's exactly the kind of thing
 this table would misrepresent if it got filed under one platform's
 column instead of called out on its own.
 
-Notably, this exact confusion is common enough that Kiro's own
-documentation for Agent Skills includes a section specifically addressing
-how skills differ from steering — this isn't a made-up distinction for
-the sake of having a framework, it's a real point of confusion the
-platform itself felt the need to clarify. The lesson transfers regardless
-of which of these you're actually using: the question is never "what's
-this platform's word for it," it's "which of the three underlying
-properties does this thing actually have."
+Notably, this exact confusion is common enough that platforms in this
+space have had to explicitly address it — the boundary between "always
+loaded" and "invoked on demand" isn't obvious just from looking at two
+similarly shaped markdown files. The lesson transfers regardless of which
+of these you're actually using: the question is never "what's this
+platform's word for it," it's "which of the three underlying properties
+does this thing actually have."
 
 ## Worked examples
 

@@ -50,9 +50,9 @@ The most familiar example of true backpressure is one almost every
 networked application already relies on without thinking about it: TCP's
 own flow-control window. A sender only transmits as much data as the
 receiver has already said it currently has room to buffer — the receiver
-communicates its available buffer space back to the sender continuously,
-and the sender throttles itself accordingly, entirely below the
-application layer. Neither side has to poll the other; the signal is
+communicates its available buffer space back to the sender with every
+ACK as data flows, and the sender throttles itself accordingly, entirely
+below the application layer. Neither side has to poll the other; the signal is
 built into the protocol itself.
 
 The same idea shows up explicitly at the application layer in reactive

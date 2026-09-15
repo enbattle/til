@@ -98,7 +98,6 @@ specifically for claims that used to be true and no longer are.
 None of these mechanisms make documentation perfect forever. What they
 change is how long a piece of drift survives before something catches
 it — from "until someone happens to notice by accident, maybe never" to
-"the next time a related change ships, or the next scheduled sweep."
-That's the realistic goal: not eliminating the problem, but keeping the
-gap between a doc going stale and someone finding out short enough that
-it stops mattering.
+"the next time a related change ships, or the next scheduled sweep." The
+goal is to keep that gap, between a doc going stale and someone finding
+out, short enough that it stops mattering.

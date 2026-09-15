@@ -58,25 +58,24 @@ never-seen-before request.
 
 ## Where this shows up constantly
 
+Any system that retries automatically on failure needs this — including
+background jobs retried by the platform running them with no code
+explicitly asking for it, where idempotency stops being a nice-to-have
+and becomes a requirement. Two places it bites hardest:
+
 - **Payment systems**, where a duplicate charge is a direct, visible harm
   to the user — this is exactly why real-world payment APIs require an
   idempotency key on charge-creation requests.
 - **Message queues**, most of which guarantee a message is delivered _at
-  least_ once, not _exactly_ once — meaning a consumer processing that
-  message has to be written idempotently, or an occasional duplicate
-  delivery turns into a duplicate side effect.
-- **Any system that retries automatically on failure** — including
-  asynchronous background jobs that are retried by the platform running
-  them with no code explicitly asking for it — where idempotency becomes
-  non-optional rather than merely good practice, since the retry is going
-  to happen whether the code was written to expect it or not.
-- **Database writes**, where an "insert-or-update" operation is
-  idempotent by construction, but a plain insert retried after a timeout
-  can silently create a duplicate row.
+  least_ once, not _exactly_ once — an occasional duplicate delivery
+  turns into a duplicate side effect unless the consumer is written to
+  handle it.
 
-Practically every client on a real network will eventually retry a
-request it can't confirm succeeded — a timeout simply doesn't tell you
-whether the other side got the message. Idempotency, or an idempotency
-key standing in for it where the operation itself isn't naturally
-idempotent, is the mechanism that makes that retry harmless instead of a
-second charge, a second order, or a second email.
+Database writes have the same failure mode in miniature: an
+"insert-or-update" statement is idempotent by construction, but a plain
+insert retried after a timeout can silently create a duplicate row.
+
+Idempotency — or an idempotency key standing in where the operation
+isn't naturally idempotent — is what turns that inevitable retry into a
+harmless no-op instead of a second charge, a second order, or a second
+email.

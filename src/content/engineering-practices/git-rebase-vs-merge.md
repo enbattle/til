@@ -42,10 +42,6 @@ This is the reasoning behind the rule "never rebase a branch others have
 already based work on," and it's also the source of the difference
 between `git pull` (a merge by default) and `git pull --rebase` — a
 choice most people using git on a team make, knowingly or not, every day.
-
-## The short version
-
-Rebase for a cleaner history on work only you have; merge once a branch is
-shared with anyone else. The risk of rebase is entirely about rewriting
-commits other people have already built on top of: on your own unshared
-branch, there's nothing to break.
+The risk of rebase is entirely about rewriting commits other people have
+already built on top of: on your own unshared branch, there's nothing to
+break.

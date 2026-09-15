@@ -9,7 +9,7 @@ techniques, and conflating them is a common design mistake: throwing a
 read-scaling technique like a cache at a write-heavy problem does
 nothing for it, and vice versa.
 
-## Reads scale by adding copies
+## The read side: adding copies
 
 Reads are usually the easier side to scale, because a read can be
 served from a **copy** of the data instead of the one authoritative
@@ -30,7 +30,7 @@ The common thread across all three: they all work by adding copies, and
 a copy means the reader might occasionally see slightly stale data — a
 real tradeoff to make deliberately, not a free win.
 
-## Writes scale by splitting the authoritative data itself
+## The write side: splitting the source
 
 Writes are the harder side, because every write eventually has to land
 somewhere authoritative — there's no copying your way out of needing to
@@ -59,6 +59,5 @@ batching, and asynchronous ingestion instead.
 
 Reads scale by adding copies; writes scale by splitting the
 authoritative data itself. A design struggling under write load needs
-sharding or asynchronous processing, not a bigger cache — a cache can
-only make reads of already-written data faster, it can't absorb a
-single additional write.
+sharding or asynchronous processing, not a bigger cache — caching
+doesn't touch the write path at all.

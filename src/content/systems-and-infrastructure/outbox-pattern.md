@@ -17,10 +17,12 @@ separate steps — commit to the database, then publish to the broker —
 has no atomic guarantee across the two different systems. If the
 process crashes between the two steps, either the event is lost (a
 crash before publishing), or, if the whole operation is retried, a
-duplicate order risks being created. This is the **dual-write problem**,
-and there's no way to wrap a database commit and a message-broker
-publish in one shared transaction — they're different systems with no
-common coordinator between them.
+duplicate order risks being created. This is the **dual-write problem**. Distributed transactions (XA,
+two-phase commit) exist in principle for coordinating a database commit
+and a message-broker publish together, but there's no practical way to
+lean on them here: XA is operationally painful, kills availability
+under a partition, and modern brokers like Kafka don't support it at
+all.
 
 ## Writing the event in the same transaction as the data
 

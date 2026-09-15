@@ -28,9 +28,9 @@ is roughly another 500x. Chain those together and the gap between
 "served from memory" and "served across the country" is close to half a
 million times over — so a design that hides an unnecessary cross-region
 round trip behind something that could have been served from memory is
-leaving most of that gap on the table. That's what these numbers are
-actually for: not precision, just a fast way to notice when a design
-can't possibly hit its own latency budget.
+leaving most of that gap on the table. The point isn't precision — it's a
+fast way to notice when a design can't possibly hit its own latency
+budget.
 
 ## Chaining them into a throughput estimate
 
@@ -66,7 +66,6 @@ these:
 Skip the calculator and these numbers still catch the obvious break: if a
 request's stated latency requirement is 50ms and the design routes it
 through three sequential cross-region calls, the numbers alone say it
-can't work before any deeper analysis does. That's the payoff of having
-them memorized — a design that's off by three orders of magnitude gets
-flagged with "wait, that can't be right" instead of surviving
-unchallenged.
+can't work before any deeper analysis does. Having them memorized means a
+design that's off by three orders of magnitude gets flagged with "wait,
+that can't be right" instead of surviving unchallenged.

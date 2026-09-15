@@ -24,8 +24,10 @@ regardless of how many of them get run.
 
 The most common structure behind an index, a **B-tree**, keeps keys
 sorted in a shallow, wide tree rather than a flat list, so a lookup takes
-a small, roughly-fixed number of comparisons no matter how large the
-table gets, instead of a number that grows with every additional row.
+a small number of comparisons that grows only logarithmically with table
+size — in practice just two to four levels even at billions of rows,
+thanks to how wide each level fans out — instead of a number that grows
+with every additional row.
 
 ```sql
 CREATE INDEX idx_users_email ON users (email);
@@ -83,7 +85,7 @@ just scanning the table would have.
 
 ## Rule of thumb
 
-Index the columns your actual queries filter, sort, or join on — no
-more, no less — and use your database's query-plan explainer to confirm
-a query is genuinely using the index you expect, rather than assuming it
-is just because the index exists.
+Index the columns your actual queries filter, sort, or join on, and use
+your database's query-plan explainer to confirm a query is genuinely
+using the index you expect, rather than assuming it is just because the
+index exists.

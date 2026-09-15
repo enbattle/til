@@ -45,11 +45,15 @@ always does — attach the cookie — at a moment the site never expected.
   Set-Cookie: session=abc123; SameSite=Lax; Secure; HttpOnly
   ```
 
-  `Lax` (the modern browser default) or `Strict` tells the browser not to
-  send the cookie on cross-site requests, so `evil.com`'s form submission
-  arrives at `bank.com` with no cookie attached at all — no session, no
-  authenticated request. This alone neutralizes most CSRF; don't rely on
-  the default being set for you, set it explicitly.
+  `Lax` (the modern browser default) blocks the cookie on cross-site POSTs
+  and cross-site subresource loads (images, iframes, fetch) — regardless
+  of method — but still allows it on a cross-site top-level GET
+  navigation, like clicking a plain link. `Strict` is tighter still: no
+  cross-site requests at all, including that top-level navigation. Either
+  setting means `evil.com`'s form submission above arrives at `bank.com`
+  with no cookie attached — no session, no authenticated request. This
+  alone neutralizes most CSRF; don't rely on the default being set for
+  you, set it explicitly.
 
 - **CSRF tokens** — a per-session, unguessable value the server generates,
   embeds in your forms, and requires on every state-changing request. The
@@ -76,6 +80,8 @@ always does — attach the cookie — at a moment the site never expected.
 ## Where the hole opens up
 
 Any endpoint that (a) authenticates via cookies and (b) changes state.
-Safe methods should stay safe: a `GET` that mutates data is a CSRF hole,
-because it can be triggered with a bare `<img>` tag — no form or script
-needed at all.
+Safe methods should stay safe: without `SameSite` protection in place, a
+`GET` that mutates data is a CSRF hole, because it can be triggered with a
+bare `<img>` tag — no form or script needed at all. (`SameSite=Lax` or
+`Strict` blocks that subresource load regardless of method, which is one
+more reason not to rely on the default being set for you.)

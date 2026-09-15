@@ -43,7 +43,7 @@ keep it in `localStorage` for JS to attach, any XSS can steal it.
   cookie: no JS access (XSS-safe), no manual attaching, and the short
   lifetime bounds the revocation gap.
 
-It's revocation vs. statelessness, in the end. Don't reach for a JWT
+It's revocation vs. statelessness. Don't reach for a JWT
 because it's fashionable when a session cookie would serve a
 single-backend app better; don't force server-side sessions onto a fleet
 of APIs that would rather not share a store.

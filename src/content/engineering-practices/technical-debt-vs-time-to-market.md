@@ -15,8 +15,7 @@ what's actually being learned or won by shipping sooner.
 
 ## Debt, taken seriously, compounds like the financial kind
 
-The debt metaphor is genuinely useful, not just a cute analogy, if taken
-seriously: like financial debt, technical debt has interest. Every future
+Like financial debt, technical debt has interest. Every future
 change to that hacky, undertested part of the codebase is slower and
 riskier than it would have been done properly, until the debt is paid
 down (refactored) or retired (that code stops being used). Left unpaid,
@@ -24,7 +23,7 @@ it compounds: each new feature built on top of a shortcut has to work
 around it, and the shortcut gets more expensive to fix the longer it's
 load-bearing.
 
-## The distinction that actually matters: deliberate debt vs. reckless debt
+## The distinction that matters: deliberate debt vs. reckless debt
 
 Whether debt exists at all matters less than how it got there. Debt taken
 on **deliberately** — a conscious decision to ship the fast version
@@ -60,7 +59,7 @@ shortcut explicitly is what turns reckless debt into deliberate, tracked
 debt.
 
 Taking on technical debt is sometimes the right call; taking it on
-unconsciously, without a real plan to pay it back, is the actual mistake.
-Name the shortcut explicitly — a TODO, a ticket, a comment explaining
+unconsciously, without a real plan to pay it back, is the mistake. Name
+the shortcut explicitly — a TODO, a ticket, a comment explaining
 what was skipped and why — so it stays a deliberate decision instead of
 quietly becoming permanent.

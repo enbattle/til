@@ -16,9 +16,9 @@ get proportionally slower with every additional token.
 
 Most modern language models are built as a **transformer**: a stack of
 identical layers, each of which lets every token exchange information
-with every other token before passing its updated understanding up to the
-next layer. The mechanism that does that exchanging within each layer is
-called **attention**, computed from three projections of every token:
+with every earlier token before passing its updated understanding up to
+the next layer. The mechanism that does that exchanging within each layer
+is called **attention**, computed from three projections of every token:
 
 - **Query (Q)** — roughly, "what is this token looking for?"
 - **Key (K)** — roughly, "what does this token contain, for the purpose
@@ -47,17 +47,21 @@ Token 3: compute Q₃ only    → reuse stored K₁,V₁,K₂,V₂ → store K�
 ...
 ```
 
-Without this, step _k_ of generating a response would redo attention work
-proportional to all _k_ tokens seen so far, from scratch — so the total
-work across a response of length _n_ adds up to roughly _n_² (step 1 does
-1 unit of work, step 2 does 2, and so on up to step _n_, and those add up
-to something proportional to n²). With the cache, step _k_ only does new
-work proportional to the one new token being generated, no matter how
-long the sequence already is — so the total across the whole response
-adds up to roughly _n_ instead. Each individual step still costs a little
-more as the conversation grows longer (there's more cached history to
-attend over), but that per-step cost grows far more slowly than the
-"redo everything so far" cost it replaces, which is what keeps a long
+Without this, step _k_ of generating a response would redo the full set of
+Key/Value projections — and the surrounding per-layer computation, like
+the MLP block — for all _k_ tokens seen so far, from scratch, every time.
+With the cache, step _k_ skips all of that for every previously seen
+token: it only computes a fresh Query, Key, and Value for the one new
+token, and reuses everything stored before. The attention step itself
+still has to compare that new Query against all _k_ cached Keys, so the
+score computation isn't free — summed over a whole response of length
+_n_, that part still adds up to something proportional to _n_². What the
+cache actually removes is the far more expensive redundant work: re-running
+the full K/V projection and MLP computation for every earlier token on
+every step. So the honest framing isn't that generation becomes linear
+overall — it's that the expensive part of each step (projection,
+MLP) becomes proportional to n instead of n², leaving only cheap vector
+comparisons to scale with the growing history, which is what keeps a long
 response from getting dramatically slower per token than a short one.
 
 ## The tradeoff: memory, not computation, becomes the limit
@@ -69,8 +73,8 @@ needs a separate, growing cache for each one, all held in memory at the
 same time. This is why, in practice, serving a language model to many
 users at once is very often limited by how much memory is available to
 hold all those caches, not by how fast the underlying computation can
-run — the opposite bottleneck from what the O(n²)-versus-O(n) framing
-above might suggest on its own. A meaningful amount of engineering effort
+run — the opposite bottleneck from what "the cache makes things cheaper"
+might suggest on its own. A meaningful amount of engineering effort
 in how models are served goes into exactly this: techniques for sharing
 cache memory across requests where it's safe to do so, compressing what's
 stored, and organizing memory so it isn't wasted on gaps between

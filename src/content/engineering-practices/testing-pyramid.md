@@ -20,7 +20,7 @@ unreliable enough, that people start skipping it. Unit tests are fast and
 precise — a failure points at almost exactly the broken line — so they
 should carry the bulk of the coverage instead.
 
-## What each layer is actually for
+## What each layer is for
 
 - **Unit** — one function or class, in isolation, no real I/O.
   Milliseconds each; thousands can run in seconds. Should cover the
@@ -53,7 +53,6 @@ test for what's being verified," not just "is there a test."
 
 ## A guide to lean on, not a ratio to hit
 
-Treat the shape as a reminder, not a target ratio to hit exactly: test
-cost and confidence trade off differently at each layer, so coverage
+Test cost and confidence trade off differently at each layer, so coverage
 should sit as low (fast, isolated) as it can while still catching real
 bugs, saving the expensive layers for what only they can verify.

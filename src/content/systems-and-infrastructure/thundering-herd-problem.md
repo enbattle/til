@@ -34,29 +34,27 @@ send all of them to the database at once.
 
 ## Fixes: keep the herd from forming, or filter most of it out
 
-- **Single-flight / request coalescing** — when a cache miss happens,
-  let exactly one request actually recompute the value; every other
-  concurrent request for the same key waits on that first request's
-  result instead of independently recomputing it.
-- **Early or jittered expiration** — recompute a cache entry slightly
-  _before_ it actually expires, with a small random offset per entry, so
-  requests don't all discover a miss at the exact same instant in the
-  first place.
-- **Stale-while-revalidate** — keep serving the old, technically-expired
-  value to most readers while exactly one request refreshes it in the
-  background, rather than making every reader wait on (or trigger) a
+- **Single-flight / request coalescing.** When a cache miss happens, let
+  exactly one request recompute the value; every other concurrent
+  request for the same key waits on that first request's result instead
+  of independently recomputing it.
+- Recomputing a cache entry slightly _before_ it expires, with a small
+  random offset per entry, keeps requests from all discovering a miss at
+  the exact same instant in the first place — **early or jittered
+  expiration**.
+- With **stale-while-revalidate**, most readers keep getting served the
+  old, technically-expired value while exactly one request refreshes it
+  in the background, instead of every reader waiting on or triggering a
   fresh recompute.
-- **Jittered reconnects** — the same underlying fix as
-  [exponential backoff and jitter](/systems-and-infrastructure/exponential-backoff)
-  applied to a different trigger: when a service comes back online after
-  an outage, spreading out when clients reconnect avoids every client
-  hitting it in the same instant it's least able to absorb the load.
+- The same underlying fix also applies to a completely different
+  trigger: when a service comes back online after an outage, **jittered
+  reconnects** spread out when clients retry, so they don't all hit the
+  service in the same instant it's least able to absorb the load — the
+  same idea as [exponential backoff and jitter](/systems-and-infrastructure/exponential-backoff).
 
-## The common thread: don't let one trigger become work for everyone
+## Don't let one trigger become work for everyone
 
 Anywhere a shared resource has a synchronized trigger that can hit many
 clients at the same moment: a cache key expiring, a service recovering
 from an outage and every client reconnecting at once, or a scheduled job
-that fires for every tenant at exactly the same minute. The common
-thread across every fix above is the same: don't let one trigger turn
-into simultaneous, duplicated work from everyone it affects.
+that fires for every tenant at exactly the same minute.

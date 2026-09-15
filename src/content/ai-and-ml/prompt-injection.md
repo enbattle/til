@@ -104,8 +104,8 @@ fact.
   logging and reviewing — even when no specific blocked phrase was
   involved.
 
-None of these is a complete fix on its own — that's the actual point.
-Prompt injection is treated as a defense-in-depth problem, the same way
+None of these is a complete fix on its own. Prompt injection is treated
+as a defense-in-depth problem, the same way
 [XSS](/security/xss) and [CSRF](/security/csrf) are: several
 independent, structural layers, so that one layer failing doesn't mean
 the whole system fails with it.

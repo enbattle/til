@@ -24,7 +24,12 @@ it's automatically released if the holder crashes before explicitly
 unlocking it. Releasing the lock checks that the stored token matches
 before deleting it, so a process can't accidentally release a lock it
 no longer actually holds — for example, after its own lock already
-expired and a different process has since acquired it.
+expired and a different process has since acquired it. That check and
+that delete have to run as one atomic operation on the store — typically
+a small server-side script — rather than two separate round trips (fetch
+the token, compare it, then delete). Split into two steps, the gap
+between them reopens exactly the race this mechanism is supposed to
+close: another process can acquire the lock in between.
 
 ## The central hard problem: a lease can expire mid-work
 
@@ -36,10 +41,9 @@ holds the lock. Process B now acquires the same lock successfully. For
 the next 15 seconds, both A and B believe they exclusively hold it, and
 both may act on that belief.
 
-This isn't a rare edge case; it's the central hard problem with
-distributed locks. A longer lease doesn't fix it — it just delays the
-same failure to a later point, since there's no lease duration long
-enough to rule out every possible pause or slowdown.
+A longer lease doesn't fix this — it just delays the same failure to a
+later point, since there's no lease duration long enough to rule out
+every possible pause or slowdown.
 
 ## Fencing tokens: moving the safety check to the resource itself
 

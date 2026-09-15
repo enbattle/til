@@ -86,7 +86,7 @@ move. This is exactly the problem consistent hashing solves, which is
 why systems built for elastic scaling generally reach for it instead of
 a raw modulo from the start.
 
-## Why the distinction actually matters
+## Why the distinction matters
 
 The two terms get used interchangeably in casual conversation, but
 conflating them hides the actual design decision being made: partitioning

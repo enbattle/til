@@ -39,12 +39,11 @@ property that makes it usable at all.
 ## Why the model can't count the letters in a word it just split
 
 The word "strawberry" is a good illustration of what this costs you. A
-typical tokenizer doesn't see `s-t-r-a-w-b-e-r-r-y`; it sees something
-closer to two chunks, roughly `["straw", "berry"]`. The model receives
-two opaque token IDs, not ten characters — it has no direct way to look
-inside a token and count how many times the letter "r" shows up, because
-the letters inside a token were never presented to it as separate units
-in the first place. Ask a model to count letters in a word and you're
+typical tokenizer doesn't see `s-t-r-a-w-b-e-r-r-y`; it sees a few
+opaque chunks, not ten characters — it has no direct way to look inside a
+token and count how many times the letter "r" shows up, because the
+letters inside a token were never presented to it as separate units in
+the first place. Ask a model to count letters in a word and you're
 asking it to reason about structure it was never actually shown.
 
 The same effect shows up anywhere a task depends on structure _inside_ a

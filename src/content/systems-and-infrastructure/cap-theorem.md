@@ -32,9 +32,9 @@ sure the answer is current (**consistency-favoring**).
   used to manage cluster configuration — would rather return an error
   than risk handing back an inconsistent read.
 - **Favoring availability**: the internet's DNS system keeps answering
-  requests during a partition and reconciles any conflicting writes
-  afterward,
-  once the partition heals.
+  requests during a partition, serving whatever answer it already has
+  cached even if it's gone stale, rather than refusing to respond until
+  it can reach the authoritative source.
 
 ## The tradeoff CAP leaves out: latency vs. consistency, even when nothing's broken
 

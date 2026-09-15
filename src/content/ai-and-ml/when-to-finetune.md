@@ -46,12 +46,15 @@ this mistake happen.
 
 ## Where fine-tuning actually wins
 
-Fine-tuning has a real advantage in a specific set of situations:
+Fine-tuning has a real advantage in a couple of specific situations. The
+clearest is a format or style the model doesn't reliably produce from
+prompting alone — a strict, consistent output schema, a specialized
+notation, a house style that needs to hold across thousands of outputs
+without drifting. Related to that: a long, detailed instruction that has
+to be followed exactly across a huge volume of calls can end up more
+reliably baked into the model's weights than repeated in full on every
+single request and hoped for.
 
-- **A format or style the model doesn't reliably produce from prompting
-  alone** — a strict, consistent output schema, a specialized notation,
-  a house style that needs to hold across thousands of outputs without
-  drifting.
 - **Domain-heavy vocabulary and reasoning** — a medical, legal, or
   scientific domain where the model needs to consistently use precise
   terminology and reason correctly within that domain's specific
@@ -61,15 +64,13 @@ Fine-tuning has a real advantage in a specific set of situations:
   tightly for one narrow task, can sometimes match a much larger
   general-purpose model's quality on just that task, without paying for
   either the larger model's size or a retrieval step on top of it.
-- **Data that can't leave your environment** — if a task involves
-  sensitive data that can't be sent to an external retrieval system or
-  third-party API, a model fine-tuned and hosted entirely within your own
-  environment avoids that data ever leaving it.
-- **A complex instruction that has to be followed reliably, every time**
-  — if a long, detailed system prompt needs to be followed exactly across
-  a huge volume of calls, training that behavior directly into the model
-  can end up more reliable than repeating the same lengthy instruction on
-  every single call and hoping it's followed consistently.
+
+Data residency is a related but separate question, and worth untangling
+from fine-tuning itself: what actually keeps sensitive data from leaving
+your environment is hosting the model yourself, fine-tuned or not — a
+self-hosted retrieval system satisfies the same requirement without
+changing a single weight. Fine-tuning doesn't buy you data privacy; only
+self-hosting does.
 
 ## What it actually costs, beyond the training run itself
 
@@ -82,5 +83,5 @@ fine-tuned model you host yourself keeps costing money for every hour
 it's running, whether or not it's actively handling a request — unlike
 a per-call API cost that only accrues when it's actually used. Before
 committing, it's worth confirming that prompting and retrieval have
-genuinely been ruled out, and that the quality improvement fine-tuning
+actually been ruled out, and that the quality improvement fine-tuning
 would buy is worth a multi-week cycle to get there.

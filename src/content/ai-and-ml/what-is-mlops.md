@@ -72,15 +72,14 @@ without yet having a problem it's solving.
 
 ## The core discipline underneath all of it
 
-A handful of principles tie the whole practice together: version
-everything that affects behavior — code, model, data, and prompts alike,
-not just code; evaluate before deploying, so a quality gate blocks a
-new version from reaching users until it's actually been checked against
-real examples (concretely, this is what
+Two principles matter more than the rest. Version everything that
+affects behavior — code, model, data, and prompts alike, not just code —
+so that when quality shifts, there's an actual record of what changed to
+check against. And evaluate before deploying: a quality gate that blocks
+a new version from reaching users until it's been checked against real
+examples. Concretely, this is what
 [an eval suite](/ai-and-ml/what-are-evals) is _for_ — the mechanism that
 makes "evaluate before deploying" something a pipeline can enforce
-automatically, rather than a step someone has to remember); monitor
-continuously in production, since production data reliably surfaces
-problems that development data never does; and document what was tried
-and why, so a decision made under pressure six months ago isn't
-mysterious to whoever has to revisit it later.
+automatically, rather than a step someone has to remember. Continuous
+monitoring and documentation matter too, but they're downstream of
+getting these two right first.

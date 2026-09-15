@@ -36,11 +36,14 @@ questions:
   [CAP theorem](/systems-and-infrastructure/cap-theorem) showing up in a
   concrete product decision. Traditional relational databases usually
   favor consistency: a single point of truth for writes, strongly
-  consistent, harder to spread across many machines or regions. Many
-  NoSQL stores are built the other way around: eventually consistent, but
-  able to accept writes across many nodes at once, distributing that data
-  using techniques built specifically for spreading load evenly across a
-  cluster.
+  consistent, harder to spread across many machines or regions. Some
+  NoSQL stores, particularly leaderless, Dynamo-style ones like Cassandra
+  and DynamoDB, are built the other way around: eventually consistent,
+  but able to accept writes across many nodes at once. Others, like
+  MongoDB, still route writes through a single primary per shard and
+  default to strongly consistent reads against it — "NoSQL" describes a
+  break from the relational model, not a single consistency tradeoff
+  every store in the category makes the same way.
 
 ## The same data, modeled two different ways
 
@@ -76,9 +79,6 @@ volume of loosely structured events, where horizontal write scale matters
 more than strict consistency, often wants NoSQL instead. Most real
 systems that live long enough end up using a mix of both, chosen
 per-service or even per data type, rather than committing one database
-technology to the entire application. Framing this as "SQL or NoSQL" as a
-single, one-time decision skips the actual question, which is what a
-specific piece of data actually needs: relationships, transactions, and a
+technology to the entire application: relationships, transactions, and a
 fixed shape point toward relational; flexible structure and horizontal
-write scale point toward NoSQL. Neither wins in general — only for a
-given access pattern.
+write scale point toward NoSQL.

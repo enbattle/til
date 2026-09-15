@@ -20,7 +20,7 @@ If `user_input` is `' OR '1'='1`, the query becomes
 table. If it's `'; DROP TABLE users; --`, the database may execute that as
 a second statement entirely.
 
-## Why this keeps ranking as a top vulnerability, year after year
+## Why this keeps ranking as a top vulnerability
 
 It's consistently one of the most common and most damaging vulnerabilities
 in software — a recurring entry on the **OWASP Top 10**, a periodically
@@ -28,9 +28,8 @@ updated ranking, published by the Open Web Application Security Project,
 of the web's most critical security risks. A successful injection can
 read, modify, or delete an entire database, or bypass authentication
 outright, and the vulnerable code often looks completely unremarkable
-until someone tests it with the right input. That's what keeps it near
-the top of the list year after year: it doesn't take a sophisticated
-attacker, just one query built the wrong way.
+until someone tests it with the right input. It doesn't take a
+sophisticated attacker, just one query built the wrong way.
 
 ## Separate the data from the code, don't sanitize it
 
@@ -53,8 +52,8 @@ writing SQL by hand; most ORMs use parameterized queries under the hood
 even though you never see the query string). There's rarely a good reason
 to build a query by string concatenation at all.
 
-The real rule is never let input be interpreted as code in the first
-place, not "sanitize or escape it carefully" after the fact — sanitization
+The fix is to never let input be interpreted as code in the first place,
+not to "sanitize or escape it carefully" after the fact — sanitization
 has to be remembered and done correctly on every single query, and one
 missed spot is all it takes. Parameterized queries make the safe behavior
 the default instead of a discipline every developer has to maintain by

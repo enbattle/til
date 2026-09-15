@@ -56,9 +56,10 @@ obvious loop sitting in application code.
   a code path issues, not just its final output.
 - **Tracing tools** showing a single request that fired dozens of
   near-identical queries, differing only by one `WHERE id = ?` value.
-- **ORM debug logs during development** are the cheapest early warning —
-  most mainstream ORMs ship some form of query-count assertion or an
-  "N+1 detected" warning mode for exactly this reason.
+- **ORM debug logs during development** are the cheapest early warning,
+  and most ecosystems have a well-known third-party tool built for
+  exactly this: Bullet for Rails, django-debug-toolbar or the nplusone
+  package for Django.
 
 N+1 is specifically about the _number_ of queries issued; a query
 that's still slow even after fixing that is usually a missing

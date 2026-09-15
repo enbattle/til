@@ -23,8 +23,8 @@ time, what comes next. Get shown "the capital of France is," predict
 "Paris." Do this across a large fraction of the internet's text,
 adjusting the model's internal parameters a tiny bit every time it's
 wrong, and you get a system that's very good at this one narrow task.
-That's genuinely what pretraining optimizes for. The description isn't
-false — it's the starting point, not the finish line.
+That's what pretraining optimizes for. The description isn't false, but
+it only covers the starting point, not what gets built on top of it.
 
 ## Why "just" is the misleading part
 
@@ -32,10 +32,8 @@ Here's the reasoning error in stopping there: the objective a system was
 trained on doesn't fully describe what that training produces. Human
 brains, at the level of physical mechanism, are "just" networks of
 neurons firing electrochemical signals — a true statement that tells you
-almost nothing useful about what a brain can actually do. Evolution
-"just" optimized for survival and reproduction, and produced, along the
-way, creatures capable of writing poetry and building particle
-accelerators — outcomes the optimization target itself never mentions.
+almost nothing useful about what a brain can actually do, from recognizing
+a face to writing a poem.
 
 The same gap shows up in language models. To get good at predicting the
 next word across a huge, varied body of text, a model has to build
@@ -48,10 +46,10 @@ rigorously demonstrated so far in small, controlled setups built
 specifically to test for this, with earlier-stage and still-debated
 evidence that something similar shows up in full-scale models processing
 real text. None of this was explicitly programmed in. Where it does show
-up, it emerged because representing that structure turned out to be a
-genuinely useful way to get better at the prediction task — the same way
-a brain optimized for survival "discovers" abstract reasoning because
-abstract reasoning helps you survive.
+up, it emerged because representing that structure turned out to help
+with the prediction task — the same way a brain optimized for survival
+"discovers" abstract reasoning because abstract reasoning helps you
+survive.
 
 ## What's actually built on top of pretraining
 
@@ -124,17 +122,17 @@ building these systems, but the broad shape — several expensive,
 compute-hungry stages stacked on top of each other, not one — is well
 documented.
 
-## What's still genuinely unsettled
+## What's still unsettled
 
 It's worth being honest that not everything here is settled science. How
 much of what a language model does reflects something like genuine
 understanding, versus extremely sophisticated pattern-matching that
 merely behaves as if it understands, is an active, unresolved research
 question — interpretability researchers are still working out how to
-even ask that question rigorously, let alone answer it. The fair
-takeaway isn't "next-token predictor is wrong, actually these systems
-think like humans do." It's narrower and more defensible: describing the
-training objective correctly (predict the next token) doesn't describe
-the system that objective, plus several more expensive stages of
-training on top of it, actually produces — and conflating the two is
-where the "just a next-token predictor" framing goes wrong.
+even ask that question rigorously, let alone answer it. A narrower,
+more defensible claim holds up regardless of how that question gets
+settled: describing the training objective correctly (predict the next
+token) doesn't describe the system that objective, plus several more
+expensive stages of training on top of it, actually produces. That gap —
+not "these systems secretly think like humans" — is where the "just a
+next-token predictor" framing goes wrong.

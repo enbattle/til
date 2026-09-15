@@ -34,14 +34,13 @@ the same handful of techniques do most of the work:
   { "sentiment": "positive", "confidence": 0.92 }
   ```
 
-- **Show examples for anything subtle.** A style, a tone, or an edge case
-  that's hard to describe in words is often much easier to demonstrate
-  with one or two examples (sometimes called "few-shot" examples) than to
-  explain abstractly.
-- **Iterate.** Treat the first attempt as a draft. If the output isn't
-  right, that's information about what the prompt failed to specify —
-  refine and try again rather than assuming the model simply "got it
-  wrong."
+A style, a tone, or an edge case that's hard to describe in words is
+usually easier to demonstrate than to explain — showing one or two
+examples (sometimes called "few-shot" examples) settles ambiguity that no
+amount of extra wording would. And treat the first attempt as a draft: if
+the output isn't right, that's information about what the prompt failed
+to specify, not a sign the model simply "got it wrong" — refine and try
+again.
 
 ## Where it diverges: chat versus building on the API
 
@@ -62,18 +61,18 @@ the prompt has to work correctly, unattended, across every input real
 users will ever send it — not just the handful you tested by hand. That
 difference in stakes is what drives every practical distinction below:
 
-- **You write the system prompt yourself**, and it has to hold up across
-  an unknown range of future inputs, not just the one conversation in
-  front of you.
+You write the system prompt yourself now, and it has to hold up across an
+unknown range of future inputs, not just the one conversation in front of
+you. Cost and latency stop being an afterthought, too: every token in the
+prompt and the response has a dollar cost and a time cost, multiplied
+across every request the application makes, so prompts get trimmed to
+what's actually needed rather than padded "just in case."
+
 - **Output usually needs to be structured, not conversational.** A chat
   response can be a friendly paragraph; a response your code has to parse
   needs to reliably come back as JSON matching a specific shape, or as a
   **tool call** (the model choosing to invoke one of a set of functions
   you've defined, with specific arguments) rather than free-form prose.
-- **Cost and latency are real constraints**, not an afterthought — every
-  token in the prompt and the response has a dollar cost and a time cost,
-  multiplied across every request the application makes, so prompts are
-  trimmed to what's actually needed rather than padded "just in case."
 - **Prompts get versioned and tested like code.** A production prompt is
   changed deliberately, with a way to check the change didn't quietly
   break behavior for cases it used to handle well — often a small set of
@@ -85,11 +84,12 @@ difference in stakes is what drives every practical distinction below:
   something a human chatting casually would just read past, but that a
   fully automated pipeline needs to be deliberately resistant to.
 
-## The takeaway
+## Prompting is a skill; shipping a prompt is an engineering problem
 
-The core skill — being specific, giving context, showing what "good"
-looks like — transfers directly between typing into a chat box and
-writing a prompt for an application. What changes is everything _around_
-that skill: in production, a prompt is a piece of the system that has to
-be reliable, measurable, and safe to change, not just a message you send
-once and read the reply to.
+Treat the two as the same activity and a production integration ends up
+with a prompt that was tuned by hand against a handful of examples,
+never versioned, and never checked again after launch — exactly the
+mistakes evals, versioning, and structured output exist to prevent. The
+core skill carries over unchanged; what has to be added on top, once a
+prompt is running unattended in front of real traffic, is everything
+that makes it a piece of infrastructure rather than a conversation.

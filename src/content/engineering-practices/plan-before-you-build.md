@@ -47,9 +47,9 @@ Document) — but the shape is similar. A short design doc usually answers:
 
 The document is short on purpose — long enough to think clearly, short
 enough that a teammate will actually read the whole thing. At companies
-with a strong writing culture (LinkedIn and Glovo are commonly cited
-examples), this is a normal part of shipping anything nontrivial, not
-extra bureaucracy layered on top of "real work."
+with a strong writing culture — Amazon's six-page narrative memos are the
+best-known example — this is a normal part of shipping anything
+nontrivial, not extra bureaucracy layered on top of "real work."
 
 Not every decision needs a full document. Many teams keep a lightweight
 **decision log** — a running table of `Decision | Date | Why | Alternatives

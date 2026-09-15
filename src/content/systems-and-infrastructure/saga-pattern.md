@@ -17,7 +17,7 @@ A transaction inside one database gives atomicity for free: either
 everything in it commits, or nothing does. Once an operation spans
 multiple services, each owning its own data, there's no shared
 transaction coordinator that can offer the same guarantee without an
-unacceptable cost to availability — the same tension
+unacceptable cost to availability — a related tension to what
 [CAP theorem](/systems-and-infrastructure/cap-theorem) describes, and
 part of why coordinating a single transaction across multiple databases
 falls out of favor as a system grows. A saga accepts that intermediate
@@ -59,8 +59,6 @@ compensation, actually fires — is exactly the problem the
 [Outbox Pattern](/systems-and-infrastructure/outbox-pattern) solves;
 sagas are usually built on top of it, not as a replacement for it.
 
-The whole design commitment behind a saga is always having a way back
-out if a later step fails, while accepting that intermediate states are
-genuinely visible along the way — someone really can observe a flight
-reserved with no hotel booked yet — rather than trying to hide that
-reality behind a guarantee distributed systems can't actually offer.
+A flight reserved with no hotel booked yet is a state someone else in
+the system can actually observe — the saga's job is to make sure there's
+always a way back out of it, not to pretend it never happens.

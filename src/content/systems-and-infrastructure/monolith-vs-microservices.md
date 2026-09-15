@@ -50,10 +50,10 @@ free now has to be built deliberately:
   moment state is split across services that can't always talk to each
   other.
 
-## Why the industry consensus actually shifted
+## Why the industry consensus shifted
 
 This is one of the more debated architecture decisions of the last
-decade, and opinion has genuinely moved: from "everyone should be doing
+decade, and opinion has moved: from "everyone should be doing
 microservices" toward a more cautious "start with a monolith" default,
 with some well-known early adopters having since folded services back
 together. That shift happened because the operational costs above are
@@ -73,6 +73,4 @@ deployability — a trade that only pays for itself once team size,
 conflicting deploy schedules, or genuine scaling needs make the
 distributed-systems complexity worth it. Adopting microservices before
 that need is real and specific is a common, expensive mistake: it pays
-the entire operational cost while capturing none of the benefit yet. The
-safer default is a well-organized monolith, splitting out a service only
-once a concrete, current pain point demands it.
+the entire operational cost while capturing none of the benefit yet.

@@ -66,7 +66,8 @@ question with one clear answer, a workflow that never actually varies
 (better served by ordinary code that just does the same steps every
 time), or anything latency-critical, since a multi-step loop is
 inherently slower than a single model call. It's also the wrong shape for
-high-stakes, hard-to-reverse actions taken with no human review — the
-same autonomy that makes an agent useful for open-ended tasks is exactly
-what makes an unsupervised mistake more consequential than a single wrong
-answer from a chatbot would be.
+high-stakes, hard-to-reverse actions taken with no human review: an agent
+that's free to act on its own for several steps in a row is also free to
+compound a bad decision across those same steps before anyone notices —
+a risk a single chatbot answer, reviewed by a human before anyone acts on
+it, doesn't carry.

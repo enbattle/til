@@ -78,14 +78,23 @@ another service, a database, an external API — and the caller just sees
 either a normal result or a fast, predictable `CircuitOpenError` instead
 of an unpredictable hang.
 
+One thing this illustrative version leaves out: it doesn't cap how many
+callers can get through at once while the breaker is half-open — the
+state simply flips, and every concurrent caller that shows up next
+attempts the call. A production implementation needs an explicit
+concurrency gate here (a counter or semaphore limiting how many trial
+requests are in flight) so "half-open" actually means a small, bounded
+trial rather than the full request volume hitting a dependency that just
+started to recover.
+
 ## Backoff and circuit breakers solve different halves of the problem
 
-The two are easy to mix up because they both respond to failure, but they
-protect different parties: backoff helps a _caller_ survive a transient
-failure by spacing out its own retries, while a circuit breaker protects
-the _dependency being called_ from being overwhelmed by everyone's
-retries arriving at once. A resilient system generally needs both — one
-alone leaves the other's failure mode uncovered. This pattern shows up
+The two are easy to mix up because they both respond to failure, but
+they aren't interchangeable: backoff is something a caller does to
+survive its own transient failures, while a circuit breaker is something
+that shields the dependency from getting hit by everyone's retries at
+once. Most resilient systems run both together, since each is handling a
+failure mode the other doesn't touch. This pattern shows up
 constantly in service-to-service calls inside a
 [microservices architecture](/systems-and-infrastructure/monolith-vs-microservices),
 in database connection pools, and in any call to an external dependency

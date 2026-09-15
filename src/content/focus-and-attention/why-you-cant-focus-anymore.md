@@ -11,28 +11,27 @@ detox," "rewire your dopamine") gets the actual science backwards in a way
 that makes the real fix easy to miss. This topic works through what's
 actually happening, and what's actually shown to help.
 
-## What dopamine actually is
+## What dopamine is for
 
 Dopamine gets talked about as "the pleasure chemical" your brain releases
 when something feels good. That's not quite right, and the difference
-matters. Dopamine is better understood as a **prediction and motivation
-signal**: it fires not just when you get a reward, but in anticipation of
-one, based on your brain's running prediction of "is something good about
-to happen." It's active constantly, during completely mundane moments,
-not just during pleasure — because its job is to help you decide what's
-worth paying attention to and pursuing next, not to make you feel good
-after the fact.
+matters. One of the better-supported ways to understand it is as a
+**prediction and motivation signal**: it fires in anticipation of a
+reward at least as much as in response to getting one, tracking your
+brain's running prediction of "is something good about to happen." It's
+active constantly, during completely mundane moments, not just during
+pleasure — because its job is to help you decide what's worth paying
+attention to and pursuing next, not to make you feel good after the fact.
 
-This matters because "detoxing" your dopamine doesn't make biological
-sense — dopamine isn't a toxin building up that you flush out. Your brain
-produces it continuously as part of normal functioning; you can't abstain
-your way to having less of it. What you _can_ change is what triggers it
-and how strongly — which is a completely different, more useful question.
+"Dopamine detox" is a metaphor, not a literal biological claim — you
+can't flush out a chemical your brain produces continuously as part of
+normal functioning. What you _can_ change is what triggers it and how
+strongly, which is the more useful question.
 
-## The actual mechanism: variable reward
+## The mechanism behind it: variable reward
 
-Here's the part that's real. A slot machine is effective not because
-winning feels amazing, but because you never know _when_ you'll win — a
+A slot machine is effective not because winning feels amazing, but
+because you never know _when_ you'll win — a
 predictable reward (a vending machine that always dispenses a snack) is
 far less compelling than an unpredictable one. This is called **variable
 reward**, and it's a well-established finding in behavioral psychology:
@@ -74,31 +73,30 @@ The cumulative effect, especially on something like reading a technical
 topic or working through a hard problem, is a steady tax on how much of
 it actually sticks.
 
-## What the "dopamine detox" trend actually gets right
+## What the "dopamine detox" trend gets right
 
-The term traces back to psychologist Dr. Cameron Sepah, and what he
-originally described was never a literal detox — it was a set of
-cognitive-behavioral techniques for reducing compulsive behavior by
-changing your environment, a well-studied approach called **stimulus
-control**. The idea: instead of relying on willpower to resist a trigger,
-remove the trigger. Turn off non-essential notifications. Leave your
-phone in another room while doing focused work. Log out of an app instead
-of trusting yourself not to open it. None of this touches your dopamine
-levels directly — it works by cutting off the variable-reward loop at the
-source, so there's nothing intermittently reinforcing to keep checking.
-This part is genuinely evidence-backed; it's the "detox" framing around
-it that isn't.
+The term traces back to psychologist Dr. Cameron Sepah, whose original
+proposal was a set of cognitive-behavioral techniques for reducing
+compulsive behavior by changing your environment — a well-studied
+approach called **stimulus control**. The idea: instead of relying on
+willpower to resist a trigger, remove the trigger. Turn off non-essential
+notifications. Leave your phone in another room while doing focused work.
+Log out of an app instead of trusting yourself not to open it. It works by
+cutting off the variable-reward loop at the source, so there's nothing
+intermittently reinforcing to keep checking — and this part is genuinely
+evidence-backed.
 
-## What else is actually shown to help
+## What else helps
 
 - **Protect longer, uninterrupted blocks of time**, and batch similar
   kinds of work together. Attention-residue research found that short,
   fragmented work periods produce the worst outcome on both ends — too
   shallow to engage deeply, and still leaving residue behind when
-  interrupted. Switching between similar tasks (two kinds of writing,
-  say) also leaves less residue than switching between very different
-  modes of thinking (writing, then a quick social check, then writing
-  again).
+  interrupted. Some related work suggests switching between similar tasks
+  (two kinds of writing, say) also leaves less residue than switching
+  between very different modes of thinking (writing, then a quick social
+  check, then writing again), though that specific comparison is more
+  tentative than the residue finding itself.
 - **Give yourself an explicit stopping point**, not just an interruption.
   Closure is the specific thing that reduces residue — jotting down
   "here's exactly where I left off and what's next" before switching

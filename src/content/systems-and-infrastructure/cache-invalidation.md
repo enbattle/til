@@ -72,11 +72,10 @@ invalidation can stay silently wrong, even in the worst case.
 ## The actual design question
 
 No single strategy eliminates staleness completely — every one of them
-just bounds it differently. The real design question isn't "is this cache
-correct," since a cache is rarely simply correct or broken; it's how much
-staleness a specific piece of data can tolerate, and for how long, and
-which strategy (or combination) keeps the actual staleness inside that
-bound. This applies anywhere a cache sits in front of a slower source of
+just bounds it differently. The design question is how much staleness a
+specific piece of data can tolerate, and for how long, and which strategy
+(or combination) keeps the actual staleness inside that bound. This
+applies anywhere a cache sits in front of a slower source of
 truth: an in-memory cache in front of a database, HTTP caching in a
 browser, or a content-delivery layer sitting in front of an origin
 server.
