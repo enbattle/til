@@ -55,9 +55,11 @@ how evenly data spreads and which queries stay fast:
   evenly, but a range query ("all orders from June") now has to fan out
   to every shard instead of staying on one.
 - **Directory-based** — a separate lookup service maps each key to its
-  shard explicitly. The most flexible option (individual keys can be
-  rebalanced one at a time), but the directory itself becomes a
-  critical, must-scale dependency and an extra hop on every query.
+  shard explicitly, which is the most flexible of the three since
+  individual keys can be rebalanced one at a time rather than reshuffled
+  in bulk. That flexibility isn't free: the directory itself is now a
+  critical, must-scale dependency, and every query pays for an extra hop
+  through it.
 
 The right key is whatever the majority of real queries actually filter
 by: sharding by `user_id` is a good fit when nearly every query is

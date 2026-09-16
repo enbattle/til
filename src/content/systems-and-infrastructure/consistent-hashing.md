@@ -44,11 +44,12 @@ so load balances evenly even with only a handful of physical machines.
 
 ## Why this beats the naive approach
 
-That's the entire benefit over `hash(key) % n`: adding or removing a
-node becomes a small, local, proportional change instead of a
-full-dataset reshuffle — which is what makes horizontally scaling a
-cache or a set of database shards an ordinary, low-risk operation
-instead of something that needs to be scheduled as risky maintenance.
+Adding or removing a node becomes a small, local, proportional change
+instead of a full-dataset reshuffle — which is what makes consistent
+hashing better than `hash(key) % n`, and what makes horizontally
+scaling a cache or a set of database shards an ordinary, low-risk
+operation instead of something that needs to be scheduled as risky
+maintenance.
 This is the mechanism underneath distributed caches, distributed
 databases spreading data across [shards](/systems-and-infrastructure/partitioning-vs-sharding),
 and load balancers that need to keep routing a given client to the same

@@ -96,7 +96,7 @@ not the access token, which was never meant to answer that question.
 - **Not validating `state` on the redirect back**, which reopens the
   CSRF hole the value was there to close.
 - **Skipping PKCE, or embedding a client secret in a single-page app** —
-  there's no way to actually keep a secret hidden inside code running in
+  there's no way to keep a secret hidden inside code running in
   a browser.
 - **Letting access tokens live too long.** Lean on short-lived access
   tokens plus refresh tokens, so revoking access actually takes effect

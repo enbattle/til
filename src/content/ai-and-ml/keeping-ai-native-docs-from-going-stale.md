@@ -93,7 +93,7 @@ change was; and a named, on-demand procedure that occasionally does a
 slow, thorough, independent read of every doc in the repo, looking
 specifically for claims that used to be true and no longer are.
 
-## The result isn't "never stale" — it's "stale for less time"
+## What these mechanisms actually buy you
 
 None of these mechanisms make documentation perfect forever. What they
 change is how long a piece of drift survives before something catches

@@ -5,9 +5,11 @@ date: 2026-09-14
 ---
 
 A JSON Web Token is three parts joined by dots — `header.payload.signature`
-— each one a JSON object encoded with **base64url** (a variant of base64
-text encoding that's safe to put directly in a URL, since it avoids the
-`+`, `/`, and `=` characters plain base64 uses).
+— each part encoded with **base64url** (a variant of base64 text encoding
+that's safe to put directly in a URL, since it avoids the `+`, `/`, and
+`=` characters plain base64 uses). The header and payload are JSON
+objects; the signature is the raw output of the signing operation, not
+JSON.
 
 ```json
 // payload (the middle part) — decoded

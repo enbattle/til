@@ -37,10 +37,15 @@ questions:
   concrete product decision. Traditional relational databases usually
   favor consistency: a single point of truth for writes, strongly
   consistent, harder to spread across many machines or regions. Some
-  NoSQL stores, particularly leaderless, Dynamo-style ones like Cassandra
-  and DynamoDB, are built the other way around: eventually consistent,
-  but able to accept writes across many nodes at once. Others, like
-  MongoDB, still route writes through a single primary per shard and
+  NoSQL stores, particularly Dynamo-lineage ones, are built the other way
+  around: eventually consistent, but able to accept writes across many
+  nodes at once. Cassandra is a genuinely leaderless example — any
+  replica can coordinate a quorum read or write for a given key.
+  DynamoDB, despite the shared lineage, actually replicates each
+  partition through a single leader replica, closer to leader-based than
+  fully leaderless — though its default reads are still eventually
+  consistent. Others, like MongoDB, still route writes through a single
+  primary per shard and
   default to strongly consistent reads against it — "NoSQL" describes a
   break from the relational model, not a single consistency tradeoff
   every store in the category makes the same way.

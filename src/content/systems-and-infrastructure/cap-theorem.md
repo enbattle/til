@@ -64,8 +64,8 @@ whether or not anything is actually broken.
 ## Choosing it deliberately
 
 Partitions aren't a rare edge case to plan for later — they happen
-regularly at any real scale, so this decision is best made deliberately
-at design time, not discovered mid-incident when a service has already
+regularly at any real scale, so this decision is best made at design
+time, not discovered mid-incident when a service has already
 started timing out. It shows up directly when picking between a strongly
 consistent [relational database and a more availability-oriented NoSQL
 store](/systems-and-infrastructure/sql-vs-nosql), and in designing any

@@ -80,6 +80,4 @@ same base: each adapter is small enough to store and swap in cheaply,
 rather than needing a full separate copy of the entire model for every
 variant. This general idea — freezing the bulk of a model and training
 a small, targeted update on top — has continued to spawn variants
-refining exactly which part of the weights get decomposed and how,
-which is a sign the core insight was a genuinely useful one, not a
-one-off trick.
+refining exactly which part of the weights get decomposed and how.

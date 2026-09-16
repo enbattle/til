@@ -53,12 +53,12 @@ each maps to something concrete:
   doesn't have to re-derive what the first step already learned.
 
 A system with a model but none of these is a chatbot with better wording,
-not an agent — the loop, not any single capability in isolation, is what
-does the actual work.
+not an agent — the loop is what turns those capabilities into repeated,
+self-directed progress toward a goal.
 
 ## Where the loop pays off, and where it's overkill
 
-The loop is genuinely useful when a task requires multiple steps whose
+The loop is useful when a task requires multiple steps whose
 outcome can't be known in advance — where step three depends on what step
 two actually returned, so it can't just be scripted as a fixed sequence
 ahead of time. It's a poor fit for the opposite case: a single, direct

@@ -60,8 +60,11 @@ it isn't the only shape an index can take:
 
 A **clustered** index determines the actual physical order rows are
 stored on disk — there can only be one per table, since rows can only be
-physically sorted one way at a time, and it's usually built on the
-primary key by default. A **non-clustered** index is a separate
+physically sorted one way at a time, and in databases that support it
+(MySQL/InnoDB, SQL Server), it's usually built on the primary key by
+default. Postgres, notably, has no persistent clustered index at all —
+`CLUSTER` there is a one-time manual reorder, not something the database
+maintains automatically. A **non-clustered** index is a separate
 structure entirely: a sorted list of keys, each pointing back to where
 its full row actually lives.
 

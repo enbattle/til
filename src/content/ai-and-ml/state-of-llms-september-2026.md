@@ -28,8 +28,8 @@ it only covers the starting point, not what gets built on top of it.
 
 ## Why "just" is the misleading part
 
-Here's the reasoning error in stopping there: the objective a system was
-trained on doesn't fully describe what that training produces. Human
+The objective a system was trained on doesn't fully describe what that
+training produces. Human
 brains, at the level of physical mechanism, are "just" networks of
 neurons firing electrochemical signals — a true statement that tells you
 almost nothing useful about what a brain can actually do, from recognizing
@@ -98,17 +98,17 @@ working through the problem step by step, sometimes checking its own
 intermediate logic — before producing a final answer. Some approaches
 take this further and generate multiple candidate solution paths in
 parallel, then select the best one. This is called **test-time** or
-**inference-time compute scaling**, and it's a genuinely different
-paradigm from classic next-token prediction: the model isn't just
+**inference-time compute scaling**, and it's a different paradigm
+from classic next-token prediction: the model isn't just
 guessing one word forward, it's allocating variable amounts of "thinking"
 depending on how hard the problem seems, at the cost of taking longer and
 consuming more compute per answer.
 
 ## Why all of this takes so much time, money, and compute
 
-This is the direct answer to why frontier models are so expensive to
-build: it's not one big expensive step, it's several. The pretraining run
-alone requires tens of thousands of specialized processors running for
+Frontier models are expensive because several separate, expensive stages
+stack on top of each other. The pretraining run alone requires tens of
+thousands of specialized processors running for
 weeks or months, at a cost that (based on figures the major labs have
 disclosed or that have been credibly estimated) runs into the hundreds of
 millions of dollars for a single frontier-scale model — and that's before

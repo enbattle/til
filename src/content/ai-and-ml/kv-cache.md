@@ -21,8 +21,8 @@ the next layer. The mechanism that does that exchanging within each layer
 is called **attention**, computed from three projections of every token:
 
 - **Query (Q)** — roughly, "what is this token looking for?"
-- **Key (K)** — roughly, "what does this token contain, for the purpose
-  of being found by something else?"
+- **Key (K)** — what this token contains, for the purpose of being found
+  by something else.
 - **Value (V)** — roughly, "what should get passed along if this token is
   a match?"
 
@@ -31,7 +31,8 @@ every earlier token's Key, and pulling in a weighted mix of their Values.
 Crucially, once a token has been processed, its Key and Value **never
 change again** — they depend only on that token and the ones before it,
 not on anything generated afterward. Only a brand-new token, the one
-currently being generated, needs a freshly computed Query.
+currently being generated, needs a freshly computed Query, Key, and
+Value.
 
 ## Caching the part that never changes
 
@@ -42,8 +43,8 @@ them for every future step.
 
 ```
 Token 1: compute Q₁, K₁, V₁ → store K₁, V₁
-Token 2: compute Q₂ only    → reuse stored K₁,V₁ → store K₂, V₂
-Token 3: compute Q₃ only    → reuse stored K₁,V₁,K₂,V₂ → store K₃, V₃
+Token 2: compute Q₂, K₂, V₂ → reuse stored K₁,V₁ → store K₂, V₂
+Token 3: compute Q₃, K₃, V₃ → reuse stored K₁,V₁,K₂,V₂ → store K₃, V₃
 ...
 ```
 

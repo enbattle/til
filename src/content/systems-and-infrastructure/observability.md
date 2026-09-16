@@ -42,15 +42,14 @@ _why_ — the error message, the bad input, the stack trace.
 
 ## The order matters more than it seems
 
-Start with metrics to confirm something is wrong, use traces to find
-where in the system it's happening, and only then dig into logs to learn
-why. Jumping straight to logs — the most common instinct when something
-breaks — means combing through fine-grained detail before you even know
-where to look, which is a large part of why debugging a production
-incident so often takes longer than it should. This is also exactly the
-toolkit for answering why a
+That sequence isn't just a mnemonic — skipping straight to the last step
+is the expensive mistake most people make under pressure. Jumping
+straight to logs — the most common instinct when something breaks —
+means combing through fine-grained detail before you even know where to
+look, which is a large part of why debugging a production incident so
+often takes longer than it should. This is also exactly the toolkit for
+answering why a
 [circuit breaker](/systems-and-infrastructure/circuit-breaker) tripped,
 or why a string of
 [retries](/systems-and-infrastructure/exponential-backoff) keep failing:
-metrics to notice the pattern, traces to find which dependency is
-involved, logs to see the error underneath it.
+the same metrics-then-traces-then-logs order applies there too.

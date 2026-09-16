@@ -16,7 +16,7 @@ There's a well-known line about why this is harder than it sounds: "there
 are only two hard things in computer science: cache invalidation and
 naming things." Storing a value and returning it next time is the easy
 part. Noticing, correctly and every time, that the value is no longer
-current is the actual hard part — and getting it wrong means silently
+current is the hard part — and getting it wrong means silently
 serving stale data, which is a worse failure than having no cache at all,
 because nothing about the response signals that anything is wrong.
 

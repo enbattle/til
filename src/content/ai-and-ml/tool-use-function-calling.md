@@ -45,8 +45,8 @@ code the model doesn't control directly.
 ## The description is the interface — write it for the model, not for you
 
 The model decides which tool to call, and with what arguments, based
-entirely on the name and description supplied for each one — it has no
-other information about what a tool actually does. A vague description
+on the name, description, and parameter schema supplied for each one —
+it has no other information about what a tool actually does. A vague description
 ("does database stuff") gives the model nothing to reliably decide on; a
 specific one ("search the product catalog by name, SKU, or category;
 returns price, stock, and specifications") tells the model exactly when

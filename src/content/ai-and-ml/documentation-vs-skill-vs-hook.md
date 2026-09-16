@@ -24,17 +24,16 @@ things you can build:
   automatically at the start of every session, without anyone asking for
   it — project conventions, architecture, house style. It's _always
   there_, whether or not it's relevant to the current task.
-- **An invokable, on-demand procedure.** Something with a name, surfaced
-  in a list of "things you can ask for," that runs only when explicitly
-  triggered — by a person typing a command, or by the agent recognizing
-  the situation calls for it. It exists _conditionally_, and has to be
-  _found and chosen_, not just read.
-- **An event-triggered automation.** Something that fires on its own
-  when a specific action happens — a file gets edited, a command gets
-  run — with no one needing to remember to trigger it. What sets this
-  one apart is that it requires _zero recall_ from whoever's working,
-  because it's wired to the event itself, not to someone's memory of a
-  rule.
+- **An invokable, on-demand procedure.** This one has to be _found and
+  chosen_, not just read: something with a name, surfaced in a list of
+  "things you can ask for," that runs only when explicitly triggered —
+  by a person typing a command, or by the agent recognizing the
+  situation calls for it.
+- **An event-triggered automation** fires on its own when a specific
+  action happens — a file gets edited, a command gets run — with no one
+  needing to remember to trigger it. It requires zero recall from
+  whoever's working, because it's wired to the event itself, not to
+  someone's memory of a rule.
 
 ## The decision test
 
@@ -46,14 +45,15 @@ Three questions, in order, usually settle it:
    passive context. Making it something you have to invoke defeats the
    point: you'd need to already know it applies before that were
    possible.
-2. **If not always relevant, does this only matter in a specific,
-   recognizable situation, and does someone need to be able to trigger
-   it on purpose?** If yes — a repeatable multi-step procedure, a
-   specific kind of change with its own process — it should be a
-   distinct, invokable unit with its own name and description, not a
-   paragraph buried in a longer document. A procedure sitting in passive
-   prose only gets followed if someone already remembers it exists and
-   goes looking for it; a named, invokable unit gets surfaced on its own.
+2. Making a rule invokable only helps if someone actually invokes it —
+   so the second question is **whether this only matters in a specific,
+   recognizable situation where someone needs to trigger it on
+   purpose.** A repeatable multi-step procedure, a specific kind of
+   change with its own process — these should be distinct, invokable
+   units with their own name and description, not a paragraph buried in
+   a longer document. A procedure sitting in passive prose only gets
+   followed if someone already remembers it exists and goes looking for
+   it; a named, invokable unit gets surfaced on its own.
 3. **Does this need to happen automatically, with nobody having to
    remember to ask for it?** If yes — a reminder tied to a specific kind
    of edit, an automatic check before a risky action — it belongs as an
@@ -90,7 +90,7 @@ not any single platform's own vocabulary. It's exactly the kind of thing
 this table would misrepresent if it got filed under one platform's
 column instead of called out on its own.
 
-Notably, this exact confusion is common enough that platforms in this
+This exact confusion is common enough that platforms in this
 space have had to explicitly address it — the boundary between "always
 loaded" and "invoked on demand" isn't obvious just from looking at two
 similarly shaped markdown files. The lesson transfers regardless of which
@@ -102,19 +102,18 @@ does this thing actually have."
 
 - A rule like "topics must define terms before using them" is true every
   time you write a topic, regardless of which one — passive context.
-- "Here's the multi-step process for drafting a new piece of content and
-  getting it independently reviewed before it's considered finished" is
-  only relevant when someone specifically wants that done, and benefits
-  from being triggerable by name rather than requiring someone to
-  remember a procedure buried in a markdown file — a skill.
-- "The moment someone starts editing a certain kind of file, remind them
-  to check whether a bigger review process applies" needs to fire the
-  instant that edit happens, without anyone having to ask — a hook.
+- A multi-step process for drafting a new piece of content and getting
+  it independently reviewed before it's considered finished is a skill,
+  because it's only relevant when someone specifically wants that done,
+  and it benefits from being triggerable by name rather than requiring
+  someone to remember a procedure buried in a markdown file.
+- Nobody should have to remember to check whether a bigger review
+  process applies the moment they start editing a certain kind of file —
+  which makes that a hook: it fires the instant the edit happens,
+  without anyone having to ask.
 
 Getting this classification right the first time is genuinely hard, and
 getting it wrong isn't usually catastrophic — a procedure left as prose
-still works if someone happens to find it, a fact turned into a skill
-still works if someone happens to invoke it. But the gap between
-"technically documented" and "reliably followed" is exactly this
-judgment call, made correctly, over and over, as a project's tooling
-grows.
+still works if someone happens to find it and read that far. But the gap
+between "technically documented" and "reliably followed" is exactly this
+judgment call, as a project's tooling grows.

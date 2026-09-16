@@ -8,8 +8,8 @@ If concentrating on one thing for more than a few minutes feels harder
 than it used to, you're not imagining it, and you're not broken. There's
 a real mechanism behind it — but the popular explanation for it ("dopamine
 detox," "rewire your dopamine") gets the actual science backwards in a way
-that makes the real fix easy to miss. This topic works through what's
-actually happening, and what's actually shown to help.
+that makes the fix easy to miss. This topic works through what's
+happening, and what's shown to help.
 
 ## What dopamine is for
 
@@ -23,10 +23,8 @@ active constantly, during completely mundane moments, not just during
 pleasure — because its job is to help you decide what's worth paying
 attention to and pursuing next, not to make you feel good after the fact.
 
-"Dopamine detox" is a metaphor, not a literal biological claim — you
-can't flush out a chemical your brain produces continuously as part of
-normal functioning. What you _can_ change is what triggers it and how
-strongly, which is the more useful question.
+"Dopamine detox" isn't literal — what you can change is what triggers
+dopamine and how strongly, which is the more useful question.
 
 ## The mechanism behind it: variable reward
 
@@ -40,9 +38,9 @@ how good the reward actually is.
 
 Your phone, and social feeds especially, are built on exactly this
 structure. Every pull-to-refresh, every scroll, might surface something
-genuinely interesting — or might not. You can't predict which, so your
+interesting — or might not. You can't predict which, so your
 brain's prediction system stays highly engaged, generating a small hit of
-anticipation on every check. Estimates of how often people actually check
+anticipation on every check. Estimates of how often people check
 their phones vary a lot depending on how a study measures "a check" — but
 they consistently land somewhere between dozens and a few hundred times a
 day. Do this often enough and your brain adapts to expect a new
@@ -83,7 +81,7 @@ willpower to resist a trigger, remove the trigger. Turn off non-essential
 notifications. Leave your phone in another room while doing focused work.
 Log out of an app instead of trusting yourself not to open it. It works by
 cutting off the variable-reward loop at the source, so there's nothing
-intermittently reinforcing to keep checking — and this part is genuinely
+intermittently reinforcing to keep checking — and this part is
 evidence-backed.
 
 ## What else helps
@@ -102,7 +100,7 @@ evidence-backed.
   "here's exactly where I left off and what's next" before switching
   tasks gives your attention something concrete to let go of, rather than
   an unfinished thread it keeps quietly chewing on.
-- **Use stimulus control deliberately**, per the actual evidence above:
+- **Use stimulus control deliberately**, per the evidence above:
   remove the trigger rather than relying on in-the-moment willpower.
   Phone in another room, notifications off, one browser tab — not a
   vague intention to "be more disciplined."

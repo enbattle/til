@@ -46,12 +46,12 @@ different systems can fail in different ways:
   actually say.
 - **An [agent](/ai-and-ml/what-are-ai-agents)** can fail by choosing the
   wrong tool, reasoning its way to a bad plan, or technically finishing
-  its steps without actually accomplishing the underlying goal — so an
+  its steps without accomplishing the underlying goal — so an
   agent eval typically checks tool choice, the coherence of its
   intermediate reasoning, and whether the end state actually matches what
   was asked for, not just whether the loop terminated.
 - **A general-purpose response** can be evaluated for plain correctness,
-  whether it's actually useful to the person asking, and whether it stays
+  whether it's useful to the person asking, and whether it stays
   inside whatever behavioral guidelines the system is supposed to follow.
 
 ## Closing the loop, not just running the numbers once
@@ -59,9 +59,9 @@ different systems can fail in different ways:
 An eval that gets run once and filed away isn't doing its job. The value
 is in the loop: build or change the system, run the eval dataset against
 it, look closely at where it failed and why, use that to decide what to
-fix, make the change, and run the eval again to confirm it actually
-helped rather than just feeling like it should have. The faster that
-loop can run, the faster the underlying system actually improves — an
+fix, make the change, and run the eval again to confirm it helped
+rather than just feeling like it should have. The faster that
+loop can run, the faster the underlying system improves — an
 eval that takes a day to run is far less useful than one that takes a
 minute, even if the two measure exactly the same thing, because the slow
 one gets run far less often in practice.

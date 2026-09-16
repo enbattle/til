@@ -28,9 +28,9 @@ is roughly another 500x. Chain those together and the gap between
 "served from memory" and "served across the country" is close to half a
 million times over — so a design that hides an unnecessary cross-region
 round trip behind something that could have been served from memory is
-leaving most of that gap on the table. The point isn't precision — it's a
-fast way to notice when a design can't possibly hit its own latency
-budget.
+leaving most of that gap on the table. These numbers are for noticing
+when a design can't possibly hit its own latency budget — not for
+precision.
 
 ## Chaining them into a throughput estimate
 
@@ -61,7 +61,7 @@ these:
   "this needs dedicated file storage, not a database row" becomes
   obvious.
 
-## The actual payoff: catching a design that's off by 1000x
+## The payoff: catching a design that's off by 1000x
 
 Skip the calculator and these numbers still catch the obvious break: if a
 request's stated latency requirement is 50ms and the design routes it

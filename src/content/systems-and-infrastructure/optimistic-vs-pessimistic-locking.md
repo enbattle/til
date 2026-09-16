@@ -60,9 +60,11 @@ from scratch. Optimistic locking wins when conflicts are rare and most
 attempts succeed on the first try, which describes the majority of
 real-world write patterns — part of why optimistic locking (or a
 database's own **MVCC** — multi-version concurrency control, where the
-database keeps multiple versions of a row around so readers and writers
-don't block each other, a built-in form of the same optimistic idea)
-tends to be the more common default.
+database keeps multiple versions of a row around so readers never block
+writers or vice versa) tends to be the more common default — though note
+that write-write conflicts on the same row under MVCC typically still
+block or serialize, closer to pessimistic behavior than to lock-free
+optimistic locking.
 
 This applies to any concurrent update to shared state: inventory
 counts, seat reservations, account balances, collaborative document

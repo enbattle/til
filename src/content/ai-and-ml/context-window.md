@@ -23,9 +23,8 @@ it either fails outright with an error, or — worse — silently truncates
 something to make room. Silent truncation is especially dangerous when
 the context is built from retrieved documents: the piece that gets cut to
 make room might be the one document that actually answered the question,
-and nothing in the response will tell you that happened. A budget you
-can't see yourself running out of is a budget you have to actively manage,
-not just trust.
+and nothing in the response will tell you that happened. Nothing tells
+you when that budget is blown, so you have to manage it actively.
 
 ## Why bigger isn't simply better
 
@@ -68,8 +67,8 @@ out what's relevant. Two things push back on that:
 
 For a small, fixed set of documents — small enough that everything
 plausibly relevant fits comfortably inside the budget at once — pasting
-it all in and letting a large context window handle it is genuinely the
-simpler design: no retrieval system to build, no risk of the wrong chunk
+it all in and letting a large context window handle it is the simpler
+design: no retrieval system to build, no risk of the wrong chunk
 being retrieved. Once the underlying knowledge base is too large for that
 to hold — dozens or hundreds of documents rather than a handful — the
 cost and reasoning-quality tradeoffs above start to favor retrieving only

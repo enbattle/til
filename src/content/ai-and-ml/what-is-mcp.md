@@ -72,19 +72,19 @@ Server → Client:
       parameters: { ticket_id: string }
 ```
 
-The host never needed to know in advance that this particular server
-existed, or that it happened to expose a ticket-search tool — it asked,
-and got back everything it needs to let the model use what's there. Add
-a second server exposing a completely different tool, and the same
-discovery step picks it up automatically, with no change to the host's
-own code at all. That's what makes it possible to add or swap out a
-server without touching the host.
+The host doesn't need to know in advance what a connected server offers —
+no hardcoded tool list — it asked, and got back everything it needs to
+let the model use what's there. Add a second server exposing a
+completely different tool (still requiring its own config or connection
+entry on the host), and the same discovery step picks up its
+capabilities automatically. That's what makes it possible to add or swap
+out a server without changing how the host talks to it.
 
 ## Why building it once pays off
 
-The actual payoff of standardizing this is reuse: a server built to
-expose, say, a company's internal ticketing system works with _any_
-host that speaks MCP, not just the one it was originally built for.
+A server built to expose, say, a company's internal ticketing system
+works with _any_ host that speaks MCP, not just the one it was
+originally built for.
 That's the same underlying logic behind most successful protocols — a
 device built to a shared driver standard works with any compliant
 operating system, not one rebuilt per device; a website built to

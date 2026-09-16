@@ -47,7 +47,7 @@ every possible pause or slowdown.
 
 ## Fencing tokens: moving the safety check to the resource itself
 
-The actual fix is giving every acquisition a monotonically increasing
+The fix is giving every acquisition a monotonically increasing
 **fencing token**, and having the _protected resource itself_ reject any
 write that arrives with a stale token:
 
@@ -60,8 +60,8 @@ apply(write)
 
 This moves the actual safety guarantee onto the resource being
 protected, rather than trusting that merely holding the lock implies
-exclusivity. It's the fully correct fix, not a workaround layered on top
-of the same broken assumption.
+exclusivity. This closes the gap fully — it isn't a workaround layered
+on top of the same broken assumption.
 
 ## What this actually coordinates in practice
 
@@ -73,10 +73,9 @@ store with atomic conditional writes (the mechanism shown above), or a
 consensus-based coordination service built specifically for this kind of
 guarantee.
 
-## Treat possession as advisory
+## What this doesn't guarantee
 
-Without fencing tokens, a distributed lock only prevents concurrent
-_acquisition_ — not concurrent _access_ — once a lease can expire
-mid-operation. Treat mere lock possession as advisory, not a guarantee,
-unless the protected resource itself is actually capable of rejecting a
-stale write.
+Unless the protected resource itself can reject a stale write on its
+own, mere lock possession is advisory, not a guarantee. Without fencing
+tokens, a distributed lock only prevents concurrent _acquisition_ — not
+concurrent _access_ — once a lease can expire mid-operation.

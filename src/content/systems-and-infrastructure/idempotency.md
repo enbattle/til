@@ -50,6 +50,12 @@ def charge_card(idempotency_key, amount):
     return result
 ```
 
+This sketch has a gap: if two requests with the same key arrive
+concurrently, both can read no existing result before either saves one.
+A real implementation needs a unique constraint (or lock) on the
+idempotency key at the database level so a concurrent duplicate is
+rejected or blocked rather than racing through.
+
 The key has to be generated once per real-world action — once per "place
 order" button click, say — and reused across every retry of that same
 action. Generating a fresh key on every retry defeats the entire
@@ -77,5 +83,4 @@ insert retried after a timeout can silently create a duplicate row.
 
 Idempotency — or an idempotency key standing in where the operation
 isn't naturally idempotent — is what turns that inevitable retry into a
-harmless no-op instead of a second charge, a second order, or a second
-email.
+harmless no-op instead of a second charge.
