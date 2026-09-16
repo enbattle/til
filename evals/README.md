@@ -11,23 +11,37 @@ That's not something `npm run test:run` can check — those tests verify
 the _app_. This verifies the _process that builds the app_, the same way
 you'd want to know a CI pipeline still triggers correctly after editing
 the workflow file, not just that the code it builds still compiles.
+Concretely, each category plants a known-bad case (a task that should
+route a specific way, a topic draft with a specific violation) and checks
+whether the real machinery actually catches it — the same fault-injection
+idea behind chaos-engineering practices elsewhere, aimed at this repo's
+own safety nets instead of a running service.
 
 ## What's here
 
 - `skill-routing/` — does a fresh session, given a task description,
-  correctly decide whether to invoke `/feature`, `add-topic`,
-  `docs-audit`, `content-audit`, `skill-routing-eval`, or just make the
-  change directly per `CLAUDE.md`'s own carve-out? This is the first
-  eval category, chosen because routing is the thing most likely to
-  silently drift as `CLAUDE.md` and the skills themselves change over
-  time — a session can build something _well_ while still having picked
-  the wrong process for it. Run via the `skill-routing-eval` skill
-  rather than by hand.
+  correctly decide whether to invoke the right skill under
+  `.claude/skills/` (see `skill-routing-eval/SKILL.md`'s Stage 1 for the
+  current, canonical list — not repeated here on purpose, since it's
+  already drifted from being hand-duplicated in more than one place) or
+  just make the change directly per `CLAUDE.md`'s own carve-out? This is
+  the first eval category, chosen because routing is the thing most
+  likely to silently drift as `CLAUDE.md` and the skills themselves
+  change over time — a session can build something _well_ while still
+  having picked the wrong process for it. Run via the `skill-routing-eval`
+  skill rather than by hand.
+- `content-review/` — once `add-topic`'s Stage 3 review actually runs,
+  does it catch a deliberately planted content-quality violation
+  (undefined jargon, AI-patterned tone, over-explained figurative
+  language, an unverified technical claim), or rubber-stamp the draft? A
+  different failure surface than `skill-routing`: that category checks
+  whether the right skill gets chosen, this one checks whether the
+  chosen skill's review step actually works, including a false-positive
+  control (a clean draft that should draw no findings). Run via the
+  `content-review-eval` skill.
 
-Future categories worth adding once routing is stable: does the
-`/feature` review stage actually catch known-bad injected bugs; does
-`add-topic`'s review actually catch a planted factual error or Writing
-Standard violation.
+Future categories worth adding once these are stable: does the
+`/feature` review stage actually catch known-bad injected bugs.
 
 ## How this is run
 

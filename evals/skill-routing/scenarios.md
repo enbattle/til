@@ -179,3 +179,23 @@ pass covers a single new topic it's writing, not a sweep of everything
 already published), or done as an ad-hoc read-through by the same session
 with no independent per-batch audit pass — that defeats the same design
 premise `docs-audit` already establishes for this repo.
+
+---
+
+### SR-12 — content-review-eval routing
+
+> After changing the wording of add-topic's review instructions, can you
+> check that the review still actually catches a planted content
+> violation instead of just checking that the routing still works?
+
+**Expected:** `content-review-eval`
+**Why:** Exact match for the skill's stated purpose — checking whether
+`add-topic`'s Stage 3 review agent actually catches a deliberately
+planted problem, a different failure surface from routing correctness.
+**Fails if:** routed to `skill-routing-eval` (that checks whether the
+right skill gets _chosen_, not whether a chosen skill's review step
+actually works), `content-audit` (that's a corpus-wide sweep of already-
+published topics, not a check of the review process itself), or done as
+an ad-hoc manual check with no spawned fresh reviewer agent and no
+planted-violation scenario — that defeats the same "genuinely fresh eyes"
+premise every other eval in this repo is built on.

@@ -67,7 +67,11 @@ the in-app theme toggle (light/dark/system, in `ThemeContext`) can win
 regardless of the system setting. Components reference the tokens
 (`bg-bg-primary`, `text-text-secondary`, `border-border`, `text-accent`,
 …) — never a raw hex value — so a future palette change happens in one
-file.
+file. `npm run check:colors` (`scripts/check-hex-colors.mjs`, wired into
+CI) enforces this mechanically rather than relying on review to catch a
+raw hex literal creeping into a component — it fails if one shows up
+anywhere under `src/` outside `src/index.css` itself (where the tokens
+are defined) or `src/content/` (published prose, not app code).
 
 | Token            | Light     | Dark      |
 | ---------------- | --------- | --------- |
@@ -80,6 +84,12 @@ file.
 | `border`         | `#ddd1bf` | `#3d3428` |
 | `accent`         | `#92400e` | `#f0a83c` |
 | `accent-hover`   | `#7c3609` | `#f7bb5c` |
+| `accent-soft`    | `#f3e3c8` | `#3d2f16` |
+
+`accent-soft` is defined but not yet referenced by any component — kept
+as a reserved, muted-accent option (e.g. a subtle highlight background)
+rather than removed, since the theme is meant to be extended from these
+tokens rather than a new one added ad hoc.
 
 ## Accessibility checklist
 

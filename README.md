@@ -49,6 +49,9 @@ npm run format:check      # Prettier check
 npm run test              # Vitest, watch mode
 npm run test:run          # Vitest, run once (CI mode)
 npm run size              # Check built JS chunks against size-limit budgets
+npm run check:colors      # Fail if a component references a raw hex color instead of a design token
+npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src/index.css
+npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
 ```
 
 ## Adding content
@@ -66,7 +69,7 @@ accessibility checklist behind the UI.
 ## Development process
 
 Features and nontrivial app changes go through a spec → TDD →
-implementation → adversarial review → UI check → docs pipeline — see
+implementation (+ docs) → adversarial review (code + UI) pipeline — see
 [docs/SDLC.md](docs/SDLC.md). Adding a topic gets a lighter, separate
 process instead (draft → one independent review pass) — see the
 `add-topic` skill referenced in [CLAUDE.md](CLAUDE.md).

@@ -29,6 +29,9 @@ jobs:
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint
+      - run: npm run check:colors
+      - run: npm run check:tokens
+      - run: npm run check:npm-refs
       - run: npm run typecheck
       - run: npm run test:run
       - run: npm run build

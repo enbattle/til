@@ -14,8 +14,9 @@ as files in the repository and shipped with the next build.
 Use `/feature <description>` — it runs this repo's full spec → TDD →
 implementation → adversarial review (code + UI) pipeline: three separate,
 fresh agents (test-writer, implementer, reviewer) with role separation
-enforced between them, plus the orchestrating session handling spec and
-docs directly. See [docs/SDLC.md](docs/SDLC.md) for why it's shaped this
+enforced between them, plus the orchestrating session handling spec
+directly (docs stay with the implementer agent, as part of finishing the
+change). See [docs/SDLC.md](docs/SDLC.md) for why it's shaped this
 way — including why it's three agents and not one per named step — and
 [`.claude/skills/feature/SKILL.md`](.claude/skills/feature/SKILL.md) for
 the exact steps. Skip it for genuinely small, unambiguous changes (a typo,
@@ -122,10 +123,16 @@ editor or CMS are all out of scope for now — the app is intentionally kept
 to sections + search + markdown rendering + dark mode. Add one of these
 only if a real need shows up, not speculatively.
 
+The equivalent list for _process/tooling_ practices (CI gates, hooks,
+agent-workflow scaling) considered and deliberately deferred, each with
+its actual reasoning and a concrete revisit condition, lives in
+[docs/DEFERRED_PRACTICES.md](docs/DEFERRED_PRACTICES.md).
+
 ## Verifying a change
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
+npm run check:colors && npm run check:tokens && npm run check:npm-refs
 npm run test:run
 npm run build
 npm run size

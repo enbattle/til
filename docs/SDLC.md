@@ -45,7 +45,11 @@ Applying that test to each step:
 - **Implementation** is separate from both of the above, and specifically
   from review — the one rule enforced almost universally in real
   engineering orgs: the author of a change doesn't approve their own
-  change.
+  change. A fresh agent for review also sidesteps a second LLM-specific
+  problem beyond bias: performance degrades as a context fills, not only
+  once it's full, so a reviewer that inherited the entire spec-to-
+  implementation conversation is working with more degraded attention
+  than one that opens fresh with just the diff and the spec.
 - **UI verification** is folded into the review stage rather than given
   its own agent. It exists for the identical reason review does — a
   perspective that isn't the implementer's own — so splitting it out
@@ -101,9 +105,12 @@ None of it checks whether that actually keeps happening — a session can
 build something well while still having picked the wrong process for it,
 and that kind of drift is invisible until someone checks for it directly.
 `evals/` holds scenario-based checks for exactly that: given a task
-description, does a fresh session route it to `/feature`, `add-topic`,
-`docs-audit`, or a direct edit, the way this document and `CLAUDE.md`
-intend? Run via the `skill-routing-eval` skill — see `evals/README.md`.
-It's run manually/periodically, not on every commit — most usefully right
-after editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also
-when `.claude/hooks/nudge-sdlc.js` reminds a session to check it.
+description, does a fresh session route it to the skill this document and
+`CLAUDE.md` intend, or a direct edit (`skill-routing`) — and, once the
+right skill runs, does its review step actually catch what it's supposed
+to catch instead of rubber-stamping the work (`content-review`, for
+`add-topic`'s Stage 3)? Run via the `skill-routing-eval` and
+`content-review-eval` skills — see `evals/README.md`. Both are run
+manually/periodically, not on every commit — most usefully right after
+editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also when
+`.claude/hooks/nudge-sdlc.js` reminds a session to check it.

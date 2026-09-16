@@ -16,9 +16,11 @@ For each scenario in `scenarios.md`:
    beyond the scenario prompt. It must not have seen this eval file or
    any other scenario; it should react the way a session encountering
    this request cold actually would.
-2. **Give it the scenario prompt verbatim.** Add one instruction on top:
-   _state which skill you'd invoke (`/feature`, `add-topic`, or neither/
-   direct) and why, but don't actually implement anything yet._ This
+2. **Give it the scenario prompt verbatim.** Add the instruction from
+   `skill-routing-eval/SKILL.md`'s Stage 1 on top, exactly as written
+   there — that file is the single source of truth for the current list
+   of valid routing options, so copy it fresh rather than retyping the
+   list here (it's drifted from being duplicated in the past). This
    keeps a routing check cheap — the thing being measured is the
    decision, not the build.
 3. **Record**: the routing decision, and its stated reasoning in one

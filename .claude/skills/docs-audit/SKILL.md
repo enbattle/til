@@ -64,7 +64,14 @@ Stage 1 and this instruction, close to verbatim:
 > reference the source, the same way `README.md`'s Features section
 > points at `registry.ts` instead of naming sections directly — that
 > class of fix prevents the same staleness from recurring, not just
-> patches it once. Do not edit anything — audit only. Report findings
+> patches it once. **Separately, also flag a fact that's hand-duplicated
+> across two or more docs with no single canonical source** (as opposed
+> to a doc restating something code owns) — e.g. the same named list
+> spelled out independently in more than one file — even if every copy
+> currently agrees with every other one; the risk here isn't that one is
+> wrong yet, it's that nothing stops the next edit from updating only one
+> copy. Name every location the fact appears and suggest which one should
+> become canonical. Do not edit anything — audit only. Report findings
 > ranked by how misleading they'd be to someone reading the doc cold, or
 > say explicitly you found nothing worth flagging.
 >
@@ -83,7 +90,14 @@ resolve it yourself or ask the user rather than applying it blindly.
 
 ```bash
 npm run format:check
+npm run check:tokens
+npm run check:npm-refs
 ```
+
+The latter two are exactly this skill's own failure mode caught
+mechanically — run them even though Stage 2 already checked by hand, the
+same reasoning `/feature`'s Stage 5 re-runs its full suite instead of
+trusting an earlier stage's self-report.
 
 (Add `npm run typecheck && npm run lint && npm run test:run && npm run build`
 too if any fix touched actual code rather than only documentation.)
