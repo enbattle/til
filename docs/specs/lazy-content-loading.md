@@ -127,27 +127,39 @@ well below today's 183 kB, into the ~100-120 kB range); record before/after in
 4. `loadAllTopicBodies` resolves a map with exactly one non-empty entry per
    `TOPICS` element.
 
-**Search** 5. `searchContent('')` and whitespace return `[]`; before `ensureFullTextSearch`
-a topic-title query finds that topic, a query matching only a question's body
-finds the question, and a phrase that appears only in a topic body
-(`thin vertical slice`) does NOT find `plan-before-you-build`. 6. After `await ensureFullTextSearch()` that same phrase finds
-`plan-before-you-build`; `isFullTextSearchReady()` is false before and true
-after; a second call reuses the work; a rejected load leaves it false and a
-later call retries. 7. `searchTopics` is no longer exported.
+**Search**
 
-**UI** 8. `SearchDialog`: title/summary results appear immediately with the status
-line present; when full text loads the status disappears and a body-only
-phrase now returns its topic; on load failure the failure status is shown and
-title/summary results still work. Existing dialog behavior (label,
-placeholder, Escape, focus trap, activating a result) unchanged. 9. `TopicPage`: the `h1` and back link are present without waiting for the body;
-the body's content appears once loaded; an unknown topic still redirects to
-not-found; a rejected body load shows the ErrorBoundary fallback with a
-Reload button. 10. Everything else (topic page's "This comes up in" list, prev/next, question
-pages, catalog and System Design navigation) passes its existing tests.
+5. `searchContent('')` and whitespace return `[]`; before `ensureFullTextSearch`
+   a topic-title query finds that topic, a query matching only a question's body
+   finds the question, and a phrase that appears only in a topic body
+   (`thin vertical slice`) does NOT find `plan-before-you-build`.
+6. After `await ensureFullTextSearch()` that same phrase finds
+   `plan-before-you-build`; `isFullTextSearchReady()` is false before and true
+   after; a second call reuses the work; a rejected load leaves it false and a
+   later call retries.
+7. `searchTopics` is no longer exported.
 
-**Build (not unit-testable; checked by the scripts and the browser review)** 11. `.md?meta` works in dev, build and Vitest. 12. `npm run check:bundle` passes on the new build and fails when topic bodies
-are inlined into the main chunk. 13. `npm run verify` passes with the lowered main-chunk limit; the number and
-the before/after are recorded in `CLAUDE.md`.
+**UI**
+
+8. `SearchDialog`: title/summary results appear immediately with the status
+   line present; when full text loads the status disappears and a body-only
+   phrase now returns its topic; on load failure the failure status is shown and
+   title/summary results still work. Existing dialog behavior (label,
+   placeholder, Escape, focus trap, activating a result) unchanged.
+9. `TopicPage`: the `h1` and back link are present without waiting for the body;
+   the body's content appears once loaded; an unknown topic still redirects to
+   not-found; a rejected body load shows the ErrorBoundary fallback with a
+   Reload button.
+10. Everything else (topic page's "This comes up in" list, prev/next, question
+    pages, catalog and System Design navigation) passes its existing tests.
+
+**Build (not unit-testable; checked by the scripts and the browser review)**
+
+11. `.md?meta` works in dev, build and Vitest.
+12. `npm run check:bundle` passes on the new build and fails when topic bodies
+    are inlined into the main chunk.
+13. `npm run verify` passes with the lowered main-chunk limit; the number and
+    the before/after are recorded in `CLAUDE.md`.
 
 ## Tests that must change (deliberately, for the new API)
 
@@ -243,3 +255,31 @@ under Node 22 (CI's version). Then a real-browser review: production build via
 its own small chunk, the first search fetching the rest and showing the status
 line then the body matches, offline/failed-chunk behavior via the reload
 fallback, keyboard-only search, both themes, a 375 px viewport, console clean.
+
+## As built
+
+Where the shipped change differs from the plan above.
+
+- **`TopicPage` loads the body with state and an effect, not `use` inside
+  Suspense.** `use` on a still-pending promise never got retried under the
+  tests' synchronous `render`. A `useEffect` with a loading/loaded/failed state
+  passes them, and a failed load is still rethrown during render so it reaches
+  the `ErrorBoundary`. The header renders immediately; the back-links and
+  prev/next navigation are passed as children and appear only after the body,
+  so they don't jump down when it arrives.
+- **`check:bundle` checks more than the two conditions in "Guard".** It also
+  fails when one chunk holds more than one topic's body, and when any other
+  chunk statically imports a body chunk. The static-import check was added
+  after review found that a body could be pulled into a chunk loaded on every
+  topic view without ever appearing in the main chunk.
+- **The search dialog's status line reserves its height** (`min-h-[33px]`, the
+  height with text) so the results below don't shift by a pixel when the text
+  appears.
+- **One test edit by the orchestrator:** `TopicPage.test.tsx`'s render helper
+  wraps the page in `ThemeProvider`, because `CodeBlock` needs the theme. It
+  was a genuine test bug, but the orchestrator fixed it directly; the
+  pipeline now says to send it back to a fresh test-writer.
+- **Main chunk:** 179.04 kB to 100.17 kB brotlied, limit lowered to 104 kB.
+- **Follow-up outside this spec (commit `00f2f84`):** `main` gained `min-w-0`,
+  fixing a pre-existing horizontal overflow at 375 px on pages with wide
+  content, found during this change's review.

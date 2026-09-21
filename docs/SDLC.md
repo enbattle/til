@@ -62,9 +62,11 @@ Applying that test to each step:
   against here — docs aren't a correctness check, so independence has
   nothing to protect.
 
-That leaves exactly three worker agents with real, distinct jobs — a
+That leaves three worker agents with real, distinct jobs — a
 test-writer, an implementer, and an adversarial reviewer — plus the
-orchestrating session handling spec and coordination throughout.
+orchestrating session handling spec and coordination throughout. Two
+single-purpose agents join only when a stage calls for one: a fixer when review
+finds something, and a reader of process edits at the retrospective.
 
 ## The stages
 
@@ -89,7 +91,18 @@ orchestrating session handling spec and coordination throughout.
    instead of running forever.
 5. **Final gate.** Every check green on the actual final diff, summarized
    for the user, who decides whether and when to commit and push. No stage
-   in this process commits or pushes on its own.
+   in this process commits or pushes on its own. Findings the review made
+   that the change didn't cause are listed separately, so they aren't
+   mistaken for regressions or lost.
+6. **Retrospective.** Part of the same handoff. Look back over the run for
+   friction that actually happened and fix each real issue at the strongest
+   level that fits: a mechanical check, then a correction to the doc that
+   already covers it, then new guidance only if neither does. A run with no
+   friction reports "nothing to change" and adds nothing. It also checks
+   whether a [deferred practice's](DEFERRED_PRACTICES.md) revisit condition has
+   come true. Edits to a process file get one independent read first, by an
+   agent that never saw the author's reasoning, and then go to the user as
+   proposals in their own commit. The exact steps are in the skill.
 
 ## `docs/specs/`
 

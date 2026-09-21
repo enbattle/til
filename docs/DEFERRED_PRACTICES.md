@@ -28,6 +28,21 @@ practices that were adopted rather than deferred (the hex-color CI guard,
 `docs/SDLC.md`'s context-window note) are documented where they live, not
 repeated here.
 
+## Adding an entry
+
+An entry belongs here only if a practice was **considered and deliberately
+not adopted yet**, usually because this repo doesn't yet have the scale or
+complexity that justifies it, with a **revisit when** that can be checked as
+true or false (or a plain statement of why there isn't one, as the
+session-hygiene entry gives). It is a reference for when the codebase grows
+into needing the practice, not a list of lessons or todos. A bug or a
+process gap found in a run is fixed in the place it lives (a check, a doc, a
+skill) and does not get an entry here; the `/feature` retrospective (Stage 6
+of `.claude/skills/feature/SKILL.md`) is where that decision gets made. When
+a revisit condition becomes true, adopt the practice and update or remove its
+entry rather than leaving a stale deferral (the header notes that adopted
+practices are documented where they live, not repeated here). Use the three-part format below.
+
 ## How to use this file
 
 Each entry has three parts: **what it is**, **why it's deferred** (the

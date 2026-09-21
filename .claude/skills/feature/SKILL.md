@@ -26,7 +26,8 @@ argument).
    not at "committed."
 
 Only **three** stages below run as separate fresh agents (test-writer,
-implementer, reviewer) — spec-writing stays with you (the orchestrator,
+implementer, reviewer; a fixer in Stage 4a and a process-edit reader in
+Stage 6 are single-purpose extras that run only when needed) — spec-writing stays with you (the orchestrator,
 collaborating with the user) and documentation stays with the implementer.
 Neither of those needs blind independence: a spec is validated by the
 user's own approval, not by another agent's guess at what the user wants,
@@ -41,7 +42,7 @@ one-line bug fix, a config change), say so and just do it directly —
 this pipeline is for real features, not everything. Otherwise, continue.
 
 Track your progress through the stages below explicitly in your replies
-("Stage 2 of 5: writing tests") so the user can see where things stand
+("Stage 2 of 6: writing tests") so the user can see where things stand
 without reading tool output.
 
 ## Stage 1 — Spec
@@ -136,7 +137,26 @@ npm run verify
 
 A changed test file here is the one rule this whole pipeline exists to
 catch — if it's non-empty, stop immediately and surface it to the user
-rather than deciding yourself whether the edit was reasonable.
+rather than deciding yourself whether the edit was reasonable. That is a
+different case from the implementer _reporting_ that a test looks wrong: don't
+fix the test yourself either. Send the failure to a fresh test-writer (Stage
+2's instruction, plus the failure) and re-run this gate.
+
+Two more things to do here, both because the implementer's report is the
+only place they'd otherwise surface:
+
+- **Keep the spec truthful.** If the implementer's report shows it did
+  something other than the spec says (a different mechanism, a changed
+  signature, a behavior the tests forced), add an `## As built` section to
+  the spec file listing each deviation and why. Leave the original text as it
+  was; the spec is a record of what was decided, and a reader should see both
+  what was planned and what shipped.
+- **See any new guard fail.** If the change adds a check that exists to catch
+  a regression (a script under `scripts/`, a CI step, a size or bundle
+  assertion), a passing run proves nothing about it. Copy the repo outside
+  the working tree (`git worktree add` or `cp -R` into the scratchpad), plant
+  the regression the guard claims to catch there, and confirm it exits
+  non-zero. A guard that only ever passed hasn't been tested.
 
 ## Stage 4 — Adversarial review (code + UI)
 
@@ -161,7 +181,16 @@ Instruction, close to verbatim:
 > user-facing UI surface, also start the dev server and actually drive it
 > in a browser — click through the real flow, not just the happy path,
 > check both themes and a mobile-width viewport, check the console for
-> errors, and hold it to docs/DESIGN.md's accessibility checklist. If this
+> errors, and hold it to docs/DESIGN.md's accessibility checklist. Resizing
+> the browser window may not change the page's viewport, so confirm
+> `innerWidth` after resizing, or load the page in a 375px-wide same-origin
+> iframe and compare `document.documentElement.scrollWidth` to it. Check the
+> page with the widest content (tables, long code lines) for each kind of
+> page the change renders, not only the page the diff names, since a change
+> to a shared wrapper affects all of them. If the change adds a check or guard
+> script, try at least one other way of regressing what it guards that it
+> might miss, in a copy of the repo outside the working tree. For every
+> finding, say whether this diff introduced it or it was already there. If this
 > change adds or edits topic content (a file under `src/content/` or
 > `src/system-design/`), also
 > hold the prose itself to CLAUDE.md's Writing Standard section — terms
@@ -176,7 +205,7 @@ Instruction, close to verbatim:
 > incorrectly. The implementer was already asked to update docs as part
 > of Stage 3; verify that independently rather than trusting it was done
 > correctly, the same way you verify the code itself. Do not write or
-> edit any code — review only. Report findings ranked by severity, or say
+> edit any code in the working tree — review only. Report findings ranked by severity, or say
 > explicitly that you found nothing worth flagging.
 
 UI verification lives here rather than as its own stage: it exists for
@@ -187,7 +216,11 @@ being separate from Stage 3.
 
 - No findings, or only cosmetic/low-severity ones the user would clearly
   wave through → go to Stage 5.
-- Real (CONFIRMED or credible PLAUSIBLE) findings → **Stage 4a**.
+- Real (CONFIRMED or credible PLAUSIBLE) findings the diff introduced →
+  **Stage 4a**.
+- Real findings that were already there before this diff skip 4a (fixing them
+  isn't this change's job, and re-review would keep flagging them until the
+  cap tripped): they go on the Stage 5 list.
 
 ### Stage 4a — Capped fix loop
 
@@ -212,6 +245,66 @@ npm run verify
 ```
 
 Summarize for the user: what changed, a link to the spec file, the review
-outcome, and confirmation everything above is green. Ask explicitly before
-committing or pushing — this pipeline's job is to leave the working tree
-ready, not to ship it without a final human yes.
+outcome, and confirmation everything above is green. List separately any
+finding the review made that this change did not cause (a bug that was
+already there): it is not a regression and not part of this diff, so it goes
+to the user as its own item to fix now, file, or drop, rather than being
+absorbed silently or left only in your summary. Then add the Stage 6 result.
+Ask explicitly before committing or pushing — this pipeline's job is to leave
+the working tree ready, not to ship it without a final human yes.
+
+## Stage 6 — Retrospective
+
+Part of the same handoff message, done by you (the point is to write down
+what the run itself showed, not to re-review the code). Look back over this
+run for friction that actually happened: a gate or agent output that was wrong
+or misleading, something that had to be redone, or a doc that turned out false.
+The evidence is the
+three agents' reports (a spec error the test-writer caught, a deviation the
+implementer reported, findings the reviewer made), any gate that failed, and
+any tool that behaved unexpectedly. Don't invent friction, and don't add a
+rule to justify the stage: a run with none reports "nothing to change" and
+stops.
+
+For each real issue, fix it at the strongest level that fits:
+
+1. **A mechanical check** (a script, a test, a CI step). It doesn't depend on
+   anyone reading a doc, so it is the preferred fix (`check:bundle`'s
+   static-import check came from a review finding). A new check still gets
+   Stage 3's planted-regression test.
+2. **A correction to the doc or skill that already covers the area**, edited
+   in place. Add a new section only when nothing existing fits.
+3. **A new sentence of guidance**, only when neither of the above applies.
+
+A real issue is not skipped because it's small or awkward to fix. A bug found
+but not caused by this change belongs in the Stage 5 list, not here, and a
+problem in a topic under `src/content/` is fixed in this diff (Stage 4a) or
+listed there; neither is a retro edit.
+
+Also check [docs/DEFERRED_PRACTICES.md](../../../docs/DEFERRED_PRACTICES.md):
+if a practice's revisit condition became true during this run, propose
+adopting it to the user (a large one, like Playwright, is its own `/feature`)
+and update or remove its entry. That file holds practices considered and
+deliberately not adopted yet, each with a revisit trigger; a lesson or a fix
+does not go there (see its "Adding an entry").
+
+If the proposed edits touch a process file (a `SKILL.md`, `CLAUDE.md`, a doc
+under `docs/` other than a spec, anything under `evals/`, or `.claude/hooks/`),
+have **one fresh** `general-purpose` agent (never `fork`) read them before you
+show the user: you wrote them, so you are the worst-positioned reader of them.
+Give it the diff, the friction evidence for each edit (not your reasoning) and
+the paths of the files the edits sit in, and tell it to review only, not edit.
+Ask it to be skeptical and to answer: does any edit contradict text that
+already exists (counts and stage numbers included); could a hurried reader who
+has never seen this repo apply it differently than intended; is each edit
+earned by its evidence, or a rule added to look thorough; would a mechanical
+check make the prose unnecessary. Have it also pick two or three realistic
+runs and dry-run the new text against them, saying where the text gave no
+clear answer. One pass, no loop: fix each finding you can't refute in a
+sentence and report the rest. A run whose edits touch no process file skips
+this.
+
+Show the user what you found and the edits you propose, along with any review
+findings you didn't act on. Once they approve, commit the retro edits
+separately from the feature, then run whichever eval `evals/README.md`'s table
+names for what you changed.
