@@ -113,7 +113,7 @@ summary, not the scenario), or a new symptom worth turning into a scenario.
 
 ## When the question set changes
 
-The Expected answers are tied to the six seed questions. When the set
+The Expected answers are tied to the current questions. When the set
 changes:
 
 1. **Re-derive, don't patch.** For each scenario, re-read the current

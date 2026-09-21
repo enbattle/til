@@ -7,7 +7,8 @@ date: 2026-09-15
 **Backpressure** is a mechanism for a slower consumer to signal a faster
 producer to slow down, rather than letting the work it can't keep up
 with pile up without limit. Without it, a producer that's faster than
-its consumer just keeps handing off work — into a queue, a buffer, a
+its consumer just keeps handing off work — into a
+[queue](/systems-and-infrastructure/message-queues), a buffer, a
 socket — that grows unboundedly until something breaks: memory runs
 out, or the whole system slows to a crawl trying to manage a backlog
 that never stops growing.

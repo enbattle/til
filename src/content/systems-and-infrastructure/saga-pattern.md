@@ -44,7 +44,9 @@ Two ways to actually run the sequence of steps and compensations:
 - **Orchestration** — a central coordinator explicitly calls each step
   in order and decides what to do if one fails. Easier to follow and
   test, since the whole flow lives in one place, at the cost of adding a
-  new central component everything depends on.
+  new central component everything depends on. A
+  [workflow engine](/systems-and-infrastructure/workflow-engines) is
+  infrastructure built to run exactly this kind of coordinator.
 - **Choreography** — each service reacts to an event from the previous
   step and emits its own event when it's done, with no central
   coordinator at all. There's no single point of control, but the

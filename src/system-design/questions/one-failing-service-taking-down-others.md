@@ -1,6 +1,6 @@
 ---
 title: How do I stop one failing service from taking everything else down?
-summary: The defenses for a failing dependency, from timeouts and safe retries to circuit breakers, and which ones sit on the caller's side versus the receiver's.
+summary: The defenses for a failing dependency or a hung instance, from timeouts and safe retries to circuit breakers and automatic restarts, and which ones sit on the caller's side versus the receiver's.
 date: 2026-09-20
 order: 4
 ---
@@ -55,7 +55,14 @@ and systems that need one usually want both.
 
 ## If you own the failing service
 
-The rest matter when you're on the receiving end.
+These matter when you run the service that's failing. A
+[self-healing](/systems-and-infrastructure/self-healing-systems) setup checks
+each instance's health and restarts, replaces or routes around the ones that
+fail, so the boring failures don't need a person. It costs a class of failures
+of its own, crash loops and restarts that cascade from a health check that tests
+too much, and it can hide a real bug behind constant restarts, so count the
+restarts and alert on the rate.
+
 [Rate limiting](/systems-and-infrastructure/rate-limiting) caps how many
 requests each client can make in a window, so no one caller can use up shared
 capacity. To hold across many servers, the counter has to be shared between
@@ -78,11 +85,11 @@ to be idempotent.
 ## How they combine
 
 On the caller's side the pieces are a timeout, safe retries with backoff and
-jitter, and a breaker. On the receiver's side they're rate limiting and
-backpressure, plus a dead letter queue for queued work. Rate limiting protects
-the opposite side of a call from what a breaker protects, so a service that both
-calls others and is called wants both. After an outage, clients reconnecting all
-at once have their own name and their own fixes, in the
+jitter, and a breaker. On the receiver's side they're self-healing instances,
+rate limiting and backpressure, plus a dead letter queue for queued work. Rate
+limiting protects the opposite side of a call from what a breaker protects, so a
+service that both calls others and is called wants both. After an outage,
+clients reconnecting all at once have their own name and their own fixes, in the
 [thundering herd problem](/systems-and-infrastructure/thundering-herd-problem).
 
 ## When it isn't this problem

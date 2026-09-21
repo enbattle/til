@@ -46,13 +46,14 @@ throughput shortfall tends to show up as queues and a saturated component.
 Once the metrics and traces have narrowed it down, the symptom usually points
 at one of these:
 
-| What you're seeing                                                    | Go to                                                                                                                                        |
-| --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Queries are slow, or the database is busy with read traffic           | [What do I do when my database can't keep up with reads?](/system-design/database-cant-keep-up-with-reads)                                   |
-| Requests hang or fail while the database looks idle                   | [What do I do when my database can't keep up with reads?](/system-design/database-cant-keep-up-with-reads) (see the connection-pool section) |
-| Writes are slow or the database is out of capacity for them           | [What do I do when one database can't keep up with writes?](/system-design/database-cant-keep-up-with-writes)                                |
-| One dependency is failing and the trouble is spreading to its callers | [How do I stop one failing service from taking everything else down?](/system-design/one-failing-service-taking-down-others)                 |
-| Duplicate, missing or conflicting data                                | [How do I keep data correct when many users or services change it at once?](/system-design/keeping-data-correct-under-concurrency)           |
+| What you're seeing                                                     | Go to                                                                                                                                                       |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Queries are slow, or the database is busy with read traffic            | [What do I do when my database can't keep up with reads?](/system-design/database-cant-keep-up-with-reads)                                                  |
+| Requests hang or fail while the database looks idle                    | [What do I do when my database can't keep up with reads?](/system-design/database-cant-keep-up-with-reads) (see the connection-pool section)                |
+| Writes are slow or the database is out of capacity for them            | [What do I do when one database can't keep up with writes?](/system-design/database-cant-keep-up-with-writes)                                               |
+| One dependency is failing and the trouble is spreading to its callers  | [How do I stop one failing service from taking everything else down?](/system-design/one-failing-service-taking-down-others)                                |
+| One of my own servers hangs or crashes and has to be restarted by hand | [How do I stop one failing service from taking everything else down?](/system-design/one-failing-service-taking-down-others) (see the self-healing section) |
+| Duplicate, missing or conflicting data                                 | [How do I keep data correct when many users or services change it at once?](/system-design/keeping-data-correct-under-concurrency)                          |
 
 ## When it isn't this problem
 

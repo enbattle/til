@@ -28,13 +28,14 @@
     "check:colors": "node scripts/check-hex-colors.mjs",
     "check:tokens": "node scripts/check-design-tokens.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
-    "check:npm-refs": "node scripts/check-npm-script-refs.mjs"
+    "check:npm-refs": "node scripts/check-npm-script-refs.mjs",
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run test:run && npm run build && npm run size"
   },
   "size-limit": [
     {
       "name": "Main chunk (app shell + search index over all topic and question text)",
       "path": "dist/assets/index-*.js",
-      "limit": "168 KB"
+      "limit": "183 KB"
     },
     {
       "name": "MarkdownRenderer chunk (markdown + syntax highlighting, shared by TopicPage and QuestionPage)",

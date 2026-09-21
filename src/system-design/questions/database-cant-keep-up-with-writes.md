@@ -34,20 +34,16 @@ buys headroom without changing the design, up to what one machine can do.
 
 ## Batch and defer
 
-Two techniques from
-[Scaling Reads vs. Scaling Writes](/systems-and-infrastructure/scaling-reads-vs-scaling-writes)
-change how writes reach the database. Batching combines many small writes into
-fewer large ones, so a fixed cost like a transaction commit (the step that
-makes a transaction's changes permanent) is paid once for many rows.
-Asynchronous writes acknowledge a write as soon as it's safely stored in a
-queue and apply it to the database a little later, which smooths out bursts.
-The database still has to keep up on average, though. If writes arrive faster
-than they're applied, the queue grows without limit, which is the situation
-[backpressure](/systems-and-infrastructure/backpressure) exists for.
-
-Both give something up. A batch makes its earliest item wait (the trade-off in
-[Latency vs. Throughput](/systems-and-infrastructure/latency-vs-throughput)),
-and a deferred write means readers can briefly see the old value.
+[Batching and asynchronous writes](/systems-and-infrastructure/batching-and-asynchronous-writes)
+raise write throughput without changing how data is stored. Batching combines
+many small writes so a fixed cost like a transaction commit is paid once for
+many rows. Asynchronous writes acknowledge a write once it's safely queued and
+apply it a little later, which smooths out bursts. Both give something up: a
+batch makes its earliest item wait (the trade-off in
+[Latency vs. Throughput](/systems-and-infrastructure/latency-vs-throughput)), a
+deferred write means readers can briefly see the old value, and a queue that
+fills faster than it drains needs
+[backpressure](/systems-and-infrastructure/backpressure).
 
 ## Partition if the problem is query speed or maintenance
 

@@ -4,7 +4,8 @@ summary: A separate holding queue for messages that have failed processing enoug
 date: 2026-09-15
 ---
 
-A message queue's normal answer to a failed message is to retry it. A
+A [message queue](/systems-and-infrastructure/message-queues)'s normal
+answer to a failed message is to retry it. A
 **dead letter queue (DLQ)** is where a message goes instead, once it's
 failed enough times that retrying it again is clearly not going to help
 — a separate holding area for messages that need a human, or a fix,

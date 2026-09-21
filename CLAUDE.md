@@ -219,6 +219,9 @@ its actual reasoning and a concrete revisit condition, lives in
 
 ## Verifying a change
 
+`npm run verify` runs the whole chain below in CI's order, and is what the
+skills tell a session to run. The individual commands, if you need one:
+
 ```bash
 npm run typecheck && npm run lint && npm run format:check
 npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs
@@ -237,19 +240,18 @@ question are each findable by title and by a body phrase.
 `package.json`'s `size-limit` field — a change that pulls in a heavy new
 dependency should fail this rather than silently regressing page-load
 size. If a change legitimately needs more room, raise the specific
-chunk's limit deliberately rather than letting it drift unnoticed. The main
-chunk's limit was raised from 155 KB to 164 KB (151.22 KB before, 159.35 KB
-after, brotlied) when System Design landed: search indexes topics and
-questions together client-side, so the question bodies now ship in the main
-chunk. It was raised again from 164 KB to 168 KB (160.57 KB before, 164.11 KB
-after) when every systems topic gained its closing "Where you'll meet this"
-section, about 2,500 more words of searchable text. That growth is
-structural, not incidental: every topic and question adds to the main chunk,
-because the content loader and the search index carry full bodies eagerly.
-The fix is to load bodies and build the search index on demand, but that
-changes the `Topic.body` contract that components and tests rely on, so it is
-deferred, not overlooked. Revisit it when the main chunk would pass about
-200 KB brotlied, or when the limit has to be raised a third time for content
-alone. The markdown chunk's entry now points at `MarkdownRenderer-*.js`
+chunk's limit deliberately rather than letting it drift unnoticed. The limits
+live in `package.json`, and the commit history records each raise with its
+measured numbers. The main chunk's limit has been raised three times, every
+time for content: search indexes topics and questions together client-side, and
+the content loader carries full bodies eagerly, so every topic and question adds
+to the main chunk (the latest raise, 168 KB to 183 KB, came with about 9,000
+words of new topics). That growth is structural, not incidental. The fix is to
+load bodies and build the search index on demand, but it changes the
+`Topic.body` contract that components and tests rely on, so it hasn't been done.
+Its revisit condition, the main chunk passing about 200 KB brotlied or a third
+content-only raise, has been met: treat the lazy-loading change as due, and
+schedule it before adding content at this scale again. A fourth raise is not the
+answer. The markdown chunk's entry now points at `MarkdownRenderer-*.js`
 because `TopicPage` and `QuestionPage` share it (it was `TopicPage-*.js`
 while only `TopicPage` used it; that file is now a few hundred bytes).

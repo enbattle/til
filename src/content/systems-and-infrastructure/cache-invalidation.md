@@ -4,13 +4,14 @@ summary: Storing a value in a cache is easy — the strategies for keeping it fr
 date: 2026-09-14
 ---
 
-A **cache** is a copy of data kept somewhere faster to read from than
-its original source, so a system doesn't have to redo expensive work
-(hit a slow database, recompute a result) every single time the same
-data is needed again. **Cache invalidation** is the set of techniques for
-making sure that copy gets updated or thrown away once the real,
-underlying data changes — without it, a cache just serves an
-increasingly wrong answer, quickly and confidently.
+A [**cache**](/systems-and-infrastructure/caching) is a copy of data kept
+somewhere faster to read from than its original source, so a system
+doesn't have to redo expensive work (hit a slow database, recompute a
+result) every single time the same data is needed again. **Cache
+invalidation** is the set of techniques for making sure that copy gets
+updated or thrown away once the real, underlying data changes — without
+it, a cache just serves an increasingly wrong answer, quickly and
+confidently.
 
 There's a well-known line about why this is harder than it sounds: "there
 are only two hard things in computer science: cache invalidation and

@@ -10,8 +10,8 @@ design, and one is a control whose right answer is "no question covers
 this").
 
 The expected question and topics were taken from the question pages in
-`src/system-design/questions/` and the topics they link, as of the six
-seed questions. **Re-check them when the question set changes** — see
+`src/system-design/questions/` and the topics they link, as of the current
+questions. **Re-check them when the question set changes** — see
 "When the question set changes" in `HOW_TO_RUN.md`. Every **Topics**
 entry below is a `systems-and-infrastructure` topic that question links
 to (its "Go deeper" list is generated from those links), so a scenario
@@ -28,6 +28,8 @@ The question slugs used below are the filenames under
 | `one-failing-service-taking-down-others` | 4     |
 | `keeping-data-correct-under-concurrency` | 5     |
 | `structuring-services-and-storage`       | 6     |
+| `pushing-live-updates-to-users`          | 7     |
+| `running-work-that-takes-too-long`       | 8     |
 
 ---
 
@@ -121,8 +123,8 @@ database.
 **Topics:** `partitioning-vs-sharding` (and it should note that plain
 partitioning adds no write capacity on one server, sharding does),
 `consistent-hashing` when discussing spreading data across machines;
-`backpressure` and `scaling-reads-vs-scaling-writes` are also linked and
-acceptable
+`backpressure`, `scaling-reads-vs-scaling-writes` and
+`batching-and-asynchronous-writes` are also linked and acceptable
 **Why:** Insert-heavy load with the primary out of CPU and disk is the
 write-volume case, and "replicas didn't help" is the tell that the
 problem isn't reads.
@@ -324,3 +326,112 @@ expected to cover.
 **Fails if:** it opens any question, most likely
 `structuring-services-and-storage` on the strength of "should we pick X or
 Y," and presents it as an answer.
+
+---
+
+### SDN-16 — server-initiated updates
+
+> The operators of our admin dashboard have to refresh the page to see new
+> orders. We want new orders to appear within a second or two of being
+> placed, without hammering the server with requests every few seconds.
+
+**Expected question:** `pushing-live-updates-to-users`
+**Topics:** `websockets-vs-sse-vs-long-polling`; `backpressure`,
+`thundering-herd-problem` and `exponential-backoff` are also linked and
+acceptable
+**Why:** The server has to tell the client something without being asked,
+which is the whole of question 7, and "without hammering the server" is the
+cost of the polling alternative the page starts from.
+**Fails if:** it routes to `database-cant-keep-up-with-reads` on the strength
+of "hammering the server", or recommends polling faster.
+
+---
+
+### SDN-17 — a request that outlives its timeout
+
+> When a user clicks "Export report" our server spends about 90 seconds
+> building it, so the request times out at 30 seconds and the user sees an
+> error.
+
+**Expected question:** `running-work-that-takes-too-long`
+**Topics:** `message-queues`, `worker-pools`; `idempotency` and
+`dead-letter-queue` are also linked and acceptable
+**Why:** The work itself is long, so it has to leave the request, which is
+what question 8 covers; the page starts by asking whether the user has to
+wait.
+**Fails if:** it routes to `figuring-out-whats-wrong` and stops there (the
+cause is already known), to `database-cant-keep-up-with-reads` (nothing says
+the database is slow), or answers only with "raise the timeout".
+
+---
+
+### SDN-18 — where to put a cache
+
+> Our product pages are read-heavy and identical for every visitor. We know
+> we should cache them, but where should the cache live, and how do we tell
+> whether it is big enough?
+
+**Expected question:** `database-cant-keep-up-with-reads`
+**Topics:** `caching`; `cache-invalidation` is also linked and acceptable
+**Why:** Serving repeated reads from a copy is a section of question 2, and
+placement, hit rate and sizing are what the `caching` topic covers.
+**Fails if:** it routes to `structuring-services-and-storage` (a "where
+should it live" question can superficially look architectural), or names
+only `cache-invalidation`, which is about keeping a cache correct, not
+placing or sizing one.
+
+---
+
+### SDN-19 — stale reads after adding replicas
+
+> We added read replicas to take load off the primary. Now some users save
+> their profile, reload the page, and see their old details for a few
+> seconds.
+
+**Expected question:** `database-cant-keep-up-with-reads`
+**Topics:** `read-replicas`; `cache-invalidation` is also linked and
+acceptable
+**Why:** The staleness is replication lag from a read-scaling technique
+that question 2 covers, and its "when it isn't this problem" section says a
+stale replica belongs there.
+**Fails if:** it routes to `keeping-data-correct-under-concurrency` and
+recommends locking, which addresses concurrent writers, not lagging copies.
+
+---
+
+### SDN-20 — restarting a hung server by hand (ambiguous by design)
+
+> One of our servers hangs about once a week, and someone has to notice and
+> restart it by hand, usually at night. We'd like that to happen on its own.
+
+**Expected question:** `one-failing-service-taking-down-others`, or
+`figuring-out-whats-wrong` first if the reasoning then follows the pages on
+to the failing-service question. Both acceptable.
+**Topics:** `self-healing-systems`
+**Why:** Automatic detection and replacement of a broken instance is the
+"replace broken instances automatically" section of question 4, but that
+question's summary talks about a failing dependency, not one's own hung
+server, so the route isn't obvious from the landing page alone. Grade the
+reasoning, and whether it ends at the self-healing topic.
+**Fails if:** it routes to `structuring-services-and-storage`,
+`database-cant-keep-up-with-writes`, or any question and then proposes only
+"add monitoring and alerting" without automatic recovery.
+
+---
+
+### SDN-21 — a copy shaped for one page
+
+> Our order history page has to join six tables and is slow, but the tables
+> themselves are fine for placing orders. We're considering keeping a
+> separate copy of the data shaped for that page.
+
+**Expected question:** `database-cant-keep-up-with-reads`
+**Topics:** `cqrs`; `database-indexing`, `n-plus-one-queries` and
+`read-replicas` are also linked and acceptable (the cheaper options the page
+lists before it)
+**Why:** A read model shaped for a page is the heavier option question 2
+ends its copies section with, and the page says most systems try the cheaper
+fixes first.
+**Fails if:** it routes to `structuring-services-and-storage` because
+"keeping a separate copy of the data" sounds like an architecture choice, or
+goes straight to `cqrs` with no mention that cheaper fixes exist.

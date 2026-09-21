@@ -16,12 +16,15 @@ served from a **copy** of the data instead of the one authoritative
 source:
 
 - **Caching** — serve hot data from memory instead of hitting the
-  database at all; see [Cache Invalidation](/systems-and-infrastructure/cache-invalidation)
+  database at all; see [Caching](/systems-and-infrastructure/caching) for
+  where caches sit and how they're sized, and
+  [Cache Invalidation](/systems-and-infrastructure/cache-invalidation)
   for the correctness side of keeping that copy from going stale.
 - **Read replicas** — one or more read-only copies of the database, kept
   in sync (usually asynchronously) with the primary. Reads scale by
   adding more replicas; every write still has to go through the single
-  primary.
+  primary. See [Read Replicas and Replication Lag](/systems-and-infrastructure/read-replicas)
+  for the lag that comes with them.
 - **A CDN** — for content that's identical for every user, push it to
   edge servers physically close to the reader instead of serving it from
   one origin every time.
@@ -42,7 +45,8 @@ actually store the new data:
 - **Write-behind / asynchronous processing** — acknowledge a write once
   it's durably queued (a message broker, a write-ahead log), and apply
   it to the actual store slightly later, trading immediate consistency
-  for higher write throughput.
+  for higher write throughput; see
+  [Batching and Asynchronous Writes](/systems-and-infrastructure/batching-and-asynchronous-writes).
 - **Batching** — combine many small writes into fewer, larger ones,
   amortizing per-write overhead like a transaction commit or a network
   round trip — the same [Latency vs. Throughput](/systems-and-infrastructure/latency-vs-throughput)

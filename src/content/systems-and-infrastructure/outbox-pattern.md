@@ -6,8 +6,9 @@ date: 2026-09-15
 
 The **outbox pattern** reliably publishes an event as part of a database
 change, by writing the event to an "outbox" table in the _same_
-transaction as the business data, then relaying it to a real message
-broker as a separate step afterward.
+transaction as the business data, then relaying it to a real
+[message broker](/systems-and-infrastructure/message-queues) as a separate
+step afterward.
 
 ## The dual-write problem this solves
 

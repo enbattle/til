@@ -59,17 +59,25 @@ instances, since they all count against what the database can hold open. See
 ## Serve repeated reads from a copy
 
 Copies make sense once the queries themselves are sensible, and they differ in
-what they suit. A cache keeps hot results in memory and suits data many
-requests ask for repeatedly. Read replicas are read-only copies of the
-database, and suit a workload of many different queries, since any of them can
-run against a replica. A replica is usually updated asynchronously, meaning
-after the write has already returned, so it can lag the primary (the main copy,
-which every write still goes through). A content
-delivery network (CDN) serves content that's identical for every user from
-servers near the reader, and does nothing for personalized queries that reach
-your database. All three are covered in
-[Scaling Reads vs. Scaling Writes](/systems-and-infrastructure/scaling-reads-vs-scaling-writes).
-What they share is that a copy can be slightly stale.
+what they suit. A [cache](/systems-and-infrastructure/caching) keeps hot
+results in memory and suits data many requests ask for repeatedly; how much it
+helps depends on where it sits and how often lookups find what they want.
+[Read replicas](/systems-and-infrastructure/read-replicas) are read-only copies
+of the database, and suit a workload of many different queries, since any of
+them can run against a replica. A replica is updated after the write has
+already returned, so it can lag the primary (the main copy, which takes every
+write). A content delivery network (CDN) serves content that's
+identical for every user from servers near the reader, and does nothing for
+personalized queries that reach your database.
+[Scaling Reads vs. Scaling Writes](/systems-and-infrastructure/scaling-reads-vs-scaling-writes)
+compares the read and write sides as a whole. What all the copies share is that
+one can be slightly stale.
+
+If the shape the reads need differs from the shape the data is stored in, say
+an order history that would join five tables on every page view, a separate
+read model built for those queries is the heavier option, and it's what
+[CQRS](/systems-and-infrastructure/cqrs) describes. It adds a second copy of the data, shaped for those queries,
+and a lag between the two, so most systems try replicas first.
 
 A cache brings two problems of its own. Keeping it correct is the subject of
 [cache invalidation](/systems-and-infrastructure/cache-invalidation), where

@@ -96,8 +96,8 @@ describe('QUESTIONS and getQuestion (criterion 2)', () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
 
-  it('holds the six seed questions from the spec, in the specified order', () => {
-    expect(QUESTIONS.map((q) => [q.order, q.slug, q.title])).toEqual([
+  it('holds the six seed questions from the spec as the first six, in the specified order', () => {
+    expect(QUESTIONS.slice(0, 6).map((q) => [q.order, q.slug, q.title])).toEqual([
       [1, 'figuring-out-whats-wrong', "How do I figure out what's wrong with my system?"],
       [
         2,

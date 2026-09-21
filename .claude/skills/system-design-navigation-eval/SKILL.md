@@ -21,7 +21,7 @@ before running this the first time.
 ## Stage 0 — Scope the run
 
 Default when asked to "run the eval" with no qualifier, or after adding,
-renaming or reordering questions: every scenario (`SDN-01`..`SDN-15`).
+renaming or reordering questions: every scenario (`SDN-01`..`SDN-21`).
 
 Run only the scenarios plausibly affected when the trigger is narrower,
 e.g. one question's summary was reworded, so only the scenarios whose
