@@ -112,7 +112,7 @@ are defined) or `src/content/` (published prose, not app code).
 | `bg-tertiary`    | `#ece2d3` | `#342c22` |
 | `text-primary`   | `#2b2420` | `#f2e9dc` |
 | `text-secondary` | `#5c5147` | `#c9bba6` |
-| `text-tertiary`  | `#857a6d` | `#9c8f7a` |
+| `text-tertiary`  | `#6e6356` | `#a39683` |
 | `border`         | `#ddd1bf` | `#3d3428` |
 | `accent`         | `#92400e` | `#f0a83c` |
 | `accent-hover`   | `#7c3609` | `#f7bb5c` |
@@ -125,12 +125,18 @@ tokens rather than a new one added ad hoc.
 
 ## Accessibility checklist
 
-- **Contrast**: `text-primary`, `text-secondary`, and `accent` (used for
-  body text and links) are each checked against `bg-primary` in both
-  themes and clear WCAG AA for normal text (4.5:1) — `accent` in
-  particular was deliberately darkened in light mode (`#92400e` rather
-  than a brighter, lower-contrast orange) specifically to hold that bar
-  for link text, not just for large UI elements.
+- **Contrast**: every text token (`text-primary`, `text-secondary`,
+  `text-tertiary`, `accent`, `accent-hover`) clears WCAG AA for normal text
+  (4.5:1) against every surface token (`bg-primary`, `bg-secondary`,
+  `bg-tertiary`) in both themes, and `npm run check:contrast`
+  (`scripts/check-contrast.mjs`, wired into CI) fails if a palette change
+  breaks that. `accent` was deliberately darkened in light mode (`#92400e`
+  rather than a brighter, lower-contrast orange) to hold the bar for link
+  text, and `text-tertiary` was adjusted in both themes (darkened in light mode, `#857a6d`
+  -> `#6e6356`, where it was below AA on every surface; lightened in dark mode,
+  `#9c8f7a` -> `#a39683`, where it was below AA on the reserved `bg-tertiary`
+  surface). It remains the lowest-contrast of the three text tones in both
+  themes, so the hierarchy holds.
 - **Focus states**: every interactive element gets a visible focus ring
   (`:focus-visible` in `src/index.css`) — never `outline: none` without a
   replacement.

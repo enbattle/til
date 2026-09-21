@@ -31,6 +31,7 @@ jobs:
       - run: npm run lint
       - run: npm run check:colors
       - run: npm run check:tokens
+      - run: npm run check:contrast
       - run: npm run check:npm-refs
       - run: npm run typecheck
       - run: npm run test:run

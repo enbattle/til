@@ -56,6 +56,7 @@ npm run test:run          # Vitest, run once (CI mode)
 npm run size              # Check built JS chunks against size-limit budgets
 npm run check:colors      # Fail if a component references a raw hex color instead of a design token
 npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src/index.css
+npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
 npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
 ```
 

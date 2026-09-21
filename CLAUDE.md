@@ -203,7 +203,7 @@ its actual reasoning and a concrete revisit condition, lives in
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
-npm run check:colors && npm run check:tokens && npm run check:npm-refs
+npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs
 npm run test:run
 npm run build
 npm run size

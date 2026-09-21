@@ -119,7 +119,7 @@ Instruction, close to verbatim:
 > adds or changes a convention future work should follow — most changes
 > won't need every file touched, update only what actually changed.
 > Run `npm run typecheck`, `npm run lint`, `npm run check:colors`,
-> `npm run check:tokens`, `npm run check:npm-refs`, and `npm run test:run`
+> `npm run check:tokens`, `npm run check:contrast`, `npm run check:npm-refs`, and `npm run test:run`
 > yourself before reporting done.
 
 Docs stay with this agent rather than a separate one: whoever built the
@@ -131,7 +131,7 @@ check.
 
 ```bash
 git diff --stat -- '*.test.*'   # MUST be empty — a non-empty result is a hard stop
-npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:npm-refs && npm run test:run && npm run build
+npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run test:run && npm run build
 ```
 
 A changed test file here is the one rule this whole pipeline exists to
@@ -208,7 +208,7 @@ unbounded loop.
 Re-run the full verification suite one last time on the final diff:
 
 ```bash
-npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:npm-refs && npm run test:run && npm run build
+npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run test:run && npm run build
 ```
 
 Summarize for the user: what changed, a link to the spec file, the review

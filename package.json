@@ -27,6 +27,7 @@
     "size": "size-limit",
     "check:colors": "node scripts/check-hex-colors.mjs",
     "check:tokens": "node scripts/check-design-tokens.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
     "check:npm-refs": "node scripts/check-npm-script-refs.mjs"
   },
   "size-limit": [
