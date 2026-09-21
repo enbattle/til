@@ -75,6 +75,14 @@ Drift here is invisible until someone actually checks, so the point of
 running it isn't ceremony — it's catching the case where a documentation
 edit that read fine on its own quietly made the routing rule worse.
 
+Which eval to run depends on what changed:
+
+| You changed                                                                                                                   | Run                             |
+| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`            |
+| The Writing Standard, or `add-topic`'s Stage 3 review prompt                                                                  | `content-review-eval`           |
+| A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval` |
+
 ## Grading philosophy
 
 Not every scenario has exactly one right answer — `evals/skill-routing/scenarios.md`

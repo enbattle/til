@@ -39,7 +39,8 @@ npm install
 npm run dev
 ```
 
-Then open the printed `localhost` URL.
+Then open the printed `localhost` URL. Node 22.12 or newer is required (see
+`engines` in `package.json`).
 
 ## Commands
 
@@ -58,6 +59,7 @@ npm run check:colors      # Fail if a component references a raw hex color inste
 npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src/index.css
 npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
 npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
+npm run verify            # The whole chain: typecheck, lint, format, every check, tests, build, size
 ```
 
 ## Adding content

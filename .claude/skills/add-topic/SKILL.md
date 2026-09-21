@@ -41,27 +41,23 @@ and "Writing standard" sections exactly:
   reader with zero prior background on the subject can actually follow it.
 
 - **If the section is `systems-and-infrastructure`, place the topic under a
-  System Design question too.** Add a normal `[text](/systems-and-infrastructure/<slug>)`
-  link to it in the body of the question in `src/system-design/questions/`
-  whose problem it helps solve, following CLAUDE.md's "System Design
-  questions" body convention: state what the option buys, what it costs and
-  when to pick it there, then link, and don't re-explain the topic's
-  mechanism in the question. If no existing question fits, add a new question
-  file with the next free `order` instead. `system-design.test.ts`'s
-  coverage check fails the topic until this is done. Write the link as a
-  plain `[text](/systems-and-infrastructure/<slug>)` in running prose: a link
-  with a single-quoted or parenthesised title, a trailing slash, a `<...>`
-  destination or the reference style isn't counted (a double-quoted title is
-  fine), and an example link inside inline code or an indented block is.
-  Topics in other sections need no question.
+  System Design question too.** Add a plain
+  `[text](/systems-and-infrastructure/<slug>)` link to it, in running prose, in
+  the body of the question in `src/system-design/questions/` whose problem it
+  helps solve, following CLAUDE.md's "System Design questions" body convention:
+  state what the option buys, what it costs and when to pick it there, then
+  link, and don't re-explain the topic's mechanism in the question. CLAUDE.md's
+  "Links are the data" bullet lists the link forms that aren't counted. If no
+  existing question fits, add a new question file with the next free `order`
+  instead. `system-design.test.ts`'s coverage check fails the topic until this
+  is done. Afterward run `system-design-navigation-eval` (the scenarios that
+  touch that question, or the whole set if you added one) to check a reader
+  would actually land there. Topics in other sections need no question.
 - **If the section is `systems-and-infrastructure`, end the topic with a
-  `## Where you'll meet this` section** (exact heading, the last `##`, at
-  least 25 words; `src/content/where-youll-meet-this.test.ts` fails without
-  it). Name the two or three kinds of systems where the topic matters, from
-  CLAUDE.md's reference set (payments and checkout, a news feed or timeline,
-  chat and messaging, a URL shortener, a notification or email pipeline), and
-  say what the topic does there without re-teaching it. General claims only:
-  never how a specific company builds something.
+  `## Where you'll meet this` section.** CLAUDE.md has the convention, the
+  reference systems and the rules; `src/content/where-youll-meet-this.test.ts`
+  fails without it. General claims only: never how a specific company builds
+  something.
 
 If anything about scope or angle is genuinely ambiguous (which section it
 belongs in, which question it goes under, how deep to go), ask the user — don't guess on something only
@@ -70,8 +66,7 @@ they'd know.
 ## Stage 2 — Self-check
 
 ```bash
-npm run typecheck && npm run lint && npm run format:check
-npm run test:run
+npm run verify
 ```
 
 `content.test.ts`, `registry.test.ts`, `system-design.test.ts` and

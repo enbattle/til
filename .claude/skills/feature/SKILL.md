@@ -115,12 +115,12 @@ Instruction, close to verbatim:
 > any `*.test.ts` / `*.test.tsx` file for any reason. If a test looks wrong
 > or the spec is ambiguous in a way that blocks you, stop and report the
 > discrepancy instead of changing the test to fit your implementation.
-> Update `CLAUDE.md`, `README.md`, and/or `docs/DESIGN.md` if this change
-> adds or changes a convention future work should follow — most changes
+> Update any doc this change makes stale (`CLAUDE.md`, `README.md`, `docs/`,
+> `.claude/skills/`, `evals/`) if it adds or changes a convention future
+> work should follow — most changes
 > won't need every file touched, update only what actually changed.
-> Run `npm run typecheck`, `npm run lint`, `npm run check:colors`,
-> `npm run check:tokens`, `npm run check:contrast`, `npm run check:npm-refs`, and `npm run test:run`
-> yourself before reporting done.
+> Run `npm run verify` (the whole chain in CLAUDE.md's "Verifying a
+> change") yourself before reporting done.
 
 Docs stay with this agent rather than a separate one: whoever built the
 feature is well-positioned to describe it, and there's no bias to protect
@@ -131,7 +131,7 @@ check.
 
 ```bash
 git diff --stat -- '*.test.*'   # MUST be empty — a non-empty result is a hard stop
-npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run test:run && npm run build
+npm run verify
 ```
 
 A changed test file here is the one rule this whole pipeline exists to
@@ -208,7 +208,7 @@ unbounded loop.
 Re-run the full verification suite one last time on the final diff:
 
 ```bash
-npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run test:run && npm run build
+npm run verify
 ```
 
 Summarize for the user: what changed, a link to the spec file, the review

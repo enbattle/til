@@ -25,7 +25,7 @@ planted problem instead of rubber-stamping the draft."
 
 Running all scenarios (`CR-01`..`CR-05`) is the default when asked to
 "run the content-review eval" with no further qualifier, or after editing
-something both scenarios depend on (`add-topic/SKILL.md`'s Stage 3
+something the scenarios depend on (`add-topic/SKILL.md`'s Stage 3
 prompt, or `CLAUDE.md`'s Writing Standard).
 
 Run only the scenarios plausibly affected when the trigger is narrower —
@@ -63,9 +63,8 @@ If this run was triggered by a real `add-topic` review missing something
 in actual use, or by a new content-reviewing skill being added to the
 repo, add a scenario for it to `scenarios.md` first (a fabricated draft
 with that exact planted problem, in the existing format), then include
-it in Stage 1 — the same way `content-review`'s own `CR-01`..`CR-05` set
-was built from the two violation categories `evals/README.md` had
-already flagged.
+it in Stage 1 — the same way each `content-review` scenario is built around one
+planted violation category.
 
 ## Stage 4 — Report
 

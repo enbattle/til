@@ -29,9 +29,10 @@ complete, since a category being missing here is itself exactly the kind
 of staleness this skill exists to catch:
 
 - `CLAUDE.md`, `README.md`
-- everything under `docs/` (`DESIGN.md`, `SDLC.md`, `specs/*.md`)
+- everything under `docs/`
 - everything under `evals/` (`README.md`, every scenario/how-to-run file)
-- every `SKILL.md` under `.claude/skills/`
+- every `SKILL.md` under `.claude/skills/`, and the reminder text in
+  `.claude/hooks/*.js` (it names skills and docs, so it can go stale the same way)
 - (explicitly **not** in scope: `src/content/**` and
   `src/system-design/questions/**` — the published topic and question
   files themselves. Their prose quality against the Writing Standard is
@@ -76,6 +77,11 @@ Stage 1 and this instruction, close to verbatim:
 > ranked by how misleading they'd be to someone reading the doc cold, or
 > say explicitly you found nothing worth flagging.
 >
+> `docs/specs/*.md` are records of what was decided at a point in time, and
+> `evals/*/results/*.md` are dated run logs: don't flag them for describing the
+> past, but do flag one that states something as a present-tense rule that is
+> now wrong.
+>
 > Files to audit: <Stage 1's list>
 
 ## Stage 3 — Apply fixes
@@ -100,8 +106,8 @@ mechanically — run them even though Stage 2 already checked by hand, the
 same reasoning `/feature`'s Stage 5 re-runs its full suite instead of
 trusting an earlier stage's self-report.
 
-(Add `npm run typecheck && npm run lint && npm run test:run && npm run build`
-too if any fix touched actual code rather than only documentation.)
+(Run `npm run verify` instead if any fix touched actual code rather than only
+documentation.)
 
 Summarize for the user: what was audited, what was found, what was
 fixed, and anything left open for their judgment. Ask before committing

@@ -118,8 +118,8 @@ and this instruction, close to verbatim:
 >
 > **5. Systems topics only (skip for other sections and question pages) —
 > is the closing `## Where you'll meet this` section general and true?**
-> It should name kinds of systems (payments and checkout, a news feed, chat,
-> a URL shortener, a notification pipeline) and say what the topic does
+> It should name kinds of systems (CLAUDE.md's reference set) and say what the
+> topic does
 > there, without re-teaching the mechanism. Flag any claim about how a
 > specific named company builds something (it can't be verified), any
 > sentence that isn't true of the generic system described, and any
@@ -147,12 +147,10 @@ applying it blindly.
 ## Stage 4 — Final gate
 
 ```bash
-npm run typecheck && npm run lint && npm run format:check
-npm run test:run
+npm run verify
 ```
 
-Add `npm run build && npm run size` too if the batch of fixes was large
-enough that a build-level regression is plausible. Summarize for the
+Summarize for the
 user: what was audited, what was found (grouped by
 criterion), what was fixed, and anything left open for their judgment.
 Ask before committing or pushing, same as always — this skill leaves the

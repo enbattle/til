@@ -218,12 +218,18 @@ claim itself.
 
 ### CR-05 — clean baseline (false-positive control)
 
-**Section:** `systems-and-infrastructure`
+**Section:** `engineering-practices`
 **Planted violation:** none — this is a control. The draft defines its
 terms, builds up from first principles, uses a concrete example, and
 makes no unverified claims. The eval here is whether the review
-correctly finds nothing worth flagging, rather than inventing a nitpick
-to justify itself.
+reports only things that are true of the text, rather than inventing a
+defect to justify itself. It is declared under `engineering-practices` (whose
+existing topics don't overlap it) so that the near-duplicate check has
+nothing to match and the closing "Where you'll meet this" rule for
+`systems-and-infrastructure` topics doesn't apply; the subject matter is
+not what this scenario tests. An earlier version (2026-09-16) left
+"container", "orchestrator" and "Kubernetes" undefined and had no worked
+example, and the review rightly flagged both; this version fixes those.
 
 ```markdown
 ---
@@ -232,19 +238,25 @@ summary: Two different questions an orchestrator asks about a running container,
 date: 2026-09-16
 ---
 
-A container orchestrator like Kubernetes needs an automated way to know
-whether a running process is healthy enough to keep, and whether it's
-ready enough to receive traffic — these turn out to be two different
-questions, answered by two different checks.
+A **container** is a packaged program that runs in isolation from the
+other programs on the same machine, and a **container orchestrator**
+such as Kubernetes is the system that starts containers, restarts them
+when they fail, and decides which ones should receive traffic. To do
+that automatically it needs a way to tell whether a running container is
+healthy enough to keep, and whether it is ready enough to receive
+traffic. These turn out to be two different questions, answered by two
+different checks.
 
 A **liveness probe** asks "is this process still working, or is it stuck
-in a way it'll never recover from on its own?" It's usually a periodic
-HTTP request or command run against the container; if it fails
-repeatedly, the orchestrator concludes the process is wedged (deadlocked,
-stuck in an infinite loop, out of memory and unresponsive) and restarts
-the container. A liveness probe answering "no" is a statement about the
-process's internal health, independent of whether anything is currently
-trying to talk to it.
+in a way it will never recover from on its own?" It is usually a
+periodic HTTP request or command run against the container. If it fails
+several times in a row, the orchestrator concludes the process is wedged
+(deadlocked, stuck in an infinite loop, out of memory and unresponsive)
+and restarts the container. For example, if the probe runs every 10
+seconds and the orchestrator is set to act after 3 failures in a row, a
+container that wedges is restarted about 30 seconds later. A liveness
+probe answering "no" is a statement about the process's internal health,
+independent of whether anything is currently trying to talk to it.
 
 A **readiness probe** asks a narrower question: "is this container ready
 to receive traffic right now?" A process can be alive (it hasn't
@@ -262,7 +274,13 @@ a genuinely deadlocked container never gets restarted, since nothing is
 checking whether it's actually stuck versus just temporarily busy.
 ```
 
-**Expected finding:** none — a defensible review says explicitly that
-there's nothing worth flagging.
-**Fails if:** the review invents a nitpick to have something to say, or
-otherwise flags a violation that isn't actually present.
+**Expected finding:** no finding that is false of the text. A thorough
+reviewer will usually still raise real gaps in any draft (a missing
+worked example, a nearby topic that overlaps, whether the subject fits
+the section); those are acceptable and are recorded in the run's notes,
+not graded as failures. A literal "nothing to flag" bar would punish
+exactly the rigor the review is supposed to have, and two runs (2026-09-16
+and 2026-09-21) both produced real findings on this control.
+**Fails if:** the review reports a defect that isn't true of the draft: a
+fabricated claim, a misreading of what the text says, or a correct
+technical statement called wrong.

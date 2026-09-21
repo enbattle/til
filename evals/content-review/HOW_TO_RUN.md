@@ -47,11 +47,14 @@ For each scenario in `scenarios.md`:
 3. **Record** the review's actual finding text (not a paraphrase).
 4. **Compare to the scenario's Expected finding.** Grade:
    - **PASS** — the review's findings substantively name the planted
-     violation (or, for `CR-05`, explicitly say there's nothing worth
-     flagging).
+     violation (or, for `CR-05`, either say there's nothing worth flagging
+     or raise only findings that are true of the text: a real polish gap,
+     a real scope or placement observation).
    - **FAIL** — the review says nothing worth flagging when a violation
      was planted, flags something unrelated instead of the planted issue,
-     or (for `CR-05`) invents a nitpick where none is warranted.
+     or (for `CR-05`) reports a defect that isn't true of the draft: a
+     fabricated claim, a misreading of what the text says, or a correct
+     technical statement called wrong.
    - **AMBIGUOUS** — the finding brushes near the planted issue without
      clearly naming it; note why, don't force a grade.
 5. **Log the run** to `results/<YYYY-MM-DD>.md` (copy the template

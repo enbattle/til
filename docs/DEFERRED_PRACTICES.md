@@ -51,8 +51,7 @@ rejected for a specific, verified reason: Claude Code's PreToolUse hooks
 **fail open on timeout** — if the check doesn't finish inside its
 configured timeout, the tool call proceeds anyway, block or no block.
 `til`'s existing hooks use a 10-second timeout; the full verification
-suite (`typecheck && lint && format:check && check:colors && test:run &&
-build`) can exceed that, which means a naive version of this hook would
+suite (`npm run verify`, the chain in `CLAUDE.md`) can exceed that, which means a naive version of this hook would
 silently stop blocking the first time a check ran slow — a false sense
 of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk
@@ -144,8 +143,8 @@ representation instead of reading source files fresh each time. This is
 the pattern behind several public "give your coding agent long-term
 memory" projects.
 **Why deferred:** Solves a scale problem `til` doesn't have. `src/` is
-about 15 files, comfortably read in full within a fraction of one
-context window — there's no re-reading cost here to amortize. It also
+a modest codebase that `CLAUDE.md` plus `Glob`/`Grep` orient a fresh
+session in quickly — there's no re-reading cost here to amortize. It also
 wouldn't have fixed the actual drift this repo has hit repeatedly (a
 fact hand-duplicated across docs going stale): a derived graph is itself
 a second representation of the truth that needs its own invalidation the
@@ -160,8 +159,8 @@ costly — not a fixed file count, but the point where `CLAUDE.md` plus
 `Glob`/`Grep` stop being enough to orient a fresh session quickly. A
 related but distinct idea — a graph of relationships between _published
 topics_, for readers rather than agents — is a different, content-facing
-version of this same instinct, already covered by `CLAUDE.md`'s existing
-exclusion of tags/tracks/domain-split; that's a product-scope call, not
+version of this same instinct, already covered by `CLAUDE.md`'s scope
+exclusions (tags, and no tracks or ordered curricula over the catalog); that's a product-scope call, not
 a process-tooling one, so it isn't repeated here.
 
 ### Visual regression / end-to-end (Playwright) testing
