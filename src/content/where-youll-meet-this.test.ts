@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { TOPICS } from '@/lib/content';
+import { TOPICS, loadAllTopicBodies } from '@/lib/content';
 
 /**
  * Content-structure test for docs/specs/where-youll-meet-this.md: every topic
@@ -75,6 +75,19 @@ function wordsAfter(body: string, headingLine: number): number {
 }
 
 const systemsTopics = TOPICS.filter((topic) => topic.section === SECTION);
+
+// Topic bodies load on demand (`section/slug` -> frontmatter-stripped markdown).
+let bodies: Map<string, string>;
+beforeAll(async () => {
+  bodies = await loadAllTopicBodies();
+});
+
+function bodyOf(topic: { section: string; slug: string }): string {
+  const body = bodies.get(`${topic.section}/${topic.slug}`);
+  if (body === undefined)
+    throw new Error(`no body loaded for ${topic.section}/${topic.slug}`);
+  return body;
+}
 
 // ---------------------------------------------------------------------------
 // The helpers themselves, against fixture strings.
@@ -232,10 +245,15 @@ describe('scope of the check (criterion 4)', () => {
 describe.each(systemsTopics.map((topic) => [topic.slug, topic] as const))(
   'systems topic %s',
   (_slug, topic) => {
-    const h2s = findH2Headings(topic.body);
-    const matches = h2s.filter((h) => h.text === HEADING);
+    // Bodies are loaded on demand, so they're read from the map `beforeAll`
+    // fills rather than off the topic itself.
+    const headings = () => {
+      const h2s = findH2Headings(bodyOf(topic));
+      return { h2s, matches: h2s.filter((h) => h.text === HEADING) };
+    };
 
     it(`has exactly one "## ${HEADING}" heading (criterion 1)`, () => {
+      const { h2s, matches } = headings();
       expect(
         matches.length,
         `found ${matches.length}; ## headings present: ${JSON.stringify(h2s.map((h) => h.text))}`,
@@ -243,14 +261,16 @@ describe.each(systemsTopics.map((topic) => [topic.slug, topic] as const))(
     });
 
     it(`has "## ${HEADING}" as its last ## heading (criterion 2)`, () => {
+      const { h2s, matches } = headings();
       expect(matches.length, 'no such heading (see criterion 1)').toBeGreaterThan(0);
       expect(h2s[h2s.length - 1].text).toBe(HEADING);
     });
 
     it(`has at least ${MIN_WORDS} words under "## ${HEADING}" (criterion 3)`, () => {
+      const { matches } = headings();
       expect(matches.length, 'no such heading (see criterion 1)').toBeGreaterThan(0);
       const heading = matches[matches.length - 1];
-      expect(wordsAfter(topic.body, heading.line)).toBeGreaterThanOrEqual(MIN_WORDS);
+      expect(wordsAfter(bodyOf(topic), heading.line)).toBeGreaterThanOrEqual(MIN_WORDS);
     });
   },
 );

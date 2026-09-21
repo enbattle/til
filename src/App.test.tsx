@@ -43,7 +43,10 @@ describe('App routing', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: /Prompt Engineering/i }),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /copy/i }).length).toBeGreaterThan(0);
+    // The body (and its code blocks) arrives after the header, so wait for it.
+    expect(
+      (await screen.findAllByRole('button', { name: /copy/i })).length,
+    ).toBeGreaterThan(0);
   });
 
   // Regression test: the breadcrumb/prev-next chrome links aren't inside

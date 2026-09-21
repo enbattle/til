@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { TOPICS, getTopic } from './content';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { TOPICS, getTopic, loadAllTopicBodies } from './content';
 import {
   QUESTIONS,
   extractTopicRefs,
@@ -78,6 +78,18 @@ const TOPIC_LINKS: [topicSlug: string, linked: string[]][] = [
   ['cache-invalidation', ['caching']],
 ];
 
+// Topic bodies load on demand (`section/slug` -> frontmatter-stripped markdown).
+let bodies: Map<string, string>;
+beforeAll(async () => {
+  bodies = await loadAllTopicBodies();
+});
+
+function bodyOf(section: string, slug: string): string {
+  const body = bodies.get(`${section}/${slug}`);
+  if (body === undefined) throw new Error(`no body loaded for ${section}/${slug}`);
+  return body;
+}
+
 function linkedSlugs(body: string, section = SECTION): string[] {
   return extractTopicRefs(body)
     .filter((ref) => ref.section === section)
@@ -132,7 +144,7 @@ describe('link-level additions to existing topics (criterion 3)', () => {
   it.each(cases)('%s links %s in its body', (topicSlug, linkedSlug) => {
     const topic = getTopic(SECTION, topicSlug);
     expect(topic, `${SECTION}/${topicSlug} should exist`).toBeDefined();
-    expect(linkedSlugs(topic!.body)).toContain(linkedSlug);
+    expect(linkedSlugs(bodyOf(SECTION, topicSlug))).toContain(linkedSlug);
   });
 });
 
@@ -142,7 +154,7 @@ describe('no dead links between systems topics (criterion 1)', () => {
   it.each(systemsTopics.map((t) => [t.slug, t] as const))(
     '%s links only to systems topics that exist',
     (_slug, topic) => {
-      for (const slug of linkedSlugs(topic.body)) {
+      for (const slug of linkedSlugs(bodyOf(topic.section, topic.slug))) {
         expect(getTopic(SECTION, slug), `${SECTION}/${slug}`).toBeDefined();
       }
     },

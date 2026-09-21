@@ -1,4 +1,8 @@
-/** One topic write-up: a single markdown file under `src/content/<section>/`. */
+/**
+ * One topic write-up: a single markdown file under `src/content/<section>/`.
+ * This is the metadata only; the markdown body is loaded on demand
+ * (`loadTopicBody` in `src/lib/content.ts`) so it isn't in the main bundle.
+ */
 export interface Topic {
   /** Slug of the folder this topic lives in — see `src/content/registry.ts`. */
   section: string;
@@ -9,8 +13,6 @@ export interface Topic {
   summary: string;
   /** ISO date (`YYYY-MM-DD`) the topic was written. */
   date: string;
-  /** Markdown body, frontmatter already stripped. */
-  body: string;
 }
 
 /**

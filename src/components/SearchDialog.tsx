@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSection } from '@/content/registry';
-import { searchContent } from '@/lib/search';
+import { ensureFullTextSearch, isFullTextSearchReady, searchContent } from '@/lib/search';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface SearchDialogProps {
@@ -15,7 +15,15 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const results = useMemo(() => searchContent(query), [query]);
+  // Topic bodies load on demand (they aren't in the main bundle), so title and
+  // summary matches work at once and body matches join in when they arrive.
+  const [fullText, setFullText] = useState<'loading' | 'ready' | 'failed'>(() =>
+    isFullTextSearchReady() ? 'ready' : 'loading',
+  );
+  // Searched on every render rather than memoized on `query`: when the bodies
+  // arrive the same query has to start matching them, and the state change
+  // above is what triggers this re-render. The index is small, so it's cheap.
+  const results = searchContent(query);
 
   // Called before the autofocus effect below (hook order = call order), so
   // it captures whatever had focus before the dialog opened, not the input
@@ -24,6 +32,17 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    ensureFullTextSearch().then(
+      () => active && setFullText('ready'),
+      () => active && setFullText('failed'),
+    );
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -60,6 +79,20 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
           placeholder="Search topics..."
           className="w-full border-b border-border bg-transparent px-4 py-3 text-text-primary placeholder:text-text-tertiary focus:outline-none"
         />
+        {/* One live region for the dialog's whole life: it stays mounted and
+            only its text changes, so screen readers announce the change. The
+            min height equals the height with text (16px line + 16px padding +
+            1px border), so the results below never shift. */}
+        <p
+          role="status"
+          className="min-h-[33px] border-b border-border px-4 py-2 text-xs leading-4 text-text-tertiary"
+        >
+          {fullText === 'loading'
+            ? 'Loading full-text search…'
+            : fullText === 'failed'
+              ? 'Full-text search couldn’t load; showing title and summary matches.'
+              : ''}
+        </p>
         <ul className="max-h-80 overflow-y-auto py-2">
           {results.length === 0 && query.trim() && (
             <li className="px-4 py-3 text-sm text-text-tertiary">

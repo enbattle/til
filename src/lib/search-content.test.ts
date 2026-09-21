@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTIONS } from './system-design';
-import { searchContent, searchTopics } from './search';
+import { ensureFullTextSearch, searchContent } from './search';
 
 describe('searchContent', () => {
   it('returns nothing for an empty or whitespace-only query', () => {
@@ -28,7 +28,8 @@ describe('searchContent', () => {
     ).toBe(true);
   });
 
-  it('finds a topic by a distinctive body phrase', () => {
+  it('finds a topic by a distinctive body phrase once full-text search has loaded', async () => {
+    await ensureFullTextSearch();
     const results = searchContent('thin vertical slice');
     expect(
       results.some(
@@ -53,13 +54,6 @@ describe('searchContent', () => {
         expect(typeof result.question.slug).toBe('string');
         expect(typeof result.question.order).toBe('number');
       }
-    }
-  });
-
-  it('leaves searchTopics returning topics only', () => {
-    for (const topic of searchTopics('database', 50)) {
-      expect(topic).toHaveProperty('section');
-      expect(topic).not.toHaveProperty('kind');
     }
   });
 });

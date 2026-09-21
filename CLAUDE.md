@@ -50,6 +50,14 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
 - **Slug** is the filename without `.md` (kebab-case).
 - **`title`, `summary`, and `date` are required** — `src/lib/content.ts`
   throws at load time if any is missing.
+- **Frontmatter is eager, bodies are lazy.** `content.ts` reads each file's
+  frontmatter at load through a `?meta` Vite query (the `markdownMeta` plugin
+  in `vite.config.ts`), so `TOPICS` is metadata only and `Topic` has no `body`.
+  A body is fetched as its own small chunk by `loadTopicBody(section, slug)`
+  (topic page) or `loadAllTopicBodies()` (full-text search, which starts
+  loading when the search dialog opens). Question bodies stay eager. Don't
+  reintroduce an eager `?raw` glob over `src/content`: `npm run check:bundle`
+  fails if any topic body ends up in the main chunk.
 - The frontmatter parser (`src/lib/frontmatter.ts`) is intentionally not a
   real YAML parser — it only understands flat `key: value` lines, with
   optional matching quotes around the value. Don't add nested structures
@@ -118,8 +126,8 @@ order: 2
 Use the `add-topic` skill — see
 [`.claude/skills/add-topic/SKILL.md`](.claude/skills/add-topic/SKILL.md).
 Mechanically, a new topic is just a `.md` file dropped into that
-section's folder with the frontmatter above (`src/lib/content.ts` loads
-every file under `src/content/**/*.md` automatically via
+section's folder with the frontmatter above (`src/lib/content.ts` picks
+up every file under `src/content/**/*.md` automatically via
 `import.meta.glob`, no registry change needed) — but the skill also runs
 one independent review pass against the Writing Standard below before
 calling it done, since this is the most frequent change in the repo and
@@ -219,15 +227,15 @@ its actual reasoning and a concrete revisit condition, lives in
 
 ## Verifying a change
 
-`npm run verify` runs the whole chain below in CI's order, and is what the
-skills tell a session to run. The individual commands, if you need one:
+`npm run verify` runs the same checks as CI (the order differs slightly), and
+is what the skills tell a session to run. The individual commands, if you need one:
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
 npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs
 npm run test:run
 npm run build
-npm run size
+npm run size && npm run check:bundle
 ```
 
 `npm run dev` for manual checking: click through the home page, a section,
@@ -242,16 +250,16 @@ dependency should fail this rather than silently regressing page-load
 size. If a change legitimately needs more room, raise the specific
 chunk's limit deliberately rather than letting it drift unnoticed. The limits
 live in `package.json`, and the commit history records each raise with its
-measured numbers. The main chunk's limit has been raised three times, every
-time for content: search indexes topics and questions together client-side, and
-the content loader carries full bodies eagerly, so every topic and question adds
-to the main chunk (the latest raise, 168 KB to 183 KB, came with about 9,000
-words of new topics). That growth is structural, not incidental. The fix is to
-load bodies and build the search index on demand, but it changes the
-`Topic.body` contract that components and tests rely on, so it hasn't been done.
-Its revisit condition, the main chunk passing about 200 KB brotlied or a third
-content-only raise, has been met: treat the lazy-loading change as due, and
-schedule it before adding content at this scale again. A fourth raise is not the
-answer. The markdown chunk's entry now points at `MarkdownRenderer-*.js`
-because `TopicPage` and `QuestionPage` share it (it was `TopicPage-*.js`
-while only `TopicPage` used it; that file is now a few hundred bytes).
+measured numbers.
+
+The main chunk used to carry every topic body (search indexed them at load), so
+each new topic grew it: its limit was raised three times for content alone, up
+to 183 KB (179 KB brotlied). Loading bodies on demand is done: the main chunk
+is now 100 KB brotlied with a 104 KB limit, and each topic body is its own
+chunk of a few kB. Adding topics no longer touches it. What still grows it is
+question pages (kept eager, since the sidebar and each topic's "This comes up
+in" links read their text at first render) and app code; if questions multiply,
+loading their bodies lazily is the next lever. `npm run check:bundle` guards the
+split itself: after a build it fails if a topic's body text is in the main chunk,
+or in no chunk at all. The markdown chunk's entry points at
+`MarkdownRenderer-*.js` because `TopicPage` and `QuestionPage` share it.

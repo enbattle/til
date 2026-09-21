@@ -1,19 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { searchTopics } from './search';
+import * as searchModule from './search';
+import { ensureFullTextSearch, searchContent } from './search';
 
-describe('searchTopics', () => {
+function topicSlugs(query: string): string[] {
+  return searchContent(query).flatMap((result) =>
+    result.kind === 'topic' ? [result.topic.slug] : [],
+  );
+}
+
+describe('searchContent over topics', () => {
   it('returns nothing for an empty or whitespace-only query', () => {
-    expect(searchTopics('')).toEqual([]);
-    expect(searchTopics('   ')).toEqual([]);
+    expect(searchContent('')).toEqual([]);
+    expect(searchContent('   ')).toEqual([]);
   });
 
   it('finds a topic by a distinctive word in its title', () => {
-    const results = searchTopics('prompt engineering');
-    expect(results.some((topic) => topic.slug === 'prompt-engineering')).toBe(true);
+    expect(topicSlugs('prompt engineering')).toContain('prompt-engineering');
   });
 
-  it('finds a topic by a distinctive phrase in its body', () => {
-    const results = searchTopics('thin vertical slice');
-    expect(results.some((topic) => topic.slug === 'plan-before-you-build')).toBe(true);
+  it('finds a topic by a distinctive phrase in its body once full-text search has loaded', async () => {
+    await ensureFullTextSearch();
+    expect(topicSlugs('thin vertical slice')).toContain('plan-before-you-build');
+  });
+
+  it('no longer exports searchTopics (criterion 7)', () => {
+    expect('searchTopics' in searchModule).toBe(false);
   });
 });

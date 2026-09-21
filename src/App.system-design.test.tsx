@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -363,7 +363,8 @@ describe('topic page back-links (criterion 22)', () => {
     renderAt(`/${topic.section}/${topic.slug}`);
     await screen.findByRole('heading', { level: 1, name: topic.title });
     const main = screen.getByRole('main');
-    const nav = within(main).getByRole('navigation', { name: BACKLINKS });
+    // The navigation is added once the body has loaded, not with the header.
+    const nav = await within(main).findByRole('navigation', { name: BACKLINKS });
     expect(nav).toHaveTextContent('This comes up in:');
 
     const links = within(nav).getAllByRole('link');
@@ -373,8 +374,10 @@ describe('topic page back-links (criterion 22)', () => {
     expect(links.map((a) => a.textContent)).toEqual(expected.map((q) => q.title));
     expect(links.length).toBe(questionsForTopic(topic.section, topic.slug).length);
 
+    // The topic body loads after the header, so wait for it before comparing
+    // its position against the back-link nav.
+    await waitFor(() => expect(main.querySelector('.prose')).not.toBeNull());
     const prose = main.querySelector('.prose') as HTMLElement;
-    expect(prose).not.toBeNull();
     expect(
       prose.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
@@ -392,7 +395,7 @@ describe('topic page back-links (criterion 22)', () => {
     const [question] = questionsForTopic(topic.section, topic.slug);
     renderAt(`/${topic.section}/${topic.slug}`);
     await screen.findByRole('heading', { level: 1, name: topic.title });
-    const nav = screen.getByRole('navigation', { name: BACKLINKS });
+    const nav = await screen.findByRole('navigation', { name: BACKLINKS });
     await user.click(within(nav).getByRole('link', { name: question.title }));
     expect(
       await screen.findByRole('heading', { level: 1, name: question.title }),
@@ -409,6 +412,11 @@ describe('topic page back-links (criterion 22)', () => {
     expect(getTopic(topic.section, topic.slug)).toBeDefined();
     renderAt(`/${topic.section}/${topic.slug}`);
     await screen.findByRole('heading', { level: 1, name: topic.title });
+    // Wait for the body so the absence is checked after the page has settled
+    // (the navigations are only rendered once it loads).
+    await waitFor(() =>
+      expect(screen.getByRole('main').querySelector('.prose')).not.toBeNull(),
+    );
     expect(screen.queryByRole('navigation', { name: BACKLINKS })).not.toBeInTheDocument();
     expect(screen.queryByText('This comes up in:')).not.toBeInTheDocument();
   });
