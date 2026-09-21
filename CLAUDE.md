@@ -132,6 +132,19 @@ question whose problem it helps solve; if none fits, that is the signal a
 new question is needed (a file under `src/system-design/questions/` with the
 next free `order`). Topics in other sections don't need one.
 
+Every `systems-and-infrastructure` topic also ends with a
+`## Where you'll meet this` section: the exact heading (straight apostrophe),
+the last `##` in the body, at least 25 words. It names the two or three kinds
+of systems where the topic genuinely matters and says what the topic does
+there, drawn from a small fixed set that recurs across topics so the same
+systems connect them: payments and checkout, a news feed or timeline, chat
+and messaging, a URL shortener, and a notification or email pipeline (name
+one outside the set only when none fit).
+`src/content/where-youll-meet-this.test.ts` enforces the heading, its position
+and its length. If a topic already ends with a section about where it shows
+up, rename that section instead of adding a second. Other sections' topics
+don't need it.
+
 ## Adding a new section
 
 1. Create the folder: `src/content/<new-section-slug>/`.
@@ -177,6 +190,11 @@ pass on denser subjects, not assumed on the first read. Concretely:
   a topic states what the option buys, what it costs and when to pick it
   here, then links. A fact that belongs to a topic is stated there and only
   linked from the question, never restated in both places.
+- A systems topic's `Where you'll meet this` section says what the topic does
+  in a kind of system, in terms of what the topic just taught; it doesn't
+  re-teach the mechanism. It makes claims about generic systems only, never
+  about how a specific company builds something, because every claim has to be
+  verifiable.
 - Every substantive technical claim is independently verified against
   real knowledge of the subject before publishing, not assumed correct
   because it reads confidently.
@@ -223,6 +241,15 @@ chunk's limit deliberately rather than letting it drift unnoticed. The main
 chunk's limit was raised from 155 KB to 164 KB (151.22 KB before, 159.35 KB
 after, brotlied) when System Design landed: search indexes topics and
 questions together client-side, so the question bodies now ship in the main
-chunk. The markdown chunk's entry now points at `MarkdownRenderer-*.js`
+chunk. It was raised again from 164 KB to 168 KB (160.57 KB before, 164.11 KB
+after) when every systems topic gained its closing "Where you'll meet this"
+section, about 2,500 more words of searchable text. That growth is
+structural, not incidental: every topic and question adds to the main chunk,
+because the content loader and the search index carry full bodies eagerly.
+The fix is to load bodies and build the search index on demand, but that
+changes the `Topic.body` contract that components and tests rely on, so it is
+deferred, not overlooked. Revisit it when the main chunk would pass about
+200 KB brotlied, or when the limit has to be raised a third time for content
+alone. The markdown chunk's entry now points at `MarkdownRenderer-*.js`
 because `TopicPage` and `QuestionPage` share it (it was `TopicPage-*.js`
 while only `TopicPage` used it; that file is now a few hundred bytes).

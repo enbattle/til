@@ -54,6 +54,14 @@ and "Writing standard" sections exactly:
   destination or the reference style isn't counted (a double-quoted title is
   fine), and an example link inside inline code or an indented block is.
   Topics in other sections need no question.
+- **If the section is `systems-and-infrastructure`, end the topic with a
+  `## Where you'll meet this` section** (exact heading, the last `##`, at
+  least 25 words; `src/content/where-youll-meet-this.test.ts` fails without
+  it). Name the two or three kinds of systems where the topic matters, from
+  CLAUDE.md's reference set (payments and checkout, a news feed or timeline,
+  chat and messaging, a URL shortener, a notification or email pipeline), and
+  say what the topic does there without re-teaching it. General claims only:
+  never how a specific company builds something.
 
 If anything about scope or angle is genuinely ambiguous (which section it
 belongs in, which question it goes under, how deep to go), ask the user — don't guess on something only
@@ -66,10 +74,12 @@ npm run typecheck && npm run lint && npm run format:check
 npm run test:run
 ```
 
-`content.test.ts`, `registry.test.ts` and `system-design.test.ts` already
-catch structural problems (missing frontmatter field, section/registry
-mismatch, a `systems-and-infrastructure` topic no question links, a dead
-question link) — this stage is just confirming those still pass, not
+`content.test.ts`, `registry.test.ts`, `system-design.test.ts` and
+`where-youll-meet-this.test.ts` already catch structural problems (missing
+frontmatter field, section/registry mismatch, a `systems-and-infrastructure`
+topic no question links, a dead question link, a systems topic without its
+closing "Where you'll meet this" section) — this stage is just confirming
+those still pass, not
 writing new tests. A topic file
 never needs its own test.
 
@@ -83,6 +93,9 @@ If Stage 1 also touched a System Design question, give it that question's
 full content too and have it check the added snippet against the Writing
 Standard's question-page rule (routes and compares, doesn't re-teach the
 mechanism, and no fact is stated in both places).
+If the topic is in `systems-and-infrastructure`, also have it check the
+closing `## Where you'll meet this` section: general kinds of systems only,
+every sentence true of the generic system, and no re-teaching of the topic.
 Instruction, close to verbatim:
 
 > Review this new til topic adversarially against the Writing Standard

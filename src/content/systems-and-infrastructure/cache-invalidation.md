@@ -79,3 +79,15 @@ applies anywhere a cache sits in front of a slower source of
 truth: an in-memory cache in front of a database, HTTP caching in a
 browser, or a content-delivery layer sitting in front of an origin
 server.
+
+## Where you'll meet this
+
+Checkout is where a cache has to be kept away from the money: a cached
+price or stock count is fine for browsing, but the amount charged
+and the stock reserved should come from the source of truth, not the
+cache. A news feed can usually tolerate cached timelines
+and like counts running a few seconds behind, so a short TTL alone is
+often enough. A URL shortener is read-dominated, and a short code's
+destination rarely changes, so a long TTL costs little, until someone
+disables a link or edits its target; then the TTL (or an explicit
+delete) decides how long the old redirect keeps working.

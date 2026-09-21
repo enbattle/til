@@ -52,9 +52,14 @@ send all of them to the database at once.
   service in the same instant it's least able to absorb the load — the
   same idea as [exponential backoff and jitter](/systems-and-infrastructure/exponential-backoff).
 
-## Don't let one trigger become work for everyone
+## Where you'll meet this
 
-Anywhere a shared resource has a synchronized trigger that can hit many
-clients at the same moment: a cache key expiring, a service recovering
-from an outage and every client reconnecting at once, or a scheduled job
-that fires for every tenant at exactly the same minute.
+A URL shortener shows the cache version: one link goes viral, its cache
+entry expires, and thousands of concurrent redirects find it empty and query
+the database for the same row. Chat has the reconnect version: when a server
+restarts or a network blip drops every connection at once, all of those
+clients try to reconnect in the same instant, which is where jittered retries
+earn their keep. A notification pipeline gets the scheduled version: a digest
+job set for 9:00 starts work for every account in the same minute, and if the
+sends it retries aren't jittered, a provider recovering from an outage takes
+all those retries at once.

@@ -61,3 +61,14 @@ Reads scale by adding copies; writes scale by splitting the
 authoritative data itself. A design struggling under write load needs
 sharding or asynchronous processing, not a bigger cache — caching
 doesn't touch the write path at all.
+
+## Where you'll meet this
+
+A news feed's reads are cached, but its posts and reactions still add a write
+load that a bigger cache does nothing for. A URL shortener is the extreme read
+case: a link is created once and followed many times, so caches, replicas and
+sometimes a CDN absorb the traffic, and link creation rarely becomes the
+bottleneck. Chat is write-heavy in a way a feed isn't: every message sent is a
+new row to store, so splitting messages across shards by conversation spreads
+that load while keeping one conversation's history together, though one very
+busy conversation can still overload its shard.

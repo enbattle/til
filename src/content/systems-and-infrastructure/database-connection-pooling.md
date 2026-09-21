@@ -59,3 +59,14 @@ code that forgot to check it back in — can hold a connection out of the
 pool far longer than intended, and if that happens repeatedly it
 gradually starves every other request in the same application of a
 connection to work with, even though the database itself is healthy.
+
+## Where you'll meet this
+
+A URL shortener serves a very high rate of very small queries, where opening
+a connection per redirect would often cost more than the lookup itself; a small
+shared pool spares the application and the database that handshake on every
+redirect. Scaling out the web tier of a feed or chat app is where the
+connection storm tends to appear: each new application server brings its own
+pool, so adding servers to absorb a traffic spike multiplies the total
+connections against the same database, and the extra servers can end up
+overloading it instead of relieving anything.

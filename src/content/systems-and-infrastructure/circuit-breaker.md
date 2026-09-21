@@ -99,3 +99,14 @@ constantly in service-to-service calls inside a
 [microservices architecture](/systems-and-infrastructure/monolith-vs-microservices),
 in database connection pools, and in any call to an external dependency
 that can degrade under load.
+
+## Where you'll meet this
+
+In checkout, a payment provider that has started timing out would
+otherwise leave every request holding a thread or connection for the
+full timeout. With the breaker open, checkout can tell the shopper right
+away that payment is unavailable, and the provider isn't hit by a wave
+of retries while it recovers. A news feed page assembled from several
+services (the posts themselves, recommendations, counts) can wrap each
+call in its own breaker, so one failing dependency means that section is
+skipped instead of the whole feed hanging.

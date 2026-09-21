@@ -43,14 +43,16 @@ fail; and once the underlying bug is fixed or the bad data corrected,
 the messages sitting in the DLQ can be **redriven** — replayed back into
 the original queue for normal processing.
 
-## Where this shows up, and what it still requires downstream
+## Where you'll meet this
 
-Any system built on at-least-once message delivery: message queues,
-webhook handlers, event-driven pipelines — anywhere a message can
-plausibly fail in a way that no amount of retrying will resolve, rather
-than only ever failing transiently. Since redriven messages are, by
-definition, being delivered again, consumers reading from a queue with a
-dead letter policy still need to be
-[idempotent](/systems-and-infrastructure/idempotency): a message coming
-back a second time, whether as an ordinary retry or a manual redrive
+In a notification or email pipeline, a message with a malformed address, or a
+template that won't render for one recipient, keeps failing while everything
+around it is fine, and the DLQ keeps it from being retried forever and, if the
+queue is processed in order, from blocking the messages behind it. The same
+holds for any system built on at-least-once delivery (a message may arrive more
+than once but is never lost), including webhook handlers and other
+event-driven pipelines. Since redriven messages are, by definition, being
+delivered again, consumers reading from a queue with a dead letter policy still
+need to be [idempotent](/systems-and-infrastructure/idempotency): a message
+coming back a second time, whether as an ordinary retry or a manual redrive
 after a fix, has to be safe to process again.

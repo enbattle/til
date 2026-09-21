@@ -63,13 +63,17 @@ than that until asked for more. It's the same mechanism as TCP's flow
 control, just made visible as something application code participates
 in directly instead of getting it for free from the network stack.
 
-## Every producer-consumer boundary has this problem, handled or not
+## Where you'll meet this
 
-Any boundary where a producer can plausibly run faster than its
-consumer: a message-queue consumer falling behind the rate messages
-arrive, a UI receiving a stream of updates faster than it can render
-them, a log shipper reading log lines faster than the network can carry
-them onward. Anywhere that boundary exists without a backpressure
-mechanism, an unbounded buffer is quietly standing in for one — and
-unlike real backpressure, it fails only after it's already grown large
-enough to hurt.
+A chat server meets this once per connected client: a phone on a weak
+connection drains its outbound buffer more slowly than a busy group
+conversation fills it, so the server has to choose between waiting,
+dropping, or disconnecting that one client instead of holding an
+ever-growing pile of messages in memory for it. A notification or email
+pipeline has the same mismatch between stages: the step that expands one
+broadcast into thousands of per-recipient messages can enqueue far
+faster than the sending step can hand them to a mail provider. A bounded
+queue between the two forces the fan-out to slow down, or to drop
+low-priority sends on purpose, rather than letting the backlog swell.
+A UI receiving updates faster than it can render, and a log shipper
+reading lines faster than the network carries them, have the same shape.

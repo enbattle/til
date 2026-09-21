@@ -54,3 +54,17 @@ This is the mechanism underneath distributed caches, distributed
 databases spreading data across [shards](/systems-and-infrastructure/partitioning-vs-sharding),
 and load balancers that need to keep routing a given client to the same
 backend instance even as instances come and go.
+
+## Where you'll meet this
+
+- In a URL shortener, a cache typically sits in front of the key-value
+  store, spread across several cache nodes by short code. With
+  consistent hashing, adding or losing a cache node invalidates only a
+  slice of the cached links, so the store behind it isn't hit by a flood
+  of misses all at once.
+- A news feed can keep each user's assembled timeline in a cache sharded
+  by user ID, and scaling that cache tier up or down moves only some
+  users' timelines.
+- Chat can pin each conversation to the server that holds its live state
+  by hashing the conversation ID, so a server joining or leaving
+  reassigns only some conversations rather than nearly all of them.

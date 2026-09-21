@@ -74,3 +74,12 @@ batched `WHERE id IN (...)` query instead of querying inside the loop.
 Where the data fetch sits relative to the loop is the entire bug — move
 it outside the loop and the N+1 disappears regardless of how it
 originally got introduced.
+
+## Where you'll meet this
+
+A chat server loading a conversation hits it when it looks up each message's
+sender one message at a time instead of fetching all the distinct senders in
+one batched query. A news feed page does the same to authors, counts and
+attachments: a lookup inside the loop turns one page view into dozens of
+queries. In a background job the same loop is easy to miss, since nobody is
+waiting on a page to notice it running long.

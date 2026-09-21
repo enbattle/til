@@ -53,3 +53,18 @@ answering why a
 or why a string of
 [retries](/systems-and-infrastructure/exponential-backoff) keep failing:
 the same metrics-then-traces-then-logs order applies there too.
+
+## Where you'll meet this
+
+A checkout that suddenly feels slow shows what traces are for. The
+request calls inventory, pricing, and a payment provider, and a trace
+shows which hop the time went to (for the provider, only how long your
+call to it took), while a metric such as payment failure rate is what
+fires the alert in the first place. A news feed page is often assembled
+from several services, so a slow load is again a "where" question before
+it is a "why" one. In a notification or email pipeline, the metrics
+worth alerting on are things like queue depth and the age of the oldest
+waiting message. When a user says an email never arrived, following that
+one message's ID through the logs shows whether it was never sent,
+retried, or
+[dead-lettered](/systems-and-infrastructure/dead-letter-queue).

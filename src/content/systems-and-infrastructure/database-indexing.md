@@ -92,3 +92,15 @@ Index the columns your actual queries filter, sort, or join on, and use
 your database's query-plan explainer to confirm a query is genuinely
 using the index you expect, rather than assuming it is just because the
 index exists.
+
+## Where you'll meet this
+
+A URL shortener looks up every redirect by short code, so that column has to
+be indexed, usually as the primary key or a unique index; without one, each
+redirect scans every link ever created. Chat loading a conversation's latest
+messages filters by conversation and sorts by time, and a composite index on
+`(conversation_id, sent_at)` finds one conversation's rows already in time
+order, so the newest few come straight off the index with no sort step. Tables
+that take a steady stream of inserts, such as orders, pay for every extra index
+on each write, so index the columns lookups filter or sort on and leave the
+rest alone.

@@ -104,3 +104,15 @@ but isn't actually running out of capacity, partitioning alone might be
 the entire fix — reaching straight for sharding's operational complexity
 when partitioning would have solved it is a common, expensive
 overcorrection.
+
+## Where you'll meet this
+
+A notification pipeline's delivery log grows without bound unless trimmed,
+so it is a good table to partition by date on a single database: old months can
+be dropped as whole partitions instead of deleted row by row. A URL shortener
+shards well by hashing the short code, because the core redirect lookup is for
+one key and never needs a range or a join across shards. Payments and checkout
+show the price of sharding: sharded by customer, one customer's orders stay on
+a single shard, but an order that also decrements a shared product's stock, or
+a transfer between two customers' accounts, touches more than one shard and
+becomes a cross-shard problem.

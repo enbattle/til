@@ -56,9 +56,14 @@ reason — the reliability the outbox buys on the publishing side only
 pays off if the receiving side can safely handle the same event arriving
 twice.
 
-## Any place a database write and a notification have to survive together
+## Where you'll meet this
 
-Any service that needs "change the database" and "notify the rest of
-the system" to happen together and survive a crash in between — order
-processing, inventory updates, and generally any event-driven system
-built on top of a relational store.
+In payments and checkout, saving an order and telling inventory and
+shipping about it have to happen together, and an outbox row committed
+alongside the order means a crash in between can't leave a saved order
+nobody hears about, or an announcement for an order that was never
+saved. A notification or email pipeline is often the consuming end of
+that same event: the confirmation email is triggered by the event the
+relay publishes from the outbox and, since delivery is at-least-once,
+has to cope with seeing it twice or the customer gets two emails. The
+same shape fits many event-driven systems built on a relational store.

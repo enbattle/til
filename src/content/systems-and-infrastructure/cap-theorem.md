@@ -70,3 +70,16 @@ started timing out. It shows up directly when picking between a strongly
 consistent [relational database and a more availability-oriented NoSQL
 store](/systems-and-infrastructure/sql-vs-nosql), and in designing any
 service replicated across multiple regions or availability zones.
+
+## Where you'll meet this
+
+A news feed or timeline usually sits on the availability side: a post
+that shows up a few seconds late costs a reader almost nothing, while an
+error page is a visible failure. Chat mostly leans the same way for
+delivery, since a message that arrives late beats a send that errors
+out; what it gives up is every device seeing the same messages in the
+same order while the partition lasts. Wherever a stale answer could
+cause something hard to undo, such as approving a purchase against a
+stale balance or stock count, the choice flips toward consistency, and
+most systems end up split by data rather than picking one side
+everywhere.

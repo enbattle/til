@@ -63,19 +63,24 @@ protected, rather than trusting that merely holding the lock implies
 exclusivity. This closes the gap fully — it isn't a workaround layered
 on top of the same broken assumption.
 
-## What this actually coordinates in practice
-
-Coordinating exclusive access across services: ensuring only one
-instance of a scheduled job runs at a time, preventing two workers from
-processing the same queue item twice, leader election among a set of
-replicas. The common implementations lean on either a fast key-value
-store with atomic conditional writes (the mechanism shown above), or a
-consensus-based coordination service built specifically for this kind of
-guarantee.
-
 ## What this doesn't guarantee
 
 Unless the protected resource itself can reject a stale write on its
 own, mere lock possession is advisory, not a guarantee. Without fencing
 tokens, a distributed lock only prevents concurrent _acquisition_ — not
 concurrent _access_ — once a lease can expire mid-operation.
+
+## Where you'll meet this
+
+Several copies of a service must not all do the same job at once, and
+that is where these locks turn up. In a notification or email pipeline,
+a scheduled job such as a nightly digest runs on every instance of the
+service, and a lock lets only one of them send it, while a per-message
+lock can stop two workers from picking up the same queue item. Payments
+and checkout use the same idea for work like settling a batch of orders
+or issuing a refund, with the caveat above: because a lease can expire
+mid-operation, the write that moves the money still needs a fencing
+token, or has to be safe to repeat. Leader election among replicas is
+another common use, and the lock itself usually comes from a fast
+key-value store with atomic conditional writes, as in the example above,
+or from a consensus-based coordination service built for that guarantee.

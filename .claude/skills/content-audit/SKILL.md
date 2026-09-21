@@ -116,6 +116,15 @@ and this instruction, close to verbatim:
 > repeated across two question pages instead of living in one and being
 > linked from the other. Read the linked topic when deciding.
 >
+> **5. Systems topics only (skip for other sections and question pages) —
+> is the closing `## Where you'll meet this` section general and true?**
+> It should name kinds of systems (payments and checkout, a news feed, chat,
+> a URL shortener, a notification pipeline) and say what the topic does
+> there, without re-teaching the mechanism. Flag any claim about how a
+> specific named company builds something (it can't be verified), any
+> sentence that isn't true of the generic system described, and any
+> section that just restates the topic's own definition.
+>
 > Your batch: <Stage 1's file list for this batch>
 
 Run all batches in parallel (one message, multiple `Agent` calls), not

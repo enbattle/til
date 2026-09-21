@@ -88,12 +88,16 @@ mechanism varies by store, but the requirement is the same everywhere:
 the two steps can't be allowed to happen as separate, individually
 interruptible operations.
 
-## Where it applies
+## Where you'll meet this
 
-Public-facing APIs (per-API-key limits are standard across most SaaS
-products), internal service-to-service calls inside a
-[microservices architecture](/systems-and-infrastructure/monolith-vs-microservices),
-and login endpoints, where rate limiting doubles as a standard defense
-against brute-force password guessing. Because it protects the opposite
-side of a call from what a circuit breaker protects, a resilient system
-generally needs both, not one instead of the other.
+A URL shortener's link-creation endpoint needs a limit: anyone can call it,
+and a per-client cap keeps one script from flooding the store with spam links,
+while the read-heavy redirect path can be given a far higher ceiling. A
+notification or email pipeline meets the idea from the other side: as the
+caller, it has to keep its own send rate under whatever ceiling a downstream
+provider imposes, which a leaky bucket in front of the sender can do.
+Per-API-key limits on public APIs, limits on login and payment attempts (which
+blunt password guessing and trying stolen card numbers with small charges), and
+limits between internal services in a
+[microservices architecture](/systems-and-infrastructure/monolith-vs-microservices)
+follow the same logic.

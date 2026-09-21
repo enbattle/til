@@ -62,25 +62,25 @@ action. Generating a fresh key on every retry defeats the entire
 mechanism, since the server would then see each retry as a brand-new,
 never-seen-before request.
 
-## Where this shows up constantly
+## The same problem inside a database
 
-Any system that retries automatically on failure needs this — including
-background jobs retried by the platform running them with no code
-explicitly asking for it, where idempotency stops being a nice-to-have
-and becomes a requirement. Two places it bites hardest:
+Database writes have the same failure mode in miniature. An
+insert-or-update that sets fixed values is idempotent by construction,
+since running it twice leaves the same row, but one that increments a
+counter or appends to a value is not. A plain insert retried after a
+timeout can silently create a duplicate row.
 
-- **Payment systems**, where a duplicate charge is a direct, visible harm
-  to the user — this is exactly why real-world payment APIs require an
-  idempotency key on charge-creation requests.
-- **Message queues**, most of which guarantee a message is delivered _at
-  least_ once, not _exactly_ once — an occasional duplicate delivery
-  turns into a duplicate side effect unless the consumer is written to
-  handle it.
+## Where you'll meet this
 
-Database writes have the same failure mode in miniature: an
-"insert-or-update" statement is idempotent by construction, but a plain
-insert retried after a timeout can silently create a duplicate row.
-
-Idempotency — or an idempotency key standing in where the operation
-isn't naturally idempotent — is what turns that inevitable retry into a
-harmless no-op instead of a second charge.
+Anything that retries automatically needs this, including background jobs
+that the platform re-runs on failure without any code asking it to. A shopper
+who double-clicks "place order", or a mobile app that retries a charge over a
+flaky connection, is the payments case: a client-generated key sent with every
+attempt lets the server return the first result instead of billing the card
+twice, which is why many payment APIs accept an idempotency key on
+charge-creation requests. In a notification or email pipeline, queues
+generally deliver at least once, so a worker can receive the same message
+twice; recording which messages were already handled lets it skip a redelivery
+instead of sending it again. Chat works the same way: a client that never sees
+an acknowledgment will send the message again, and an ID the client generated
+once lets the server drop the duplicate.

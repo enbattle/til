@@ -49,22 +49,23 @@ def backoff_delay(attempt, base=1.0, cap=30.0):
     return random.uniform(0, exponential)
 ```
 
-Each failed attempt increases the _ceiling_ a random delay is drawn from,
-so later retries are, on average, spaced further apart — while still
-never landing at the same predictable moment as another client's retry.
+Each failed attempt increases the _ceiling_ a random delay is drawn
+from, so later retries are, on average, spaced further apart — while
+still never landing at the same predictable moment as another client's
+retry. Backoff protects the failing system from being hit too
+aggressively by any one client; jitter protects it from being hit by
+every client at once. They solve two different halves of the same
+problem and are almost always used together.
 
-## Where it applies, and what it depends on
+## Where you'll meet this
 
-This shows up anywhere a client might retry a request against a shared,
-possibly struggling dependency — which describes most distributed
-systems: HTTP client retry logic, message-queue consumers redelivering
-failed messages, any service-to-service call that can time out. It only
-makes sense to retry at all when doing so is actually safe — that's a
-separate property called
-[idempotency](/systems-and-infrastructure/idempotency), and the two
-pair directly: backoff decides _when_ to send a retry, idempotency is
-what makes sending it safe in the first place. Backoff protects the
-failing system from being hit too aggressively by any one client; jitter
-protects it from being hit by every client at once. They solve two
-different halves of the same problem and are almost always used
-together.
+Many email workers retrying sends against a provider that is throttling or
+briefly down will fall into step without jitter, and a struggling provider
+stays that way for as long as they do. In payments and checkout, a client
+that times out on a charge request will retry it, and can do so safely only
+because [idempotency](/systems-and-infrastructure/idempotency) makes a second
+send harmless: backoff decides when the retry goes out, idempotency decides
+whether sending it is safe. The same reasoning covers HTTP client retries and
+any service-to-service call that can time out, and a chat app whose
+connections all drop at once is the same failure in a different setting; see
+the [thundering herd problem](/systems-and-infrastructure/thundering-herd-problem).

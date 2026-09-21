@@ -87,3 +87,16 @@ per-service or even per data type, rather than committing one database
 technology to the entire application: relationships, transactions, and a
 fixed shape point toward relational; flexible structure and horizontal
 write scale point toward NoSQL.
+
+## Where you'll meet this
+
+Payments and checkout are relational territory: orders, line items, and
+balances relate to each other and have to change together, which is what joins,
+constraints, and multi-row transactions are for. A news feed often goes the
+other way, because its main query is known in advance (a given reader's latest
+posts), so a store built around that one access pattern, with the data shaped
+and duplicated to match it, can serve it without joins. A URL shortener could
+go either way: a lookup from short code to destination is a key-value read with
+no joins involved, which suits a key-value NoSQL store, though a plain
+relational table works too, and the choice comes down to scale and operations
+more than data model.

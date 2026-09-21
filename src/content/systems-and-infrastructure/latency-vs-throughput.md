@@ -60,3 +60,13 @@ nothing is waiting on one record in particular. Optimizing for the wrong
 one — batching a user-facing request to squeeze out more throughput, or
 handling a bulk job one row at a time to keep per-row latency low — is a
 common, and avoidable, performance mistake.
+
+## Where you'll meet this
+
+Chat is a latency system: holding messages back to deliver them in batches
+would raise throughput and make every conversation feel laggy. A notification
+pipeline has to decide between latency and throughput twice, because a
+password-reset message needs to arrive within seconds while a newsletter going
+to a million recipients is happy to be batched and slow per recipient. That
+split is commonly handled by giving the two kinds of traffic separate queues,
+so a bulk send doesn't sit in front of an urgent one.

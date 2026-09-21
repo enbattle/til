@@ -62,3 +62,11 @@ sagas are usually built on top of it, not as a replacement for it.
 A flight reserved with no hotel booked yet is a state someone else in
 the system can actually observe — the saga's job is to make sure there's
 always a way back out of it, not to pretend it never happens.
+
+## Where you'll meet this
+
+Checkout, once it's split into services, is where a saga earns its keep. If
+the card is declined after stock has been reserved, a compensating step
+releases the stock; if something fails after the charge has gone through, the
+compensation is a refund, which is a new action with its own visible effects,
+not a rollback that erases the charge.

@@ -141,3 +141,15 @@ locking strategy determines what happens when two _different,
 concurrent_ requests touch the same data at the same time. Guess wrong
 about which strategy fits, and either throughput suffers for no reason,
 or retries pile up under load.
+
+## Where you'll meet this
+
+In payments and checkout, the contested thing is stock or a balance. A
+guarded single-statement decrement keeps two buyers from taking the last
+unit, and a multi-step flow that reads, decides, and then writes needs a
+row lock or a version check, with the lock the better bet when redoing
+the whole flow is expensive. A news feed meets the hot-row problem
+instead: the like counter on a viral post is one row with thousands of
+writers, so the relief is a shorter transaction, spreading the counter
+across several rows, or funneling the updates through a single worker,
+not a better choice between the two strategies.

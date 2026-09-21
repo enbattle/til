@@ -74,3 +74,15 @@ conflicting deploy schedules, or genuine scaling needs make the
 distributed-systems complexity worth it. Adopting microservices before
 that need is real and specific is a common, expensive mistake: it pays
 the entire operational cost while capturing none of the benefit yet.
+
+## Where you'll meet this
+
+A checkout inside a monolith can save the order, decrement stock, and record
+the payment in one database transaction, and splitting those apart is what
+brings in [sagas](/systems-and-infrastructure/saga-pattern) and the
+[outbox pattern](/systems-and-infrastructure/outbox-pattern). A notification or
+email pipeline is a common early candidate to carve out: it usually already
+runs off a queue and its load tends to be bursty, and a slow or failing email
+provider shouldn't drag the rest of the application down with it. A URL
+shortener has little to gain from splitting early, since one small service
+already covers both its read and write paths.
