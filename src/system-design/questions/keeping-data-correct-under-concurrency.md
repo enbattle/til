@@ -1,6 +1,6 @@
 ---
 title: How do I keep data correct when many users or services change it at once?
-summary: Which mechanism fits when writers collide, a job runs twice, or one change has to reach several systems reliably.
+summary: Which mechanism fits when concurrent writers collide, a scheduled job runs on two machines at once, or one change has to reach several systems reliably.
 date: 2026-09-20
 order: 5
 ---
@@ -26,9 +26,10 @@ saga.
 
 A transaction is a group of changes the database applies all together or not at
 all. For the last-item example, the simplest fix is often a single conditional
-update, one that only decrements the quantity while it's above zero and reports
-whether it changed a row, since the database applies it atomically, as one
-indivisible step.
+update that only decrements the quantity while it's above zero, which needs no
+version column and no lock held across application code; the
+[locking topic](/systems-and-infrastructure/optimistic-vs-pessimistic-locking)
+shows it.
 
 Beyond that there are two strategies, and the difference is a bet on how often
 conflicts happen.
@@ -42,9 +43,8 @@ aren't. Choose pessimistic when conflicts are frequent and redoing work is
 expensive, and optimistic otherwise.
 
 If the symptom is slowness on a hot row, the locking strategy only decides who
-waits. Shorter transactions hold locks for less time. A counter that every
-request updates can be split across several rows and added up when read. Or the
-writes can go through a queue so they apply one at a time.
+waits. The same topic covers the ways to relieve it, in order of increasing
+cost: a shorter transaction, splitting the row, or queuing the writes.
 
 ## Separate processes needing exclusive access
 

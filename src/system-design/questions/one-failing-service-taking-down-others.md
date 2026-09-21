@@ -1,6 +1,6 @@
 ---
 title: How do I stop one failing service from taking everything else down?
-summary: The defenses for a failing dependency, and which ones sit on the caller's side versus the receiver's.
+summary: The defenses for a failing dependency, from timeouts and safe retries to circuit breakers, and which ones sit on the caller's side versus the receiver's.
 date: 2026-09-20
 order: 4
 ---

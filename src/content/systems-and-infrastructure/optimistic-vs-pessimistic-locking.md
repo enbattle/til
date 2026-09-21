@@ -46,6 +46,72 @@ repeatedly — each one's write invalidated by the next one landing first —
 which can be worse in practice than simply queuing behind a lock in the
 first place.
 
+## Sometimes a single statement is enough
+
+Before reaching for either strategy, check whether the database can make the
+change atomically on its own, meaning as one indivisible step. A decrement
+guarded by a condition does the check and the write together:
+
+```sql
+UPDATE inventory
+SET quantity = quantity - 1
+WHERE product_id = 42 AND quantity > 0;
+
+-- 0 rows affected → sold out; nothing was written
+```
+
+Two buyers racing for the last unit can't both succeed. A database's
+isolation level is a setting for how much concurrent transactions can see of
+each other's work, and at the defaults of Postgres (read committed) and
+MySQL's InnoDB (repeatable read) the second statement waits for the first
+transaction to finish, then evaluates its condition against the updated
+quantity, finds zero, and matches no row. In Postgres at repeatable read or
+serializable, the second transaction instead fails with a serialization error
+and has to be retried. There's no version column to maintain, and no lock is
+held while application code runs, as long as the statement commits promptly
+instead of sitting inside a long transaction. It only covers a change that
+fits in one statement; a flow that reads a row, decides something in
+application code, and then writes still needs one of the two strategies
+above.
+
+## When one row is the bottleneck
+
+Neither strategy makes a hot row faster; they only decide who waits. If
+thousands of requests update the same row (the stock of a flash-sale item, a
+global counter), they all queue behind that row's lock, and throughput is
+capped by how fast transactions that touch that row can commit one after
+another, even while the database has plenty of CPU and disk to spare.
+
+The cheapest relief is a shorter transaction. A row lock is held from the
+moment the row is locked until the transaction commits or rolls back, so slow
+work that doesn't depend on that row, such as calling a payment API or sending
+an email, belongs outside the transaction, and the statement that touches the
+hot row belongs as late in it as possible.
+
+Past that, a counter can be split across several rows: each request updates
+one at random, and reading the total means adding them up. Writers collide far
+less often because they're spread across rows, at the price of more expensive
+reads. For stock that must not oversell, the randomly chosen row can be empty
+while others still hold units, so a request that lands on an empty row has to
+try another before reporting sold out. Checking the summed total first and
+then decrementing is the same read-then-write race as before: two requests can
+both see one unit left and both take it.
+
+The most drastic option is to queue the writes and let a single worker, one
+process that drains the queue and is the only writer to that row, apply them.
+Because it is the only writer, contention disappears, and the worker can
+combine many requests into one statement, which cuts the per-transaction
+overhead, while the waiting requests sit in the queue instead of holding
+scarce database connections. The catch is that the worker has to decide in its
+own logic which requests get units, since a blind decrement of the whole batch
+would reject all of it whenever fewer units remain than requested. The caller
+also learns that its write was accepted, not that it was applied. The queue
+needs protection from growing without limit, which is what
+[backpressure](/systems-and-infrastructure/backpressure) is for, and because
+queues usually deliver a message at least once, a crashed worker can replay
+work, so the work has to be
+[idempotent](/systems-and-infrastructure/idempotency).
+
 ## Betting on how often conflicts actually happen
 
 Locking is fundamentally a bet about conflict frequency, and the two
