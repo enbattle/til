@@ -31,13 +31,13 @@
   },
   "size-limit": [
     {
-      "name": "Main chunk (app shell + search index over all topic text)",
+      "name": "Main chunk (app shell + search index over all topic and question text)",
       "path": "dist/assets/index-*.js",
-      "limit": "155 KB"
+      "limit": "164 KB"
     },
     {
-      "name": "TopicPage chunk (markdown + syntax highlighting)",
-      "path": "dist/assets/TopicPage-*.js",
+      "name": "MarkdownRenderer chunk (markdown + syntax highlighting, shared by TopicPage and QuestionPage)",
+      "path": "dist/assets/MarkdownRenderer-*.js",
       "limit": "95 KB"
     }
   ],

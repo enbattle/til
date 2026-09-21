@@ -40,8 +40,23 @@ and "Writing standard" sections exactly:
   use concrete examples over abstract description, and write it so a
   reader with zero prior background on the subject can actually follow it.
 
+- **If the section is `systems-and-infrastructure`, place the topic under a
+  System Design question too.** Add a normal `[text](/systems-and-infrastructure/<slug>)`
+  link to it in the body of the question in `src/system-design/questions/`
+  whose problem it helps solve, following CLAUDE.md's "System Design
+  questions" body convention: state what the option buys, what it costs and
+  when to pick it there, then link, and don't re-explain the topic's
+  mechanism in the question. If no existing question fits, add a new question
+  file with the next free `order` instead. `system-design.test.ts`'s
+  coverage check fails the topic until this is done. Write the link as a
+  plain `[text](/systems-and-infrastructure/<slug>)` in running prose: a link
+  with a single-quoted or parenthesised title, a trailing slash, a `<...>`
+  destination or the reference style isn't counted (a double-quoted title is
+  fine), and an example link inside inline code or an indented block is.
+  Topics in other sections need no question.
+
 If anything about scope or angle is genuinely ambiguous (which section it
-belongs in, how deep to go), ask the user — don't guess on something only
+belongs in, which question it goes under, how deep to go), ask the user — don't guess on something only
 they'd know.
 
 ## Stage 2 — Self-check
@@ -51,9 +66,11 @@ npm run typecheck && npm run lint && npm run format:check
 npm run test:run
 ```
 
-`content.test.ts` and `registry.test.ts` already catch structural problems
-(missing frontmatter field, section/registry mismatch) — this stage is
-just confirming those still pass, not writing new tests. A topic file
+`content.test.ts`, `registry.test.ts` and `system-design.test.ts` already
+catch structural problems (missing frontmatter field, section/registry
+mismatch, a `systems-and-infrastructure` topic no question links, a dead
+question link) — this stage is just confirming those still pass, not
+writing new tests. A topic file
 never needs its own test.
 
 ## Stage 3 — Independent review
@@ -62,6 +79,10 @@ Spawn a **fresh** `general-purpose` agent (never `fork` — it must not
 inherit your own read of the draft). Give it: the new file's full content,
 CLAUDE.md's "Writing standard" section, and the titles/slugs of the other
 topics already in the same section (so it can check for a near-duplicate).
+If Stage 1 also touched a System Design question, give it that question's
+full content too and have it check the added snippet against the Writing
+Standard's question-page rule (routes and compares, doesn't re-teach the
+mechanism, and no fact is stated in both places).
 Instruction, close to verbatim:
 
 > Review this new til topic adversarially against the Writing Standard

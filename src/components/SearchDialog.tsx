@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSection } from '@/content/registry';
-import { searchTopics } from '@/lib/search';
+import { searchContent } from '@/lib/search';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface SearchDialogProps {
@@ -15,7 +15,7 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const results = useMemo(() => searchTopics(query), [query]);
+  const results = useMemo(() => searchContent(query), [query]);
 
   // Called before the autofocus effect below (hook order = call order), so
   // it captures whatever had focus before the dialog opened, not the input
@@ -34,9 +34,9 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
 
-  function goTo(section: string, slug: string) {
+  function goTo(path: string) {
     onClose();
-    navigate(`/${section}/${slug}`);
+    navigate(path);
   }
 
   return (
@@ -66,20 +66,36 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
               No topics match &ldquo;{query}&rdquo;.
             </li>
           )}
-          {results.map((topic) => {
-            const section = getSection(topic.section);
+          {results.map((result) => {
+            // A question stands in the position a topic gives its section
+            // label; its own "section" is the System Design tab.
+            const { key, path, title, label, summary } =
+              result.kind === 'topic'
+                ? {
+                    key: `${result.topic.section}/${result.topic.slug}`,
+                    path: `/${result.topic.section}/${result.topic.slug}`,
+                    title: result.topic.title,
+                    label:
+                      getSection(result.topic.section)?.label ?? result.topic.section,
+                    summary: result.topic.summary,
+                  }
+                : {
+                    key: `system-design/${result.question.slug}`,
+                    path: `/system-design/${result.question.slug}`,
+                    title: result.question.title,
+                    label: 'System Design',
+                    summary: result.question.summary,
+                  };
             return (
-              <li key={`${topic.section}/${topic.slug}`}>
+              <li key={key}>
                 <button
                   type="button"
-                  onClick={() => goTo(topic.section, topic.slug)}
+                  onClick={() => goTo(path)}
                   className="block w-full px-4 py-2 text-left hover:bg-bg-secondary"
                 >
-                  <div className="text-sm font-medium text-text-primary">
-                    {topic.title}
-                  </div>
+                  <div className="text-sm font-medium text-text-primary">{title}</div>
                   <div className="text-xs text-text-tertiary">
-                    {section?.label ?? topic.section} · {topic.summary}
+                    {label} · {summary}
                   </div>
                 </button>
               </li>

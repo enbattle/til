@@ -199,3 +199,24 @@ published topics, not a check of the review process itself), or done as
 an ad-hoc manual check with no spawned fresh reviewer agent and no
 planted-violation scenario — that defeats the same "genuinely fresh eyes"
 premise every other eval in this repo is built on.
+
+---
+
+### SR-13 — system-design-navigation-eval routing
+
+> I just added a new question to the System Design section and reworded
+> another one's summary. Can you check that someone describing a problem
+> would still end up on the right question and topics?
+
+**Expected:** `system-design-navigation-eval`
+**Why:** Exact match for the skill's stated purpose — checking, with
+fresh agents given only a symptom, whether the System Design questions'
+titles, summaries and topic links still lead a reader to the right page
+after the question set changed.
+**Fails if:** routed to `content-audit` (that reads question and topic
+prose against the Writing Standard, not whether a symptom finds the right
+question), `skill-routing-eval` (checks which _skill_ gets picked, not
+whether readers reach the right _content_), or done as an ad-hoc
+read-through by the same session with no fresh agent per scenario, which
+defeats the premise that whoever just wrote the questions is the
+worst-positioned person to judge whether a stranger would find them.

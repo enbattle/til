@@ -49,7 +49,7 @@ only the scenario's prompt, verbatim, plus this instruction:
 > NOT read anything under the evals/ directory (irrelevant and would
 > bias you). Your only job: decide which skill, if any, you'd invoke —
 > /feature, add-topic, docs-audit, content-audit, skill-routing-eval,
-> content-review-eval, or neither (direct). Explore the codebase as
+> content-review-eval, system-design-navigation-eval, or neither (direct). Explore the codebase as
 > needed to inform that judgment. Report your routing decision and a
 > one-sentence reason why. Keep it under 100 words.
 

@@ -40,6 +40,19 @@ own safety nets instead of a running service.
   control (a clean draft that should draw no findings). Run via the
   `content-review-eval` skill.
 
+- `system-design-navigation/` — starting from a symptom with no topic
+  names in it, does the System Design section's question list (titles
+  and summaries) get a fresh reader to the right question and the right
+  catalog topics? A third failure surface: the other two check process
+  (routing, review); this one checks the _content_ a reader navigates by,
+  which `npm run test:run` can't judge (it proves no dead links and
+  full coverage of `systems-and-infrastructure`, not that a person with a
+  problem would find the right page). Includes ambiguous-by-design
+  scenarios and a control whose right answer is "no question covers this."
+  Its Expected answers depend on the current question set, so it has a
+  "when the question set changes" step in `HOW_TO_RUN.md`. Run via the
+  `system-design-navigation-eval` skill.
+
 Future categories worth adding once these are stable: does the
 `/feature` review stage actually catch known-bad injected bugs.
 
@@ -52,7 +65,8 @@ observing what it actually does, which costs real time and tokens per
 scenario. That's a deliberate, judged expense for a personal site, not
 something to run on every commit. Use the `skill-routing-eval` skill to
 run it — see `skill-routing/HOW_TO_RUN.md` for the underlying procedure
-the skill wraps.
+the skill wraps. The other categories work the same way, each through its
+own skill (`content-review-eval`, `system-design-navigation-eval`).
 
 **Re-run whenever it matters**, not on a fixed schedule: after editing
 `CLAUDE.md`, any `SKILL.md`, or `docs/SDLC.md` — the same trigger the
@@ -64,7 +78,7 @@ edit that read fine on its own quietly made the routing rule worse.
 ## Grading philosophy
 
 Not every scenario has exactly one right answer — `evals/skill-routing/scenarios.md`
-marks some as **ambiguous by design** (e.g., a bug of unknown size before
+and `evals/system-design-navigation/scenarios.md` mark some as **ambiguous by design** (e.g., a bug of unknown size before
 investigation, or a new section where `CLAUDE.md` itself allows either
 the plain 3-step process or the full pipeline). Grade those against
 whether the session's reasoning was defensible, not against a single

@@ -24,4 +24,12 @@ describe('section registry', () => {
       expect(section.description.length).toBeGreaterThan(0);
     }
   });
+
+  // Criterion 8: /system-design and /not-found are static routes in App.tsx;
+  // a section with either slug would be shadowed (or shadow them).
+  it('does not use a slug reserved by a static route', () => {
+    const slugs = SECTIONS.map((section) => section.slug);
+    expect(slugs).not.toContain('system-design');
+    expect(slugs).not.toContain('not-found');
+  });
 });

@@ -1,5 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { isSystemDesignPath } from '@/lib/system-design';
 import { ThemeToggle } from './ThemeToggle';
+
+// Same non-color "current" signal as the sidebar navs (docs/DESIGN.md): bold
+// weight plus an accent underline, not just a color change.
+const TAB_BASE = 'border-b-2 px-1 py-1 text-sm no-underline transition-colors';
+const TAB_CURRENT = 'font-bold border-accent text-text-primary';
+const TAB_DEFAULT = 'border-transparent text-text-secondary hover:border-accent';
 
 interface HeaderProps {
   onOpenSearch: () => void;
@@ -7,9 +14,11 @@ interface HeaderProps {
 }
 
 export function Header({ onOpenSearch, onOpenNav }: HeaderProps) {
+  const systemDesignActive = isSystemDesignPath(useLocation().pathname);
+
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg-primary/95 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -38,7 +47,28 @@ export function Header({ onOpenSearch, onOpenNav }: HeaderProps) {
             til
           </Link>
         </div>
-        <div className="flex items-center gap-2">
+        {/* Wraps to its own row below the logo row under `sm` so the tabs stay
+            visible at 375 px without crowding it or scrolling the page. */}
+        <nav
+          aria-label="Primary"
+          className="order-last flex w-full gap-5 sm:order-none sm:mr-auto sm:w-auto"
+        >
+          <Link
+            to="/"
+            aria-current={systemDesignActive ? undefined : 'page'}
+            className={`${TAB_BASE} ${systemDesignActive ? TAB_DEFAULT : TAB_CURRENT}`}
+          >
+            Catalog
+          </Link>
+          <Link
+            to="/system-design"
+            aria-current={systemDesignActive ? 'page' : undefined}
+            className={`${TAB_BASE} ${systemDesignActive ? TAB_CURRENT : TAB_DEFAULT}`}
+          >
+            System Design
+          </Link>
+        </nav>
+        <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
             onClick={onOpenSearch}

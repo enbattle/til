@@ -15,7 +15,8 @@ notebook than a product. The UI follows that:
   background in light mode, a warm charcoal (not pure black) in dark mode
   — with a warm amber/ochre accent standing in for a highlighter pen
   rather than a generic interface blue.
-- **Layout**: a persistent left-side section/topic nav (`SectionNav`)
+- **Layout**: a persistent left-side section/topic nav (`SectionNav`, or
+  `QuestionNav` on System Design routes — see "Question navigation" below)
   alongside a centered content column (`max-w-3xl`), inside a wider
   `max-w-5xl` shell. Above the `lg` breakpoint the nav is a sticky panel
   that scrolls with the page and then holds in place once it reaches its
@@ -49,6 +50,37 @@ notebook than a product. The UI follows that:
   ellipsis-plus-tooltip patterns are unreliable for touch/keyboard users,
   so titles get `leading-snug` and vertical padding on each link instead
   so wrapped and single-line items read as one consistent list.
+- **Header tabs**: the header carries a `<nav aria-label="Primary">` with
+  two links, **Catalog** (`/`) and **System Design** (`/system-design`).
+  The active one has `aria-current="page"` plus a non-color signal — bold
+  weight and an accent-colored bottom border, the same treatment the
+  sidebar navs use for the current page — so it isn't marked by color
+  alone. System Design is active on `/system-design` and everything under
+  it; Catalog is active on every other route, including topic pages a
+  question links to (following a link into the catalog switches tabs). The
+  tabs are visible at every width. Above the `sm` breakpoint they sit in
+  the logo row right after the logo; below it they wrap onto their own row
+  under it (the header is `flex-wrap`, the nav `w-full`), so 375 px shows
+  them without crowding the Menu / Search / theme controls or scrolling the
+  page sideways.
+- **Question navigation**: on `/system-design` and `/system-design/*` the
+  persistent sidebar and `MobileNav` show `QuestionNav` instead of
+  `SectionNav`; every other route, including topic pages and not-found,
+  keeps `SectionNav`. It is the same tree shape: each question is a link
+  (its title, wrapping rather than truncating, with the same bold plus
+  accent-border current signal and `aria-current="page"`), a sibling
+  disclosure `<button>` (`aria-expanded`, `aria-controls`, an
+  `Expand <title>` / `Collapse <title>` label), and a nested `<ul>` of that
+  question's catalog topics toggled with `hidden`. The expand/collapse
+  behavior (only the current question starts open; navigating to another
+  expands it without collapsing one the user opened) lives in the shared
+  `useExpandedGroups` hook that `SectionNav` also uses. Topic links in the
+  tree go to the ordinary catalog page, where the sidebar becomes the
+  section tree; the way back is the "This comes up in:" list a topic page
+  shows for the questions that link to it. On desktop both trees stay
+  mounted and the inactive one sits in a `hidden`, `display: contents`
+  wrapper (out of the accessibility tree at every width), so a group the user
+  opened survives a round trip between the two tabs.
 - **Thin, on-theme scrollbar**: both nav scroll containers (the desktop
   sidebar wrapper in `App.tsx` and `MobileNav`'s panel) use a
   `.scrollbar-thin` utility (`src/index.css`) built from the standard

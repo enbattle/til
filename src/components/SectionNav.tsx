@@ -1,5 +1,6 @@
-import { useEffect, useId, useState } from 'react';
+import { useId } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useExpandedGroups } from '@/hooks/useExpandedGroups';
 import { topicsBySection } from '@/lib/content';
 import type { Section } from '@/content/registry';
 import type { Topic } from '@/types';
@@ -52,38 +53,9 @@ export function SectionNav({ onNavigate, className }: SectionNavProps) {
   const groups = topicsBySection();
   const idPrefix = useId();
 
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(() => {
-    const current = currentSectionSlug(pathname, groups);
-    return new Set(current ? [current] : []);
-  });
-
-  // Auto-expand the newly-current section on navigation (search, a
-  // cross-link, browser back/forward, …) without collapsing anything the
-  // user already opened manually.
-  useEffect(() => {
-    const current = currentSectionSlug(pathname, groups);
-    if (!current) return;
-    setExpandedSections((prev) => {
-      if (prev.has(current)) return prev;
-      const next = new Set(prev);
-      next.add(current);
-      return next;
-    });
-    // groups is derived from static content and doesn't change at runtime.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
-
-  function toggleSection(slug: string) {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(slug)) {
-        next.delete(slug);
-      } else {
-        next.add(slug);
-      }
-      return next;
-    });
-  }
+  const { isExpanded: isSectionExpanded, toggle: toggleSection } = useExpandedGroups(
+    currentSectionSlug(pathname, groups),
+  );
 
   return (
     <nav aria-label="Sections" className={className}>
@@ -94,7 +66,7 @@ export function SectionNav({ onNavigate, className }: SectionNavProps) {
             (topic) => pathname === `${sectionPath}/${topic.slug}`,
           );
           const isSectionCurrent = pathname === sectionPath || isTopicCurrent;
-          const isExpanded = expandedSections.has(section.slug);
+          const isExpanded = isSectionExpanded(section.slug);
           const topicListId = `${idPrefix}-${section.slug}-topics`;
 
           return (

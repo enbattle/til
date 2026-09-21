@@ -2,6 +2,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { getSection } from '@/content/registry';
 import { getTopic, sectionNeighbors } from '@/lib/content';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { questionsForTopic } from '@/lib/system-design';
 
 export function TopicPage() {
   const { section: sectionSlug, slug } = useParams<{ section: string; slug: string }>();
@@ -11,6 +12,7 @@ export function TopicPage() {
   if (!section || !topic) return <Navigate to="/not-found" replace />;
 
   const { prev, next } = sectionNeighbors(topic);
+  const questions = questionsForTopic(topic.section, topic.slug);
 
   return (
     <article className="space-y-8">
@@ -28,6 +30,30 @@ export function TopicPage() {
       </div>
 
       <MarkdownRenderer content={topic.body} />
+
+      {/* The way back from a System Design question (which links here) — the
+          list is generated from the questions' own links, not maintained by
+          hand on each topic. */}
+      {questions.length > 0 && (
+        <nav
+          aria-label="Questions this topic comes up in"
+          className="border-t border-border pt-6 text-sm"
+        >
+          <p className="text-text-tertiary">This comes up in:</p>
+          <ul className="mt-2 space-y-1">
+            {questions.map((question) => (
+              <li key={question.slug}>
+                <Link
+                  to={`/system-design/${question.slug}`}
+                  className="text-accent hover:text-accent-hover"
+                >
+                  {question.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       {(prev || next) && (
         <nav className="flex flex-wrap justify-between gap-4 border-t border-border pt-6 text-sm">

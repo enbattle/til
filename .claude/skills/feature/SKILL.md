@@ -81,8 +81,8 @@ this instruction, close to verbatim:
 
 > Write tests covering every acceptance criterion in the spec above. Only
 > create or edit `*.test.ts` / `*.test.tsx` files (and test fixture content
-> under `src/content/` only if the spec requires new seed content to test
-> against). Do not write or modify any implementation file. Run the suite
+> under `src/content/` or `src/system-design/` only if the spec requires new
+> seed content to test against). Do not write or modify any implementation file. Run the suite
 > yourself when done and confirm the new tests fail — report exactly which
 > tests are red and why (missing implementation, not a typo in the test).
 
@@ -162,7 +162,8 @@ Instruction, close to verbatim:
 > in a browser — click through the real flow, not just the happy path,
 > check both themes and a mobile-width viewport, check the console for
 > errors, and hold it to docs/DESIGN.md's accessibility checklist. If this
-> change adds or edits topic content (a file under `src/content/`), also
+> change adds or edits topic content (a file under `src/content/` or
+> `src/system-design/`), also
 > hold the prose itself to CLAUDE.md's Writing Standard section — terms
 > defined before use, built from first principles rather than an assumed
 > mental model, concrete examples over abstract description, and written

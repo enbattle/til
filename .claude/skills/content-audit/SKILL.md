@@ -1,6 +1,6 @@
 ---
 name: content-audit
-description: Sweep published topic(s) under src/content/**/*.md for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics "sound AI-written," or a quality check of one specific already-published topic (not a brand-new topic being drafted — that's add-topic's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
+description: Sweep published topic(s) under src/content/**/*.md, and System Design question pages under src/system-design/questions/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics "sound AI-written," or a quality check of one specific already-published topic (not a brand-new topic being drafted — that's add-topic's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
 ---
 
 # Content audit
@@ -18,7 +18,8 @@ where this repo does and doesn't spend a separate agent, and
 this one is structurally parallel to — that one covers meta-documentation
 staleness (`CLAUDE.md`, `docs/`, `evals/`, every `SKILL.md`) against
 current repo state; this one covers the prose _quality_ of the published
-topics themselves under `src/content/**`, against
+topics themselves under `src/content/**` and the System Design question
+pages under `src/system-design/questions/`, against
 [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard. Neither one's scope
 includes the other's.
 
@@ -33,8 +34,9 @@ that never held the draft in mind reads the tic on sight instead of
 
 ## Stage 0 — Scope the run
 
-Default: every file under `src/content/**/*.md` (glob at run time —
-don't trust a cached file list, the corpus grows). If invoked with
+Default: every file under `src/content/**/*.md` and
+`src/system-design/questions/*.md` (glob at run time — don't trust a cached
+file list, the corpus grows). If invoked with
 specific file or section names as arguments, scope to those instead and
 say so before starting.
 
@@ -45,7 +47,9 @@ list into roughly-even parallel batches rather than one massive agent
 call — by section is the natural split (mirrors how this repo's own
 first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
-section is unusually large.
+section is unusually large. The question pages are one more batch of their
+own (they link across each other and into the topics, so read together they
+are the natural unit for check 4 below).
 
 ## Stage 2 — Independent audit, per batch
 
@@ -54,7 +58,7 @@ must not inherit any prior read of these files). Give each agent its
 batch's file list, [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard,
 and this instruction, close to verbatim:
 
-> Read every file in your batch in full. Audit each one against three
+> Read every file in your batch in full. Audit each one against these
 > criteria. Report findings grouped by file, each with a quote, which
 > criterion it violates, and a suggested fix. Do not edit anything —
 > audit only. If a file has nothing worth flagging, say so explicitly
@@ -101,6 +105,17 @@ and this instruction, close to verbatim:
 > being wrong, or internally inconsistent — quote the claim, say what's
 > wrong, and say what's actually true.
 >
+> **4. Question pages only (skip for a catalog topic) — does it route
+> and compare, or re-teach?** A System Design question page under
+> `src/system-design/questions/` answers its question by comparing options
+> and linking to catalog topics; it doesn't carry a topic's mechanism.
+> Flag a snippet that walks through how a topic works instead of stating
+> what the option buys, what it costs and when to pick it here, then
+> linking. Also flag any fact stated in two places: a claim a linked topic
+> already makes that the question restates rather than links, and a claim
+> repeated across two question pages instead of living in one and being
+> linked from the other. Read the linked topic when deciding.
+>
 > Your batch: <Stage 1's file list for this batch>
 
 Run all batches in parallel (one message, multiple `Agent` calls), not
@@ -129,7 +144,7 @@ npm run test:run
 
 Add `npm run build && npm run size` too if the batch of fixes was large
 enough that a build-level regression is plausible. Summarize for the
-user: what was audited, what was found (grouped by the three
-criteria), what was fixed, and anything left open for their judgment.
+user: what was audited, what was found (grouped by
+criterion), what was fixed, and anything left open for their judgment.
 Ask before committing or pushing, same as always — this skill leaves the
 working tree ready, it doesn't ship it.

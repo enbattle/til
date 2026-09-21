@@ -5,8 +5,9 @@ Guidance for working in this repository.
 ## What this is
 
 `til` is a static reference site: markdown topics grouped into top-level
-sections, rendered by a Vite + React + TypeScript app and deployed to
-GitHub Pages. There's no backend and no in-app editor — content is added
+sections, plus a second, question-first way in (System Design) over the
+`systems-and-infrastructure` material, rendered by a Vite + React +
+TypeScript app and deployed to GitHub Pages. There's no backend and no in-app editor — content is added
 as files in the repository and shipped with the next build.
 
 ## Adding a feature or nontrivial change
@@ -59,6 +60,59 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
   they navigate client-side and respect the GitHub Pages base path. An
   `https://` link renders as a normal new-tab external link.
 
+## System Design questions
+
+The header has two tabs: **Catalog** (everything above) and **System
+Design**, which is browsed by question ("what do I do when my database can't
+keep up with reads?") instead of by topic name. Each question page answers
+its question by routing and comparing options, and links into the catalog;
+it never holds a copy of a topic.
+
+```
+src/system-design/questions/<slug>.md
+```
+
+Questions live outside `src/content/` on purpose: everything under
+`src/content/` is a catalog section, and `registry.test.ts` requires one
+registry entry per folder there. A question has its own loader
+(`src/lib/system-design.ts`, which reuses `parseFrontmatter`) and is not
+registered in `SECTIONS`; the two are independent. Frontmatter is the usual
+flat `key: value`, plus one more required field:
+
+```md
+---
+title: The question itself, ending in a question mark?
+summary: One plain-text sentence — the hook shown on the landing page and in search.
+date: YYYY-MM-DD
+order: 2
+---
+```
+
+- **`order`** is a positive integer, unique across questions; questions are
+  listed in ascending `order`. `parseQuestion` throws at load time, naming
+  the file and field, if any of the four fields is missing or `order` isn't a
+  positive integer.
+- **Links are the data.** A question's topic list is generated from the
+  `[text](/<section>/<slug>)` links in its body (first appearance order,
+  fenced code ignored). The sidebar's topic list, the "Go deeper" list on the
+  question page and the "This comes up in:" list on each topic page are all
+  derived from those links, so there's nothing to keep in sync by hand.
+  `src/lib/system-design.test.ts` fails on a link to a topic or question that
+  doesn't exist. The extractor only counts plain inline links written as
+  `[text](/section/slug)` (a double-quoted title after the URL is fine).
+  Anything else, such as a single-quoted or parenthesised title, a trailing
+  slash, `<...>` around the destination, nested brackets in the text, or the
+  reference style, still renders as a working link but is silently dropped
+  from those lists. A link inside inline code or a 4-space-indented block is
+  counted even though it isn't a real link, so don't put example links there.
+- Every `systems-and-infrastructure` topic must be linked from at least one
+  question, or that test fails (there is no allowlist). See the next section.
+- Body convention, reviewed by a person or agent rather than enforced by a
+  test: what the problem looks like, how to confirm it, options cheapest
+  first (2-3 sentences each: what it buys, what it costs, when to pick it,
+  then the link), how they combine, and when it isn't this problem
+  (pointing at a neighboring question).
+
 ## Adding a topic to an existing section
 
 Use the `add-topic` skill — see
@@ -70,6 +124,13 @@ every file under `src/content/**/*.md` automatically via
 one independent review pass against the Writing Standard below before
 calling it done, since this is the most frequent change in the repo and
 otherwise the easiest one to skip review on entirely.
+
+A new `systems-and-infrastructure` topic must also be linked from a System
+Design question (in the body, as a normal `/<section>/<slug>` link), or
+`src/lib/system-design.test.ts`'s coverage check fails. Add it to the
+question whose problem it helps solve; if none fits, that is the signal a
+new question is needed (a file under `src/system-design/questions/` with the
+next free `order`). Topics in other sections don't need one.
 
 ## Adding a new section
 
@@ -111,17 +172,27 @@ pass on denser subjects, not assumed on the first read. Concretely:
   "dopamine detox") is used naturally and trusted to land — not
   over-explained or defended against a literal misreading nobody would
   actually make.
+- A System Design question page routes and compares; it doesn't re-explain
+  a topic's mechanism (that's the topic's job, one link away). A snippet of
+  a topic states what the option buys, what it costs and when to pick it
+  here, then links. A fact that belongs to a topic is stated there and only
+  linked from the question, never restated in both places.
 - Every substantive technical claim is independently verified against
   real knowledge of the subject before publishing, not assumed correct
   because it reads confidently.
 
 ## What's deliberately not built here
 
-Tags, "tracks" / reading paths, a domain split, interactive step-through
-pages, Mermaid diagrams, end-to-end (Playwright) tests, and an in-app
-editor or CMS are all out of scope for now — the app is intentionally kept
-to sections + search + markdown rendering + dark mode. Add one of these
-only if a real need shows up, not speculatively.
+Tags, interactive step-through pages, Mermaid diagrams, end-to-end
+(Playwright) tests, and an in-app editor or CMS are all out of scope for
+now — the app is intentionally kept to sections + search + markdown
+rendering + dark mode, plus the System Design question layer above. That
+layer is a bounded exception to the earlier "no domain split, no reading
+paths" stance: it adds one alternate route into `systems-and-infrastructure`
+by question, but not tracks, ordered curricula or a domain hierarchy over
+the catalog, and catalog URLs, section pages and the topics' own prose are
+unchanged. Add one of the deferred items only if a real need shows up, not
+speculatively.
 
 The equivalent list for _process/tooling_ practices (CI gates, hooks,
 agent-workflow scaling) considered and deliberately deferred, each with
@@ -139,11 +210,19 @@ npm run size
 ```
 
 `npm run dev` for manual checking: click through the home page, a section,
-and a topic; toggle the theme; open search (`Ctrl`/`Cmd`+K) and confirm a
-topic is findable by title and by a body phrase.
+and a topic; open the System Design tab and a question page, and check that a
+`systems-and-infrastructure` topic shows its "This comes up in:" back-link;
+toggle the theme; open search (`Ctrl`/`Cmd`+K) and confirm a topic and a
+question are each findable by title and by a body phrase.
 
 `npm run size` checks the built JS chunks against the budgets in
 `package.json`'s `size-limit` field — a change that pulls in a heavy new
 dependency should fail this rather than silently regressing page-load
 size. If a change legitimately needs more room, raise the specific
-chunk's limit deliberately rather than letting it drift unnoticed.
+chunk's limit deliberately rather than letting it drift unnoticed. The main
+chunk's limit was raised from 155 KB to 164 KB (151.22 KB before, 159.35 KB
+after, brotlied) when System Design landed: search indexes topics and
+questions together client-side, so the question bodies now ship in the main
+chunk. The markdown chunk's entry now points at `MarkdownRenderer-*.js`
+because `TopicPage` and `QuestionPage` share it (it was `TopicPage-*.js`
+while only `TopicPage` used it; that file is now a few hundred bytes).

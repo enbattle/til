@@ -109,8 +109,11 @@ description, does a fresh session route it to the skill this document and
 `CLAUDE.md` intend, or a direct edit (`skill-routing`) — and, once the
 right skill runs, does its review step actually catch what it's supposed
 to catch instead of rubber-stamping the work (`content-review`, for
-`add-topic`'s Stage 3)? Run via the `skill-routing-eval` and
-`content-review-eval` skills — see `evals/README.md`. Both are run
+`add-topic`'s Stage 3), and — for the System Design section — does a
+reader starting from a symptom reach the right question and topics
+(`system-design-navigation`)? Run via the `skill-routing-eval`,
+`content-review-eval` and `system-design-navigation-eval` skills — see
+`evals/README.md`. All are run
 manually/periodically, not on every commit — most usefully right after
 editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also when
 `.claude/hooks/nudge-sdlc.js` reminds a session to check it.

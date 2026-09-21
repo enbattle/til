@@ -15,8 +15,13 @@ sections, deployed as a static site.
   browse by this grouping — the navigation's own section groups expand
   and collapse independently as you move between them (see
   [docs/DESIGN.md](docs/DESIGN.md)).
-- **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's title, summary,
-  and body ([Fuse.js](https://www.fusejs.io)).
+- **System Design** — a second tab that starts from a question ("what do I
+  do when my database can't keep up with reads?") instead of a topic name.
+  Each question page compares the options and links into the catalog
+  topics it draws on; every topic links back to the questions it comes up
+  in. Its sidebar lists the questions, each expandable to its topics.
+- **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's and System Design
+  question's title, summary, and body ([Fuse.js](https://www.fusejs.io)).
 - **Markdown content** — fenced code blocks are syntax-highlighted (via
   [Shiki](https://shiki.style)) with a copy button; long-form writing reads
   through the [Tailwind Typography](https://github.com/tailwindlabs/tailwindcss-typography)
@@ -59,7 +64,8 @@ npm run check:npm-refs    # Fail if a doc references an npm script that no longe
 There's no in-app editor — topics are markdown files added to the
 repository and shipped with the next build. See [CLAUDE.md](CLAUDE.md) for
 the exact steps: adding a topic to an existing section, adding a new
-section, and the writing standard topics are held to.
+section, System Design questions, and the writing standard topics are held
+to.
 
 ## Design
 
