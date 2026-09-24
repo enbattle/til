@@ -16,15 +16,24 @@ Logging started on 2026-09-23. Earlier runs are in `docs/specs/` and git
 history; they were not backfilled, since that would mean reconstructing
 numbers nobody recorded.
 
-Columns:
+Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
 
-- **Gate failures** — times a stage's gate failed (Stage 2 re-runs, a
-  test-lock or `verify` failure), with a two-word reason; `0` if none.
-- **Findings** — review findings the diff introduced, as
-  high/medium/low counts, plus `pre:N` for findings that were already there.
-  `add-topic` counts its Stage 3 findings the same way.
-- **Fix rounds** — rounds of the capped fix loop used (0–2).
-- **Retro** — `nothing to change`, or the edits made, in a few words.
+- **Run** — `/feature <spec path>` or `add-topic <topic path>`.
+- **Gate failures** — a count, then a few words of reason: every time a gate
+  the orchestrator runs failed (Stage 2's, the test-lock check, `verify`),
+  plus every Stage 2 re-run after an implementer reported a wrong test; `0`
+  if none.
+- **Findings** — the first review round's findings that the diff introduced,
+  as high/medium/low counts (CONFIRMED and credible PLAUSIBLE; cosmetic ones
+  the user would wave through don't count), plus `, pre:N` for findings that
+  were already there. `add-topic` counts its first Stage 3 round the same
+  way. Example: `0/2/1, pre:1`.
+- **Fix rounds** — rounds of the capped fix loop used: `0`, `1` or `2`.
+- **Retro** — what was actually applied after the user's decision, in a few
+  words, or `nothing to change` (which the check rejects on a row with gate
+  failures or findings: say why none called for a change). `n/a` for
+  `add-topic`, which has no retrospective.
+- **Escaped defect** — empty until a later fix traces a bug to this run.
 
 | Date | Run | Gate failures | Findings (H/M/L, pre) | Fix rounds | Retro | Escaped defect |
 | ---- | --- | ------------- | --------------------- | ---------- | ----- | -------------- |

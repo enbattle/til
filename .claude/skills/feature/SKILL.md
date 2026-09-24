@@ -109,15 +109,34 @@ If a non-test implementation file changed, or the new tests pass
 immediately (meaning they're not testing anything new), stop and re-run
 this stage with a corrected instruction rather than proceeding.
 
-Once the gate passes, lock the tests:
+Once the gate passes, lock the tests, naming every content fixture the
+test-writer created or changed (from the `git status` output above) so it is
+locked too:
 
 ```bash
-npm run check:test-lock -- --snapshot
+npm run check:test-lock -- --snapshot [fixture paths...]
 ```
 
-This records a hash of every test file (tracked or not) inside `.git/`, and
-the Stage 3 and 4a gates compare against it. Re-take it whenever a fresh
+This records a hash of every test file, everything under `src/test/`, every
+vitest snapshot and the named fixtures (tracked or not) inside `.git/`, and
+the Stage 3, 4a and 5 gates compare against it. Re-take it whenever a fresh
 test-writer changes the tests; nothing else may.
+
+**Re-running this stage after Stage 3 has started** (the implementer reported
+a test as wrong) is the one case where tests change later. Give the fresh
+test-writer Stage 2's instruction plus the report, and scope it to the tests
+the report names. Its gate is different, because implementation files already
+exist and a corrected test may now pass against them:
+
+```bash
+git status --porcelain -uall   # before and after the re-run: non-test lines must be identical
+npm run check:test-lock -- --verify   # lists exactly what the re-run changed
+```
+
+Every path `--verify` lists must be one the report named. A corrected test
+doesn't have to fail. Then re-take the snapshot. Cap: **2 re-runs per
+feature**. A third report of a wrong test means the spec is the problem;
+stop and take it to the user.
 
 ## Stage 3 — Implementation (green) + docs
 
@@ -126,8 +145,11 @@ the specific failing test file(s) from Stage 2 (their paths and content —
 it should treat them as ground truth, not something to question lightly).
 Instruction, close to verbatim:
 
-> Implement the spec above so the failing tests listed pass. Do not edit
-> any `*.test.ts` / `*.test.tsx` file for any reason. If a test looks wrong
+> Implement the spec above so the failing tests listed pass. Do not edit,
+> delete or add any `*.test.ts` / `*.test.tsx` file, anything under
+> `src/test/`, a vitest snapshot, or these fixture files: <the fixture paths
+> locked in Stage 2, or "none">. They are locked, and a check will fail if
+> any of them changes. If a test looks wrong
 > or the spec is ambiguous in a way that blocks you, stop and report the
 > discrepancy instead of changing the test to fit your implementation.
 > Update any doc this change makes stale (`CLAUDE.md`, `README.md`, `docs/`,
@@ -145,20 +167,19 @@ check.
 **Verification gate:**
 
 ```bash
-npm run check:test-lock -- --verify   # MUST pass — any changed, deleted or added test file is a hard stop
+npm run check:test-lock -- --verify   # MUST pass — any changed, deleted or added locked file is a hard stop
 npm run verify
 ```
 
 Don't use `git diff` for this check: it never shows untracked files, which is
 what the Stage 2 tests usually are, and a `git add` hides an edit from it.
 
-A changed test file here is the one rule this whole pipeline exists to
-catch — if it's non-empty, stop immediately and surface it to the user
+A changed locked file here is the one rule this whole pipeline exists to
+catch — if the check fails, stop immediately and surface it to the user
 rather than deciding yourself whether the edit was reasonable. That is a
 different case from the implementer _reporting_ that a test looks wrong: don't
-fix the test yourself either. Send the failure to a fresh test-writer (Stage
-2's instruction, plus the failure), re-take the snapshot after its gate, and
-re-run this gate.
+fix the test yourself either. Re-run Stage 2 as described there ("Re-running
+this stage after Stage 3 has started"), then re-run this gate.
 
 Two more things to do here, both because the implementer's report is the
 only place they'd otherwise surface:
@@ -188,15 +209,15 @@ you or the user to run ad hoc, standalone, outside this pipeline.)
 Instead, spawn a **fresh** `general-purpose` agent (never `fork`). Give it
 only: the spec file's path/content, the path of
 [docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md), and the full
-diff, produced with
+diff from
 
 ```bash
-git add -N .        # intent-to-add: makes new, untracked files show up in the diff
-git diff HEAD
+npm run review:diff
 ```
 
 (plain `git diff HEAD` silently leaves out every new file, so the reviewer
-would never see them) — not your own exploration, not either prior
+would never see them; `review:diff` includes them without touching your
+index) — not your own exploration, not either prior
 subagent's report, not any framing of your own about the implementation's
 quality.
 Instruction, close to verbatim:
@@ -256,10 +277,10 @@ being separate from Stage 3.
 Up to **2 rounds**:
 
 1. Spawn a **fresh** `general-purpose` agent (not the Stage 3 agent) with
-   the findings and the spec: "Fix these findings. Do not edit any
-   `*.test.ts` / `*.test.tsx` file." Same verification gate as Stage 3.
-2. Re-run Stage 4's review on the updated diff (produced the same way,
-   `git add -N .` then `git diff HEAD`).
+   the findings and the spec: "Fix these findings. Do not edit, delete or
+   add any locked file (the same list as Stage 3's instruction)." Same
+   verification gate as Stage 3.
+2. Re-run Stage 4's review on the updated diff (`npm run review:diff` again).
 
 If findings remain after 2 rounds, **stop** — report the remaining
 findings to the user directly rather than attempting a third round
@@ -271,7 +292,9 @@ unbounded loop.
 Re-run the full verification suite one last time on the final diff:
 
 ```bash
+npm run check:test-lock -- --verify   # the reviewer ran the app; confirm it changed no locked file
 npm run verify
+npm run check:test-lock -- --clear    # the run's snapshot has done its job
 ```
 
 Summarize for the user: what changed, a link to the spec file, the review
@@ -319,7 +342,7 @@ deliberately not adopted yet, each with a revisit trigger; a lesson or a fix
 does not go there (see its "Adding an entry").
 
 If the proposed edits touch a process file (a `SKILL.md`, `CLAUDE.md`, a doc
-under `docs/` other than a spec, anything under `evals/`, or `.claude/hooks/`),
+under `docs/` other than a spec or the pipeline log, anything under `evals/`, or `.claude/hooks/`),
 have **one fresh** `general-purpose` agent (never `fork`) read them before you
 show the user: you wrote them, so you are the worst-positioned reader of them.
 Give it the diff, the friction evidence for each edit (not your reasoning) and
@@ -334,15 +357,18 @@ clear answer. One pass, no loop: fix each finding you can't refute in a
 sentence and report the rest. A run whose edits touch no process file skips
 this.
 
-Append this run's row to [docs/pipeline-log.md](../../../docs/pipeline-log.md)
-(its header defines the columns), even when the retro found nothing: a run
-with no friction is data too. Before writing "nothing to change", compare it
-with the row's own gate failures and findings; if they are non-zero, say in
-the Retro cell why none of them called for a change. If this run fixed a bug
-an earlier approved run introduced, fill in that row's **Escaped defect** cell
-and treat it as friction for this retro.
-
 Show the user what you found and the edits you propose, along with any review
 findings you didn't act on. Once they approve, commit the retro edits
 separately from the feature, then run whichever eval `evals/README.md`'s table
 names for what you changed.
+
+Finally, once the user has decided on the retro edits, append this run's row
+to [docs/pipeline-log.md](../../../docs/pipeline-log.md), even when the retro
+found nothing: a run with no friction is data too. The log's header defines
+each column; the Retro cell records what was actually applied, not what was
+proposed. The row goes in the feature's commit, and it is not a process edit,
+so it needs no independent read. `npm run check:pipeline-log` (part of
+`verify`) fails a row with gate failures or findings whose Retro cell is a bare
+"nothing to change": say why none of them called for a change. If this run
+fixed a bug an earlier approved run introduced, fill in that row's **Escaped
+defect** cell and treat it as friction for this retro.

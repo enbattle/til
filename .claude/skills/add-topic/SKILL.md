@@ -97,7 +97,8 @@ Instruction, close to verbatim:
 
 > Review this new til topic adversarially against the Writing Standard
 > below — assume nothing about it is fine until you've checked it
-> yourself. Check specifically: are terms defined before they're used, is
+> yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line
+> there is always a real finding. Check specifically: are terms defined before they're used, is
 > it built up from first principles rather than assuming a mental model
 > the reader may not have, does it use concrete examples rather than
 > staying abstract, would a reader with zero prior background on this
@@ -125,7 +126,7 @@ Instruction, close to verbatim:
 Re-run the Stage 2 verification suite on the final version, confirm it's
 green, and summarize the topic and the review outcome for the user. Append a
 row for this run to [docs/pipeline-log.md](../../../docs/pipeline-log.md)
-(the Stage 3 findings go in its Findings column, rounds used in Fix rounds;
-Retro is `n/a`, since this skill has no retrospective stage). Ask
+(its header defines the columns; Retro is `n/a`, since this skill has no
+retrospective stage). The row goes in the topic's commit. Ask
 before committing or pushing, same as always — this skill leaves the
 working tree ready, it doesn't ship it.

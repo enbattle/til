@@ -25,4 +25,4 @@ detail is never copied here.
 9. Tests locked after Stage 2 change only through a fresh test-writer; `check:test-lock` enforces it.
 10. Gates are checks the orchestrator runs itself, never a subagent's self-report.
 11. Nothing is committed or pushed without the user's explicit go-ahead.
-12. Every loop is capped (2 review rounds) and surfaces to the user when the cap is hit.
+12. Every loop is capped (2 fix rounds, 2 Stage 2 re-runs, 2 add-topic review rounds) and surfaces to the user when the cap is hit.

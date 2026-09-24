@@ -1,72 +1,71 @@
 #!/usr/bin/env node
 // Guardrail for /feature's locked-tests rule (.claude/skills/feature/SKILL.md,
-// Stages 2, 3 and 4a): once the test-writer's red tests pass their gate, no
+// Stages 2, 3, 4a and 5): once the test-writer's red tests pass their gate, no
 // later stage may edit, delete or add a test file.
 //
-// `--snapshot` records a sha256 of every test file; `--verify` recomputes them
-// and fails on any difference. It hashes files instead of reading `git diff`
-// because `git diff` never shows untracked files (the new test files a
-// test-writer usually creates are untracked until the user commits) and an
-// agent's `git add` would hide an edit from it. The manifest lives inside the
-// git directory, so it is never in the working tree or the diff.
+// `--snapshot [path...]` records a sha256 of every locked file: every test
+// file, everything under src/test/ and every vitest snapshot, plus any extra
+// paths given (the content fixtures a test-writer created or changed).
+// `--verify` recomputes them and fails on any difference. `--clear` deletes
+// the snapshot at the end of a run.
+//
+// It hashes files instead of reading `git diff` because `git diff` never shows
+// untracked files (the new test files a test-writer usually creates are
+// untracked until the user commits) and an agent's `git add` would hide an edit
+// from it. Files are listed through git (tracked plus untracked, minus
+// ignored), so ignored output, nested worktrees and symlink loops are never
+// walked. The snapshot lives inside the git directory, so it is never in the
+// working tree or the diff.
 //
 // Not part of `npm run verify` or CI: it compares against a snapshot that only
 // exists during a pipeline run.
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const EXCLUDED_DIRS = new Set(['node_modules', 'dist', '.git']);
 const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
+const SNAPSHOT_FILE = /(^|\/)__snapshots__\/.+\.snap$/;
 // Shared test setup can weaken every test at once, so it is locked too.
-const TEST_SUPPORT_DIR = `src${sep}test${sep}`;
+const TEST_SUPPORT_DIR = 'src/test/';
 
-function isLocked(relPath) {
-  return TEST_FILE.test(relPath) || relPath.startsWith(TEST_SUPPORT_DIR);
+function git(args) {
+  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
 }
 
-function walk(dir, files = []) {
-  for (const entry of readdirSync(dir)) {
-    if (EXCLUDED_DIRS.has(entry)) continue;
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) {
-      walk(path, files);
-    } else {
-      const rel = relative(ROOT, path);
-      if (isLocked(rel)) files.push(rel);
-    }
-  }
-  return files;
+function isTestFile(path) {
+  return (
+    TEST_FILE.test(path) || SNAPSHOT_FILE.test(path) || path.startsWith(TEST_SUPPORT_DIR)
+  );
 }
 
-function hashAll() {
-  const hashes = {};
-  for (const rel of walk(ROOT).sort()) {
-    hashes[rel.split(sep).join('/')] = createHash('sha256')
-      .update(readFileSync(join(ROOT, rel)))
-      .digest('hex');
-  }
-  return hashes;
+// Tracked and untracked files, minus ignored ones, with `/` separators.
+function repoFiles() {
+  return git(['ls-files', '-co', '--exclude-standard', '-z']).split('\0').filter(Boolean);
 }
 
-function manifestPath() {
-  const gitDir = execFileSync('git', ['rev-parse', '--git-dir'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  });
-  return join(resolve(ROOT, gitDir.trim()), 'til-test-lock.json');
+function hash(path) {
+  const full = join(ROOT, path);
+  return existsSync(full)
+    ? createHash('sha256').update(readFileSync(full)).digest('hex')
+    : null;
 }
 
-const mode = process.argv[2];
-const manifest = manifestPath();
+const manifest = join(
+  resolve(ROOT, git(['rev-parse', '--git-dir']).trim()),
+  'til-test-lock.json',
+);
+const [mode, ...extraPaths] = process.argv.slice(2);
 
 if (mode === '--snapshot') {
-  const hashes = hashAll();
+  const files = new Set(repoFiles().filter(isTestFile));
+  for (const path of extraPaths) files.add(path.replace(/\\/g, '/'));
+  const hashes = {};
+  for (const path of [...files].sort()) hashes[path] = hash(path);
   writeFileSync(manifest, JSON.stringify(hashes, null, 2));
-  console.log(`Locked ${Object.keys(hashes).length} test file(s). Snapshot: ${manifest}`);
+  console.log(`Locked ${files.size} file(s). Snapshot: ${manifest}`);
   process.exit(0);
 }
 
@@ -79,28 +78,38 @@ if (mode === '--verify') {
     process.exit(1);
   }
   const locked = JSON.parse(readFileSync(manifest, 'utf8'));
-  const current = hashAll();
   const changed = [];
-  for (const [file, hash] of Object.entries(locked)) {
-    if (!(file in current)) changed.push(`deleted:  ${file}`);
-    else if (current[file] !== hash) changed.push(`modified: ${file}`);
+  for (const [path, lockedHash] of Object.entries(locked)) {
+    const now = hash(path);
+    if (now === lockedHash) continue;
+    if (lockedHash === null) changed.push(`added:    ${path}`);
+    else if (now === null) changed.push(`deleted:  ${path}`);
+    else changed.push(`modified: ${path}`);
   }
-  for (const file of Object.keys(current)) {
-    if (!(file in locked)) changed.push(`added:    ${file}`);
+  for (const path of repoFiles().filter(isTestFile)) {
+    if (!(path in locked)) changed.push(`added:    ${path}`);
   }
   if (changed.length > 0) {
-    console.error('Test files changed since the Stage 2 snapshot — hard stop:\n');
+    console.error('Locked files changed since the Stage 2 snapshot — hard stop:\n');
     for (const line of changed) console.error(`  ${line}`);
     console.error(
-      '\nLocked tests may only change through a fresh test-writer (Stage 2), which ' +
+      '\nLocked files may only change through a fresh test-writer (Stage 2), which ' +
         'takes a new snapshot. Surface this to the user; do not decide yourself whether ' +
         'the edit was reasonable.',
     );
     process.exit(1);
   }
-  console.log(`All ${Object.keys(locked).length} locked test file(s) are unchanged.`);
+  console.log(`All ${Object.keys(locked).length} locked file(s) are unchanged.`);
   process.exit(0);
 }
 
-console.error('Usage: npm run check:test-lock -- --snapshot | --verify');
+if (mode === '--clear') {
+  rmSync(manifest, { force: true });
+  console.log('Test-lock snapshot cleared.');
+  process.exit(0);
+}
+
+console.error(
+  'Usage: npm run check:test-lock -- --snapshot [path...] | --verify | --clear',
+);
 process.exit(2);

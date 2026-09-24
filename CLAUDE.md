@@ -22,7 +22,9 @@ change). See [docs/SDLC.md](docs/SDLC.md) for why it's shaped this
 way — including why it's three agents and not one per named step — and
 [`.claude/skills/feature/SKILL.md`](.claude/skills/feature/SKILL.md) for
 the exact steps. Skip it for genuinely small, unambiguous changes (a typo,
-a one-line fix) — just make those directly.
+a one-line fix) — just make those directly. If a direct fix repairs a bug
+that a run in [docs/pipeline-log.md](docs/pipeline-log.md) introduced, fill
+in that row's **Escaped defect** cell.
 
 ## Content architecture
 
@@ -234,16 +236,17 @@ commit that fails any check never goes live. The individual commands, if you nee
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
-npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs
+npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:pipeline-log
 npm run test:run
 npm run build
 npm run size && npm run check:bundle
 ```
 
-`npm run check:test-lock` is not part of `verify` or CI: `/feature` uses it
-inside a run (`-- --snapshot` after the red tests, `-- --verify` after each
-later stage) to prove no test file changed, and it has nothing to compare
-against outside one.
+`npm run check:test-lock` and `npm run review:diff` are not part of `verify`
+or CI: `/feature` uses them inside a run. `check:test-lock` proves no test
+file changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
+`-- --clear`); `review:diff` prints the reviewer's diff, including new
+untracked files.
 
 `npm run dev` for manual checking: click through the home page, a section,
 and a topic; open the System Design tab and a question page, and check that a
