@@ -53,8 +53,8 @@ own safety nets instead of a running service.
   "when the question set changes" step in `HOW_TO_RUN.md`. Run via the
   `system-design-navigation-eval` skill.
 
-Future categories worth adding once these are stable: does the
-`/feature` review stage actually catch known-bad injected bugs.
+A fourth category, whether `/feature`'s review stage catches planted bugs, is
+tracked with its revisit condition in `docs/DEFERRED_PRACTICES.md`.
 
 ## How this is run
 

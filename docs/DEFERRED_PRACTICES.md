@@ -76,7 +76,10 @@ already varies by change type across the skills (`add-topic` vs.
 `/feature` intentionally use different-sized gates). The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
-doesn't fail open, can't be bypassed by local config.
+doesn't fail open, can't be bypassed by local config. Commits have in
+practice been pushed straight to `main` (none of the history arrived
+through a PR), so as a second server-side layer the deploy workflow runs
+`npm run verify` itself: a red commit can land on `main` but can't go live.
 **Revisit when:** Branch protection alone proves insufficient in
 practice (e.g., a bad commit reaches `main` despite the CI gate because
 of a race or a misconfiguration) — that would be evidence the local
@@ -92,7 +95,9 @@ successful task, not just raw agent output volume.
 usage compounds across many people and a shared budget. For a solo
 personal-site repo, there's no budget being pooled and no one else's
 spend to keep visible — the cost of a wasteful session is fully borne
-and immediately felt by the one person running it.
+and immediately felt by the one person running it. When it is needed, the
+cheap first step is a cost column in [pipeline-log.md](pipeline-log.md)
+(agents spawned, rough tokens per run), not a metering system.
 **Revisit when:** Agent usage on this repo becomes heavy/frequent enough
 that cost becomes a real planning question, or if this repo is ever
 used as a template by a team where spend needs to be visible across
@@ -201,7 +206,10 @@ product scope.
 
 **What it is:** Cryptographically signing commits and/or attesting to a
 build's provenance, common at organizations shipping software other
-people's infrastructure depends on.
+people's infrastructure depends on. The same family includes pinning
+third-party GitHub Actions to a full commit SHA instead of a movable tag
+like `@v4` (a retagged action runs new code in the deploy job, which holds
+`pages: write` and `id-token: write`); Dependabot can keep SHA pins current.
 **Why deferred:** `til` is a static, read-only reference site with no
 downstream consumers depending on its supply chain integrity the way a
 library or a service would — the actual risk this defends against
@@ -283,3 +291,94 @@ the trigger condition is expected to fire. If `til` ever needed
 repo-specific session-hygiene guidance (unlikely), that would be a
 different, genuinely repo-specific entry, not this one promoted
 verbatim.
+
+### Aggregating friction across retrospectives
+
+**What it is:** A periodic pass that reads every row of
+[pipeline-log.md](pipeline-log.md) (and the eval result logs) together,
+groups recurring friction, and proposes structural changes (merge or delete a
+stage, a new check, a new doc) instead of the point fixes a single retro
+makes.
+**Why deferred:** It needs data. The log started on 2026-09-23 with no
+backfill, and a pass over a handful of rows finds nothing a single retro
+wouldn't. Until then, `/feature` Stage 6 is the only retro, and it only sees
+its own run.
+**Revisit when:** The log reaches about 20 rows, or the same kind of friction
+appears in the Retro column of two or more rows.
+
+### An independent read of the retrospective's judgment
+
+**What it is:** A fresh agent that checks the retro's conclusions (was
+"nothing to change" right, was the chosen fix at the right level), not only
+the process-file edits it proposes, which already get one.
+**Why deferred:** It would add an agent to every run to catch a failure
+nobody has seen yet. The pipeline log makes the obvious case mechanical: a
+row with gate failures or findings and a retro of "nothing to change" must
+say why in the same row, so it is visible without another agent.
+**Revisit when:** A logged row shows a "nothing to change" retro whose stated
+reason doesn't hold up, or an escaped defect traces back to a run whose retro
+was clean.
+
+### A separate spec-clarify step
+
+**What it is:** A dedicated stage (in cortex-workspace, `spec-clarify`) that
+interrogates the spec for undefined terms, unstated assumptions, missing
+error behavior and untestable acceptance criteria before any tests are
+written.
+**Why deferred:** In `/feature`, the user reads and approves the spec in plan
+mode, and a solo maintainer is both the requester and the approver, so the
+ambiguity this step hunts for is usually resolved in that same conversation.
+**Revisit when:** Twice in the log: a Stage 2 test-writer reports that the
+spec was ambiguous, or an `## As built` section records a deviation caused by
+a spec ambiguity rather than a technical discovery.
+
+### A planted-defect eval for `/feature`'s reviewer
+
+**What it is:** An `evals/` category that gives Stage 4's reviewer prompt a
+diff with known, planted bugs (and a clean control) and grades whether it
+finds them, the same pattern `content-review` applies to `add-topic`.
+**Why deferred:** It is the most expensive eval to build well: realistic
+planted bugs in this codebase, rotated whenever the prompt changes so the
+prompt doesn't memorize them. `content-review` covers the more frequent
+change.
+**Revisit when:** The next edit to Stage 4's reviewer instruction (the
+2026-09-21 edit was made without a way to measure it), or the first escaped
+defect in the pipeline log. Of the entries here, this is the closest to
+firing.
+
+### One canonical agent file, with generated adapters for other tools
+
+**What it is:** Keeping agent guidance in a tool-neutral `AGENTS.md` and
+generating thin per-tool pointers (`CLAUDE.md` as `@AGENTS.md`, Cursor rules,
+Copilot instructions), as cortex-workspace's design rule R8 does.
+**Why deferred:** This repo is deliberately built for Claude Code: the skills,
+hooks, subagent rules and `settings.json` permissions are Claude Code
+mechanisms, and nobody works on it with another tool.
+**Revisit when:** A second agent tool is used on this repo, or `til` is used
+as a template by people who don't use Claude Code.
+
+### A dedicated security-review pass
+
+**What it is:** A second, separately-scoped reviewer (threat model, input
+handling, auth boundaries) that runs when a diff adds an external surface,
+instead of security riding along as one item in Stage 4's review.
+**Why deferred:** `til` has no runtime input surface: no forms, no API, no
+auth, no user content, no third-party scripts. The security lines in
+[NON_NEGOTIABLES.md](NON_NEGOTIABLES.md) and Stage 4's review cover what
+exists.
+**Revisit when:** A change adds any runtime input or trust boundary: a form,
+a fetch to an API, authentication, user-generated content, or a third-party
+script.
+
+### Splitting CLAUDE.md so each skill loads only what it needs
+
+**What it is:** Moving content-authoring detail (System Design question
+rules, "Where you'll meet this", link-extractor edge cases) out of the
+always-loaded `CLAUDE.md` into a doc that `add-topic` and the reviewers read
+on demand, leaving `CLAUDE.md` as a short router.
+**Why deferred:** At about 270 lines `CLAUDE.md` is long, but no eval or run
+has yet shown an instruction ignored because of its length, and moving text
+risks breaking the routing that `skill-routing-eval` currently passes.
+**Revisit when:** An eval result or a logged run traces a miss to an
+instruction in `CLAUDE.md` being ignored or crowded out, or before adding
+the next large section to it.
