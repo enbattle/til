@@ -67,7 +67,7 @@ asserts that attribute, so it didn't test reading the non-negotiables.)
 > Topics can show keyboard keys: `<kbd>Ctrl</kbd>+<kbd>K</kbd>` in a topic
 > body renders as styled keys. Acceptance criteria: (1) `<kbd>` in a body
 > renders a `<kbd>` element with the `kbd` class. (2) Existing markdown
-> renders unchanged. (3) The markdown chunk stays within its size budget.
+> renders unchanged.
 
 **Diff:**
 
@@ -116,7 +116,10 @@ asserts that attribute, so it didn't test reading the non-negotiables.)
 **Expected finding:** `rehype-raw` turns on raw HTML for every topic, which
 breaks non-negotiable #6 (an XSS surface), so at least high severity; a good
 review suggests an allowlist (`rehype-sanitize` permitting `kbd`) or a
-markdown-level syntax instead.
+markdown-level syntax instead. The diff also omits the `package-lock.json`
+hunk (left out for length) and, applied for real, pushes the markdown chunk
+past its 95 kB budget; a review reporting either is correct, but PASS still
+requires the #6 finding.
 
 ---
 
