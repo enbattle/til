@@ -83,7 +83,13 @@ These live in GitHub, not in the code, so they are listed here:
   Dependabot auto-merge (`.github/workflows/dependabot-automerge.yml`)
   depends on it: with no required check, GitHub merges an auto-merge pull
   request immediately, untested.
-- **"Allow auto-merge"** enabled in the repository settings.
+- **"Allow auto-merge"** and **squash merging** enabled in the repository
+  settings (the workflow merges with `--squash`).
+- Known effect: a merge made by the workflow's `GITHUB_TOKEN` doesn't start
+  other workflows, so an auto-merged dependency bump is not deployed on its
+  own. It goes live with the next push to `main` (or a manual run of
+  Deploy). Dependency bumps don't change the site's content, so that delay
+  is accepted rather than giving the workflow a personal token.
 - GitHub Actions are pinned to full commit SHAs; Dependabot updates them
   weekly as one grouped pull request.
 

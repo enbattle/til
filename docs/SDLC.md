@@ -8,7 +8,10 @@ version, with the reasoning behind each stage.
 
 ## Why a process at all
 
-For a one-line fix, none of this applies — just make the change. For
+For a one-line fix, none of this applies — just make the change. A bug of
+unknown size is triaged first (reproduce it and find the cause), and the
+cause decides the route: a localized fix is direct with a regression test,
+anything wider comes here. For
 anything with real scope (new functionality, a change to an existing
 convention, anything touching more than a file or two), skipping straight
 to code trades a small amount of upfront thinking for a much larger amount
