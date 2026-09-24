@@ -98,7 +98,7 @@ finds something, and a reader of process edits at the retrospective.
    friction that actually happened and fix each real issue at the strongest
    level that fits: a mechanical check, then a correction to the doc that
    already covers it, then new guidance only if neither does. A run with no
-   friction reports "nothing to change" and adds nothing. It also checks
+   friction reports "nothing to change" and changes nothing but its log row. It also checks
    whether a [deferred practice's](DEFERRED_PRACTICES.md) revisit condition has
    come true. Edits to a process file get one independent read first, by an
    agent that never saw the author's reasoning, and then go to the user as
@@ -134,10 +134,11 @@ description, does a fresh session route it to the skill this document and
 `CLAUDE.md` intend, or a direct edit (`skill-routing`) — and, once the
 right skill runs, does its review step actually catch what it's supposed
 to catch instead of rubber-stamping the work (`content-review`, for
-`add-topic`'s Stage 3), and — for the System Design section — does a
+`add-topic`'s Stage 3; `feature-review`, for `/feature`'s Stage 4), and — for the System Design section — does a
 reader starting from a symptom reach the right question and topics
 (`system-design-navigation`)? Run via the `skill-routing-eval`,
-`content-review-eval` and `system-design-navigation-eval` skills — see
+`content-review-eval`, `feature-review-eval` and
+`system-design-navigation-eval` skills — see
 `evals/README.md`. All are run
 manually/periodically, not on every commit — most usefully right after
 editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also when

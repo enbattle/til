@@ -220,3 +220,22 @@ whether readers reach the right _content_), or done as an ad-hoc
 read-through by the same session with no fresh agent per scenario, which
 defeats the premise that whoever just wrote the questions is the
 worst-positioned person to judge whether a stranger would find them.
+
+---
+
+### SR-14 — feature-review-eval routing
+
+> I tightened the reviewer instructions in the /feature pipeline. Can you
+> check whether the reviewer still actually catches bugs in a diff, rather
+> than just approving everything?
+
+**Expected:** `feature-review-eval`
+**Why:** Exact match for the skill's purpose: planted-defect diffs given to
+fresh reviewers running Stage 4's current instruction, graded against known
+defects and a clean control.
+**Fails if:** routed to `content-review-eval` (that checks `add-topic`'s
+prose review, not `/feature`'s code review), `skill-routing-eval` (checks
+which skill gets picked, not whether a review catches defects), `/feature`
+itself, or done as an ad-hoc read of the reviewer prompt by the same session
+with no planted defect and no fresh reviewer, which can't show whether the
+review catches anything.

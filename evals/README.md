@@ -53,8 +53,14 @@ own safety nets instead of a running service.
   "when the question set changes" step in `HOW_TO_RUN.md`. Run via the
   `system-design-navigation-eval` skill.
 
-A fourth category, whether `/feature`'s review stage catches planted bugs, is
-tracked with its revisit condition in `docs/DEFERRED_PRACTICES.md`.
+- `feature-review/` — once `/feature`'s Stage 4 review runs, does it catch a
+  planted defect in a diff (a correctness bug, a `docs/NON_NEGOTIABLES.md`
+  violation, a React stale closure) instead of rubber-stamping it, and does
+  it leave a clean diff alone? The `/feature` counterpart of
+  `content-review`. Each scenario runs twice, since one review of a
+  nondeterministic agent says little, and a planted defect is rotated whenever
+  the reviewer instruction changes so the instruction can't learn the answers.
+  Run via the `feature-review-eval` skill.
 
 ## How this is run
 
@@ -66,7 +72,8 @@ scenario. That's a deliberate, judged expense for a personal site, not
 something to run on every commit. Use the `skill-routing-eval` skill to
 run it — see `skill-routing/HOW_TO_RUN.md` for the underlying procedure
 the skill wraps. The other categories work the same way, each through its
-own skill (`content-review-eval`, `system-design-navigation-eval`).
+own skill (`content-review-eval`, `system-design-navigation-eval`,
+`feature-review-eval`).
 
 **Re-run whenever it matters**, not on a fixed schedule: after editing
 `CLAUDE.md`, any `SKILL.md`, or `docs/SDLC.md` — the same trigger the
@@ -81,6 +88,7 @@ Which eval to run depends on what changed:
 | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`            |
 | The Writing Standard, or `add-topic`'s Stage 3 review prompt                                                                  | `content-review-eval`           |
+| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review                 | `feature-review-eval`           |
 | A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval` |
 
 ## Grading philosophy

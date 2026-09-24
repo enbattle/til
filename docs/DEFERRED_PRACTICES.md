@@ -76,15 +76,18 @@ already varies by change type across the skills (`add-topic` vs.
 `/feature` intentionally use different-sized gates). The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
-doesn't fail open, can't be bypassed by local config. Commits have in
-practice been pushed straight to `main` (none of the history arrived
-through a PR), so as a second server-side layer the deploy workflow runs
-`npm run verify` itself: a red commit can land on `main` but can't go live.
-**Revisit when:** Branch protection alone proves insufficient in
-practice (e.g., a bad commit reaches `main` despite the CI gate because
-of a race or a misconfiguration) — that would be evidence the local
-layer is worth the added complexity, rather than a guess that it might
-be.
+doesn't fail open, can't be bypassed by local config. Branch protection is
+enabled, but in practice commits are pushed straight to `main` (none of the
+history arrived through a PR), and on 2026-09-21 two commits whose CI failed
+(fdd0db5, 00f2f84) reached `main` and deployed. That was this entry's
+revisit condition firing. The response was a second server-side layer rather
+than this local hook: the deploy workflow now runs `npm run verify` itself,
+so a red commit can land on `main` but can't go live. The local hook's
+fail-open problem is unchanged, so it stays deferred.
+**Revisit when:** The server-side layers prove insufficient in practice: a
+commit that fails `verify` goes live despite the deploy gate, or red commits
+on `main` keep costing enough (broken history to bisect, reverts) that
+catching them before the push is worth the hook's complexity.
 
 ### Token/compute cost tracking per agent task
 
@@ -153,9 +156,12 @@ isolation. The one real blast radius is that a push to `main` deploys the
 public site. That is covered without a sandbox: `.claude/settings.json`
 denies force-pushes and asks before any `git push` (permission rules, unlike
 hooks, don't fail open on a timeout), and the deploy workflow runs
-`npm run verify` before publishing. Deny rules on `Bash` match command
-prefixes, so they are a guardrail against a mistake, not a security boundary
-against a determined agent.
+`npm run verify` before publishing. The rules are a guardrail against a
+mistake, not a security boundary: they match command text, so they cover
+`git push`, `git -C <dir> push` and the same forms in the PowerShell tool
+(`Bash(...)` rules don't apply to it, so each rule is written for both), but
+Claude Code's own docs note forms like `git -c key=value push` or a quoted
+`'push'` slip past any such rule.
 **Revisit when:** This repo (or a fork of it) starts running agents
 against something with real blast radius — deployment credentials,
 production data, another system's API keys.
@@ -321,7 +327,7 @@ was clean.
 
 ### A separate spec-clarify step
 
-**What it is:** A dedicated stage (in cortex-workspace, `spec-clarify`) that
+**What it is:** A dedicated stage (`spec-clarify` in cortex-workspace, a separate design reference at github.com/enbattle/cortex-workspace) that
 interrogates the spec for undefined terms, unstated assumptions, missing
 error behavior and untestable acceptance criteria before any tests are
 written.
@@ -331,20 +337,6 @@ ambiguity this step hunts for is usually resolved in that same conversation.
 **Revisit when:** Twice in the log: a Stage 2 test-writer reports that the
 spec was ambiguous, or an `## As built` section records a deviation caused by
 a spec ambiguity rather than a technical discovery.
-
-### A planted-defect eval for `/feature`'s reviewer
-
-**What it is:** An `evals/` category that gives Stage 4's reviewer prompt a
-diff with known, planted bugs (and a clean control) and grades whether it
-finds them, the same pattern `content-review` applies to `add-topic`.
-**Why deferred:** It is the most expensive eval to build well: realistic
-planted bugs in this codebase, rotated whenever the prompt changes so the
-prompt doesn't memorize them. `content-review` covers the more frequent
-change.
-**Revisit when:** The next edit to Stage 4's reviewer instruction (the
-2026-09-21 edit was made without a way to measure it), or the first escaped
-defect in the pipeline log. Of the entries here, this is the closest to
-firing.
 
 ### One canonical agent file, with generated adapters for other tools
 
