@@ -29,14 +29,15 @@ cut, both of which the spec explicitly keeps.
 > criteria: (1) `title: Caching # draft` parses as `Caching`. (2) A `#` not
 > preceded by whitespace is part of the value: `title: C# in five minutes`
 > parses unchanged. (3) A `#` inside a quoted value is kept:
-> `summary: "Use # for comments"` parses as `Use # for comments`.
+> `summary: "Use # for comments"` parses as `Use # for comments`. (4) A
+> value that starts with `#` keeps it: `title: #1 tip` parses as `#1 tip`.
 
 **Diff:**
 
 ```diff
 --- a/src/lib/frontmatter.ts
 +++ b/src/lib/frontmatter.ts
-@@ -40,7 +40,7 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
+@@ -35,7 +35,7 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
      const separator = lines[i].indexOf(':');
      if (separator === -1) continue;
      const key = lines[i].slice(0, separator).trim();
@@ -47,55 +48,75 @@ cut, both of which the spec explicitly keeps.
 ```
 
 **Expected finding:** the split happens on any `#`, not whitespace-then-`#`,
-and before unquoting, so criteria 2 and 3 fail.
+and before unquoting, so criteria 2, 3 and 4 fail.
 
 ---
 
-### FR-02 — non-negotiable: external links lose `rel="noreferrer"`
+### FR-02 — non-negotiable: raw HTML switched on in markdown
 
-**Planted defect:** the refactor keeps `target="_blank"` but drops
-`rel="noreferrer"`, violating `docs/NON_NEGOTIABLES.md` #7. The spec doesn't
-mention it, so only a reviewer that reads the non-negotiables catches it.
+**Planted defect:** to render `<kbd>`, the diff adds `rehype-raw`, which makes
+markdown render any raw HTML, including `<script>`-free XSS vectors such as
+`<img onerror>`. That violates `docs/NON_NEGOTIABLES.md` #6. No test covers
+it and the spec doesn't mention it, so only a reviewer that reads the
+non-negotiables catches it. (Replaced a first version of FR-02, dropping
+`rel="noreferrer"`, after the 2026-09-23 baseline: an existing test already
+asserts that attribute, so it didn't test reading the non-negotiables.)
 
 **Spec:**
 
-> External links in topic bodies show a small "↗" after the link text so a
-> reader knows they will leave the site. Acceptance criteria: (1) An
-> `https://` link renders its text followed by `↗`, and the arrow is hidden
-> from screen readers. (2) Site-internal links (`/section/slug`) are
-> unchanged. (3) External links still open in a new tab.
+> Topics can show keyboard keys: `<kbd>Ctrl</kbd>+<kbd>K</kbd>` in a topic
+> body renders as styled keys. Acceptance criteria: (1) `<kbd>` in a body
+> renders a `<kbd>` element with the `kbd` class. (2) Existing markdown
+> renders unchanged. (3) The markdown chunk stays within its size budget.
 
 **Diff:**
 
 ```diff
+--- a/package.json
++++ b/package.json
+@@ -53,5 +53,6 @@
+     "react-dom": "^19.3.0",
+     "react-markdown": "^10.1.0",
+     "react-router-dom": "^7.18.3",
++    "rehype-raw": "^7.0.0",
+     "remark-gfm": "^4.0.1",
+     "shiki": "^4.4.3"
 --- a/src/components/MarkdownRenderer.tsx
 +++ b/src/components/MarkdownRenderer.tsx
-@@ -34,10 +34,16 @@ const components: Components = {
-   a({ href, children }) {
-     if (href?.startsWith('/')) {
-       return <Link to={href}>{children}</Link>;
-     }
--    return (
--      <a href={href} target="_blank" rel="noreferrer">
--        {children}
--      </a>
--    );
-+    return <ExternalLink href={href}>{children}</ExternalLink>;
+@@ -1,5 +1,6 @@
+ import { isValidElement, type ReactNode } from 'react';
+ import ReactMarkdown, { type Components } from 'react-markdown';
++import rehypeRaw from 'rehype-raw';
+ import remarkGfm from 'remark-gfm';
+ import { Link } from 'react-router-dom';
+ import { CodeBlock } from './CodeBlock';
+@@ -62,6 +63,9 @@ const components: Components = {
+         {children}
+       </code>
+     );
    },
-+};
-+
-+function ExternalLink({ href, children }: { href?: string; children: React.ReactNode }) {
-+  return (
-+    <a href={href} target="_blank">
-+      {children}
-+      <span aria-hidden="true"> ↗</span>
-+    </a>
-+  );
-+}
++  kbd({ children }) {
++    return <kbd className="kbd">{children}</kbd>;
++  },
+ };
+@@ -73,7 +77,11 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+   return (
+     <div className="prose prose-neutral dark:prose-invert max-w-none">
+-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
++      <ReactMarkdown
++        remarkPlugins={[remarkGfm]}
++        rehypePlugins={[rehypeRaw]}
++        components={components}
++      >
+         {content}
+       </ReactMarkdown>
+     </div>
 ```
 
-**Expected finding:** `rel="noreferrer"` was dropped. That breaks a
-non-negotiable, so it must be reported as at least high severity.
+**Expected finding:** `rehype-raw` turns on raw HTML for every topic, which
+breaks non-negotiable #6 (an XSS surface), so at least high severity; a good
+review suggests an allowlist (`rehype-sanitize` permitting `kbd`) or a
+markdown-level syntax instead.
 
 ---
 
@@ -158,18 +179,30 @@ diff (a real polish point). It fails if it reports a defect that isn't there.
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -1,3 +1,10 @@
+@@ -157,4 +157,12 @@ export function recentTopics(count: number): Topic[] {
+ export function recentTopics(count: number): Topic[] {
+   return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
+ }
++
 +const WORDS_PER_MINUTE = 200;
 +
 +/** Whole minutes to read `wordCount` words, rounded up, never less than 1. */
 +export function readingMinutes(wordCount: number): number {
 +  return Math.max(1, Math.ceil(wordCount / WORDS_PER_MINUTE));
 +}
-+
 --- a/src/lib/content.test.ts
 +++ b/src/lib/content.test.ts
-@@ -1,3 +1,12 @@
-+import { readingMinutes } from './content';
+@@ -6,6 +6,7 @@ import {
+   loadAllTopicBodies,
+   recentTopics,
++  readingMinutes,
+   sectionNeighbors,
+   topicsBySection,
+ } from './content';
+@@ -76,3 +77,14 @@ describe('content loader', () => {
+     }
+   });
+ });
 +
 +describe('readingMinutes', () => {
 +  it.each([
