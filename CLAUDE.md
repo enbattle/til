@@ -236,7 +236,7 @@ commit that fails any check never goes live. The individual commands, if you nee
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
-npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:pipeline-log
+npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:pipeline-log && npm run check:raw-html
 npm run test:run
 npm run build
 npm run size && npm run check:bundle

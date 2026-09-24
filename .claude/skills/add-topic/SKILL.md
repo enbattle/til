@@ -127,6 +127,8 @@ Re-run the Stage 2 verification suite on the final version, confirm it's
 green, and summarize the topic and the review outcome for the user. Append a
 row for this run to [docs/pipeline-log.md](../../../docs/pipeline-log.md)
 (its header defines the columns; Retro is `n/a`, since this skill has no
-retrospective stage). The row goes in the topic's commit. Ask
+retrospective stage; Gate failures counts failed `verify` runs). Then run
+`npx prettier --write docs/pipeline-log.md` and `npm run check:pipeline-log`.
+The row goes in the topic's commit. Ask
 before committing or pushing, same as always — this skill leaves the
 working tree ready, it doesn't ship it.

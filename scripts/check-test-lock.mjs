@@ -4,8 +4,11 @@
 // later stage may edit, delete or add a test file.
 //
 // `--snapshot [path...]` records a sha256 of every locked file: every test
-// file, everything under src/test/ and every vitest snapshot, plus any extra
-// paths given (the content fixtures a test-writer created or changed).
+// file, everything under src/test/, every vitest snapshot, any extra paths
+// given (the content fixtures a test-writer created or changed), and the test
+// runner's own configuration: the `test` block of vite.config.ts, the `test*`
+// scripts in package.json, and any vitest.config.* file. Weakening the runner
+// (excluding a file, skipping setup) weakens every test at once.
 // `--verify` recomputes them and fails on any difference. `--clear` deletes
 // the snapshot at the end of a run.
 //
@@ -21,13 +24,14 @@
 // exists during a pipeline run.
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
 const SNAPSHOT_FILE = /(^|\/)__snapshots__\/.+\.snap$/;
+const RUNNER_CONFIG_FILE = /^vitest\.(config|workspace)\.[cm]?[jt]s$/;
 // Shared test setup can weaken every test at once, so it is locked too.
 const TEST_SUPPORT_DIR = 'src/test/';
 
@@ -37,7 +41,10 @@ function git(args) {
 
 function isTestFile(path) {
   return (
-    TEST_FILE.test(path) || SNAPSHOT_FILE.test(path) || path.startsWith(TEST_SUPPORT_DIR)
+    TEST_FILE.test(path) ||
+    SNAPSHOT_FILE.test(path) ||
+    RUNNER_CONFIG_FILE.test(path) ||
+    path.startsWith(TEST_SUPPORT_DIR)
   );
 }
 
@@ -46,11 +53,40 @@ function repoFiles() {
   return git(['ls-files', '-co', '--exclude-standard', '-z']).split('\0').filter(Boolean);
 }
 
+const sha = (content) => createHash('sha256').update(content).digest('hex');
+
 function hash(path) {
   const full = join(ROOT, path);
-  return existsSync(full)
-    ? createHash('sha256').update(readFileSync(full)).digest('hex')
-    : null;
+  return existsSync(full) ? sha(readFileSync(full)) : null;
+}
+
+// Parts of shared files that configure the test runner. Hashing only these
+// parts leaves the rest of each file (plugins, dependencies) free to change.
+function runnerConfig() {
+  const vitePath = join(ROOT, 'vite.config.ts');
+  const vite = existsSync(vitePath) ? readFileSync(vitePath, 'utf8') : '';
+  const testBlock = /\n\s*test:\s*\{[\s\S]*?\n\s*\},?/.exec(vite)?.[0] ?? vite;
+  const { scripts = {} } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const testScripts = Object.entries(scripts).filter(([name]) => name.startsWith('test'));
+  return {
+    'vite.config.ts#test': sha(testBlock),
+    'package.json#scripts.test*': sha(JSON.stringify(testScripts)),
+  };
+}
+
+// A fixture path from the command line, as a repo-relative `/` path. Refuses
+// anything that isn't an existing file, so a typo can't silently lock nothing.
+function fixturePath(arg) {
+  const full = isAbsolute(arg) ? arg : resolve(ROOT, arg);
+  const rel = relative(ROOT, full).split('\\').join('/');
+  if (rel.startsWith('..') || !existsSync(full) || statSync(full).isDirectory()) {
+    console.error(
+      `Not a file in this repository: ${arg}. Pass each fixture file; ` +
+        '`git status --porcelain -uall` lists them individually.',
+    );
+    process.exit(2);
+  }
+  return rel;
 }
 
 const manifest = join(
@@ -61,11 +97,14 @@ const [mode, ...extraPaths] = process.argv.slice(2);
 
 if (mode === '--snapshot') {
   const files = new Set(repoFiles().filter(isTestFile));
-  for (const path of extraPaths) files.add(path.replace(/\\/g, '/'));
+  for (const arg of extraPaths) files.add(fixturePath(arg));
   const hashes = {};
   for (const path of [...files].sort()) hashes[path] = hash(path);
+  Object.assign(hashes, runnerConfig());
   writeFileSync(manifest, JSON.stringify(hashes, null, 2));
-  console.log(`Locked ${files.size} file(s). Snapshot: ${manifest}`);
+  console.log(
+    `Locked ${Object.keys(hashes).length} file(s) and config part(s). Snapshot: ${manifest}`,
+  );
   process.exit(0);
 }
 
@@ -78,9 +117,10 @@ if (mode === '--verify') {
     process.exit(1);
   }
   const locked = JSON.parse(readFileSync(manifest, 'utf8'));
+  const config = runnerConfig();
   const changed = [];
   for (const [path, lockedHash] of Object.entries(locked)) {
-    const now = hash(path);
+    const now = path in config ? config[path] : hash(path);
     if (now === lockedHash) continue;
     if (lockedHash === null) changed.push(`added:    ${path}`);
     else if (now === null) changed.push(`deleted:  ${path}`);
@@ -99,7 +139,9 @@ if (mode === '--verify') {
     );
     process.exit(1);
   }
-  console.log(`All ${Object.keys(locked).length} locked file(s) are unchanged.`);
+  console.log(
+    `All ${Object.keys(locked).length} locked file(s) and config part(s) are unchanged.`,
+  );
   process.exit(0);
 }
 
@@ -110,6 +152,6 @@ if (mode === '--clear') {
 }
 
 console.error(
-  'Usage: npm run check:test-lock -- --snapshot [path...] | --verify | --clear',
+  'Usage: npm run check:test-lock -- --snapshot [fixture...] | --verify | --clear',
 );
 process.exit(2);

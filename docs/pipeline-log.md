@@ -22,7 +22,8 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
 - **Gate failures** — a count, then a few words of reason: every time a gate
   the orchestrator runs failed (Stage 2's, the test-lock check, `verify`),
   plus every Stage 2 re-run after an implementer reported a wrong test; `0`
-  if none.
+  if none. Name each re-run's cause: `spec ambiguity` or `test bug`. For
+  `add-topic`, count failed `verify` runs.
 - **Findings** — the first review round's findings that the diff introduced,
   as high/medium/low counts (CONFIRMED and credible PLAUSIBLE; cosmetic ones
   the user would wave through don't count), plus `, pre:N` for findings that

@@ -334,9 +334,9 @@ written.
 **Why deferred:** In `/feature`, the user reads and approves the spec in plan
 mode, and a solo maintainer is both the requester and the approver, so the
 ambiguity this step hunts for is usually resolved in that same conversation.
-**Revisit when:** Twice in the log: a Stage 2 test-writer reports that the
-spec was ambiguous, or an `## As built` section records a deviation caused by
-a spec ambiguity rather than a technical discovery.
+**Revisit when:** Twice in the log: a row's Gate failures names a `spec
+ambiguity` re-run, or an `## As built` section records a deviation caused by a
+spec ambiguity rather than a technical discovery.
 
 ### One canonical agent file, with generated adapters for other tools
 

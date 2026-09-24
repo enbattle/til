@@ -87,7 +87,7 @@ Which eval to run depends on what changed:
 | You changed                                                                                                                   | Run                             |
 | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`            |
-| The Writing Standard, or `add-topic`'s Stage 3 review prompt                                                                  | `content-review-eval`           |
+| The Writing Standard, `add-topic`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                                       | `content-review-eval`           |
 | `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review                 | `feature-review-eval`           |
 | A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval` |
 

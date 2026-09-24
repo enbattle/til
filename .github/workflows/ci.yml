@@ -34,6 +34,7 @@ jobs:
       - run: npm run check:contrast
       - run: npm run check:npm-refs
       - run: npm run check:pipeline-log
+      - run: npm run check:raw-html
       - run: npm run typecheck
       - run: npm run test:run
       - run: npm run build

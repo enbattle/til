@@ -15,9 +15,9 @@ detail is never copied here.
 
 **Security**
 
-5. No secrets in the repository, and nothing that reads `.env` files.
-6. Markdown never renders raw HTML (no `rehype-raw`); `dangerouslySetInnerHTML` only takes output from an escaping source (Shiki).
-7. External links open with `rel="noreferrer"`; no third-party scripts at runtime.
+5. No secrets in the repository or in `.env` files (Vite reads `.env` at build time, so anything there can end up in the bundle); agents never read `.env` files.
+6. Markdown never renders raw HTML (no `rehype-raw`); `dangerouslySetInnerHTML` only takes output from an escaping source (Shiki). `check:raw-html` enforces both.
+7. External links open with `rel="noreferrer"` (`MarkdownRenderer.test.tsx` checks it); no third-party scripts at runtime.
 
 **Process**
 

@@ -43,7 +43,7 @@ one-line bug fix, a config change), say so and just do it directly —
 this pipeline is for real features, not everything. Otherwise, continue.
 
 Track your progress through the stages below explicitly in your replies
-("Stage 2 of 6: writing tests") so the user can see where things stand
+("Stage 2: writing tests") so the user can see where things stand
 without reading tool output.
 
 ## Stage 1 — Spec
@@ -101,13 +101,21 @@ way to enforce that.
 **Verification gate** (you run this, don't trust the report):
 
 ```bash
-git status --porcelain          # every changed path should be a test file (or content fixture)
-npm run test:run                # the new tests must actually fail
+git status --porcelain -uall    # every changed path should be a test file (or content fixture), listed file by file
+npm run test:run                # the new or edited tests for the new behavior must actually fail
 ```
 
 If a non-test implementation file changed, or the new tests pass
 immediately (meaning they're not testing anything new), stop and re-run
-this stage with a corrected instruction rather than proceeding.
+this stage with a corrected instruction rather than proceeding. Cap: **2
+corrected re-runs**; a third failure goes to the user, since the spec's
+criteria are probably not testable as written. (An edited existing test only
+has to fail if the edit encodes the new behavior.)
+
+A content fixture under `src/content/` or `src/system-design/` ships as real
+content, so it is held to the Writing Standard too. Once locked, only a Stage 2
+re-run may change it; a review finding about a fixture's prose goes back
+through that re-run, not through Stage 4a.
 
 Once the gate passes, lock the tests, naming every content fixture the
 test-writer created or changed (from the `git status` output above) so it is
@@ -129,12 +137,14 @@ the report names. Its gate is different, because implementation files already
 exist and a corrected test may now pass against them:
 
 ```bash
-git status --porcelain -uall   # before and after the re-run: non-test lines must be identical
+git status --porcelain -uall   # before and after the re-run: no implementation file may change
 npm run check:test-lock -- --verify   # lists exactly what the re-run changed
 ```
 
-Every path `--verify` lists must be one the report named. A corrected test
-doesn't have to fail. Then re-take the snapshot. Cap: **2 re-runs per
+Every path `--verify` lists must be one the report named (a test, or a
+fixture it depends on). A corrected test doesn't have to fail. Then re-take
+the snapshot and spawn a **fresh** implementer (Stage 3) with the corrected
+tests; the one that reported the problem stopped before finishing. Cap: **2 re-runs per
 feature**. A third report of a wrong test means the spec is the problem;
 stop and take it to the user.
 
@@ -147,7 +157,8 @@ Instruction, close to verbatim:
 
 > Implement the spec above so the failing tests listed pass. Do not edit,
 > delete or add any `*.test.ts` / `*.test.tsx` file, anything under
-> `src/test/`, a vitest snapshot, or these fixture files: <the fixture paths
+> `src/test/`, a vitest snapshot, the `test` block of `vite.config.ts`, the
+> `test*` scripts in `package.json`, a `vitest.config.*` file, or these fixture files: <the fixture paths
 > locked in Stage 2, or "none">. They are locked, and a check will fail if
 > any of them changes. If a test looks wrong
 > or the spec is ambiguous in a way that blocks you, stop and report the
@@ -176,7 +187,10 @@ what the Stage 2 tests usually are, and a `git add` hides an edit from it.
 
 A changed locked file here is the one rule this whole pipeline exists to
 catch — if the check fails, stop immediately and surface it to the user
-rather than deciding yourself whether the edit was reasonable. That is a
+rather than deciding yourself whether the edit was reasonable. If only
+`verify` fails (the implementer reported done, but a check is red), send the
+failure output and the spec to a fresh implementer; cap **2** such re-runs,
+then go to the user. That is a
 different case from the implementer _reporting_ that a test looks wrong: don't
 fix the test yourself either. Re-run Stage 2 as described there ("Re-running
 this stage after Stage 3 has started"), then re-run this gate.
@@ -367,8 +381,9 @@ to [docs/pipeline-log.md](../../../docs/pipeline-log.md), even when the retro
 found nothing: a run with no friction is data too. The log's header defines
 each column; the Retro cell records what was actually applied, not what was
 proposed. The row goes in the feature's commit, and it is not a process edit,
-so it needs no independent read. `npm run check:pipeline-log` (part of
-`verify`) fails a row with gate failures or findings whose Retro cell is a bare
+so it needs no independent read. After appending, run
+`npx prettier --write docs/pipeline-log.md`, `npm run check:pipeline-log` and
+`npm run format:check`, since `verify` already ran. `check:pipeline-log` fails a row with gate failures or findings whose Retro cell is a bare
 "nothing to change": say why none of them called for a change. If this run
 fixed a bug an earlier approved run introduced, fill in that row's **Escaped
 defect** cell and treat it as friction for this retro.
