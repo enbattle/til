@@ -13,6 +13,15 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// These navigation tests enter the query with one paste rather than
+// `user.type`: typing a long title fires a full-text search per keystroke,
+// which took over 4s per test in jsdom and timed out under full-suite load.
+// Typing itself is covered by the first test.
+async function enterQuery(user: ReturnType<typeof userEvent.setup>, query: string) {
+  await user.click(screen.getByPlaceholderText(/search topics/i));
+  await user.paste(query);
+}
+
 function renderDialog() {
   const onClose = vi.fn();
   render(
@@ -43,7 +52,7 @@ describe('SearchDialog with questions', () => {
     const user = userEvent.setup();
     const question = QUESTIONS[1];
     const onClose = renderDialog();
-    await user.type(screen.getByPlaceholderText(/search topics/i), question.title);
+    await enterQuery(user, question.title);
     await user.click(
       await screen.findByRole('button', {
         name: new RegExp(escapeRegExp(question.title)),
@@ -58,7 +67,7 @@ describe('SearchDialog with questions', () => {
   it('still navigates a topic result to its catalog page, labelled with its section', async () => {
     const user = userEvent.setup();
     const onClose = renderDialog();
-    await user.type(screen.getByPlaceholderText(/search topics/i), 'prompt engineering');
+    await enterQuery(user, 'prompt engineering');
     const result = await screen.findByRole('button', { name: /Prompt Engineering/i });
     expect(result).toHaveTextContent('AI & Machine Learning');
     expect(result).not.toHaveTextContent('System Design');
