@@ -19,7 +19,10 @@ near-duplicate check the same way a real `add-topic` review would.
 
 ### CR-01 — undefined jargon (trap for "define terms before using them")
 
-**Section:** `systems-and-infrastructure`
+**Section:** `engineering-practices` (not `systems-and-infrastructure`, whose
+structural rules, a closing "Where you'll meet this" section and a System
+Design link, drew real findings that outranked the planted one on
+2026-09-24)
 **Planted violation (the only one; the rest of the draft was corrected on
 2026-09-24 so this one stands out):** never defines "hash function" before
 relying on it as load-bearing vocabulary — a reader with zero background has no way
@@ -51,7 +54,7 @@ many hash functions you use. A larger array lowers it at the cost of
 memory. The number of hashes has a sweet spot for a given array size and
 item count: too few and each item marks too little of the array to be
 told apart, too many and the array fills up quickly. Databases such as
-Cassandra and RocksDB keep a Bloom filter per data file for exactly this
+Cassandra keep a Bloom filter per data file for exactly this
 "cheap definitely-not versus probably-yes" check, so most lookups for a key
 that isn't there never touch the disk.
 ```

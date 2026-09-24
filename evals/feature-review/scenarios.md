@@ -157,6 +157,12 @@ review's top finding (the 2026-09-23 and 2026-09-24 runs), so the eval
 couldn't tell a strong reviewer from a merely adequate one; this defect is
 quiet, spec-level, and sits next to correct-looking code.
 
+Result so far: on 2026-09-24 all three runs still named it first, one hop
+from the diff (`searchContent`'s default limit). It stays as a regression
+check; the next rotation should put the cause several hops away (a limit
+set in another module, or a default changed in a shared helper) to test
+whether a reviewer follows the call chain.
+
 **Spec:**
 
 > When a search matches more topics than the dialog shows, say so.
@@ -174,7 +180,7 @@ quiet, spec-level, and sits next to correct-looking code.
    const results = searchContent(query);
 +  const SHOWN = 8;
 +  const hidden = Math.max(0, results.length - SHOWN);
-@@ -136,2 +138,7 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -136,3 +138,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
            })}
          </ul>
 +        {hidden > 0 && (
