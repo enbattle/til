@@ -1,4 +1,15 @@
 {
+  "permissions": {
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f*)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ],
+    "ask": ["Bash(git push*)"]
+  },
   "hooks": {
     "PreToolUse": [
       {

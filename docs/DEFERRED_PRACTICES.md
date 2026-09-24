@@ -144,7 +144,13 @@ no backend, no secrets of consequence beyond what's already
 git-ignored, and a single operator; the existing "never `fork` for an
 independent review" pattern already provides the isolation that
 actually matters here (fresh reasoning context), just not OS-level
-isolation.
+isolation. The one real blast radius is that a push to `main` deploys the
+public site. That is covered without a sandbox: `.claude/settings.json`
+denies force-pushes and asks before any `git push` (permission rules, unlike
+hooks, don't fail open on a timeout), and the deploy workflow runs
+`npm run verify` before publishing. Deny rules on `Bash` match command
+prefixes, so they are a guardrail against a mistake, not a security boundary
+against a determined agent.
 **Revisit when:** This repo (or a fork of it) starts running agents
 against something with real blast radius — deployment credentials,
 production data, another system's API keys.
