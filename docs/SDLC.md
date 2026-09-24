@@ -143,3 +143,17 @@ reader starting from a symptom reach the right question and topics
 manually/periodically, not on every commit — most usefully right after
 editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also when
 `.claude/hooks/nudge-sdlc.js` reminds a session to check it.
+
+## Completeness audit, after a large effort
+
+Reviews check that each change is correct; none of them checks that a whole
+plan was carried out. After an effort that spans many commits (a batch of
+process changes, a multi-feature branch), and before merging it, give one
+fresh `general-purpose` agent (never `fork`) the plan or specs and the branch
+diff, and nothing from the conversation that built it. Ask for a table
+mapping every planned item to evidence (file and line), marked implemented,
+deliberately changed (and whether the reason holds), partial or missing, plus
+a check that the docs still describe what the branch does. On 2026-09-23/24
+this found real gaps that every per-change review had passed, including a
+flaky test that `verify` depended on and a planned change that was never
+made. It is expensive, so it runs once per large effort, not per change.
