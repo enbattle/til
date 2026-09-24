@@ -102,7 +102,10 @@ finds something, and a reader of process edits at the retrospective.
    whether a [deferred practice's](DEFERRED_PRACTICES.md) revisit condition has
    come true. Edits to a process file get one independent read first, by an
    agent that never saw the author's reasoning, and then go to the user as
-   proposals in their own commit. The exact steps are in the skill.
+   proposals in their own commit. Every run also appends a row to
+   [pipeline-log.md](pipeline-log.md), so friction that is too small to act
+   on in one run can still show up as a pattern across runs. The exact steps
+   are in the skill.
 
 ## `docs/specs/`
 

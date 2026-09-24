@@ -287,7 +287,7 @@ three agents' reports (a spec error the test-writer caught, a deviation the
 implementer reported, findings the reviewer made), any gate that failed, and
 any tool that behaved unexpectedly. Don't invent friction, and don't add a
 rule to justify the stage: a run with none reports "nothing to change" and
-stops.
+only logs its row (below).
 
 For each real issue, fix it at the strongest level that fits:
 
@@ -326,6 +326,14 @@ runs and dry-run the new text against them, saying where the text gave no
 clear answer. One pass, no loop: fix each finding you can't refute in a
 sentence and report the rest. A run whose edits touch no process file skips
 this.
+
+Append this run's row to [docs/pipeline-log.md](../../../docs/pipeline-log.md)
+(its header defines the columns), even when the retro found nothing: a run
+with no friction is data too. Before writing "nothing to change", compare it
+with the row's own gate failures and findings; if they are non-zero, say in
+the Retro cell why none of them called for a change. If this run fixed a bug
+an earlier approved run introduced, fill in that row's **Escaped defect** cell
+and treat it as friction for this retro.
 
 Show the user what you found and the edits you propose, along with any review
 findings you didn't act on. Once they approve, commit the retro edits

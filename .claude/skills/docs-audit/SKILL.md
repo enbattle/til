@@ -78,8 +78,8 @@ Stage 1 and this instruction, close to verbatim:
 > say explicitly you found nothing worth flagging.
 >
 > `docs/specs/*.md` are records of what was decided at a point in time, and
-> `evals/*/results/*.md` are dated run logs: don't flag them for describing the
-> past, but do flag one that states something as a present-tense rule that is
+> `evals/*/results/*.md` and the rows of `docs/pipeline-log.md` are dated run
+> logs: don't flag them for describing the past, but do flag one that states something as a present-tense rule that is
 > now wrong.
 >
 > Files to audit: <Stage 1's list>

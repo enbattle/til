@@ -121,6 +121,9 @@ Instruction, close to verbatim:
 ## Stage 4 — Final gate
 
 Re-run the Stage 2 verification suite on the final version, confirm it's
-green, and summarize the topic and the review outcome for the user. Ask
+green, and summarize the topic and the review outcome for the user. Append a
+row for this run to [docs/pipeline-log.md](../../../docs/pipeline-log.md)
+(the Stage 3 findings go in its Findings column, rounds used in Fix rounds;
+Retro is `n/a`, since this skill has no retrospective stage). Ask
 before committing or pushing, same as always — this skill leaves the
 working tree ready, it doesn't ship it.
