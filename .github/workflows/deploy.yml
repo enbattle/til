@@ -28,7 +28,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
+      # The full chain CI runs (it includes the build), on the exact commit being deployed.
+      # Commits can reach main without a PR, so CI passing is not otherwise a precondition
+      # of deploying; a red commit must never go live.
+      - run: npm run verify
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

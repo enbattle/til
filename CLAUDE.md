@@ -229,7 +229,8 @@ its actual reasoning and a concrete revisit condition, lives in
 ## Verifying a change
 
 `npm run verify` runs the same checks as CI (the order differs slightly), and
-is what the skills tell a session to run. The individual commands, if you need one:
+is what the skills tell a session to run. The deploy workflow runs it too, so a
+commit that fails any check never goes live. The individual commands, if you need one:
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
