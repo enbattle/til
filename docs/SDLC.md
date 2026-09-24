@@ -107,6 +107,15 @@ finds something, and a reader of process edits at the retrospective.
    on in one run can still show up as a pattern across runs. The exact steps
    are in the skill.
 
+## `docs/NON_NEGOTIABLES.md`
+
+The standing constraints every stage is held to (accessibility, security,
+the process rules above), in one short numbered list that points to where
+each detail lives. The spec is checked against it before approval, and every
+reviewer is given it. When a spec and a line there conflict, the line wins
+unless the user amends the file; a stage that finds the conflict stops and
+asks rather than choosing.
+
 ## `docs/specs/`
 
 Every feature that went through this process leaves a spec file behind —

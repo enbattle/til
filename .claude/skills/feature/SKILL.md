@@ -64,6 +64,9 @@ The plan you write must include, explicitly:
 - Files/modules touched.
 - Whether this change has a user-facing UI surface (decides whether
   Stage 4 includes a browser check).
+- A check against [docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md):
+  if the request needs to break a line there, say so in the plan and let the
+  user amend that file or change the request. Don't plan around it quietly.
 
 `ExitPlanMode` for approval as usual — the user's approval here _is_ the
 independent check on the spec; nothing else validates "is this actually
@@ -183,7 +186,9 @@ defeat the entire point of this stage. (`/code-review` is still fine for
 you or the user to run ad hoc, standalone, outside this pipeline.)
 
 Instead, spawn a **fresh** `general-purpose` agent (never `fork`). Give it
-only: the spec file's path/content and the full diff, produced with
+only: the spec file's path/content, the path of
+[docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md), and the full
+diff, produced with
 
 ```bash
 git add -N .        # intent-to-add: makes new, untracked files show up in the diff
@@ -197,7 +202,9 @@ quality.
 Instruction, close to verbatim:
 
 > Review the diff below against the spec above, adversarially — assume
-> nothing in it is correct until you've checked it yourself. Look for
+> nothing in it is correct until you've checked it yourself. Read
+> docs/NON_NEGOTIABLES.md first: a violation of any line there is at least a
+> high-severity finding, whatever the spec says. Look for
 > correctness bugs, missed edge cases from the spec's acceptance criteria,
 > accessibility issues, and security issues. If this change has a
 > user-facing UI surface, also start the dev server and actually drive it

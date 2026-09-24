@@ -82,7 +82,9 @@ never needs its own test.
 
 Spawn a **fresh** `general-purpose` agent (never `fork` — it must not
 inherit your own read of the draft). Give it: the new file's full content,
-CLAUDE.md's "Writing standard" section, and the titles/slugs of the other
+CLAUDE.md's "Writing standard" section, the path of
+`docs/NON_NEGOTIABLES.md` (a violation there is always a real finding), and
+the titles/slugs of the other
 topics already in the same section (so it can check for a near-duplicate).
 If Stage 1 also touched a System Design question, give it that question's
 full content too and have it check the added snippet against the Writing
