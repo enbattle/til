@@ -22,7 +22,9 @@ change). See [docs/SDLC.md](docs/SDLC.md) for why it's shaped this
 way — including why it's three agents and not one per named step — and
 [`.claude/skills/feature/SKILL.md`](.claude/skills/feature/SKILL.md) for
 the exact steps. Skip it for genuinely small, unambiguous changes (a typo,
-a one-line fix) — just make those directly. If a direct fix repairs a bug
+a one-line fix) — just make those directly. A bug of unknown size is
+triaged first (reproduce it, find the cause), then routed by what was found;
+see the skill's Stage 0. If a direct fix repairs a bug
 that a run in [docs/pipeline-log.md](docs/pipeline-log.md) introduced, fill
 in that row's **Escaped defect** cell.
 

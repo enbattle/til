@@ -68,26 +68,34 @@ to), or the registry/folder correspondence is skipped entirely.
 > The search dialog doesn't close reliably — sometimes if I hit Escape
 > right after typing, it reopens a second later. Can you fix that?
 
-**Expected:** Investigate first; **then** either `/feature` (if the
-root cause turns out to be a real design gap) or a direct fix (if it
-turns out to be a one-line timing bug) — both acceptable.
-**Why:** Bug severity/scope is genuinely unknown before investigation —
-this tests whether the session investigates before committing to a
-process size, not whether it guesses right upfront.
-**Fails if:** it commits to a process (either direction) _before_
-finding the actual cause, or guesses at a fix without reproducing it.
+**Expected:** "Triage first": reproduce the bug and find its cause
+before choosing a process, then route by what is found (a localized fix is
+direct with a regression test; a cause that spans modules or needs a
+behavior decision goes to `/feature`), as `feature/SKILL.md` Stage 0 says.
+The eval forbids implementing and asks for a routing answer, so "triage
+first, and here is what decides the route afterwards" **is** the passing
+answer.
+**Why:** Bug size is unknown before investigation. This tests whether the
+session knows to triage before sizing the process, not whether it guesses
+the size right.
+**Fails if:** it names `/feature` or a direct fix as its route without
+making that conditional on what triage finds, or proposes a fix without
+reproducing the bug. (Before 2026-09-24 this scenario had no written triage
+rule to follow, and four runs in a row landed as near-misses on both sides;
+the rule was added to Stage 0 in response.)
 
 ---
 
 ### SR-06 — editing existing content, not adding new (trap)
 
-> Fix a factual error in the prompt-engineering topic — it currently
-> implies RLHF is a 2024 invention, but the technique is older than
-> that.
+> In the September 2026 state-of-LLMs topic, the preference-optimization
+> bullet mentions RLHF without saying where it comes from. Add a few words
+> noting the technique predates chat models (it was introduced for deep
+> reinforcement learning in 2017).
 
 **Expected:** Direct, no skill
 **Why:** `add-topic` is explicitly scoped to _new_ topic files, not
-editing existing ones; a factual correction to existing prose is exactly
+editing existing ones; a small, accurate addition to existing prose is exactly
 `CLAUDE.md`'s "small, unambiguous" carve-out.
 **Fails if:** routed through `add-topic` (scope creep of a skill beyond
 its stated purpose) or `/feature` (no app behavior involved).

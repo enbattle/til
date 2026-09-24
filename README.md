@@ -75,6 +75,18 @@ the exact steps: adding a topic to an existing section, adding a new
 section, System Design questions, and the writing standard topics are held
 to.
 
+## Repository settings this relies on
+
+These live in GitHub, not in the code, so they are listed here:
+
+- **Branch protection on `main`** requiring the CI `verify` check to pass.
+  Dependabot auto-merge (`.github/workflows/dependabot-automerge.yml`)
+  depends on it: with no required check, GitHub merges an auto-merge pull
+  request immediately, untested.
+- **"Allow auto-merge"** enabled in the repository settings.
+- GitHub Actions are pinned to full commit SHAs; Dependabot updates them
+  weekly as one grouped pull request.
+
 ## Design
 
 See [docs/DESIGN.md](docs/DESIGN.md) for the visual identity and

@@ -13,7 +13,7 @@ It is the `/feature` counterpart of `content-review-eval`: that one checks
 
 ## Stage 0 — Scope the run
 
-All scenarios (`FR-01`..`FR-04`) by default, and always after an edit to
+All scenarios (`FR-01`..`FR-05`) by default, and always after an edit to
 Stage 4's reviewer instruction or to `docs/NON_NEGOTIABLES.md`. Before
 running after such an edit, rotate one scenario's planted defect as
 `scenarios.md` asks, and say which.

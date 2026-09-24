@@ -145,6 +145,55 @@ dependency list, so the handler always sees `''`.
 
 ---
 
+### FR-05 — subtle: a count that can never be positive
+
+**Planted defect:** `searchContent(query)` already caps results at its
+default limit of 8, so `results.length - 8` is never positive and the "+N
+more" line never renders: criterion 2 can't be met. The diff also adds no
+test for criterion 2, which is how it slipped through. Nothing existing
+catches it: every current test still passes, types check, and lint is clean.
+This scenario exists because every planted defect in FR-01..03 was each
+review's top finding (the 2026-09-23 and 2026-09-24 runs), so the eval
+couldn't tell a strong reviewer from a merely adequate one; this defect is
+quiet, spec-level, and sits next to correct-looking code.
+
+**Spec:**
+
+> When a search matches more topics than the dialog shows, say so.
+> Acceptance criteria: (1) The dialog lists at most 8 results, as today.
+> (2) When more than 8 results match, a line under the list reads "+N more
+> results — refine your search", where N is the number not shown. (3) With 8
+> or fewer matches, no such line appears.
+
+**Diff:**
+
+```diff
+--- a/src/components/SearchDialog.tsx
++++ b/src/components/SearchDialog.tsx
+@@ -26,1 +26,3 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+   const results = searchContent(query);
++  const SHOWN = 8;
++  const hidden = Math.max(0, results.length - SHOWN);
+@@ -136,2 +138,7 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+           })}
+         </ul>
++        {hidden > 0 && (
++          <p className="px-4 pb-2 text-xs text-text-tertiary">
++            +{hidden} more results — refine your search
++          </p>
++        )}
+         <div className="border-t border-border px-4 py-2 text-xs text-text-tertiary">
+```
+
+**Expected finding:** criterion 2 can never be met, because `searchContent`
+is called with its default limit of 8, so `results.length` never exceeds 8
+and `hidden` is always 0 (the fix: ask for more results, e.g.
+`searchContent(query, Infinity)`, and slice to 8 for display). Medium
+severity or higher. A finding that only notes the missing test, without
+seeing that the feature can't work, is AMBIGUOUS.
+
+---
+
 ### FR-04 — clean control
 
 **Planted defect:** none. The diff is correct and complete. A review passes

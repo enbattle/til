@@ -42,6 +42,14 @@ Read the user's request. If it's small and unambiguous (a copy tweak, a
 one-line bug fix, a config change), say so and just do it directly —
 this pipeline is for real features, not everything. Otherwise, continue.
 
+**A bug of unknown size gets triaged before any process is chosen.**
+Reproduce it and find the cause first, read-only: no fix yet. Then route by
+what you found: a cause confined to one place, fixed without changing
+behavior anything else relies on, is a direct fix with a regression test
+that fails before the fix; a cause that spans modules, changes a
+convention, or needs a behavior decision comes back here as a feature.
+Choosing either route before the cause is known is a guess.
+
 Track your progress through the stages below explicitly in your replies
 ("Stage 2: writing tests") so the user can see where things stand
 without reading tool output.

@@ -212,10 +212,9 @@ product scope.
 
 **What it is:** Cryptographically signing commits and/or attesting to a
 build's provenance, common at organizations shipping software other
-people's infrastructure depends on. The same family includes pinning
-third-party GitHub Actions to a full commit SHA instead of a movable tag
-like `@v4` (a retagged action runs new code in the deploy job, which holds
-`pages: write` and `id-token: write`); Dependabot can keep SHA pins current.
+people's infrastructure depends on. (Pinning GitHub Actions to commit
+SHAs, from the same family, was adopted on 2026-09-24; see
+`.github/dependabot.yml`.)
 **Why deferred:** `til` is a static, read-only reference site with no
 downstream consumers depending on its supply chain integrity the way a
 library or a service would — the actual risk this defends against
@@ -262,26 +261,6 @@ Claude Code automatically each session; a checklist duplicates
 information that's already the first thing read.
 **Revisit when:** Another contributor starts opening PRs against this
 repo who wouldn't otherwise see `CLAUDE.md`'s verification section.
-
-### Dependabot auto-merge for patch-level bumps
-
-**What it is:** Automatically merging a dependency-update PR once CI
-passes, without a manual look, for low-risk patch versions.
-**Why deferred:** Not investigated in depth — flagged here as a
-plausible small win rather than a fully reasoned rejection, unlike the
-entries above. The open question is whether patch-level bumps in this
-dependency set have historically been safe enough to skip a manual
-glance; that hasn't been checked.
-**Status (2026-09-23): the trigger has fired.** Nine Dependabot PRs
-(#1–#5, #7–#10) had been open since 2026-09-13 without a look; a review of
-each (verify on the branch merged with `main`, release notes for the major
-bumps) produced a merge order for the user. Adopting auto-merge still waits
-on one fact: whether required status checks are enforced for pull requests,
-since without them auto-merge merges immediately.
-**Revisit when:** Dependabot PR volume becomes tedious enough that a
-manual look at each one stops actually happening (silently trusting them
-unreviewed is worse than an explicit auto-merge policy for the ones
-proven safe).
 
 ### Generic Claude Code session-hygiene advice (e.g., "kitchen sink session," "correcting over and over")
 
