@@ -60,6 +60,7 @@ npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src
 npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
 npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
 npm run check:bundle      # After a build: fail if topic bodies are in the main chunk instead of lazy chunks
+npm run check:test-lock   # /feature only: -- --snapshot locks test files, -- --verify fails if any changed
 npm run verify            # The whole chain: typecheck, lint, format, every check, tests, build, size, bundle check
 ```
 

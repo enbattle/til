@@ -19,8 +19,9 @@ argument).
    is a **separate, fresh** `Agent` call — never a `fork` — so no stage
    inherits another stage's reasoning or bias.
 2. After the test-writing stage and after the implementation stage, you
-   (the orchestrator) verify the rule held by reading the actual `git diff`
-   — not by trusting the subagent's self-report.
+   (the orchestrator) verify the rule held by running the gate checks
+   yourself (`git status`, the test-lock check) — not by trusting the
+   subagent's self-report.
 3. Never commit or push without the user's explicit go-ahead, per this
    session's standing git rules — this pipeline ends at "ready to commit,"
    not at "committed."
@@ -105,6 +106,16 @@ If a non-test implementation file changed, or the new tests pass
 immediately (meaning they're not testing anything new), stop and re-run
 this stage with a corrected instruction rather than proceeding.
 
+Once the gate passes, lock the tests:
+
+```bash
+npm run check:test-lock -- --snapshot
+```
+
+This records a hash of every test file (tracked or not) inside `.git/`, and
+the Stage 3 and 4a gates compare against it. Re-take it whenever a fresh
+test-writer changes the tests; nothing else may.
+
 ## Stage 3 — Implementation (green) + docs
 
 Spawn another **fresh** `general-purpose` agent. Give it the spec file and
@@ -131,16 +142,20 @@ check.
 **Verification gate:**
 
 ```bash
-git diff --stat -- '*.test.*'   # MUST be empty — a non-empty result is a hard stop
+npm run check:test-lock -- --verify   # MUST pass — any changed, deleted or added test file is a hard stop
 npm run verify
 ```
+
+Don't use `git diff` for this check: it never shows untracked files, which is
+what the Stage 2 tests usually are, and a `git add` hides an edit from it.
 
 A changed test file here is the one rule this whole pipeline exists to
 catch — if it's non-empty, stop immediately and surface it to the user
 rather than deciding yourself whether the edit was reasonable. That is a
 different case from the implementer _reporting_ that a test looks wrong: don't
 fix the test yourself either. Send the failure to a fresh test-writer (Stage
-2's instruction, plus the failure) and re-run this gate.
+2's instruction, plus the failure), re-take the snapshot after its gate, and
+re-run this gate.
 
 Two more things to do here, both because the implementer's report is the
 only place they'd otherwise surface:
@@ -168,10 +183,17 @@ defeat the entire point of this stage. (`/code-review` is still fine for
 you or the user to run ad hoc, standalone, outside this pipeline.)
 
 Instead, spawn a **fresh** `general-purpose` agent (never `fork`). Give it
-only: the spec file's path/content and the output of
-`git diff HEAD -- <changed files>` (or the equivalent for what actually
-changed) — not your own exploration, not either prior subagent's report,
-not any framing of your own about the implementation's quality.
+only: the spec file's path/content and the full diff, produced with
+
+```bash
+git add -N .        # intent-to-add: makes new, untracked files show up in the diff
+git diff HEAD
+```
+
+(plain `git diff HEAD` silently leaves out every new file, so the reviewer
+would never see them) — not your own exploration, not either prior
+subagent's report, not any framing of your own about the implementation's
+quality.
 Instruction, close to verbatim:
 
 > Review the diff below against the spec above, adversarially — assume
@@ -229,7 +251,8 @@ Up to **2 rounds**:
 1. Spawn a **fresh** `general-purpose` agent (not the Stage 3 agent) with
    the findings and the spec: "Fix these findings. Do not edit any
    `*.test.ts` / `*.test.tsx` file." Same verification gate as Stage 3.
-2. Re-run Stage 4's review on the updated diff.
+2. Re-run Stage 4's review on the updated diff (produced the same way,
+   `git add -N .` then `git diff HEAD`).
 
 If findings remain after 2 rounds, **stop** — report the remaining
 findings to the user directly rather than attempting a third round

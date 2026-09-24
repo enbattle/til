@@ -239,6 +239,11 @@ npm run build
 npm run size && npm run check:bundle
 ```
 
+`npm run check:test-lock` is not part of `verify` or CI: `/feature` uses it
+inside a run (`-- --snapshot` after the red tests, `-- --verify` after each
+later stage) to prove no test file changed, and it has nothing to compare
+against outside one.
+
 `npm run dev` for manual checking: click through the home page, a section,
 and a topic; open the System Design tab and a question page, and check that a
 `systems-and-infrastructure` topic shows its "This comes up in:" back-link;
