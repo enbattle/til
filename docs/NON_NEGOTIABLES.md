@@ -21,7 +21,7 @@ detail is never copied here.
 
 **Process**
 
-8. The test-writer, implementer and reviewer are separate, fresh agents, never a `fork` or a skill invoked for review (docs/SDLC.md).
+8. The test-writer, implementer and reviewer are separate, fresh agents, never a `fork` or a skill invoked for review (.claude/skills/feature/SKILL.md, rule 1 and Stage 4).
 9. Tests locked after Stage 2 change only through a fresh test-writer; `check:test-lock` enforces it.
 10. Gates are checks the orchestrator runs itself, never a subagent's self-report.
 11. Nothing is committed or pushed without the user's explicit go-ahead.

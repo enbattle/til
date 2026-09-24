@@ -44,7 +44,7 @@ content), or done directly with no independent review pass.
 **Expected:** Direct, no skill
 **Why:** `CLAUDE.md`'s own named example of what to skip the pipeline
 for.
-**Fails if:** either skill is invoked for a one-word fix.
+**Fails if:** any skill is invoked for a one-word fix.
 
 ---
 
@@ -120,8 +120,7 @@ functionality, no design choices to spec. Dependabot already automates
 this in the ordinary case; this scenario is about a manual invocation of
 the same kind of change.
 **Fails if:** routed to `/feature` (there's no feature here to spec), or
-done without running `npm run typecheck/lint/test:run/build/size`
-afterward.
+done without running `npm run verify` afterward.
 
 ---
 

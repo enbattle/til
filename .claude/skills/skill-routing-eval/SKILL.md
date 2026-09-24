@@ -34,7 +34,7 @@ current list of valid routing targets.** `evals/skill-routing/HOW_TO_RUN.md`
 and `evals/README.md` both reference this list rather than restating it —
 when a skill is added or removed, this is the only place the list itself
 needs to change (this list has already gone stale twice from being
-hand-duplicated elsewhere, which is why nothing else repeats it now).
+hand-duplicated elsewhere, which is why nothing else repeats the full list now).
 
 For each scenario in `evals/skill-routing/scenarios.md`, spawn a
 **fresh** `general-purpose` agent (never `fork` — it must not inherit

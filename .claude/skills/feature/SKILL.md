@@ -214,7 +214,9 @@ only place they'd otherwise surface:
   assertion), a passing run proves nothing about it. Copy the repo outside
   the working tree (`git worktree add` or `cp -R` into the scratchpad), plant
   the regression the guard claims to catch there, and confirm it exits
-  non-zero. A guard that only ever passed hasn't been tested.
+  non-zero. A guard that only ever passed hasn't been tested. Then keep that
+  planted case as a test in `scripts/checks.test.mjs`, which `npm run verify`
+  runs through `test:run`, so the guard stays tested after this run.
 
 ## Stage 4 — Adversarial review (code + UI)
 

@@ -136,6 +136,10 @@ failing criterion 1.
    }, [onClose]);
 ```
 
+Watch: oxlint's `exhaustive-deps` rule already warns about the missing
+`query` but exits 0. If that rule is ever made an error, `verify` catches this
+mechanically and the scenario must be rotated.
+
 **Expected finding:** the stale closure: `query` is missing from the
 dependency list, so the handler always sees `''`.
 

@@ -60,9 +60,9 @@ npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src
 npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
 npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
 npm run check:bundle      # After a build: fail if topic bodies are in the main chunk instead of lazy chunks
-npm run check:raw-html   # Fail if markdown can render raw HTML or dangerouslySetInnerHTML appears outside CodeBlock
+npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink (dangerouslySetInnerHTML outside CodeBlock, innerHTML, outerHTML, insertAdjacentHTML, document.write) appears
 npm run check:pipeline-log # Fail if a docs/pipeline-log.md row is malformed or closes friction with a bare "nothing to change"
-npm run check:test-lock   # /feature only: -- --snapshot locks test files, -- --verify fails if any changed, -- --clear
+npm run check:test-lock   # /feature only: -- --snapshot locks test files and test-runner config, -- --verify fails if any changed, -- --clear
 npm run review:diff       # /feature only: the reviewer's diff, including new untracked files
 npm run verify            # The whole chain: typecheck, lint, format, every check, tests, build, size, bundle check
 ```

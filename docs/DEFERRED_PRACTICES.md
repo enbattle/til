@@ -127,8 +127,8 @@ volume).
 
 **What it is:** Running eval scenarios automatically on every push/PR,
 graded by another model, with a required pass threshold blocking merge —
-the automated version of what `skill-routing-eval` and
-`content-review-eval` currently do manually.
+the automated version of what the eval skills (see `evals/README.md`)
+currently do manually.
 **Why deferred:** `evals/README.md` already states the reasoning:
 manual/periodic is deliberate here, since a full eval run costs real
 time and tokens per scenario, and this is a personal site's process
@@ -242,7 +242,7 @@ with the same enforced review rigor as source code — e.g., a hook that
 flags when `evals/**/scenarios.md` changes without a corresponding
 results-log entry.
 **Why deferred:** `til` already gets most of this benefit from
-`skill-routing-eval`/`content-review-eval`'s own Stage 3 ("add a
+the eval skills' own "add a scenario first" step ("add a
 scenario first, then run it") and the `nudge-sdlc` hook's existing
 reminder — adding a dedicated enforcement mechanism on top would be
 gating an already-lightly-gated process a second time for a solo

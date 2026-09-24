@@ -88,7 +88,8 @@ scenario.
 ## When to run this
 
 - After editing `add-topic/SKILL.md`'s Stage 3 prompt, or `CLAUDE.md`'s
-  Writing Standard section — exactly the two inputs this eval depends on.
+  Writing Standard section, or `docs/NON_NEGOTIABLES.md` — the three inputs
+  this eval depends on (see the table in `evals/README.md`).
 - Whenever a real `add-topic` review misses something in actual use —
   that's a live failure; turn it into a new scenario before fixing the
   root cause, so this eval catches it if it comes back.

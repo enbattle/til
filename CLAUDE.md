@@ -230,7 +230,7 @@ its actual reasoning and a concrete revisit condition, lives in
 
 ## Verifying a change
 
-`npm run verify` runs the same checks as CI (the order differs slightly), and
+`npm run verify` is exactly what CI runs (`ci.yml` calls it), and
 is what the skills tell a session to run. The deploy workflow runs it too, so a
 commit that fails any check never goes live. The individual commands, if you need one:
 
@@ -244,7 +244,7 @@ npm run size && npm run check:bundle
 
 `npm run check:test-lock` and `npm run review:diff` are not part of `verify`
 or CI: `/feature` uses them inside a run. `check:test-lock` proves no test
-file changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
+file or test-runner config changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
 `-- --clear`); `review:diff` prints the reviewer's diff, including new
 untracked files.
 

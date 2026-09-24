@@ -43,7 +43,7 @@ own safety nets instead of a running service.
 - `system-design-navigation/` — starting from a symptom with no topic
   names in it, does the System Design section's question list (titles
   and summaries) get a fresh reader to the right question and the right
-  catalog topics? A third failure surface: the other two check process
+  catalog topics? A third failure surface: the others check process
   (routing, review); this one checks the _content_ a reader navigates by,
   which `npm run test:run` can't judge (it proves no dead links and
   full coverage of `systems-and-infrastructure`, not that a person with a
@@ -62,6 +62,10 @@ own safety nets instead of a running service.
   the reviewer instruction changes so the instruction can't learn the answers.
   Run via the `feature-review-eval` skill.
 
+- `docs-audit/` — not an eval. `results/` holds a dated log of each docs
+  audit, written by the `docs-audit` skill's Stage 4, so whether an audit
+  ran after a batch of changes can be checked later.
+
 ## How this is run
 
 **Manual/periodic, on purpose** — not wired into CI. Running a scenario
@@ -75,9 +79,9 @@ the skill wraps. The other categories work the same way, each through its
 own skill (`content-review-eval`, `system-design-navigation-eval`,
 `feature-review-eval`).
 
-**Re-run whenever it matters**, not on a fixed schedule: after editing
-`CLAUDE.md`, any `SKILL.md`, or `docs/SDLC.md` — the same trigger the
-`nudge-sdlc` hook (`.claude/hooks/nudge-sdlc.js`) reminds you about.
+**Re-run whenever it matters**, not on a fixed schedule: after any change
+the table below names; `.claude/hooks/nudge-sdlc.js` reminds a session
+about most of them.
 Drift here is invisible until someone actually checks, so the point of
 running it isn't ceremony — it's catching the case where a documentation
 edit that read fine on its own quietly made the routing rule worse.

@@ -27,16 +27,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run check:colors
-      - run: npm run check:tokens
-      - run: npm run check:contrast
-      - run: npm run check:npm-refs
-      - run: npm run check:pipeline-log
-      - run: npm run check:raw-html
-      - run: npm run typecheck
-      - run: npm run test:run
-      - run: npm run build
-      - run: npm run size
-      - run: npm run check:bundle
+      # The one definition of the check chain (package.json "verify"), shared with
+      # the deploy workflow and every skill, so CI can never drift from it.
+      - run: npm run verify
