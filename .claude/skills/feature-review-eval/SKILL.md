@@ -1,6 +1,6 @@
 ---
 name: feature-review-eval
-description: Run this repo's feature-review eval — checks whether /feature's Stage 4 reviewer actually catches a deliberately planted defect in a diff (a correctness bug, a docs/NON_NEGOTIABLES.md violation, a React stale closure) instead of rubber-stamping it, including a clean control it must not invent findings for. Use when asked to run/check the feature-review eval, after editing Stage 4's reviewer instruction in feature/SKILL.md or docs/NON_NEGOTIABLES.md, or after a defect escaped a /feature review (add a scenario for it first).
+description: Run this repo's feature-review eval — checks whether /feature's Stage 4 reviewer actually catches a deliberately planted defect in a diff (see evals/feature-review/scenarios.md for the current set) instead of rubber-stamping it, including a clean control it must not invent findings for. Use when asked to run/check the feature-review eval, after editing Stage 4's reviewer instruction in feature/SKILL.md or docs/NON_NEGOTIABLES.md, or after a defect escaped a /feature review (add a scenario for it first).
 ---
 
 # Feature-review eval

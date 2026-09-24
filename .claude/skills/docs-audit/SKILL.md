@@ -109,6 +109,10 @@ trusting an earlier stage's self-report.
 (Run `npm run verify` instead if any fix touched actual code rather than only
 documentation.)
 
+Append a short dated entry to `evals/docs-audit/results/<YYYY-MM-DD>.md`
+(trigger, files audited, findings, what was fixed, what was left open), so
+whether an audit happened after a batch of changes is checkable later.
+
 Summarize for the user: what was audited, what was found, what was
 fixed, and anything left open for their judgment. Ask before committing
 or pushing, same as always — this skill leaves the working tree ready,

@@ -29,7 +29,7 @@ import { isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
+const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
 const SNAPSHOT_FILE = /(^|\/)__snapshots__\/.+\.snap$/;
 const RUNNER_CONFIG_FILE = /^vitest\.(config|workspace)\.[cm]?[jt]s$/;
 // Shared test setup can weaken every test at once, so it is locked too.
@@ -60,12 +60,25 @@ function hash(path) {
   return existsSync(full) ? sha(readFileSync(full)) : null;
 }
 
+// The text from `start`'s match through its matching closing brace, counted by
+// depth so nested blocks (coverage: { ... }) stay inside it; null if absent.
+function braceBlock(text, start) {
+  const match = start.exec(text);
+  if (!match) return null;
+  let depth = 0;
+  for (let i = match.index; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}' && --depth === 0) return text.slice(match.index, i + 1);
+  }
+  return text.slice(match.index);
+}
+
 // Parts of shared files that configure the test runner. Hashing only these
 // parts leaves the rest of each file (plugins, dependencies) free to change.
 function runnerConfig() {
   const vitePath = join(ROOT, 'vite.config.ts');
   const vite = existsSync(vitePath) ? readFileSync(vitePath, 'utf8') : '';
-  const testBlock = /\n\s*test:\s*\{[\s\S]*?\n\s*\},?/.exec(vite)?.[0] ?? vite;
+  const testBlock = braceBlock(vite, /\n\s*test:\s*\{/) ?? vite;
   const { scripts = {} } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
   const testScripts = Object.entries(scripts).filter(([name]) => name.startsWith('test'));
   return {

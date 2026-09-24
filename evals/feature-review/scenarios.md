@@ -52,74 +52,51 @@ and before unquoting, so criteria 2, 3 and 4 fail.
 
 ---
 
-### FR-02 — non-negotiable: raw HTML switched on in markdown
+### FR-02 — non-negotiable: an icon-only button with no accessible name
 
-**Planted defect:** to render `<kbd>`, the diff adds `rehype-raw`, which makes
-markdown render any raw HTML, including `<script>`-free XSS vectors such as
-`<img onerror>`. That violates `docs/NON_NEGOTIABLES.md` #6. No test covers
-it and the spec doesn't mention it, so only a reviewer that reads the
-non-negotiables catches it. (Replaced a first version of FR-02, dropping
-`rel="noreferrer"`, after the 2026-09-23 baseline: an existing test already
-asserts that attribute, so it didn't test reading the non-negotiables.)
+**Planted defect:** the new button's only content is a decorative arrow
+(`aria-hidden`), and it has no `aria-label` or visible text, so a screen
+reader announces an unnamed "button". That breaks `docs/NON_NEGOTIABLES.md`
+#1 (DESIGN.md's accessibility checklist). No test or `check:*` script
+catches it (the linter has no accessibility rules), so only a reviewer that
+reads the non-negotiables does.
+
+History: the first FR-02 (dropping `rel="noreferrer"`) was replaced because
+a test already covered it; the second (turning on `rehype-raw`) was
+replaced when `check:raw-html` made it mechanical. Rotate this one the same
+way if a check ever starts catching unnamed buttons.
 
 **Spec:**
 
-> Topics can show keyboard keys: `<kbd>Ctrl</kbd>+<kbd>K</kbd>` in a topic
-> body renders as styled keys. Acceptance criteria: (1) `<kbd>` in a body
-> renders a `<kbd>` element with the `kbd` class. (2) Existing markdown
-> renders unchanged.
+> Long topic pages get a "back to top" control at the end of the article.
+> Acceptance criteria: (1) It appears after the previous/next navigation on
+> every topic page. (2) Activating it scrolls the window to the top. (3) It
+> is keyboard-operable.
 
 **Diff:**
 
 ```diff
---- a/package.json
-+++ b/package.json
-@@ -53,5 +53,6 @@
-     "react-dom": "^19.3.0",
-     "react-markdown": "^10.1.0",
-     "react-router-dom": "^7.18.3",
-+    "rehype-raw": "^7.0.0",
-     "remark-gfm": "^4.0.1",
-     "shiki": "^4.4.3"
---- a/src/components/MarkdownRenderer.tsx
-+++ b/src/components/MarkdownRenderer.tsx
-@@ -1,5 +1,6 @@
- import { isValidElement, type ReactNode } from 'react';
- import ReactMarkdown, { type Components } from 'react-markdown';
-+import rehypeRaw from 'rehype-raw';
- import remarkGfm from 'remark-gfm';
- import { Link } from 'react-router-dom';
- import { CodeBlock } from './CodeBlock';
-@@ -62,6 +63,9 @@ const components: Components = {
-         {children}
-       </code>
-     );
-   },
-+  kbd({ children }) {
-+    return <kbd className="kbd">{children}</kbd>;
-+  },
- };
-@@ -73,7 +77,11 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
-   return (
-     <div className="prose prose-neutral dark:prose-invert max-w-none">
--      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-+      <ReactMarkdown
-+        remarkPlugins={[remarkGfm]}
-+        rehypePlugins={[rehypeRaw]}
-+        components={components}
+--- a/src/pages/TopicPage.tsx
++++ b/src/pages/TopicPage.tsx
+@@ -128,6 +128,14 @@ export function TopicPage() {
+           </nav>
+         )}
+       </TopicBody>
++      <button
++        type="button"
++        onClick={() => window.scrollTo({ top: 0 })}
++        className="mt-8 rounded-full border border-border p-2 text-text-secondary hover:text-accent"
 +      >
-         {content}
-       </ReactMarkdown>
-     </div>
++        <span aria-hidden="true">↑</span>
++      </button>
+     </article>
+   );
+ }
 ```
 
-**Expected finding:** `rehype-raw` turns on raw HTML for every topic, which
-breaks non-negotiable #6 (an XSS surface), so at least high severity; a good
-review suggests an allowlist (`rehype-sanitize` permitting `kbd`) or a
-markdown-level syntax instead. The diff also omits the `package-lock.json`
-hunk (left out for length) and, applied for real, pushes the markdown chunk
-past its 95 kB budget; a review reporting either is correct, but PASS still
-requires the #6 finding.
+**Expected finding:** the button has no accessible name (the arrow is
+`aria-hidden`, and there is no `aria-label`), which breaks non-negotiable
+#1, so at least high severity.
 
 ---
 

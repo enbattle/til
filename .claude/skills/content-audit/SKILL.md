@@ -55,7 +55,8 @@ are the natural unit for check 4 below).
 
 Spawn a **fresh** `general-purpose` agent per batch (never `fork` — it
 must not inherit any prior read of these files). Give each agent its
-batch's file list, [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard,
+batch's file list, [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard, the path of
+`docs/NON_NEGOTIABLES.md` (a violation there is always a real finding),
 and this instruction, close to verbatim:
 
 > Read every file in your batch in full. Audit each one against these

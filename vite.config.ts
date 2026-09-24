@@ -41,5 +41,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: true,
+    // Tests that render the whole app pay for compiling its lazily loaded routes
+    // on first use; on a cold cache that alone can pass the 5s default, which
+    // made `verify` (and so the deploy) fail intermittently.
+    testTimeout: 15000,
   },
 });

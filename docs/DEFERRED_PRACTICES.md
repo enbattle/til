@@ -272,6 +272,12 @@ plausible small win rather than a fully reasoned rejection, unlike the
 entries above. The open question is whether patch-level bumps in this
 dependency set have historically been safe enough to skip a manual
 glance; that hasn't been checked.
+**Status (2026-09-23): the trigger has fired.** Nine Dependabot PRs
+(#1–#5, #7–#10) had been open since 2026-09-13 without a look; a review of
+each (verify on the branch merged with `main`, release notes for the major
+bumps) produced a merge order for the user. Adopting auto-merge still waits
+on one fact: whether required status checks are enforced for pull requests,
+since without them auto-merge merges immediately.
 **Revisit when:** Dependabot PR volume becomes tedious enough that a
 manual look at each one stops actually happening (silently trusting them
 unreviewed is worse than an explicit auto-merge policy for the ones

@@ -54,8 +54,8 @@ own safety nets instead of a running service.
   `system-design-navigation-eval` skill.
 
 - `feature-review/` — once `/feature`'s Stage 4 review runs, does it catch a
-  planted defect in a diff (a correctness bug, a `docs/NON_NEGOTIABLES.md`
-  violation, a React stale closure) instead of rubber-stamping it, and does
+  planted defect in a diff (the current set is in its `scenarios.md`)
+  instead of rubber-stamping it, and does
   it leave a clean diff alone? The `/feature` counterpart of
   `content-review`. Each scenario runs twice, since one review of a
   nondeterministic agent says little, and a planted defect is rotated whenever
@@ -84,12 +84,13 @@ edit that read fine on its own quietly made the routing rule worse.
 
 Which eval to run depends on what changed:
 
-| You changed                                                                                                                   | Run                             |
-| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`            |
-| The Writing Standard, `add-topic`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                                       | `content-review-eval`           |
-| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review                 | `feature-review-eval`           |
-| A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval` |
+| You changed                                                                                                                   | Run                                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`                                                                                                                           |
+| The Writing Standard, `add-topic`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                                       | `content-review-eval`                                                                                                                          |
+| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review                 | `feature-review-eval`                                                                                                                          |
+| Added or widened a `check:*` script                                                                                           | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
+| A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval`                                                                                                                |
 
 ## Grading philosophy
 

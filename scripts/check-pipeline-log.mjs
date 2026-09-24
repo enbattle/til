@@ -9,7 +9,9 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const LOG = fileURLToPath(new URL('../docs/pipeline-log.md', import.meta.url));
+// An optional path argument lets the tests point it at a fixture.
+const LOG =
+  process.argv[2] ?? fileURLToPath(new URL('../docs/pipeline-log.md', import.meta.url));
 const COLUMNS = [
   'Date',
   'Run',
@@ -81,6 +83,14 @@ if (headerAt === -1) {
       .replace(/[\s.,;:!—–-]+/g, ' ')
       .trim();
     if (bareRetro === '') violations.push(`${at}: Retro must not be empty`);
+    const placeholderRetro = ['n/a', 'na', 'none', 'nothing', 'tbd', 'todo'].includes(
+      bareRetro,
+    );
+    if (placeholderRetro && !(bareRetro === 'n/a' && run.startsWith('add-topic '))) {
+      violations.push(
+        `${at}: Retro "${retro}" says nothing; only an add-topic row may use n/a`,
+      );
+    }
     const hadFriction =
       (gateCount && Number(gateCount[1]) > 0) ||
       (found && Number(found[1]) + Number(found[2]) + Number(found[3]) > 0);

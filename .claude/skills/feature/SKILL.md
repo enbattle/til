@@ -103,7 +103,12 @@ way to enforce that.
 ```bash
 git status --porcelain -uall    # every changed path should be a test file (or content fixture), listed file by file
 npm run test:run                # the new or edited tests for the new behavior must actually fail
+npx prettier --check <changed test and fixture files> && npx oxlint <changed test files>
 ```
+
+The last line matters because the tests are about to be locked: Stage 3's
+`verify` runs the format and lint checks, and no later stage may fix a locked
+file, so a formatting slip here would end the run.
 
 If a non-test implementation file changed, or the new tests pass
 immediately (meaning they're not testing anything new), stop and re-run

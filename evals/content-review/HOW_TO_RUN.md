@@ -40,6 +40,8 @@ For each scenario in `scenarios.md`:
    - The scenario's fabricated draft file content, verbatim, exactly as
      `add-topic` Stage 3 would receive a real draft.
    - The Writing Standard text from step 1.
+   - The path of `docs/NON_NEGOTIABLES.md`, exactly as `add-topic` Stage 3
+     gives it.
    - The sibling topic titles/slugs from step 1.
    - The Stage 3 reviewer instruction from step 1, verbatim, with its
      final "review this new til topic" framing intact — the agent should

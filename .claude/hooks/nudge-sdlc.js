@@ -13,10 +13,12 @@ const ROUTING_REMINDER =
 
 const EVALS_REMINDER =
   "Reminder (docs/SDLC.md): you're editing this repo's SDLC tooling " +
-  'itself (CLAUDE.md, docs/SDLC.md, a skill, or a hook). Consider running ' +
-  'the skill-routing-eval skill afterward (see evals/README.md) — ' +
-  'routing drift from a wording change here is otherwise invisible ' +
-  'until it shows up in real use.';
+  'itself (CLAUDE.md, docs/SDLC.md, docs/NON_NEGOTIABLES.md, a skill, or a ' +
+  "hook). Afterward, run the eval evals/README.md's table names for what " +
+  'you changed: skill-routing-eval for routing text, and content-review-eval ' +
+  'or feature-review-eval for a reviewer prompt or the non-negotiables. ' +
+  'Drift from a wording change here is otherwise invisible until it shows ' +
+  'up in real use.';
 
 function isAppCodeOrSpec(path) {
   return /(^|\/)src\//.test(path) || /(^|\/)docs\/specs\//.test(path);
@@ -27,7 +29,8 @@ function isSdlcTooling(path) {
     /(^|\/)CLAUDE\.md$/.test(path) ||
     /(^|\/)docs\/SDLC\.md$/.test(path) ||
     /(^|\/)\.claude\/skills\//.test(path) ||
-    /(^|\/)\.claude\/hooks\//.test(path)
+    /(^|\/)\.claude\/hooks\//.test(path) ||
+    /(^|\/)docs\/NON_NEGOTIABLES\.md$/.test(path)
   );
 }
 

@@ -16,7 +16,7 @@ detail is never copied here.
 **Security**
 
 5. No secrets in the repository or in `.env` files (Vite reads `.env` at build time, so anything there can end up in the bundle); agents never read `.env` files.
-6. Markdown never renders raw HTML (no `rehype-raw`); `dangerouslySetInnerHTML` only takes output from an escaping source (Shiki). `check:raw-html` enforces both.
+6. Markdown never renders raw HTML (no `rehype-raw`); `dangerouslySetInnerHTML` only takes output from an escaping source (Shiki). `check:raw-html` enforces both, and also rejects `innerHTML`, `outerHTML`, `insertAdjacentHTML` and `document.write` in app code.
 7. External links open with `rel="noreferrer"` (`MarkdownRenderer.test.tsx` checks it); no third-party scripts at runtime.
 
 **Process**
@@ -25,4 +25,4 @@ detail is never copied here.
 9. Tests locked after Stage 2 change only through a fresh test-writer; `check:test-lock` enforces it.
 10. Gates are checks the orchestrator runs itself, never a subagent's self-report.
 11. Nothing is committed or pushed without the user's explicit go-ahead.
-12. Every loop is capped (2 fix rounds, 2 Stage 2 re-runs, 2 add-topic review rounds) and surfaces to the user when the cap is hit.
+12. Every loop in the skills has a cap stated where the loop is, and hitting it surfaces to the user rather than trying again.
