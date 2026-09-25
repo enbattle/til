@@ -44,7 +44,7 @@ content), or done directly with no independent review pass.
 **Expected:** Direct, no skill
 **Why:** `CLAUDE.md`'s own named example of what to skip the pipeline
 for.
-**Fails if:** either skill is invoked for a one-word fix.
+**Fails if:** any skill is invoked for a one-word fix.
 
 ---
 
@@ -63,31 +63,39 @@ to), or the registry/folder correspondence is skipped entirely.
 
 ---
 
-### SR-05 — bug of unknown size (ambiguous by design)
+### SR-05 — bug of unknown size
 
 > The search dialog doesn't close reliably — sometimes if I hit Escape
 > right after typing, it reopens a second later. Can you fix that?
 
-**Expected:** Investigate first; **then** either `/feature` (if the
-root cause turns out to be a real design gap) or a direct fix (if it
-turns out to be a one-line timing bug) — both acceptable.
-**Why:** Bug severity/scope is genuinely unknown before investigation —
-this tests whether the session investigates before committing to a
-process size, not whether it guesses right upfront.
-**Fails if:** it commits to a process (either direction) _before_
-finding the actual cause, or guesses at a fix without reproducing it.
+**Expected:** "Triage first": reproduce the bug and find its cause
+before choosing a process, then route by what is found (a localized fix is
+direct with a regression test; a cause that spans modules or needs a
+behavior decision goes to `/feature`), as `feature/SKILL.md` Stage 0 says.
+The eval forbids implementing and asks for a routing answer, so "triage
+first, and here is what decides the route afterwards" **is** the passing
+answer.
+**Why:** Bug size is unknown before investigation. This tests whether the
+session knows to triage before sizing the process, not whether it guesses
+the size right.
+**Fails if:** it names `/feature` or a direct fix as its route without
+making that conditional on what triage finds, or proposes a fix without
+reproducing the bug. (Before 2026-09-24 this scenario had no written triage
+rule to follow, and four runs in a row landed as near-misses on both sides;
+the rule was added to Stage 0 in response.)
 
 ---
 
 ### SR-06 — editing existing content, not adding new (trap)
 
-> Fix a factual error in the prompt-engineering topic — it currently
-> implies RLHF is a 2024 invention, but the technique is older than
-> that.
+> In the September 2026 state-of-LLMs topic, the preference-optimization
+> bullet mentions RLHF without saying where it comes from. Add a few words
+> noting the technique predates chat models (it was introduced for deep
+> reinforcement learning in 2017).
 
 **Expected:** Direct, no skill
 **Why:** `add-topic` is explicitly scoped to _new_ topic files, not
-editing existing ones; a factual correction to existing prose is exactly
+editing existing ones; a small, accurate addition to existing prose is exactly
 `CLAUDE.md`'s "small, unambiguous" carve-out.
 **Fails if:** routed through `add-topic` (scope creep of a skill beyond
 its stated purpose) or `/feature` (no app behavior involved).
@@ -120,8 +128,7 @@ functionality, no design choices to spec. Dependabot already automates
 this in the ordinary case; this scenario is about a manual invocation of
 the same kind of change.
 **Fails if:** routed to `/feature` (there's no feature here to spec), or
-done without running `npm run typecheck/lint/test:run/build/size`
-afterward.
+done without running `npm run verify` afterward.
 
 ---
 
@@ -220,3 +227,22 @@ whether readers reach the right _content_), or done as an ad-hoc
 read-through by the same session with no fresh agent per scenario, which
 defeats the premise that whoever just wrote the questions is the
 worst-positioned person to judge whether a stranger would find them.
+
+---
+
+### SR-14 — feature-review-eval routing
+
+> I tightened the reviewer instructions in the /feature pipeline. Can you
+> check whether the reviewer still actually catches bugs in a diff, rather
+> than just approving everything?
+
+**Expected:** `feature-review-eval`
+**Why:** Exact match for the skill's purpose: planted-defect diffs given to
+fresh reviewers running Stage 4's current instruction, graded against known
+defects and a clean control.
+**Fails if:** routed to `content-review-eval` (that checks `add-topic`'s
+prose review, not `/feature`'s code review), `skill-routing-eval` (checks
+which skill gets picked, not whether a review catches defects), `/feature`
+itself, or done as an ad-hoc read of the reviewer prompt by the same session
+with no planted defect and no fresh reviewer, which can't show whether the
+review catches anything.

@@ -30,7 +30,8 @@ of staleness this skill exists to catch:
 
 - `CLAUDE.md`, `README.md`
 - everything under `docs/`
-- everything under `evals/` (`README.md`, every scenario/how-to-run file)
+- everything under `evals/` (`README.md`, every scenario/how-to-run file,
+  and the `results/` logs)
 - every `SKILL.md` under `.claude/skills/`, and the reminder text in
   `.claude/hooks/*.js` (it names skills and docs, so it can go stale the same way)
 - (explicitly **not** in scope: `src/content/**` and
@@ -78,8 +79,8 @@ Stage 1 and this instruction, close to verbatim:
 > say explicitly you found nothing worth flagging.
 >
 > `docs/specs/*.md` are records of what was decided at a point in time, and
-> `evals/*/results/*.md` are dated run logs: don't flag them for describing the
-> past, but do flag one that states something as a present-tense rule that is
+> `evals/*/results/*.md` and the rows of `docs/pipeline-log.md` are dated run
+> logs: don't flag them for describing the past, but do flag one that states something as a present-tense rule that is
 > now wrong.
 >
 > Files to audit: <Stage 1's list>
@@ -108,6 +109,10 @@ trusting an earlier stage's self-report.
 
 (Run `npm run verify` instead if any fix touched actual code rather than only
 documentation.)
+
+Append a short dated entry to `evals/docs-audit/results/<YYYY-MM-DD>.md`
+(trigger, files audited, findings, what was fixed, what was left open), so
+whether an audit happened after a batch of changes is checkable later.
 
 Summarize for the user: what was audited, what was found, what was
 fixed, and anything left open for their judgment. Ask before committing

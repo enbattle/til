@@ -19,9 +19,13 @@ near-duplicate check the same way a real `add-topic` review would.
 
 ### CR-01 — undefined jargon (trap for "define terms before using them")
 
-**Section:** `systems-and-infrastructure`
-**Planted violation:** never defines "hash function" before relying on
-it as load-bearing vocabulary — a reader with zero background has no way
+**Section:** `engineering-practices` (not `systems-and-infrastructure`, whose
+structural rules, a closing "Where you'll meet this" section and a System
+Design link, drew real findings that outranked the planted one on
+2026-09-24)
+**Planted violation (the only one; the rest of the draft was corrected on
+2026-09-24 so this one stands out):** never defines "hash function" before
+relying on it as load-bearing vocabulary — a reader with zero background has no way
 to know what "hash the item" actually means or why multiple hashes are
 used.
 
@@ -40,17 +44,19 @@ whether a username is already taken before hitting the database.
 
 Under the hood, a Bloom filter is just a bit array, all zeros to start.
 To add an item, you hash the item with several different hash functions
-and flip the resulting bit positions to 1. To check membership, you hash
+and set the resulting bit positions to 1. To check membership, you hash
 the item the same way and check whether all those bit positions are
 already 1 — if any of them are 0, the item was definitely never added;
 if they're all 1, it probably was.
 
 The false-positive rate depends on how full the bit array gets and how
-many hash functions you use. A larger array and fewer hashes means fewer
-collisions but more memory; more hashes tightens accuracy per item but
-costs more CPU per lookup. Redis, Cassandra, and Chrome's Safe Browsing
-list all use Bloom filters for exactly this "cheap definitely-not versus
-probably-yes" check before a more expensive operation.
+many hash functions you use. A larger array lowers it at the cost of
+memory. The number of hashes has a sweet spot for a given array size and
+item count: too few and each item marks too little of the array to be
+told apart, too many and the array fills up quickly. Databases such as
+Cassandra keep a Bloom filter per data file for exactly this
+"cheap definitely-not versus probably-yes" check, so most lookups for a key
+that isn't there never touch the disk.
 ```
 
 **Expected finding:** flags that "hash function" (and "hash the item")
@@ -270,8 +276,8 @@ or a database outage and would just make things worse.
 Conflating the two causes two different failure modes: using only a
 liveness probe means a container that's alive but not ready still
 receives traffic and returns errors; using only a readiness probe means
-a genuinely deadlocked container never gets restarted, since nothing is
-checking whether it's actually stuck versus just temporarily busy.
+a deadlocked container never gets restarted, since nothing is checking
+whether it's stuck or just temporarily busy.
 ```
 
 **Expected finding:** no finding that is false of the text. A thorough

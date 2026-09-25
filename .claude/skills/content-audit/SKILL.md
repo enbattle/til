@@ -55,7 +55,8 @@ are the natural unit for check 4 below).
 
 Spawn a **fresh** `general-purpose` agent per batch (never `fork` — it
 must not inherit any prior read of these files). Give each agent its
-batch's file list, [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard,
+batch's file list, [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard, the path of
+`docs/NON_NEGOTIABLES.md` (a violation there is always a real finding),
 and this instruction, close to verbatim:
 
 > Read every file in your batch in full. Audit each one against these
@@ -138,7 +139,7 @@ count, the same reasoning `docs-audit` Stage 3 gives (the independent
 audit in Stage 2 already was the check). If the finding count is large
 (many files, many findings per file), batch the fixes across fresh
 agents again rather than applying dozens of edits serially yourself,
-mirroring how this session's own first full sweep applied its fixes in
+mirroring how the first full sweep (2026-09-15) applied its fixes in
 batches rather than one at a time. For a finding you disagree with, or a
 correctness claim that needs a judgment call the audit agent couldn't
 make on its own, resolve it yourself or ask the user rather than

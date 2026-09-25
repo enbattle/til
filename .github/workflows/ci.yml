@@ -21,20 +21,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm run check:colors
-      - run: npm run check:tokens
-      - run: npm run check:contrast
-      - run: npm run check:npm-refs
-      - run: npm run typecheck
-      - run: npm run test:run
-      - run: npm run build
-      - run: npm run size
-      - run: npm run check:bundle
+      # The one definition of the check chain (package.json "verify"), shared with
+      # the deploy workflow and the /feature and add-topic gates, so CI can never
+      # drift from it.
+      - run: npm run verify

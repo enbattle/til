@@ -8,7 +8,10 @@ version, with the reasoning behind each stage.
 
 ## Why a process at all
 
-For a one-line fix, none of this applies — just make the change. For
+For a one-line fix, none of this applies — just make the change. A bug of
+unknown size is triaged first (reproduce it and find the cause), and the
+cause decides the route: a localized fix is direct with a regression test,
+anything wider comes here. For
 anything with real scope (new functionality, a change to an existing
 convention, anything touching more than a file or two), skipping straight
 to code trades a small amount of upfront thinking for a much larger amount
@@ -98,11 +101,24 @@ finds something, and a reader of process edits at the retrospective.
    friction that actually happened and fix each real issue at the strongest
    level that fits: a mechanical check, then a correction to the doc that
    already covers it, then new guidance only if neither does. A run with no
-   friction reports "nothing to change" and adds nothing. It also checks
+   friction reports "nothing to change" and changes nothing but its log row. It also checks
    whether a [deferred practice's](DEFERRED_PRACTICES.md) revisit condition has
    come true. Edits to a process file get one independent read first, by an
    agent that never saw the author's reasoning, and then go to the user as
-   proposals in their own commit. The exact steps are in the skill.
+   proposals in their own commit. Every run also appends a row to
+   [pipeline-log.md](pipeline-log.md), so friction that is too small to act
+   on in one run can still show up as a pattern across runs. The exact steps
+   are in the skill.
+
+## `docs/NON_NEGOTIABLES.md`
+
+The standing constraints every stage is held to (accessibility, security,
+the process rules above), in one short numbered list that points to where
+each detail lives. The spec is checked against it before approval, and each
+change reviewer (`/feature` Stage 4, `add-topic` Stage 3, `content-audit`) is
+given it. When a spec and a line there conflict, the line wins
+unless the user amends the file; a stage that finds the conflict stops and
+asks rather than choosing.
 
 ## `docs/specs/`
 
@@ -122,11 +138,27 @@ description, does a fresh session route it to the skill this document and
 `CLAUDE.md` intend, or a direct edit (`skill-routing`) — and, once the
 right skill runs, does its review step actually catch what it's supposed
 to catch instead of rubber-stamping the work (`content-review`, for
-`add-topic`'s Stage 3), and — for the System Design section — does a
+`add-topic`'s Stage 3; `feature-review`, for `/feature`'s Stage 4), and — for the System Design section — does a
 reader starting from a symptom reach the right question and topics
 (`system-design-navigation`)? Run via the `skill-routing-eval`,
-`content-review-eval` and `system-design-navigation-eval` skills — see
+`content-review-eval`, `feature-review-eval` and
+`system-design-navigation-eval` skills — see
 `evals/README.md`. All are run
-manually/periodically, not on every commit — most usefully right after
-editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also when
-`.claude/hooks/nudge-sdlc.js` reminds a session to check it.
+manually/periodically, not on every commit — after the changes the table in
+`evals/README.md` names (the canonical list of which eval each change
+calls for); `.claude/hooks/nudge-sdlc.js` reminds a session about most of
+them.
+
+## Completeness audit, after a large effort
+
+Reviews check that each change is correct; none of them checks that a whole
+plan was carried out. After an effort that spans many commits (a batch of
+process changes, a multi-feature branch), and before merging it, give one
+fresh `general-purpose` agent (never `fork`) the plan or specs and the branch
+diff, and nothing from the conversation that built it. Ask for a table
+mapping every planned item to evidence (file and line), marked implemented,
+deliberately changed (and whether the reason holds), partial or missing, plus
+a check that the docs still describe what the branch does. On 2026-09-23/24
+this found real gaps that every per-change review had passed, including a
+flaky test that `verify` depended on and a planned change that was never
+made. It is expensive, so it runs once per large effort, not per change.

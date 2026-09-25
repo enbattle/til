@@ -4,14 +4,31 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait 3 days after a release before proposing it; majors wait
+    # longer, since that is where a bad or compromised release hurts most.
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
     groups:
       minor-and-patch:
         update-types:
           - minor
           - patch
+      # size-limit and its @size-limit/* plugins pin each other as peers, so
+      # they only install when bumped together (separate PRs fail `npm ci`).
+      size-limit:
+        patterns:
+          - size-limit
+          - '@size-limit/*'
     open-pull-requests-limit: 10
 
+  # Actions are pinned to full commit SHAs (a tag can be moved to new code; a
+  # SHA can't). Dependabot updates the SHA and its `# vX.Y.Z` comment together.
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - '*'

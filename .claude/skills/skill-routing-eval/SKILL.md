@@ -1,6 +1,6 @@
 ---
 name: skill-routing-eval
-description: Run this repo's skill-routing eval — checks whether a fresh session correctly routes task descriptions to the right skill under .claude/skills/ (see this file's Stage 1 for the current, canonical list of options) or a direct edit, per CLAUDE.md's own carve-out. Use when asked to run/check the skill-routing eval, after editing CLAUDE.md/a SKILL.md/docs/SDLC.md (what nudge-sdlc.js reminds about), or after adding a new skill (add a scenario for it first).
+description: Run this repo's skill-routing eval — checks whether a fresh session correctly routes task descriptions to the right skill under .claude/skills/ (see this file's Stage 1 for the current, canonical list of options) or a direct edit, per CLAUDE.md's own carve-out. Use when asked to run/check the skill-routing eval, after editing CLAUDE.md/a SKILL.md/docs/SDLC.md/.claude/hooks/ (see the table in evals/README.md), or after adding a new skill (add a scenario for it first).
 ---
 
 # Skill-routing eval
@@ -34,7 +34,7 @@ current list of valid routing targets.** `evals/skill-routing/HOW_TO_RUN.md`
 and `evals/README.md` both reference this list rather than restating it —
 when a skill is added or removed, this is the only place the list itself
 needs to change (this list has already gone stale twice from being
-hand-duplicated elsewhere, which is why nothing else repeats it now).
+hand-duplicated elsewhere, which is why nothing else repeats the full list now).
 
 For each scenario in `evals/skill-routing/scenarios.md`, spawn a
 **fresh** `general-purpose` agent (never `fork` — it must not inherit
@@ -49,7 +49,8 @@ only the scenario's prompt, verbatim, plus this instruction:
 > NOT read anything under the evals/ directory (irrelevant and would
 > bias you). Your only job: decide which skill, if any, you'd invoke —
 > /feature, add-topic, docs-audit, content-audit, skill-routing-eval,
-> content-review-eval, system-design-navigation-eval, or neither (direct). Explore the codebase as
+> content-review-eval, feature-review-eval, system-design-navigation-eval,
+> or neither (direct). Explore the codebase as
 > needed to inform that judgment. Report your routing decision and a
 > one-sentence reason why. Keep it under 100 words.
 

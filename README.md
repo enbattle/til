@@ -60,7 +60,11 @@ npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src
 npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
 npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
 npm run check:bundle      # After a build: fail if topic bodies are in the main chunk instead of lazy chunks
-npm run verify            # The whole chain: typecheck, lint, format, every check, tests, build, size, bundle check
+npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink (dangerouslySetInnerHTML outside CodeBlock, innerHTML, outerHTML, insertAdjacentHTML, document.write) appears
+npm run check:pipeline-log # Fail if a docs/pipeline-log.md row is malformed or closes friction with a bare "nothing to change"
+npm run check:test-lock   # /feature only: -- --snapshot locks test files and test-runner config, -- --verify fails if any changed, -- --clear
+npm run review:diff       # /feature only: the reviewer's diff, including new untracked files
+npm run verify            # The whole chain: typecheck, lint, format, every check:* except test-lock, tests, build, size, bundle check
 ```
 
 ## Adding content
@@ -70,6 +74,24 @@ repository and shipped with the next build. See [CLAUDE.md](CLAUDE.md) for
 the exact steps: adding a topic to an existing section, adding a new
 section, System Design questions, and the writing standard topics are held
 to.
+
+## Repository settings this relies on
+
+These live in GitHub, not in the code, so they are listed here:
+
+- **Branch protection on `main`** requiring the CI `verify` check to pass.
+  Dependabot auto-merge (`.github/workflows/dependabot-automerge.yml`)
+  depends on it: with no required check, GitHub merges an auto-merge pull
+  request immediately, untested.
+- **"Allow auto-merge"** and **squash merging** enabled in the repository
+  settings (the workflow merges with `--squash`).
+- Known effect: a merge made by the workflow's `GITHUB_TOKEN` doesn't start
+  other workflows, so an auto-merged dependency bump is not deployed on its
+  own. It goes live with the next push to `main` (or a manual run of
+  Deploy). Dependency bumps don't change the site's content, so that delay
+  is accepted rather than giving the workflow a personal token.
+- GitHub Actions are pinned to full commit SHAs; Dependabot updates them
+  weekly as one grouped pull request.
 
 ## Design
 
@@ -81,5 +103,5 @@ accessibility checklist behind the UI.
 Features and nontrivial app changes go through a spec → TDD →
 implementation (+ docs) → adversarial review (code + UI) pipeline — see
 [docs/SDLC.md](docs/SDLC.md). Adding a topic gets a lighter, separate
-process instead (draft → one independent review pass) — see the
+process instead (draft → an independent review, at most two rounds) — see the
 `add-topic` skill referenced in [CLAUDE.md](CLAUDE.md).

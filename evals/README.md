@@ -43,7 +43,7 @@ own safety nets instead of a running service.
 - `system-design-navigation/` — starting from a symptom with no topic
   names in it, does the System Design section's question list (titles
   and summaries) get a fresh reader to the right question and the right
-  catalog topics? A third failure surface: the other two check process
+  catalog topics? A third failure surface: the others check process
   (routing, review); this one checks the _content_ a reader navigates by,
   which `npm run test:run` can't judge (it proves no dead links and
   full coverage of `systems-and-infrastructure`, not that a person with a
@@ -53,8 +53,18 @@ own safety nets instead of a running service.
   "when the question set changes" step in `HOW_TO_RUN.md`. Run via the
   `system-design-navigation-eval` skill.
 
-Future categories worth adding once these are stable: does the
-`/feature` review stage actually catch known-bad injected bugs.
+- `feature-review/` — once `/feature`'s Stage 4 review runs, does it catch a
+  planted defect in a diff (the current set is in its `scenarios.md`)
+  instead of rubber-stamping it, and does
+  it leave a clean diff alone? The `/feature` counterpart of
+  `content-review`. Each scenario runs twice, since one review of a
+  nondeterministic agent says little, and a planted defect is rotated whenever
+  the reviewer instruction changes so the instruction can't learn the answers.
+  Run via the `feature-review-eval` skill.
+
+- `docs-audit/` — not an eval. `results/` holds a dated log of each docs
+  audit, written by the `docs-audit` skill's Stage 4, so whether an audit
+  ran after a batch of changes can be checked later.
 
 ## How this is run
 
@@ -66,28 +76,30 @@ scenario. That's a deliberate, judged expense for a personal site, not
 something to run on every commit. Use the `skill-routing-eval` skill to
 run it — see `skill-routing/HOW_TO_RUN.md` for the underlying procedure
 the skill wraps. The other categories work the same way, each through its
-own skill (`content-review-eval`, `system-design-navigation-eval`).
+own skill (`content-review-eval`, `system-design-navigation-eval`,
+`feature-review-eval`).
 
-**Re-run whenever it matters**, not on a fixed schedule: after editing
-`CLAUDE.md`, any `SKILL.md`, or `docs/SDLC.md` — the same trigger the
-`nudge-sdlc` hook (`.claude/hooks/nudge-sdlc.js`) reminds you about.
+**Re-run whenever it matters**, not on a fixed schedule: after any change
+the table below names; `.claude/hooks/nudge-sdlc.js` reminds a session
+about most of them.
 Drift here is invisible until someone actually checks, so the point of
 running it isn't ceremony — it's catching the case where a documentation
 edit that read fine on its own quietly made the routing rule worse.
 
 Which eval to run depends on what changed:
 
-| You changed                                                                                                                   | Run                             |
-| ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`            |
-| The Writing Standard, or `add-topic`'s Stage 3 review prompt                                                                  | `content-review-eval`           |
-| A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval` |
+| You changed                                                                                                                   | Run                                                                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`                                                                                                                           |
+| The Writing Standard, `add-topic`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                                       | `content-review-eval`                                                                                                                          |
+| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review                 | `feature-review-eval`                                                                                                                          |
+| Added or widened a `check:*` script                                                                                           | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
+| A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval`                                                                                                                |
 
 ## Grading philosophy
 
 Not every scenario has exactly one right answer — `evals/skill-routing/scenarios.md`
-and `evals/system-design-navigation/scenarios.md` mark some as **ambiguous by design** (e.g., a bug of unknown size before
-investigation, or a new section where `CLAUDE.md` itself allows either
+and `evals/system-design-navigation/scenarios.md` mark some as **ambiguous by design** (e.g., a new section where `CLAUDE.md` itself allows either
 the plain 3-step process or the full pipeline). Grade those against
 whether the session's reasoning was defensible, not against a single
 fixed string. A useful eval scenario set includes real judgment calls,

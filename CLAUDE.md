@@ -22,7 +22,11 @@ change). See [docs/SDLC.md](docs/SDLC.md) for why it's shaped this
 way — including why it's three agents and not one per named step — and
 [`.claude/skills/feature/SKILL.md`](.claude/skills/feature/SKILL.md) for
 the exact steps. Skip it for genuinely small, unambiguous changes (a typo,
-a one-line fix) — just make those directly.
+a one-line fix) — just make those directly. A bug of unknown size is
+triaged first (reproduce it, find the cause), then routed by what was found;
+see the skill's Stage 0. If a direct fix repairs a bug
+that a run in [docs/pipeline-log.md](docs/pipeline-log.md) introduced, fill
+in that row's **Escaped defect** cell.
 
 ## Content architecture
 
@@ -30,6 +34,7 @@ a one-line fix) — just make those directly.
 src/content/
   registry.ts          # every section: slug, label, description
   registry.test.ts      # asserts registry.ts matches the folders on disk
+  where-youll-meet-this.test.ts  # systems topics' closing section
   <section-slug>/
     <topic-slug>.md
 ```
@@ -130,7 +135,8 @@ Mechanically, a new topic is just a `.md` file dropped into that
 section's folder with the frontmatter above (`src/lib/content.ts` picks
 up every file under `src/content/**/*.md` automatically via
 `import.meta.glob`, no registry change needed) — but the skill also runs
-one independent review pass against the Writing Standard below before
+an independent review against the Writing Standard below (re-run after
+fixes, at most two rounds) before
 calling it done, since this is the most frequent change in the repo and
 otherwise the easiest one to skip review on entirely.
 
@@ -228,16 +234,24 @@ its actual reasoning and a concrete revisit condition, lives in
 
 ## Verifying a change
 
-`npm run verify` runs the same checks as CI (the order differs slightly), and
-is what the skills tell a session to run. The individual commands, if you need one:
+`npm run verify` is exactly what CI runs (`ci.yml` calls it), and
+is the gate `/feature` and `add-topic` run (the eval and audit skills run
+only the checks they name). The deploy workflow runs it too, so a
+commit that fails any check never goes live. The individual commands, if you need one:
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
-npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs
+npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:pipeline-log && npm run check:raw-html
 npm run test:run
 npm run build
 npm run size && npm run check:bundle
 ```
+
+`npm run check:test-lock` and `npm run review:diff` are not part of `verify`
+or CI: `/feature` uses them inside a run. `check:test-lock` proves no test
+file or test-runner config changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
+`-- --clear`); `review:diff` prints the reviewer's diff, including new
+untracked files.
 
 `npm run dev` for manual checking: click through the home page, a section,
 and a topic; open the System Design tab and a question page, and check that a

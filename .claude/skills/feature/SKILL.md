@@ -19,8 +19,9 @@ argument).
    is a **separate, fresh** `Agent` call — never a `fork` — so no stage
    inherits another stage's reasoning or bias.
 2. After the test-writing stage and after the implementation stage, you
-   (the orchestrator) verify the rule held by reading the actual `git diff`
-   — not by trusting the subagent's self-report.
+   (the orchestrator) verify the rule held by running the gate checks
+   yourself (`git status`, the test-lock check) — not by trusting the
+   subagent's self-report.
 3. Never commit or push without the user's explicit go-ahead, per this
    session's standing git rules — this pipeline ends at "ready to commit,"
    not at "committed."
@@ -41,8 +42,16 @@ Read the user's request. If it's small and unambiguous (a copy tweak, a
 one-line bug fix, a config change), say so and just do it directly —
 this pipeline is for real features, not everything. Otherwise, continue.
 
+**A bug of unknown size gets triaged before any process is chosen.**
+Reproduce it and find the cause first, read-only: no fix yet. Then route by
+what you found: a cause confined to one place, fixed without changing
+behavior anything else relies on, is a direct fix with a regression test
+that fails before the fix; a cause that spans modules, changes a
+convention, or needs a behavior decision comes back here as a feature.
+Choosing either route before the cause is known is a guess.
+
 Track your progress through the stages below explicitly in your replies
-("Stage 2 of 6: writing tests") so the user can see where things stand
+("Stage 2: writing tests") so the user can see where things stand
 without reading tool output.
 
 ## Stage 1 — Spec
@@ -63,6 +72,9 @@ The plan you write must include, explicitly:
 - Files/modules touched.
 - Whether this change has a user-facing UI surface (decides whether
   Stage 4 includes a browser check).
+- A check against [docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md):
+  if the request needs to break a line there, say so in the plan and let the
+  user amend that file or change the request. Don't plan around it quietly.
 
 `ExitPlanMode` for approval as usual — the user's approval here _is_ the
 independent check on the spec; nothing else validates "is this actually
@@ -97,13 +109,57 @@ way to enforce that.
 **Verification gate** (you run this, don't trust the report):
 
 ```bash
-git status --porcelain          # every changed path should be a test file (or content fixture)
-npm run test:run                # the new tests must actually fail
+git status --porcelain -uall    # every changed path should be a test file (or content fixture), listed file by file
+npm run test:run                # the new or edited tests for the new behavior must actually fail
+npx prettier --check <changed test and fixture files> && npx oxlint <changed test files>
 ```
+
+The last line matters because the tests are about to be locked: Stage 3's
+`verify` runs the format and lint checks, and no later stage may fix a locked
+file, so a formatting slip here would end the run.
 
 If a non-test implementation file changed, or the new tests pass
 immediately (meaning they're not testing anything new), stop and re-run
-this stage with a corrected instruction rather than proceeding.
+this stage with a corrected instruction rather than proceeding. Cap: **2
+corrected re-runs**; a third failure goes to the user, since the spec's
+criteria are probably not testable as written. (An edited existing test only
+has to fail if the edit encodes the new behavior.)
+
+A content fixture under `src/content/` or `src/system-design/` ships as real
+content, so it is held to the Writing Standard too. Once locked, only a Stage 2
+re-run may change it; a review finding about a fixture's prose goes back
+through that re-run, not through Stage 4a.
+
+Once the gate passes, lock the tests, naming every content fixture the
+test-writer created or changed (from the `git status` output above) so it is
+locked too:
+
+```bash
+npm run check:test-lock -- --snapshot [fixture paths...]
+```
+
+This records a hash of every test file, everything under `src/test/`, every
+vitest snapshot and the named fixtures (tracked or not) inside `.git/`, and
+the Stage 3, 4a and 5 gates compare against it. Re-take it whenever a fresh
+test-writer changes the tests; nothing else may.
+
+**Re-running this stage after Stage 3 has started** (the implementer reported
+a test as wrong) is the one case where tests change later. Give the fresh
+test-writer Stage 2's instruction plus the report, and scope it to the tests
+the report names. Its gate is different, because implementation files already
+exist and a corrected test may now pass against them:
+
+```bash
+git status --porcelain -uall   # before and after the re-run: no implementation file may change
+npm run check:test-lock -- --verify   # lists exactly what the re-run changed
+```
+
+Every path `--verify` lists must be one the report named (a test, or a
+fixture it depends on). A corrected test doesn't have to fail. Then re-take
+the snapshot and spawn a **fresh** implementer (Stage 3) with the corrected
+tests; the one that reported the problem stopped before finishing. Cap: **2 re-runs per
+feature**. A third report of a wrong test means the spec is the problem;
+stop and take it to the user.
 
 ## Stage 3 — Implementation (green) + docs
 
@@ -112,8 +168,12 @@ the specific failing test file(s) from Stage 2 (their paths and content —
 it should treat them as ground truth, not something to question lightly).
 Instruction, close to verbatim:
 
-> Implement the spec above so the failing tests listed pass. Do not edit
-> any `*.test.ts` / `*.test.tsx` file for any reason. If a test looks wrong
+> Implement the spec above so the failing tests listed pass. Do not edit,
+> delete or add any `*.test.ts` / `*.test.tsx` file, anything under
+> `src/test/`, a vitest snapshot, the `test` block of `vite.config.ts`, the
+> `test*` scripts in `package.json`, a `vitest.config.*` file, or these fixture files: <the fixture paths
+> locked in Stage 2, or "none">. They are locked, and a check will fail if
+> any of them changes. If a test looks wrong
 > or the spec is ambiguous in a way that blocks you, stop and report the
 > discrepancy instead of changing the test to fit your implementation.
 > Update any doc this change makes stale (`CLAUDE.md`, `README.md`, `docs/`,
@@ -131,16 +191,22 @@ check.
 **Verification gate:**
 
 ```bash
-git diff --stat -- '*.test.*'   # MUST be empty — a non-empty result is a hard stop
+npm run check:test-lock -- --verify   # MUST pass — any changed, deleted or added locked file is a hard stop
 npm run verify
 ```
 
-A changed test file here is the one rule this whole pipeline exists to
-catch — if it's non-empty, stop immediately and surface it to the user
-rather than deciding yourself whether the edit was reasonable. That is a
+Don't use `git diff` for this check: it never shows untracked files, which is
+what the Stage 2 tests usually are, and a `git add` hides an edit from it.
+
+A changed locked file here is the one rule this whole pipeline exists to
+catch — if the check fails, stop immediately and surface it to the user
+rather than deciding yourself whether the edit was reasonable. If only
+`verify` fails (the implementer reported done, but a check is red), send the
+failure output and the spec to a fresh implementer; cap **2** such re-runs,
+then go to the user. That is a
 different case from the implementer _reporting_ that a test looks wrong: don't
-fix the test yourself either. Send the failure to a fresh test-writer (Stage
-2's instruction, plus the failure) and re-run this gate.
+fix the test yourself either. Re-run Stage 2 as described there ("Re-running
+this stage after Stage 3 has started"), then re-run this gate.
 
 Two more things to do here, both because the implementer's report is the
 only place they'd otherwise surface:
@@ -156,7 +222,13 @@ only place they'd otherwise surface:
   assertion), a passing run proves nothing about it. Copy the repo outside
   the working tree (`git worktree add` or `cp -R` into the scratchpad), plant
   the regression the guard claims to catch there, and confirm it exits
-  non-zero. A guard that only ever passed hasn't been tested.
+  non-zero. A guard that only ever passed hasn't been tested. Its planted
+  cases belong in `scripts/checks.test.mjs` so `verify` keeps running them,
+  but that file is a test file and locked, so the implementer doesn't write
+  them: if the spec planned the guard, its planted cases are acceptance
+  criteria and Stage 2 already wrote them; if the guard only appeared during
+  implementation, report it, and re-run Stage 2 for its cases (the re-run
+  path above) before this gate passes.
 
 ## Stage 4 — Adversarial review (code + UI)
 
@@ -168,14 +240,25 @@ defeat the entire point of this stage. (`/code-review` is still fine for
 you or the user to run ad hoc, standalone, outside this pipeline.)
 
 Instead, spawn a **fresh** `general-purpose` agent (never `fork`). Give it
-only: the spec file's path/content and the output of
-`git diff HEAD -- <changed files>` (or the equivalent for what actually
-changed) — not your own exploration, not either prior subagent's report,
-not any framing of your own about the implementation's quality.
+only: the spec file's path/content, the path of
+[docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md), and the full
+diff from
+
+```bash
+npm run review:diff
+```
+
+(plain `git diff HEAD` silently leaves out every new file, so the reviewer
+would never see them; `review:diff` includes them without touching your
+index) — not your own exploration, not either prior
+subagent's report, not any framing of your own about the implementation's
+quality.
 Instruction, close to verbatim:
 
 > Review the diff below against the spec above, adversarially — assume
-> nothing in it is correct until you've checked it yourself. Look for
+> nothing in it is correct until you've checked it yourself. Read
+> docs/NON_NEGOTIABLES.md first: a violation of any line there is at least a
+> high-severity finding, whatever the spec says. Look for
 > correctness bugs, missed edge cases from the spec's acceptance criteria,
 > accessibility issues, and security issues. If this change has a
 > user-facing UI surface, also start the dev server and actually drive it
@@ -227,9 +310,10 @@ being separate from Stage 3.
 Up to **2 rounds**:
 
 1. Spawn a **fresh** `general-purpose` agent (not the Stage 3 agent) with
-   the findings and the spec: "Fix these findings. Do not edit any
-   `*.test.ts` / `*.test.tsx` file." Same verification gate as Stage 3.
-2. Re-run Stage 4's review on the updated diff.
+   the findings and the spec: "Fix these findings. Do not edit, delete or
+   add any locked file (the same list as Stage 3's instruction)." Same
+   verification gate as Stage 3.
+2. Re-run Stage 4's review on the updated diff (`npm run review:diff` again).
 
 If findings remain after 2 rounds, **stop** — report the remaining
 findings to the user directly rather than attempting a third round
@@ -241,7 +325,9 @@ unbounded loop.
 Re-run the full verification suite one last time on the final diff:
 
 ```bash
+npm run check:test-lock -- --verify   # the reviewer ran the app; confirm it changed no locked file
 npm run verify
+npm run check:test-lock -- --clear    # the run's snapshot has done its job
 ```
 
 Summarize for the user: what changed, a link to the spec file, the review
@@ -264,7 +350,7 @@ three agents' reports (a spec error the test-writer caught, a deviation the
 implementer reported, findings the reviewer made), any gate that failed, and
 any tool that behaved unexpectedly. Don't invent friction, and don't add a
 rule to justify the stage: a run with none reports "nothing to change" and
-stops.
+only logs its row (below).
 
 For each real issue, fix it at the strongest level that fits:
 
@@ -289,7 +375,7 @@ deliberately not adopted yet, each with a revisit trigger; a lesson or a fix
 does not go there (see its "Adding an entry").
 
 If the proposed edits touch a process file (a `SKILL.md`, `CLAUDE.md`, a doc
-under `docs/` other than a spec, anything under `evals/`, or `.claude/hooks/`),
+under `docs/` other than a spec or the pipeline log, anything under `evals/`, or `.claude/hooks/`),
 have **one fresh** `general-purpose` agent (never `fork`) read them before you
 show the user: you wrote them, so you are the worst-positioned reader of them.
 Give it the diff, the friction evidence for each edit (not your reasoning) and
@@ -308,3 +394,15 @@ Show the user what you found and the edits you propose, along with any review
 findings you didn't act on. Once they approve, commit the retro edits
 separately from the feature, then run whichever eval `evals/README.md`'s table
 names for what you changed.
+
+Finally, once the user has decided on the retro edits, append this run's row
+to [docs/pipeline-log.md](../../../docs/pipeline-log.md), even when the retro
+found nothing: a run with no friction is data too. The log's header defines
+each column; the Retro cell records what was actually applied, not what was
+proposed. The row goes in the feature's commit, and it is not a process edit,
+so it needs no independent read. After appending, run
+`npx prettier --write docs/pipeline-log.md`, `npm run check:pipeline-log` and
+`npm run format:check`, since `verify` already ran. `check:pipeline-log` fails a row with gate failures or findings whose Retro cell is a bare
+"nothing to change": say why none of them called for a change. If this run
+fixed a bug an earlier approved run introduced, fill in that row's **Escaped
+defect** cell and treat it as friction for this retro.

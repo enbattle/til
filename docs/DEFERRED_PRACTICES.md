@@ -72,16 +72,23 @@ of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk
 but only protects commits made through this exact hook config on this
 exact machine; it's trivially bypassed and duplicates gate logic that
-already varies by change type across the skills (`add-topic` vs.
-`/feature` intentionally use different-sized gates). The mechanism that
+the skills already own (`/feature` and `add-topic` each run
+`npm run verify` as their gate). The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
-doesn't fail open, can't be bypassed by local config.
-**Revisit when:** Branch protection alone proves insufficient in
-practice (e.g., a bad commit reaches `main` despite the CI gate because
-of a race or a misconfiguration) — that would be evidence the local
-layer is worth the added complexity, rather than a guess that it might
-be.
+doesn't fail open, can't be bypassed by local config. Branch protection is
+enabled, but in practice commits are pushed straight to `main` (as of
+2026-09-24, no human-authored change had arrived through a PR; Dependabot's
+auto-merged PRs are the exception), and on 2026-09-21 two commits whose CI failed
+(fdd0db5, 00f2f84) reached `main` and deployed. That was this entry's
+revisit condition firing. The response was a second server-side layer rather
+than this local hook: the deploy workflow now runs `npm run verify` itself,
+so a red commit can land on `main` but can't go live. The local hook's
+fail-open problem is unchanged, so it stays deferred.
+**Revisit when:** The server-side layers prove insufficient in practice: a
+commit that fails `verify` goes live despite the deploy gate, or red commits
+on `main` keep costing enough (broken history to bisect, reverts) that
+catching them before the push is worth the hook's complexity.
 
 ### Token/compute cost tracking per agent task
 
@@ -92,7 +99,9 @@ successful task, not just raw agent output volume.
 usage compounds across many people and a shared budget. For a solo
 personal-site repo, there's no budget being pooled and no one else's
 spend to keep visible — the cost of a wasteful session is fully borne
-and immediately felt by the one person running it.
+and immediately felt by the one person running it. When it is needed, the
+cheap first step is a cost column in [pipeline-log.md](pipeline-log.md)
+(agents spawned, rough tokens per run), not a metering system.
 **Revisit when:** Agent usage on this repo becomes heavy/frequent enough
 that cost becomes a real planning question, or if this repo is ever
 used as a template by a team where spend needs to be visible across
@@ -119,8 +128,8 @@ volume).
 
 **What it is:** Running eval scenarios automatically on every push/PR,
 graded by another model, with a required pass threshold blocking merge —
-the automated version of what `skill-routing-eval` and
-`content-review-eval` currently do manually.
+the automated version of what the eval skills (see `evals/README.md`)
+currently do manually.
 **Why deferred:** `evals/README.md` already states the reasoning:
 manual/periodic is deliberate here, since a full eval run costs real
 time and tokens per scenario, and this is a personal site's process
@@ -144,7 +153,16 @@ no backend, no secrets of consequence beyond what's already
 git-ignored, and a single operator; the existing "never `fork` for an
 independent review" pattern already provides the isolation that
 actually matters here (fresh reasoning context), just not OS-level
-isolation.
+isolation. The one real blast radius is that a push to `main` deploys the
+public site. That is covered without a sandbox: `.claude/settings.json`
+denies force-pushes and asks before any `git push` (permission rules, unlike
+hooks, don't fail open on a timeout), and the deploy workflow runs
+`npm run verify` before publishing. The rules are a guardrail against a
+mistake, not a security boundary: they match command text, so they cover
+`git push`, `git -C <dir> push` and the same forms in the PowerShell tool
+(`Bash(...)` rules don't apply to it, so each rule is written for both), but
+Claude Code's own docs note forms like `git -c key=value push` or a quoted
+`'push'` slip past any such rule.
 **Revisit when:** This repo (or a fork of it) starts running agents
 against something with real blast radius — deployment credentials,
 production data, another system's API keys.
@@ -195,7 +213,9 @@ product scope.
 
 **What it is:** Cryptographically signing commits and/or attesting to a
 build's provenance, common at organizations shipping software other
-people's infrastructure depends on.
+people's infrastructure depends on. (Pinning GitHub Actions to commit
+SHAs, from the same family, was adopted on 2026-09-24; see
+`.github/dependabot.yml`.)
 **Why deferred:** `til` is a static, read-only reference site with no
 downstream consumers depending on its supply chain integrity the way a
 library or a service would — the actual risk this defends against
@@ -222,7 +242,7 @@ with the same enforced review rigor as source code — e.g., a hook that
 flags when `evals/**/scenarios.md` changes without a corresponding
 results-log entry.
 **Why deferred:** `til` already gets most of this benefit from
-`skill-routing-eval`/`content-review-eval`'s own Stage 3 ("add a
+the eval skills' own "add a scenario first" step ("add a
 scenario first, then run it") and the `nudge-sdlc` hook's existing
 reminder — adding a dedicated enforcement mechanism on top would be
 gating an already-lightly-gated process a second time for a solo
@@ -242,20 +262,6 @@ Claude Code automatically each session; a checklist duplicates
 information that's already the first thing read.
 **Revisit when:** Another contributor starts opening PRs against this
 repo who wouldn't otherwise see `CLAUDE.md`'s verification section.
-
-### Dependabot auto-merge for patch-level bumps
-
-**What it is:** Automatically merging a dependency-update PR once CI
-passes, without a manual look, for low-risk patch versions.
-**Why deferred:** Not investigated in depth — flagged here as a
-plausible small win rather than a fully reasoned rejection, unlike the
-entries above. The open question is whether patch-level bumps in this
-dependency set have historically been safe enough to skip a manual
-glance; that hasn't been checked.
-**Revisit when:** Dependabot PR volume becomes tedious enough that a
-manual look at each one stops actually happening (silently trusting them
-unreviewed is worse than an explicit auto-merge policy for the ones
-proven safe).
 
 ### Generic Claude Code session-hygiene advice (e.g., "kitchen sink session," "correcting over and over")
 
@@ -277,3 +283,80 @@ the trigger condition is expected to fire. If `til` ever needed
 repo-specific session-hygiene guidance (unlikely), that would be a
 different, genuinely repo-specific entry, not this one promoted
 verbatim.
+
+### Aggregating friction across retrospectives
+
+**What it is:** A periodic pass that reads every row of
+[pipeline-log.md](pipeline-log.md) (and the eval result logs) together,
+groups recurring friction, and proposes structural changes (merge or delete a
+stage, a new check, a new doc) instead of the point fixes a single retro
+makes.
+**Why deferred:** It needs data. The log started on 2026-09-23 with no
+backfill, and a pass over a handful of rows finds nothing a single retro
+wouldn't. Until then, `/feature` Stage 6 is the only retro, and it only sees
+its own run.
+**Revisit when:** The log reaches about 20 rows, or the same kind of friction
+appears in the Retro column of two or more rows.
+
+### An independent read of the retrospective's judgment
+
+**What it is:** A fresh agent that checks the retro's conclusions (was
+"nothing to change" right, was the chosen fix at the right level), not only
+the process-file edits it proposes, which already get one.
+**Why deferred:** It would add an agent to every run to catch a failure
+nobody has seen yet. The pipeline log makes the obvious case mechanical: a
+row with gate failures or findings and a retro of "nothing to change" must
+say why in the same row, so it is visible without another agent.
+**Revisit when:** A logged row shows a "nothing to change" retro whose stated
+reason doesn't hold up, or an escaped defect traces back to a run whose retro
+was clean.
+
+### A separate spec-clarify step
+
+**What it is:** A dedicated stage (`spec-clarify` in cortex-workspace, a separate design reference at github.com/enbattle/cortex-workspace) that
+interrogates the spec for undefined terms, unstated assumptions, missing
+error behavior and untestable acceptance criteria before any tests are
+written.
+**Why deferred:** In `/feature`, the user reads and approves the spec in plan
+mode, and a solo maintainer is both the requester and the approver, so the
+ambiguity this step hunts for is usually resolved in that same conversation.
+**Revisit when:** Twice in the log: a row's Gate failures names a `spec
+ambiguity` re-run, or an `## As built` section records a deviation caused by a
+spec ambiguity rather than a technical discovery.
+
+### One canonical agent file, with generated adapters for other tools
+
+**What it is:** Keeping agent guidance in a tool-neutral `AGENTS.md` and
+generating thin per-tool pointers (`CLAUDE.md` as `@AGENTS.md`, Cursor rules,
+Copilot instructions), as cortex-workspace's design rule R8 does.
+**Why deferred:** This repo is deliberately built for Claude Code: the skills,
+hooks, subagent rules and `settings.json` permissions are Claude Code
+mechanisms, and nobody works on it with another tool.
+**Revisit when:** A second agent tool is used on this repo, or `til` is used
+as a template by people who don't use Claude Code.
+
+### A dedicated security-review pass
+
+**What it is:** A second, separately-scoped reviewer (threat model, input
+handling, auth boundaries) that runs when a diff adds an external surface,
+instead of security riding along as one item in Stage 4's review.
+**Why deferred:** `til` has no runtime input surface: no forms, no API, no
+auth, no user content, no third-party scripts. The security lines in
+[NON_NEGOTIABLES.md](NON_NEGOTIABLES.md) and Stage 4's review cover what
+exists.
+**Revisit when:** A change adds any runtime input or trust boundary: a form,
+a fetch to an API, authentication, user-generated content, or a third-party
+script.
+
+### Splitting CLAUDE.md so each skill loads only what it needs
+
+**What it is:** Moving content-authoring detail (System Design question
+rules, "Where you'll meet this", link-extractor edge cases) out of the
+always-loaded `CLAUDE.md` into a doc that `add-topic` and the reviewers read
+on demand, leaving `CLAUDE.md` as a short router.
+**Why deferred:** At about 270 lines `CLAUDE.md` is long, but no eval or run
+has yet shown an instruction ignored because of its length, and moving text
+risks breaking the routing that `skill-routing-eval` currently passes.
+**Revisit when:** An eval result or a logged run traces a miss to an
+instruction in `CLAUDE.md` being ignored or crowded out, or before adding
+the next large section to it.

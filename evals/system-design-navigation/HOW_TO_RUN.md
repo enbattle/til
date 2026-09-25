@@ -6,7 +6,7 @@ discoverability reason `skill-routing-eval` is a skill rather than passive
 documentation. What follows is the underlying procedure, useful if you're
 running a single scenario by hand.
 
-This eval answers a different question than the other two: not "does a
+This eval answers a different question than the others: not "does a
 fresh session pick the right skill" (`skill-routing`) or "does a review
 catch a planted violation" (`content-review`), but **"starting from a
 symptom, does the System Design section actually get a reader to the right

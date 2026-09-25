@@ -1,6 +1,6 @@
 ---
 name: add-topic
-description: Add a new topic markdown file to an existing section in this til repo, with one independent review pass against CLAUDE.md's Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow CLAUDE.md's "Adding a new section" steps, or use /feature if it should get full review) and not for anything touching app code.
+description: Add a new topic markdown file to an existing section in this til repo, with an independent review against CLAUDE.md's Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow CLAUDE.md's "Adding a new section" steps, or use /feature if it should get full review) and not for anything touching app code.
 ---
 
 # Add a topic
@@ -27,7 +27,7 @@ directly). Don't stretch this skill to cover code changes.
 ## Stage 1 — Draft the topic
 
 Write the file yourself, directly — drafting prose has no adversarial bias
-to guard against (the same reasoning CLAUDE.md gives for keeping spec-writing
+to guard against (the same reasoning `docs/SDLC.md` gives for keeping spec-writing
 with the orchestrating session), so there's no reason to burn a subagent on
 a first draft. Follow the contract in CLAUDE.md's "Content architecture"
 and "Writing standard" sections exactly:
@@ -69,8 +69,9 @@ they'd know.
 npm run verify
 ```
 
-`content.test.ts`, `registry.test.ts`, `system-design.test.ts` and
-`where-youll-meet-this.test.ts` already catch structural problems (missing
+`content.test.ts`, `registry.test.ts`, `system-design.test.ts`,
+`catalog-gaps.test.ts` (which also fails on a dead link between systems
+topics) and `where-youll-meet-this.test.ts` already catch structural problems (missing
 frontmatter field, section/registry mismatch, a `systems-and-infrastructure`
 topic no question links, a dead question link, a systems topic without its
 closing "Where you'll meet this" section) — this stage is just confirming
@@ -82,7 +83,9 @@ never needs its own test.
 
 Spawn a **fresh** `general-purpose` agent (never `fork` — it must not
 inherit your own read of the draft). Give it: the new file's full content,
-CLAUDE.md's "Writing standard" section, and the titles/slugs of the other
+CLAUDE.md's "Writing standard" section, the path of
+`docs/NON_NEGOTIABLES.md` (a violation there is always a real finding), and
+the titles/slugs of the other
 topics already in the same section (so it can check for a near-duplicate).
 If Stage 1 also touched a System Design question, give it that question's
 full content too and have it check the added snippet against the Writing
@@ -95,7 +98,8 @@ Instruction, close to verbatim:
 
 > Review this new til topic adversarially against the Writing Standard
 > below — assume nothing about it is fine until you've checked it
-> yourself. Check specifically: are terms defined before they're used, is
+> yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line
+> there is always a real finding. Check specifically: are terms defined before they're used, is
 > it built up from first principles rather than assuming a mental model
 > the reader may not have, does it use concrete examples rather than
 > staying abstract, would a reader with zero prior background on this
@@ -121,6 +125,11 @@ Instruction, close to verbatim:
 ## Stage 4 — Final gate
 
 Re-run the Stage 2 verification suite on the final version, confirm it's
-green, and summarize the topic and the review outcome for the user. Ask
+green, and summarize the topic and the review outcome for the user. Append a
+row for this run to [docs/pipeline-log.md](../../../docs/pipeline-log.md)
+(its header defines the columns; Retro is `n/a`, since this skill has no
+retrospective stage; Gate failures counts failed `verify` runs). Then run
+`npx prettier --write docs/pipeline-log.md` and `npm run check:pipeline-log`.
+The row goes in the topic's commit. Ask
 before committing or pushing, same as always — this skill leaves the
 working tree ready, it doesn't ship it.
