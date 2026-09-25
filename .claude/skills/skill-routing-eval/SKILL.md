@@ -1,6 +1,6 @@
 ---
 name: skill-routing-eval
-description: Run this repo's skill-routing eval — checks whether a fresh session correctly routes task descriptions to the right skill under .claude/skills/ (see this file's Stage 1 for the current, canonical list of options) or a direct edit, per CLAUDE.md's own carve-out. Use when asked to run/check the skill-routing eval, after editing CLAUDE.md/a SKILL.md/docs/SDLC.md (what nudge-sdlc.js reminds about), or after adding a new skill (add a scenario for it first).
+description: Run this repo's skill-routing eval — checks whether a fresh session correctly routes task descriptions to the right skill under .claude/skills/ (see this file's Stage 1 for the current, canonical list of options) or a direct edit, per CLAUDE.md's own carve-out. Use when asked to run/check the skill-routing eval, after editing CLAUDE.md/a SKILL.md/docs/SDLC.md/.claude/hooks/ (see the table in evals/README.md), or after adding a new skill (add a scenario for it first).
 ---
 
 # Skill-routing eval

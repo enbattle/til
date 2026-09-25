@@ -143,9 +143,10 @@ reader starting from a symptom reach the right question and topics
 `content-review-eval`, `feature-review-eval` and
 `system-design-navigation-eval` skills — see
 `evals/README.md`. All are run
-manually/periodically, not on every commit — most usefully right after
-editing this file, `CLAUDE.md`, or any `SKILL.md`, which is also when
-`.claude/hooks/nudge-sdlc.js` reminds a session to check it.
+manually/periodically, not on every commit — after the changes the table in
+`evals/README.md` names (the canonical list of which eval each change
+calls for); `.claude/hooks/nudge-sdlc.js` reminds a session about most of
+them.
 
 ## Completeness audit, after a large effort
 

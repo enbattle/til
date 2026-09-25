@@ -409,9 +409,11 @@ recommends locking, which addresses concurrent writers, not lagging copies.
 to the failing-service question. Both acceptable.
 **Topics:** `self-healing-systems`
 **Why:** Automatic detection and replacement of a broken instance is the
-"replace broken instances automatically" section of question 4, but that
-question's summary talks about a failing dependency, not one's own hung
-server, so the route isn't obvious from the landing page alone. Grade the
+"replace broken instances automatically" section of question 4. When this
+scenario was written, that question's summary talked only about a failing
+dependency; since the 2026-09-21 miss it also names a hung instance and
+automatic restarts, and question 1's table has a row for one's own server
+hanging, so the route is now more direct from the landing page. Grade the
 reasoning, and whether it ends at the self-healing topic.
 **Fails if:** it routes to `structuring-services-and-storage`,
 `database-cant-keep-up-with-writes`, or any question and then proposes only

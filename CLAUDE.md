@@ -34,6 +34,7 @@ in that row's **Escaped defect** cell.
 src/content/
   registry.ts          # every section: slug, label, description
   registry.test.ts      # asserts registry.ts matches the folders on disk
+  where-youll-meet-this.test.ts  # systems topics' closing section
   <section-slug>/
     <topic-slug>.md
 ```
@@ -134,7 +135,8 @@ Mechanically, a new topic is just a `.md` file dropped into that
 section's folder with the frontmatter above (`src/lib/content.ts` picks
 up every file under `src/content/**/*.md` automatically via
 `import.meta.glob`, no registry change needed) — but the skill also runs
-one independent review pass against the Writing Standard below before
+an independent review against the Writing Standard below (re-run after
+fixes, at most two rounds) before
 calling it done, since this is the most frequent change in the repo and
 otherwise the easiest one to skip review on entirely.
 
@@ -233,7 +235,8 @@ its actual reasoning and a concrete revisit condition, lives in
 ## Verifying a change
 
 `npm run verify` is exactly what CI runs (`ci.yml` calls it), and
-is what the skills tell a session to run. The deploy workflow runs it too, so a
+is the gate `/feature` and `add-topic` run (the eval and audit skills run
+only the checks they name). The deploy workflow runs it too, so a
 commit that fails any check never goes live. The individual commands, if you need one:
 
 ```bash

@@ -1,7 +1,7 @@
 # Non-negotiables
 
-Constraints, not suggestions. Every reviewer in this repo's skills is given
-this file. If a spec conflicts with a line here, this file wins unless the
+Constraints, not suggestions. Every reviewer of a change is given this file
+(`/feature` Stage 4, `add-topic` Stage 3, `content-audit`). If a spec conflicts with a line here, this file wins unless the
 user explicitly amends it, and a stage that hits the conflict stops and says
 so instead of choosing. Each line points to where the detail lives; the
 detail is never copied here.

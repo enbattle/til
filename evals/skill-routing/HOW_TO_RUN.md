@@ -61,9 +61,10 @@ might need revisiting, a new failure mode worth turning into a scenario.
 
 ## When to run this
 
-- After editing `CLAUDE.md`, any file under `.claude/skills/`, or
-  `docs/SDLC.md` — this is exactly what `.claude/hooks/nudge-sdlc.js`
-  reminds a session about when it touches those files.
+- After any change the table in `evals/README.md` maps to
+  `skill-routing-eval` (that table is the canonical list;
+  `.claude/hooks/nudge-sdlc.js` reminds a session about most of those files
+  when it edits them).
 - Whenever a session's routing choice surprises you in real use — that's
   a live failure mode; turn it into a new scenario (see below) before
   fixing the root cause, so the eval catches it if it comes back.

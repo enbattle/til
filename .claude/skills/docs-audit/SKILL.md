@@ -30,7 +30,8 @@ of staleness this skill exists to catch:
 
 - `CLAUDE.md`, `README.md`
 - everything under `docs/`
-- everything under `evals/` (`README.md`, every scenario/how-to-run file)
+- everything under `evals/` (`README.md`, every scenario/how-to-run file,
+  and the `results/` logs)
 - every `SKILL.md` under `.claude/skills/`, and the reminder text in
   `.claude/hooks/*.js` (it names skills and docs, so it can go stale the same way)
 - (explicitly **not** in scope: `src/content/**` and

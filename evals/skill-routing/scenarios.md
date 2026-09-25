@@ -63,7 +63,7 @@ to), or the registry/folder correspondence is skipped entirely.
 
 ---
 
-### SR-05 — bug of unknown size (ambiguous by design)
+### SR-05 — bug of unknown size
 
 > The search dialog doesn't close reliably — sometimes if I hit Escape
 > right after typing, it reopens a second later. Can you fix that?

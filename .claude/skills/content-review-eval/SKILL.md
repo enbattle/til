@@ -1,6 +1,6 @@
 ---
 name: content-review-eval
-description: Run this repo's content-review eval — checks whether add-topic's Stage 3 review agent actually catches a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim) rather than rubber-stamping a draft, including a false-positive control. Use when asked to run/check the content-review eval, after editing add-topic/SKILL.md's Stage 3 prompt or CLAUDE.md's Writing Standard, or after a real add-topic review misses something in actual use (add a scenario for it first).
+description: Run this repo's content-review eval — checks whether add-topic's Stage 3 review agent actually catches a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim) rather than rubber-stamping a draft, including a false-positive control. Use when asked to run/check the content-review eval, after editing add-topic/SKILL.md's Stage 3 prompt, CLAUDE.md's Writing Standard or docs/NON_NEGOTIABLES.md, or after a real add-topic review misses something in actual use (add a scenario for it first).
 ---
 
 # Content-review eval
@@ -26,7 +26,8 @@ planted problem instead of rubber-stamping the draft."
 Running all scenarios (`CR-01`..`CR-05`) is the default when asked to
 "run the content-review eval" with no further qualifier, or after editing
 something the scenarios depend on (`add-topic/SKILL.md`'s Stage 3
-prompt, or `CLAUDE.md`'s Writing Standard).
+prompt, `CLAUDE.md`'s Writing Standard, or `docs/NON_NEGOTIABLES.md`; the
+table in `evals/README.md` is the canonical list).
 
 Run only the scenarios plausibly affected when the trigger is narrower —
 e.g. a Writing Standard edit that only touches the tone criteria only

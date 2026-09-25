@@ -72,13 +72,14 @@ of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk
 but only protects commits made through this exact hook config on this
 exact machine; it's trivially bypassed and duplicates gate logic that
-already varies by change type across the skills (`add-topic` vs.
-`/feature` intentionally use different-sized gates). The mechanism that
+the skills already own (`/feature` and `add-topic` each run
+`npm run verify` as their gate). The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
 doesn't fail open, can't be bypassed by local config. Branch protection is
-enabled, but in practice commits are pushed straight to `main` (none of the
-history arrived through a PR), and on 2026-09-21 two commits whose CI failed
+enabled, but in practice commits are pushed straight to `main` (as of
+2026-09-24, no human-authored change had arrived through a PR; Dependabot's
+auto-merged PRs are the exception), and on 2026-09-21 two commits whose CI failed
 (fdd0db5, 00f2f84) reached `main` and deployed. That was this entry's
 revisit condition firing. The response was a second server-side layer rather
 than this local hook: the deploy workflow now runs `npm run verify` itself,

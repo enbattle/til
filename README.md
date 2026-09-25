@@ -103,5 +103,5 @@ accessibility checklist behind the UI.
 Features and nontrivial app changes go through a spec → TDD →
 implementation (+ docs) → adversarial review (code + UI) pipeline — see
 [docs/SDLC.md](docs/SDLC.md). Adding a topic gets a lighter, separate
-process instead (draft → one independent review pass) — see the
+process instead (draft → an independent review, at most two rounds) — see the
 `add-topic` skill referenced in [CLAUDE.md](CLAUDE.md).

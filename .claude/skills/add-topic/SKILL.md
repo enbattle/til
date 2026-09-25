@@ -1,6 +1,6 @@
 ---
 name: add-topic
-description: Add a new topic markdown file to an existing section in this til repo, with one independent review pass against CLAUDE.md's Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow CLAUDE.md's "Adding a new section" steps, or use /feature if it should get full review) and not for anything touching app code.
+description: Add a new topic markdown file to an existing section in this til repo, with an independent review against CLAUDE.md's Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow CLAUDE.md's "Adding a new section" steps, or use /feature if it should get full review) and not for anything touching app code.
 ---
 
 # Add a topic
@@ -27,7 +27,7 @@ directly). Don't stretch this skill to cover code changes.
 ## Stage 1 — Draft the topic
 
 Write the file yourself, directly — drafting prose has no adversarial bias
-to guard against (the same reasoning CLAUDE.md gives for keeping spec-writing
+to guard against (the same reasoning `docs/SDLC.md` gives for keeping spec-writing
 with the orchestrating session), so there's no reason to burn a subagent on
 a first draft. Follow the contract in CLAUDE.md's "Content architecture"
 and "Writing standard" sections exactly:
@@ -69,8 +69,9 @@ they'd know.
 npm run verify
 ```
 
-`content.test.ts`, `registry.test.ts`, `system-design.test.ts` and
-`where-youll-meet-this.test.ts` already catch structural problems (missing
+`content.test.ts`, `registry.test.ts`, `system-design.test.ts`,
+`catalog-gaps.test.ts` (which also fails on a dead link between systems
+topics) and `where-youll-meet-this.test.ts` already catch structural problems (missing
 frontmatter field, section/registry mismatch, a `systems-and-infrastructure`
 topic no question links, a dead question link, a systems topic without its
 closing "Where you'll meet this" section) — this stage is just confirming

@@ -139,7 +139,7 @@ count, the same reasoning `docs-audit` Stage 3 gives (the independent
 audit in Stage 2 already was the check). If the finding count is large
 (many files, many findings per file), batch the fixes across fresh
 agents again rather than applying dozens of edits serially yourself,
-mirroring how this session's own first full sweep applied its fixes in
+mirroring how the first full sweep (2026-09-15) applied its fixes in
 batches rather than one at a time. For a finding you disagree with, or a
 correctness claim that needs a judgment call the audit agent couldn't
 make on its own, resolve it yourself or ask the user rather than

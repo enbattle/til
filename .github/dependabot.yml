@@ -4,7 +4,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    # Dependabot already waits 3 days after a release by default; majors wait
+    # Wait 3 days after a release before proposing it; majors wait
     # longer, since that is where a bad or compromised release hurts most.
     cooldown:
       default-days: 3
