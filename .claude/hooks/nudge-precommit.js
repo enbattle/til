@@ -1,4 +1,4 @@
-// PreToolUse hook (Bash): reminds the session to check for stale
+// PreToolUse hook (Bash and PowerShell): reminds the session to check for stale
 // documentation right before a git commit/push — the one point that's
 // universal across every kind of change (unlike the SDLC-routing nudge
 // in nudge-sdlc.js, which only fires on specific file paths and so never

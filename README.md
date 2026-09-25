@@ -64,7 +64,7 @@ npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink
 npm run check:pipeline-log # Fail if a docs/pipeline-log.md row is malformed or closes friction with a bare "nothing to change"
 npm run check:test-lock   # /feature only: -- --snapshot locks test files and test-runner config, -- --verify fails if any changed, -- --clear
 npm run review:diff       # /feature only: the reviewer's diff, including new untracked files
-npm run verify            # The whole chain: typecheck, lint, format, every check, tests, build, size, bundle check
+npm run verify            # The whole chain: typecheck, lint, format, every check:* except test-lock, tests, build, size, bundle check
 ```
 
 ## Adding content

@@ -7,7 +7,10 @@ import '@testing-library/jest-dom/vitest';
 // remark-gfm, shiki/core, the JS regex engine) can take longer than that to
 // transform and evaluate the first time, which is a test-environment cost,
 // not a real slowdown users hit (that chunk is prebuilt and cached in prod).
-configure({ asyncUtilTimeout: 5000 });
+// 10s rather than 5s: a cold, first-in-file render of the lazy route was
+// measured at ~11s for a whole file on 2026-09-24 and still timed out a
+// findBy at 5s. Vitest's own testTimeout (vite.config.ts) is 15s, above this.
+configure({ asyncUtilTimeout: 10000 });
 
 // jsdom doesn't implement scrollTo — App.tsx calls it on every route change.
 window.scrollTo = () => {};

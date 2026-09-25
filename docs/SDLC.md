@@ -114,8 +114,9 @@ finds something, and a reader of process edits at the retrospective.
 
 The standing constraints every stage is held to (accessibility, security,
 the process rules above), in one short numbered list that points to where
-each detail lives. The spec is checked against it before approval, and every
-reviewer is given it. When a spec and a line there conflict, the line wins
+each detail lives. The spec is checked against it before approval, and each
+change reviewer (`/feature` Stage 4, `add-topic` Stage 3, `content-audit`) is
+given it. When a spec and a line there conflict, the line wins
 unless the user amends the file; a stage that finds the conflict stops and
 asks rather than choosing.
 
