@@ -232,6 +232,19 @@ agent-workflow scaling) considered and deliberately deferred, each with
 its actual reasoning and a concrete revisit condition, lives in
 [docs/DEFERRED_PRACTICES.md](docs/DEFERRED_PRACTICES.md).
 
+## How changes land
+
+Every change, including a small direct fix, lands through a branch and a pull
+request and merges only when CI passes; nothing is committed directly to
+`main`. That is how CI runs before a change goes live: two commits with
+failing tests once reached `main` and deployed because they were pushed
+straight to it. A dependency update (a Dependabot pull request, or a version
+bump done by hand) is a direct change, not a `/feature`: run `npm run verify`,
+read the release notes for a major version, and let CI decide; patch and minor
+Dependabot updates merge on their own once CI passes (README, "Repository
+settings this relies on"). The skills still end at "ready to commit"; committing,
+pushing and opening the pull request wait for the user's go-ahead.
+
 ## Verifying a change
 
 `npm run verify` is exactly what CI runs (`ci.yml` calls it), and
