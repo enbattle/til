@@ -30,6 +30,7 @@ The question slugs used below are the filenames under
 | `structuring-services-and-storage`       | 6     |
 | `pushing-live-updates-to-users`          | 7     |
 | `running-work-that-takes-too-long`       | 8     |
+| `getting-requests-to-the-right-server`   | 9     |
 
 ---
 
@@ -179,7 +180,8 @@ which question it opens first and why.
 > relational database.
 
 **Expected question:** `keeping-data-correct-under-concurrency`
-**Topics:** `optimistic-vs-pessimistic-locking`
+**Topics:** `optimistic-vs-pessimistic-locking`; `race-conditions` also acceptable
+(the page names the bug class before routing to the fix)
 **Why:** Writers colliding on one row in a shared database is the "same
 database: lock, or detect the conflict" case. This is also the page's own
 opening example.
@@ -269,7 +271,8 @@ or answers only one of the two decisions.
 `database-cant-keep-up-with-writes` if the reasoning follows that page's
 "separate volume from contention" step over to the concurrency page.
 Both acceptable.
-**Topics:** `optimistic-vs-pessimistic-locking`
+**Topics:** `optimistic-vs-pessimistic-locking`; `race-conditions` also acceptable
+(the page names the bug class before routing to the fix)
 **Why:** The symptom is slowness, so the writes page is a natural first
 click, but spare CPU and disk with writes queued on the same rows is
 that page's own definition of contention, and it sends the reader to the
@@ -437,3 +440,41 @@ fixes first.
 **Fails if:** it routes to `structuring-services-and-storage` because
 "keeping a separate copy of the data" sounds like an architecture choice, or
 goes straight to `cqrs` with no mention that cheaper fixes exist.
+
+---
+
+### SDN-22 — one server maxed out
+
+> Our app runs on one server. At peak its CPU sits at 100% while the
+> database is mostly idle, and when we rebooted it last week the whole site
+> was down for two minutes.
+
+**Expected question:** `getting-requests-to-the-right-server`
+**Topics:** `forward-vs-reverse-proxy`; `self-healing-systems` acceptable (the
+health checks that keep traffic off a broken instance)
+**Why:** The application tier, not the database, is saturated, and a single
+server is also a single point of failure. More servers behind a load
+balancer answers both, and question 9's "What to check first" separates this
+from the database questions.
+**Fails if:** it routes to `database-cant-keep-up-with-reads` or
+`database-cant-keep-up-with-writes` (the prompt says the database is idle),
+or to `structuring-services-and-storage` and recommends splitting into
+microservices to get more capacity.
+
+---
+
+### SDN-23 — a counter that drifts
+
+> The like count on popular posts is lower than the number of rows in our
+> likes table. It never happens on quiet posts and we can't reproduce it on
+> a laptop.
+
+**Expected question:** `keeping-data-correct-under-concurrency`
+**Topics:** `race-conditions`; `optimistic-vs-pessimistic-locking` acceptable
+**Why:** Wrong data that only appears under concurrent traffic is a lost
+update from a read-modify-write race. Question 5's first section names race
+conditions and routes to the fix.
+**Fails if:** it routes to `database-cant-keep-up-with-writes` because
+"popular posts" sounds like write volume (nothing here is slow; the data is
+wrong), or to `figuring-out-whats-wrong` when the symptom already says which
+data is broken.

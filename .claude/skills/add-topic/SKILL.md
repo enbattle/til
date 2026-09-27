@@ -50,9 +50,17 @@ and "Writing standard" sections exactly:
   "Links are the data" bullet lists the link forms that aren't counted. If no
   existing question fits, add a new question file with the next free `order`
   instead. `system-design.test.ts`'s coverage check fails the topic until this
-  is done. Afterward run `system-design-navigation-eval` (the scenarios that
-  touch that question, or the whole set if you added one) to check a reader
-  would actually land there. Topics in other sections need no question.
+  is done. If the topic is the natural answer to a symptom no scenario in
+  `evals/system-design-navigation/scenarios.md` covers, add one first (its
+  `HOW_TO_RUN.md`, "When the question set changes", step 3). Afterward run
+  `system-design-navigation-eval` (the scenarios that touch that question, or
+  the whole set if you added one) to check a reader would actually land there.
+  Topics in other sections need no question.
+- **Link existing topics to the new one where they already lean on it.** If
+  other topics use the new topic's central term without explaining it, link
+  that term's first mention in each to the new topic. Keep these edits
+  link-only; any other prose change to an existing topic is its own change.
+  List them for the Stage 3 reviewer.
 - **If the section is `systems-and-infrastructure`, end the topic with a
   `## Where you'll meet this` section.** CLAUDE.md has the convention, the
   reference systems and the rules; `src/content/where-youll-meet-this.test.ts`

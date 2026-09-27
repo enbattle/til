@@ -43,7 +43,7 @@ read every claim in it. Never put secrets in the payload.
 A client logs in once and gets back a signed token; from then on, any
 service that holds the signing key can verify that token locally, with no
 round-trip to a central session store on every request. That's convenient
-for microservices and for scaling horizontally behind a load balancer:
+for microservices and for scaling horizontally behind a [load balancer](/systems-and-infrastructure/forward-vs-reverse-proxy):
 with a session store, the load balancer has to keep routing a given user
 to the same backend instance that holds their session ("sticky
 sessions"), or every instance needs access to a shared store. Stateless

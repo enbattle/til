@@ -5,7 +5,8 @@ date: 2026-09-15
 ---
 
 A mechanism for ensuring only one process, across multiple machines, can
-hold a given lock at a time — the multi-process equivalent of a mutex,
+hold a given lock at a time — the multi-process equivalent of a
+[mutex](/systems-and-infrastructure/race-conditions),
 needed whenever [pessimistic locking](/systems-and-infrastructure/optimistic-vs-pessimistic-locking)
 has to work across services that don't share a database or a single
 process's memory.

@@ -36,5 +36,7 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
   `add-topic`, which has no retrospective.
 - **Escaped defect** — empty until a later fix traces a bug to this run.
 
-| Date | Run | Gate failures | Findings (H/M/L, pre) | Fix rounds | Retro | Escaped defect |
-| ---- | --- | ------------- | --------------------- | ---------- | ----- | -------------- |
+| Date       | Run                                                                          | Gate failures | Findings (H/M/L, pre) | Fix rounds | Retro | Escaped defect |
+| ---------- | ---------------------------------------------------------------------------- | ------------- | --------------------- | ---------- | ----- | -------------- |
+| 2026-09-26 | add-topic src/content/systems-and-infrastructure/race-conditions.md          | 0             | 0/3/6                 | 2          | n/a   |                |
+| 2026-09-26 | add-topic src/content/systems-and-infrastructure/forward-vs-reverse-proxy.md | 0             | 0/3/7                 | 2          | n/a   |                |
