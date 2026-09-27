@@ -78,7 +78,7 @@ so several tabs each holding an SSE stream can starve regular requests
 to the same host; HTTP/2 multiplexes many streams over one connection
 and largely removes this.
 
-Proxies and load balancers add their own idle timeouts, so a quiet
+[Proxies and load balancers](/systems-and-infrastructure/forward-vs-reverse-proxy) add their own idle timeouts, so a quiet
 connection may get cut unless something is sent periodically: a
 heartbeat on a WebSocket, or a comment line on an SSE stream. A proxy
 that buffers responses can also hold back SSE messages until enough

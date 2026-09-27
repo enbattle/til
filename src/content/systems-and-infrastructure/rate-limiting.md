@@ -70,7 +70,7 @@ resets on a clock tick, at different cost points:
 ## Making the limit hold across many servers
 
 A counter that only lives in one process's memory only limits requests
-that happen to land on _that_ process. Behind a load balancer spreading
+that happen to land on _that_ process. Behind a [load balancer](/systems-and-infrastructure/forward-vs-reverse-proxy) spreading
 traffic across ten instances, each independently enforcing "100 requests
 per minute" effectively allows 1,000 requests per minute in total — the
 limit was real, just not shared. The fix is centralizing the counter

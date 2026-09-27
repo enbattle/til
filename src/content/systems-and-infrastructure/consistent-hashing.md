@@ -52,7 +52,7 @@ operation instead of something that needs to be scheduled as risky
 maintenance.
 This is the mechanism underneath distributed caches, distributed
 databases spreading data across [shards](/systems-and-infrastructure/partitioning-vs-sharding),
-and load balancers that need to keep routing a given client to the same
+and [load balancers](/systems-and-infrastructure/forward-vs-reverse-proxy) that need to keep routing a given client to the same
 backend instance even as instances come and go.
 
 ## Where you'll meet this

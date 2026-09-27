@@ -22,7 +22,7 @@ different questions.
 A **liveness check** asks "is this process stuck beyond recovery?" If it
 fails repeatedly, the platform kills and restarts it. A **readiness
 check** asks "can this instance serve traffic right now?" If it fails,
-the instance is only taken out of the load balancer's rotation, and it
+the instance is only taken out of the [load balancer's](/systems-and-infrastructure/forward-vs-reverse-proxy) rotation, and it
 is not restarted. That suits an instance that is still warming a cache
 at startup, or one that is temporarily overloaded. Restarting it would
 just throw away the work it is doing to become ready. The same worry
