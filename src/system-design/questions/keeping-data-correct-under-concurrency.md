@@ -14,9 +14,10 @@ other.
 
 ## Confirm which case you're in
 
-Reproduce it with concurrent requests, because these bugs rarely show up in
-single-user testing. Then sort it into one of four cases. Writers that share one
-database and collide on the same rows are a locking question. Processes that
+When the wrong data comes from two requests colliding, that's a
+[race condition](/systems-and-infrastructure/race-conditions), and the topic
+shows how to reproduce one on purpose. Whatever the symptom, sort the problem
+into one of four cases. Writers that share one database and collide on the same rows are a locking question. Processes that
 don't share a database but need exclusive access to something are a
 distributed-lock question. A change in your database that has to reach another
 system is an outbox question. A multi-step operation spread across services is a

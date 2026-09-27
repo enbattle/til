@@ -5,7 +5,7 @@ date: 2026-09-15
 ---
 
 Two strategies for handling concurrent writes to the same data without
-corrupting it. **Pessimistic locking** assumes conflicts are likely and
+corrupting it through a [race condition](/systems-and-infrastructure/race-conditions). **Pessimistic locking** assumes conflicts are likely and
 prevents them up front: acquire a lock before touching the data, so no
 one else can write to it until you're done. **Optimistic locking**
 assumes conflicts are rare — let everyone proceed without locking, but
