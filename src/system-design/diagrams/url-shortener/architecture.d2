@@ -1,0 +1,32 @@
+# High-level architecture of the URL shortener: the write path (create a short
+# link), the read path (redirect), and click analytics kept off the read path.
+direction: down
+
+client: Browser or API client
+lb: Load balancer
+app: App servers {
+  style.multiple: true
+}
+queue: Click queue {
+  shape: queue
+}
+ranges: ID range allocator
+db: URL store {
+  shape: cylinder
+}
+cache: Cache {
+  shape: stored_data
+}
+workers: Analytics workers
+analytics: Analytics store {
+  shape: cylinder
+}
+
+client -> lb: "POST /urls, GET /{code}"
+lb -> app
+app -> queue: "click events"
+app -> ranges: "claim IDs"
+app -> db: "reads on a miss, inserts"
+app -> cache: "read first"
+queue -> workers
+workers -> analytics: "batched writes"

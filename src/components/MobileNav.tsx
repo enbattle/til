@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { isSystemDesignPath } from '@/lib/system-design';
-import { QuestionNav } from './QuestionNav';
+import { CaseStudyNav } from './CaseStudyNav';
 import { SectionNav } from './SectionNav';
 
 const FOCUSABLE_SELECTOR =
@@ -15,7 +15,7 @@ interface MobileNavProps {
 /**
  * Narrow-viewport nav overlay: fixed backdrop + a panel sliding in from the
  * left edge, containing the same nav tree the persistent desktop sidebar
- * uses (`QuestionNav` on System Design routes, `SectionNav` everywhere else).
+ * uses (`CaseStudyNav` on System Design routes, `SectionNav` everywhere else).
  * Mirrors `SearchDialog`'s overlay/focus-trap/close-on-navigate pattern,
  * opening from the left edge instead of a centered panel.
  */
@@ -59,7 +59,7 @@ export function MobileNav({ onClose }: MobileNavProps) {
         onClick={(event) => event.stopPropagation()}
       >
         {isSystemDesignPath(pathname) ? (
-          <QuestionNav onNavigate={onClose} />
+          <CaseStudyNav onNavigate={onClose} />
         ) : (
           <SectionNav onNavigate={onClose} />
         )}

@@ -1,0 +1,44 @@
+{
+  "$tokens": {
+    "light": {
+      "accent": "#92400e",
+      "accent-soft": "#f3e3c8",
+      "bg-primary": "#faf6f0",
+      "bg-secondary": "#f2ebe0",
+      "bg-tertiary": "#ece2d3",
+      "border": "#ddd1bf",
+      "text-primary": "#2b2420",
+      "text-secondary": "#5c5147",
+      "text-tertiary": "#6e6356"
+    },
+    "dark": {
+      "accent": "#f0a83c",
+      "accent-soft": "#3d2f16",
+      "bg-primary": "#201a14",
+      "bg-secondary": "#2a231b",
+      "bg-tertiary": "#342c22",
+      "border": "#3d3428",
+      "text-primary": "#f2e9dc",
+      "text-secondary": "#c9bba6",
+      "text-tertiary": "#a39683"
+    }
+  },
+  "url-shortener/architecture.d2": {
+    "sha256": "7309489d33e281837b8d1ac02b657d909d2c62cfd67db0e26cf616c38bb98608",
+    "width": 811,
+    "height": 1113,
+    "svgs": {
+      "light": "568eacf8ee4a6a8298130da1791f30f86d93cf19e00f0f86f1fc6c55b534f12c",
+      "dark": "d55549b6bab5d4c8caa2fb194abe4156150f7861c7e723209a0bf132660affdc"
+    }
+  },
+  "url-shortener/redirect-sequence.d2": {
+    "sha256": "b9ea3e876a1d03631255418093aac0dfc76bc1b501b83b5db5317480dff83b19",
+    "width": 929,
+    "height": 1048,
+    "svgs": {
+      "light": "f0f0803c6d10da86c2c5e43cd9a00493bf37282135dfe9eb452443b52bfff2fb",
+      "dark": "114c8209ea2c60fc0e963fcbff7a1d21a5f52eba70ac928dae8501149c180130"
+    }
+  }
+}

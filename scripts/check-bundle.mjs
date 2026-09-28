@@ -1,26 +1,30 @@
 #!/usr/bin/env node
-// Guardrail for the lazy-loaded topic bodies (docs/specs/lazy-content-loading.md).
-// Topic bodies are meant to ship as their own small chunks, fetched when a topic
-// is opened or search is first used. Nothing in `npm run size` notices if a
+// Guardrail for the lazy-loaded markdown bodies (docs/specs/lazy-content-loading.md,
+// docs/specs/system-design-case-studies.md). Topic and case-study bodies are
+// meant to ship as their own small chunks, fetched when the page is opened or
+// search is first used. Nothing in `npm run size` notices if a
 // change quietly inlines them back into the main chunk (it only notices once
 // the total has grown past the limit), so this checks it directly: run it
 // after `npm run build`.
 //
-// For every topic file it takes one sentence-length fragment from the body and
+// For every topic file (src/content/) and case-study file
+// (src/system-design/case-studies/) it takes one sentence-length fragment from the body and
 // fails if that fragment is in the main chunk (`dist/assets/index-*.js`), if it
 // is in no other chunk at all (a body that went missing), or if the chunk that
 // holds it also holds another topic's fragment (bodies grouped into one lazy
 // chunk, which would make opening any topic download every body), or if any
 // other chunk pulls a body chunk in with a static import (so it would load
 // whenever that chunk does, e.g. on every topic view). Only a dynamic
-// `import()` may reach a body chunk. Question bodies are intentionally eager,
-// so `src/system-design/` isn't checked.
+// `import()` may reach a body chunk.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const CONTENT = join(ROOT, 'src', 'content');
+const BODY_DIRS = [
+  join(ROOT, 'src', 'content'),
+  join(ROOT, 'src', 'system-design', 'case-studies'),
+];
 const ASSETS = join(ROOT, 'dist', 'assets');
 const MIN_LINE = 40;
 const MIN_FRAGMENT = 30;
@@ -94,7 +98,10 @@ if (mainChunks.length === 0) {
 const violations = [];
 const checks = [];
 const chunkTopics = new Map();
-for (const file of walk(CONTENT, '.md')) {
+const bodyFiles = BODY_DIRS.filter((dir) => existsSync(dir)).flatMap((dir) =>
+  walk(dir, '.md'),
+);
+for (const file of bodyFiles) {
   const name = relative(ROOT, file);
   const fragment = fragmentFor(readFileSync(file, 'utf8'));
   if (!fragment) {
@@ -122,11 +129,11 @@ for (const { name, fragment } of checks) {
     chunkTopics.set(chunk.name, [...(chunkTopics.get(chunk.name) ?? []), name]);
   }
 }
-// One chunk per topic: a chunk that holds one topic's body must hold no other's.
+// One chunk per file: a chunk that holds one body must hold no other's.
 for (const [chunkName, names] of chunkTopics) {
   if (names.length > 1) {
     violations.push(
-      `${chunkName}: holds the bodies of ${names.length} topics (${names.slice(0, 3).join(', ')}${names.length > 3 ? ', ...' : ''}); each topic body must be its own chunk`,
+      `${chunkName}: holds the bodies of ${names.length} files (${names.slice(0, 3).join(', ')}${names.length > 3 ? ', ...' : ''}); each body must be its own chunk`,
     );
   }
 }
@@ -152,14 +159,14 @@ for (const [bodyChunk, names] of chunkTopics) {
 const checked = checks.length;
 
 if (violations.length > 0) {
-  console.error('Topic bodies are not split out of the main chunk as expected:\n');
+  console.error('Markdown bodies are not split out of the main chunk as expected:\n');
   for (const violation of violations) console.error(`  ${violation}`);
   console.error(
-    '\nTopic bodies must be loaded through a lazy import.meta.glob with one chunk per topic (see src/lib/content.ts), not eagerly, grouped, or imported statically.',
+    '\nTopic and case-study bodies must be loaded through a lazy import.meta.glob with one chunk per file (see src/lib/content.ts and src/lib/system-design.ts), not eagerly, grouped, or imported statically.',
   );
   process.exit(1);
 }
 
 console.log(
-  `All ${checked} topic bodies are outside the main chunk, each in its own lazy chunk, reached only by dynamic import.`,
+  `All ${checked} topic and case-study bodies are outside the main chunk, each in its own lazy chunk, reached only by dynamic import.`,
 );

@@ -7,6 +7,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { d2HexColors } from './diagram-manifest.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'src');
@@ -16,7 +17,11 @@ const SRC = join(ROOT, 'src');
 const EXCLUDED_FILES = new Set([join(SRC, 'index.css')]);
 // Published prose, not app code — a topic's body text isn't held to this.
 const EXCLUDED_DIRS = new Set([join(SRC, 'content')]);
-const SCANNED_EXTENSIONS = new Set(['.ts', '.tsx', '.css']);
+// `.d2` diagram sources too: their colors come from the tokens through
+// scripts/render-diagrams.mjs, never from the source. In a `.d2`, `#` also
+// starts a comment and appears in labels ("Issue #123"), so there only a hex
+// color used as a value counts (`d2HexColors`, shared with check-diagrams).
+const SCANNED_EXTENSIONS = new Set(['.ts', '.tsx', '.css', '.d2']);
 const HEX_COLOR = /#[0-9a-fA-F]{3,8}\b/g;
 
 function walk(dir, files = []) {
@@ -36,6 +41,14 @@ function walk(dir, files = []) {
 const violations = [];
 for (const file of walk(SRC)) {
   const content = readFileSync(file, 'utf8');
+  if (extname(file) === '.d2') {
+    const matches = d2HexColors(content);
+    if (matches.length > 0) {
+      const line = content.split('\n').findIndex((text) => text.includes(matches[0]));
+      violations.push({ file, line: line + 1, matches });
+    }
+    continue;
+  }
   const lines = content.split('\n');
   lines.forEach((line, i) => {
     const matches = line.match(HEX_COLOR);

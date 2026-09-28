@@ -172,14 +172,15 @@ fresh-subagent-per-scenario procedure the skill exists to standardize.
 
 **Expected:** `content-audit`
 **Why:** Exactly this skill's stated purpose — an independent, fresh-eyes
-read of every topic under `src/content/**` against the Writing Standard's
-AI-patterned-prose, over-explained-figurative-language, and
-unverified-technical-claim criteria. It's a full-corpus sweep of
-published topic content, which is a different axis from both neighbors:
+read of every topic under `src/content/**` (and, by default, every System
+Design case study under `src/system-design/case-studies/`) against the
+Writing Standard's AI-patterned-prose, over-explained-figurative-language,
+and unverified-technical-claim criteria. It's a full-corpus sweep of
+published content, which is a different axis from its neighbors:
 `docs-audit` covers meta-documentation (`CLAUDE.md`, `docs/`, `evals/`,
 `SKILL.md` files) staleness against current repo state, not the prose
-quality of topics under `src/content/`; `add-topic` reviews exactly one
-new topic file as part of writing it, not the entire existing corpus.
+quality of published content; `add-topic` and `add-case-study` each review
+exactly one new file as part of writing it, not the entire existing corpus.
 **Fails if:** routed to `docs-audit` (wrong scope — meta-docs staleness,
 not topic-content quality), routed to `add-topic` (that skill's review
 pass covers a single new topic it's writing, not a sweep of everything
@@ -209,24 +210,13 @@ premise every other eval in this repo is built on.
 
 ---
 
-### SR-13 — system-design-navigation-eval routing
+### SR-13 — retired
 
-> I just added a new question to the System Design section and reworded
-> another one's summary. Can you check that someone describing a problem
-> would still end up on the right question and topics?
-
-**Expected:** `system-design-navigation-eval`
-**Why:** Exact match for the skill's stated purpose — checking, with
-fresh agents given only a symptom, whether the System Design questions'
-titles, summaries and topic links still lead a reader to the right page
-after the question set changed.
-**Fails if:** routed to `content-audit` (that reads question and topic
-prose against the Writing Standard, not whether a symptom finds the right
-question), `skill-routing-eval` (checks which _skill_ gets picked, not
-whether readers reach the right _content_), or done as an ad-hoc
-read-through by the same session with no fresh agent per scenario, which
-defeats the premise that whoever just wrote the questions is the
-worst-positioned person to judge whether a stranger would find them.
+This scenario routed "check that a reader still finds the right System Design
+question" to `system-design-navigation-eval`. The question pages, that eval
+and its skill were removed by `docs/specs/system-design-case-studies.md`, so
+the scenario no longer has a right answer. The ID is kept so past results
+under `results/` still line up; don't reuse it.
 
 ---
 
@@ -246,3 +236,59 @@ which skill gets picked, not whether a review catches defects), `/feature`
 itself, or done as an ad-hoc read of the reviewer prompt by the same session
 with no planted defect and no fresh reviewer, which can't show whether the
 review catches anything.
+
+---
+
+### SR-15 — new System Design case study
+
+> Write a System Design case study for a chat app like WhatsApp, with the
+> usual architecture diagram.
+
+**Expected:** `add-case-study`
+**Why:** Exactly that skill's scope: a new file under
+`src/system-design/case-studies/` plus its D2 diagrams, drafted to the
+template, rendered with `npm run diagrams`, then reviewed by a fresh agent
+against the Writing Standard and the case-study checklist (estimate
+arithmetic, compared options in each deep dive, diagrams matching the prose).
+**Fails if:** routed to `add-topic` (a case study isn't a catalog topic, and
+that skill's review has none of the case-study checks), routed to `/feature`
+(no app code changes, so spec and TDD would be ceremony), or written directly
+with no independent review, which skips the check most likely to catch a
+wrong estimate or a one-sided deep dive.
+
+---
+
+### SR-16 — improving an existing case study's prose (trap)
+
+> The URL shortener case study reads a bit stiff in places and I'm not sure
+> every claim in it holds up. Can you go over it and tighten the writing?
+
+**Expected:** `content-audit` scoped to that one file
+**Why:** The case study already exists, and `add-case-study`'s description
+says it is not for editing an existing case study's prose quality (that's
+`content-audit`). An independent read of one published file against the
+Writing Standard, including whether its claims hold, is `content-audit`'s
+single-file scope. The prompt names no specific fix and asks for claims to be
+checked, so the direct-edit carve-out does not apply.
+**Fails if:** rewritten directly in the same session (as SR-11), routed through `add-case-study` (that skill drafts a new file
+and its diagrams; it has no path for revising a published one) or `/feature`
+(no app behavior involved).
+
+---
+
+### SR-17 — changing the case-study page or diagram tooling (trap)
+
+> On a case study page, make the Contents list stick to the side of the
+> screen on wide monitors, and have the diagram render script fail when a
+> diagram is wider than the content column.
+
+**Expected:** `/feature`
+**Why:** Both halves are app and tooling code (the case-study page component
+and `scripts/render-diagrams.mjs`), with behavior that needs acceptance
+criteria and tests. `add-case-study`'s description sends changes to the
+case-study page, loader or diagram tooling to `/feature`, and its Stage 0
+stops if a request needs anything under `src/` outside the case-study and
+diagram folders.
+**Fails if:** routed to `add-case-study` (the words "case study" and
+"diagram" match its trigger, but it writes content, not code), or done as a
+direct edit (a layout change plus a new guard is not a one-line fix).

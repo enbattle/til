@@ -3,9 +3,9 @@ import { useLocation } from 'react-router-dom';
 
 /**
  * Expand/collapse state for a nav tree of collapsible groups (`SectionNav`'s
- * sections, `QuestionNav`'s questions). Only the group containing the current
- * route (`currentKey`) starts expanded; navigating to a different group
- * auto-expands it without ever collapsing one the user already opened.
+ * sections). Only the group containing the current route (`currentKey`)
+ * starts expanded; navigating to a different group auto-expands it without
+ * ever collapsing one the user already opened.
  */
 export function useExpandedGroups(currentKey: string | undefined) {
   const { pathname } = useLocation();

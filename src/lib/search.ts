@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js';
-import type { Question, Topic } from '@/types';
+import type { CaseStudy, Topic } from '@/types';
 import { TOPICS, loadAllTopicBodies } from './content';
-import { QUESTIONS } from './system-design';
+import { CASE_STUDIES, loadAllCaseStudyBodies } from './system-design';
 
 const FUSE_OPTIONS = {
   keys: [
@@ -15,48 +15,56 @@ const FUSE_OPTIONS = {
 };
 
 export type SearchResult =
-  { kind: 'topic'; topic: Topic } | { kind: 'question'; question: Question };
+  { kind: 'topic'; topic: Topic } | { kind: 'caseStudy'; caseStudy: CaseStudy };
 
 // Fuse scores flat fields, so each entry carries the searchable fields next
 // to the result it stands for.
-type ContentEntry = Pick<Question, 'title' | 'summary' | 'body'> & {
+interface ContentEntry {
+  title: string;
+  summary: string;
+  body: string;
   result: SearchResult;
-};
+}
 
 interface SearchIndexDeps {
   topics: Topic[];
-  questions: Question[];
+  caseStudies: CaseStudy[];
   /** Every topic body keyed `section/slug`; called at most once per success. */
   loadTopicBodies: () => Promise<Map<string, string>>;
+  /** Every case-study body keyed by slug; called at most once per success. */
+  loadCaseStudyBodies: () => Promise<Map<string, string>>;
 }
 
 /**
- * A search index over topics and questions. Topic bodies aren't in the main
- * bundle, so the index starts with each topic's title and summary only (a
- * topic's `body` is empty) and gains the body text once `ensureFullTextSearch`
- * has loaded it. Takes its dependencies as arguments so the load/retry
+ * A search index over topics and case studies. Neither kind's body is in the
+ * main bundle, so the index starts with titles and summaries only (every
+ * `body` is empty) and gains the body text once `ensureFullTextSearch` has
+ * loaded both sets. Takes its dependencies as arguments so the load/retry
  * behavior can be tested with fake loaders; the module's own exports are one
  * instance built from the real content.
  */
 export function createSearchIndex({
   topics,
-  questions,
+  caseStudies,
   loadTopicBodies,
+  loadCaseStudyBodies,
 }: SearchIndexDeps) {
-  function build(bodies: Map<string, string> | undefined): Fuse<ContentEntry> {
+  function build(
+    bodies: { topics: Map<string, string>; caseStudies: Map<string, string> } | undefined,
+  ): Fuse<ContentEntry> {
     return new Fuse<ContentEntry>(
       [
         ...topics.map((topic) => ({
           title: topic.title,
           summary: topic.summary,
-          body: bodies?.get(`${topic.section}/${topic.slug}`) ?? '',
+          body: bodies?.topics.get(`${topic.section}/${topic.slug}`) ?? '',
           result: { kind: 'topic', topic } as const,
         })),
-        ...questions.map((question) => ({
-          title: question.title,
-          summary: question.summary,
-          body: question.body,
-          result: { kind: 'question', question } as const,
+        ...caseStudies.map((caseStudy) => ({
+          title: caseStudy.title,
+          summary: caseStudy.summary,
+          body: bodies?.caseStudies.get(caseStudy.slug) ?? '',
+          result: { kind: 'caseStudy', caseStudy } as const,
         })),
       ],
       FUSE_OPTIONS,
@@ -67,24 +75,27 @@ export function createSearchIndex({
   let ready = false;
   let loading: Promise<void> | undefined;
 
-  /** Fuzzy-searches topics and questions together. Empty query returns no
-   * results. Sync: topic body text is included once `ensureFullTextSearch` resolves. */
+  /** Fuzzy-searches topics and case studies together. Empty query returns no
+   * results. Sync: body text is included once `ensureFullTextSearch` resolves. */
   function searchContent(query: string, limit = 8): SearchResult[] {
     const trimmed = query.trim();
     if (!trimmed) return [];
     return fuse.search(trimmed, { limit }).map((result) => result.item.result);
   }
 
-  /** Loads every topic body and rebuilds the index with them. Safe to call
-   * repeatedly: concurrent calls share one load, and after a failure the next
-   * call tries again. */
+  /** Loads every topic and case-study body and rebuilds the index with them.
+   * Safe to call repeatedly: concurrent calls share one load, and after a
+   * failure of either set the next call tries again (each body store keeps
+   * what it already fetched, so only the failed chunks are re-requested). */
   function ensureFullTextSearch(): Promise<void> {
     if (ready) return Promise.resolve();
     if (loading) return loading;
-    const attempt = loadTopicBodies().then((bodies) => {
-      fuse = build(bodies);
-      ready = true;
-    });
+    const attempt = Promise.all([loadTopicBodies(), loadCaseStudyBodies()]).then(
+      ([topicBodies, caseStudyBodies]) => {
+        fuse = build({ topics: topicBodies, caseStudies: caseStudyBodies });
+        ready = true;
+      },
+    );
     loading = attempt;
     attempt.catch(() => {
       if (loading === attempt) loading = undefined;
@@ -101,8 +112,9 @@ export function createSearchIndex({
 
 const defaultIndex = createSearchIndex({
   topics: TOPICS,
-  questions: QUESTIONS,
+  caseStudies: CASE_STUDIES,
   loadTopicBodies: () => loadAllTopicBodies(),
+  loadCaseStudyBodies: () => loadAllCaseStudyBodies(),
 });
 
 export const searchContent = defaultIndex.searchContent;

@@ -35,7 +35,7 @@ of staleness this skill exists to catch:
 - every `SKILL.md` under `.claude/skills/`, and the reminder text in
   `.claude/hooks/*.js` (it names skills and docs, so it can go stale the same way)
 - (explicitly **not** in scope: `src/content/**` and
-  `src/system-design/questions/**` — the published topic and question
+  `src/system-design/case-studies/**` — the published topic and case-study
   files themselves. Their prose quality against the Writing Standard is
   `content-audit`'s job, not this skill's.)
 - explanatory comments in `.github/workflows/*.yml` and

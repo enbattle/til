@@ -1,6 +1,6 @@
 ---
 name: content-review-eval
-description: Run this repo's content-review eval — checks whether add-topic's Stage 3 review agent actually catches a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim) rather than rubber-stamping a draft, including a false-positive control. Use when asked to run/check the content-review eval, after editing add-topic/SKILL.md's Stage 3 prompt, CLAUDE.md's Writing Standard or docs/NON_NEGOTIABLES.md, or after a real add-topic review misses something in actual use (add a scenario for it first).
+description: Run this repo's content-review eval — checks whether add-topic's and add-case-study's Stage 3 review agents actually catch a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim, a wrong estimate, a one-sided deep dive) rather than rubber-stamping a draft, including false-positive controls. Use when asked to run/check the content-review eval, after editing add-topic/SKILL.md's or add-case-study/SKILL.md's Stage 3 prompt, CLAUDE.md's Writing Standard or docs/NON_NEGOTIABLES.md, or after a real add-topic or add-case-study review misses something in actual use (add a scenario for it first).
 ---
 
 # Content-review eval
@@ -18,16 +18,17 @@ before running this the first time.
 
 This eval is the sibling to `skill-routing-eval`, testing a different
 failure surface: not "does a fresh session pick the right skill," but
-"once `add-topic`'s Stage 3 review actually runs, does it catch a real
-planted problem instead of rubber-stamping the draft."
+"once `add-topic`'s or `add-case-study`'s Stage 3 review actually runs,
+does it catch a real planted problem instead of rubber-stamping the draft."
 
 ## Stage 0 — Scope the run
 
-Running all scenarios (`CR-01`..`CR-05`) is the default when asked to
-"run the content-review eval" with no further qualifier, or after editing
-something the scenarios depend on (`add-topic/SKILL.md`'s Stage 3
-prompt, `CLAUDE.md`'s Writing Standard, or `docs/NON_NEGOTIABLES.md`; the
-table in `evals/README.md` is the canonical list).
+Running all scenarios (`CR-01`..`CR-05` for `add-topic`, `CS-01`..`CS-03`
+for `add-case-study`) is the default when asked to "run the content-review
+eval" with no further qualifier, or after editing something they all depend
+on (`CLAUDE.md`'s Writing Standard or `docs/NON_NEGOTIABLES.md`; the table
+in `evals/README.md` is the canonical list). An edit to one skill's Stage 3
+prompt needs only that skill's scenarios.
 
 Run only the scenarios plausibly affected when the trigger is narrower —
 e.g. a Writing Standard edit that only touches the tone criteria only
@@ -37,14 +38,15 @@ scenarios.
 ## Stage 1 — Run each in-scope scenario
 
 For each scenario, follow `evals/content-review/HOW_TO_RUN.md`'s
-procedure exactly: read `add-topic/SKILL.md`'s current Stage 3
-instruction and `CLAUDE.md`'s current Writing Standard fresh (never a
+procedure exactly (its "Case-study scenarios" section for `CS-*`): read the
+reviewing skill's current Stage 3 instruction (`add-topic/SKILL.md` for
+`CR-*`, `add-case-study/SKILL.md` for `CS-*`) and `CLAUDE.md`'s current Writing Standard fresh (never a
 cached copy — this eval exists specifically to test the real, current
 prompt), glob the scenario's declared section's current sibling topics,
 then spawn a **fresh** `general-purpose` agent (never `fork` — it must
 not inherit this session's knowledge of what problem was planted) given
 the fabricated draft and that real Stage 3 instruction, framed as a real
-`add-topic` review rather than an eval.
+`add-topic` (or `add-case-study`) review rather than an eval.
 
 Run independent scenarios in parallel (one message, multiple `Agent`
 calls) rather than sequentially.
@@ -60,8 +62,8 @@ today) — never overwrite a prior run. Use the result-log template in
 
 ## Stage 3 — New violation type or reviewing skill? Add a scenario first
 
-If this run was triggered by a real `add-topic` review missing something
-in actual use, or by a new content-reviewing skill being added to the
+If this run was triggered by a real `add-topic` or `add-case-study`
+review missing something in actual use, or by a new content-reviewing skill being added to the
 repo, add a scenario for it to `scenarios.md` first (a fabricated draft
 with that exact planted problem, in the existing format), then include
 it in Stage 1 — the same way each `content-review` scenario is built around one
@@ -71,7 +73,7 @@ planted violation category.
 
 Summarize for the user: which scenarios ran, the grades, anything
 surprising (a planted violation caught for the wrong reason, a near-miss,
-a finding that suggests `add-topic`'s Stage 3 prompt itself needs
-tightening — report that as a finding, don't silently patch it
+a finding that suggests `add-topic`'s or `add-case-study`'s Stage 3
+prompt itself needs tightening — report that as a finding, don't silently patch it
 mid-eval). Format-check the results file (`npm run format:check`) before
 considering this done. Ask before committing, same as always.

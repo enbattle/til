@@ -72,8 +72,8 @@ of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk
 but only protects commits made through this exact hook config on this
 exact machine; it's trivially bypassed and duplicates gate logic that
-the skills already own (`/feature` and `add-topic` each run
-`npm run verify` as their gate). The mechanism that
+the skills already own (`/feature`, `add-topic` and `add-case-study` each
+run `npm run verify` as their gate). The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
 doesn't fail open, can't be bypassed by local config. Branch protection is
@@ -348,15 +348,41 @@ exists.
 a fetch to an API, authentication, user-generated content, or a third-party
 script.
 
+### A dead-code check (knip) as a CI gate
+
+**What it is:** Running [knip](https://knip.dev) (unused files, exports and
+dependencies) in `verify`, so dead code fails CI instead of waiting for
+someone to look.
+**Why deferred:** It was run by hand on 2026-09-28 and found a handful of
+internal-only exports, since removed; everything else it reported was a false
+positive, now recorded in `knip.json` (see CLAUDE.md, "Verifying a change").
+As a gate, every false positive (a new hook entry point, a type-only file, an
+external binary) would fail CI until someone taught `knip.json` about it,
+and it isn't a dependency, so `npx` would fetch it on every CI run. Dead code
+in a repo this size costs little and is visible in review.
+**Revisit when:** A review or retro finds dead code (an unused export, file
+or dependency) that shipped after this entry's date, or `npx knip` reports
+real findings on two separate on-demand runs.
+
 ### Splitting CLAUDE.md so each skill loads only what it needs
 
-**What it is:** Moving content-authoring detail (System Design question
+**What it is:** Moving content-authoring detail (System Design case-study
 rules, "Where you'll meet this", link-extractor edge cases) out of the
-always-loaded `CLAUDE.md` into a doc that `add-topic` and the reviewers read
+always-loaded `CLAUDE.md` into a doc that `add-topic`, `add-case-study` and the reviewers read
 on demand, leaving `CLAUDE.md` as a short router.
-**Why deferred:** At about 270 lines `CLAUDE.md` is long, but no eval or run
+**Why deferred:** At about 375 lines `CLAUDE.md` is long, but no eval or run
 has yet shown an instruction ignored because of its length, and moving text
 risks breaking the routing that `skill-routing-eval` currently passes.
+The original trigger ("before adding the next large section") fired with the
+System Design case studies (2026-09-28): the System Design section grew from
+about 55 to about 90 lines and "Verifying a change" gained the diagram
+checks, taking `CLAUDE.md` from 293 lines to about 375, without the split. That was decided rather than missed: the split is not a small move. It
+changes what every session loads, what `add-topic`'s and `add-case-study`'s
+reviewers are handed (both quote `CLAUDE.md` sections by name), and the
+routing text `skill-routing-eval` grades, so it needs its own change and an
+eval run to show routing still holds, not a line in a fix pass. No run has
+yet traced a miss to `CLAUDE.md`'s length.
 **Revisit when:** An eval result or a logged run traces a miss to an
-instruction in `CLAUDE.md` being ignored or crowded out, or before adding
-the next large section to it.
+instruction in `CLAUDE.md` being ignored or crowded out; or `CLAUDE.md`
+passes 400 lines (`wc -l CLAUDE.md`); or before adding a third kind of
+content with its own authoring rules (after topics and case studies).

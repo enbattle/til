@@ -1,6 +1,6 @@
 const DELIMITER = '---';
 
-export type FrontmatterData = Record<string, string>;
+type FrontmatterData = Record<string, string>;
 
 export interface ParsedMarkdown {
   data: FrontmatterData;

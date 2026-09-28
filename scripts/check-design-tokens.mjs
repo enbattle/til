@@ -7,32 +7,24 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readThemeTokens } from './css-tokens.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const CSS_PATH = join(ROOT, 'src', 'index.css');
 const DESIGN_PATH = join(ROOT, 'docs', 'DESIGN.md');
 
-function extractBlock(css, selector) {
-  const start = css.indexOf(`${selector} {`);
-  if (start === -1)
-    throw new Error(`Could not find a "${selector} {" block in ${CSS_PATH}`);
-  const end = css.indexOf('}', start);
-  return css.slice(start, end);
+// Read through the shared reader, so every top-level `:root`/`.dark` block
+// counts (the later value winning, as in CSS) and a token it can't read the way
+// CSS applies it fails loudly.
+let themes;
+try {
+  themes = readThemeTokens(readFileSync(CSS_PATH, 'utf8'));
+} catch (error) {
+  console.error(`src/index.css: ${error.message}`);
+  process.exit(1);
 }
-
-function extractTokens(block) {
-  const tokens = new Map();
-  const pattern = /--color-([a-z-]+):\s*(#[0-9a-fA-F]{3,8});/g;
-  let match;
-  while ((match = pattern.exec(block))) {
-    tokens.set(match[1], match[2]);
-  }
-  return tokens;
-}
-
-const css = readFileSync(CSS_PATH, 'utf8');
-const lightTokens = extractTokens(extractBlock(css, ':root'));
-const darkTokens = extractTokens(extractBlock(css, '.dark'));
+const lightTokens = new Map(Object.entries(themes.light));
+const darkTokens = new Map(Object.entries(themes.dark));
 
 const design = readFileSync(DESIGN_PATH, 'utf8');
 const tableTokens = new Map();
@@ -40,7 +32,10 @@ const rowPattern =
   /^\|\s*`([a-z-]+)`\s*\|\s*`(#[0-9a-fA-F]{3,8})`\s*\|\s*`(#[0-9a-fA-F]{3,8})`\s*\|$/gm;
 let rowMatch;
 while ((rowMatch = rowPattern.exec(design))) {
-  tableTokens.set(rowMatch[1], { light: rowMatch[2], dark: rowMatch[3] });
+  tableTokens.set(rowMatch[1], {
+    light: rowMatch[2].toLowerCase(),
+    dark: rowMatch[3].toLowerCase(),
+  });
 }
 
 const errors = [];

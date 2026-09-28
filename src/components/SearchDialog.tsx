@@ -1,8 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSection } from '@/content/registry';
-import { ensureFullTextSearch, isFullTextSearchReady, searchContent } from '@/lib/search';
+import {
+  ensureFullTextSearch,
+  isFullTextSearchReady,
+  searchContent,
+  type SearchResult,
+} from '@/lib/search';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+
+/** What a result row shows, and where it goes. A case study stands in the
+ * position a topic gives its section label; its own "section" is the System
+ * Design tab. */
+function describeResult(result: SearchResult) {
+  return result.kind === 'topic'
+    ? {
+        key: `${result.topic.section}/${result.topic.slug}`,
+        path: `/${result.topic.section}/${result.topic.slug}`,
+        title: result.topic.title,
+        label: getSection(result.topic.section)?.label ?? result.topic.section,
+        summary: result.topic.summary,
+      }
+    : {
+        key: `system-design/${result.caseStudy.slug}`,
+        path: `/system-design/${result.caseStudy.slug}`,
+        title: result.caseStudy.title,
+        label: 'System Design',
+        summary: result.caseStudy.summary,
+      };
+}
 
 interface SearchDialogProps {
   onClose: () => void;
@@ -15,7 +41,7 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  // Topic bodies load on demand (they aren't in the main bundle), so title and
+  // Topic and case-study bodies load on demand (they aren't in the main bundle), so title and
   // summary matches work at once and body matches join in when they arrive.
   const [fullText, setFullText] = useState<'loading' | 'ready' | 'failed'>(() =>
     isFullTextSearchReady() ? 'ready' : 'loading',
@@ -75,6 +101,17 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
           ref={inputRef}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => {
+            // Enter opens the first result, as a search box is expected to,
+            // except while an input method (IME) is composing: that Enter
+            // commits the composed text. Some browsers flag it only with
+            // keyCode 229.
+            const composing = event.nativeEvent.isComposing || event.keyCode === 229;
+            if (event.key === 'Enter' && !composing && results.length > 0) {
+              event.preventDefault();
+              goTo(describeResult(results[0]).path);
+            }
+          }}
           type="text"
           placeholder="Search topics..."
           className="w-full border-b border-border bg-transparent px-4 py-3 text-text-primary placeholder:text-text-tertiary focus:outline-none"
@@ -100,25 +137,7 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
             </li>
           )}
           {results.map((result) => {
-            // A question stands in the position a topic gives its section
-            // label; its own "section" is the System Design tab.
-            const { key, path, title, label, summary } =
-              result.kind === 'topic'
-                ? {
-                    key: `${result.topic.section}/${result.topic.slug}`,
-                    path: `/${result.topic.section}/${result.topic.slug}`,
-                    title: result.topic.title,
-                    label:
-                      getSection(result.topic.section)?.label ?? result.topic.section,
-                    summary: result.topic.summary,
-                  }
-                : {
-                    key: `system-design/${result.question.slug}`,
-                    path: `/system-design/${result.question.slug}`,
-                    title: result.question.title,
-                    label: 'System Design',
-                    summary: result.question.summary,
-                  };
+            const { key, path, title, label, summary } = describeResult(result);
             return (
               <li key={key}>
                 <button
@@ -136,6 +155,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
           })}
         </ul>
         <div className="border-t border-border px-4 py-2 text-xs text-text-tertiary">
+          <kbd className="rounded border border-border bg-bg-secondary px-1">Enter</kbd>{' '}
+          opens the first result ·{' '}
           <kbd className="rounded border border-border bg-bg-secondary px-1">Esc</kbd> to
           close · searches title, summary, and body text
         </div>

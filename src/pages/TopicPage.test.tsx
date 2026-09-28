@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TOPICS, getTopic, sectionNeighbors } from '@/lib/content';
-import { questionsForTopic } from '@/lib/system-design';
+import { caseStudiesForTopic } from '@/lib/system-design';
 import App from '@/App';
 import { TopicPage } from './TopicPage';
 
@@ -159,25 +159,35 @@ describe('TopicPage body loading (criterion 9)', () => {
 });
 
 describe('TopicPage layout while the body loads', () => {
-  const BACKLINKS = 'Questions this topic comes up in';
-  // A real topic that a question links to and that has a neighbor on each side,
-  // so both navigations exist once the body has loaded.
-  const topic = TOPICS.find((t) => {
-    const { prev, next } = sectionNeighbors(t);
-    return questionsForTopic(t.section, t.slug).length > 0 && prev && next;
-  })!;
-  const { prev, next } = sectionNeighbors(topic);
-  const questions = questionsForTopic(topic.section, topic.slug);
-  const path = `/${topic.section}/${topic.slug}`;
+  const BACKLINKS = 'Case studies this topic is used in';
+  // A real topic that a case study links to and that has a neighbor on each
+  // side, so both navigations exist once the body has loaded. Looked up lazily
+  // so a missing implementation fails these tests rather than the whole file.
+  function fixture() {
+    const topic = TOPICS.find((t) => {
+      const { prev, next } = sectionNeighbors(t);
+      return caseStudiesForTopic(t.section, t.slug).length > 0 && prev && next;
+    })!;
+    const { prev, next } = sectionNeighbors(topic);
+    return {
+      topic,
+      prev,
+      next,
+      caseStudies: caseStudiesForTopic(topic.section, topic.slug),
+      path: `/${topic.section}/${topic.slug}`,
+    };
+  }
 
   it('has a topic that exercises both navigations', () => {
+    const { topic, prev, next, caseStudies } = fixture();
     expect(topic).toBeDefined();
     expect(prev).not.toBeNull();
     expect(next).not.toBeNull();
-    expect(questions.length).toBeGreaterThan(0);
+    expect(caseStudies.length).toBeGreaterThan(0);
   });
 
-  it('renders the header but neither the "This comes up in" nor the prev/next navigation while the body is pending', () => {
+  it('renders the header but neither the case-study back-links nor the prev/next navigation while the body is pending', () => {
+    const { topic, path } = fixture();
     const { promise } = deferred();
     state.override = () => promise;
     renderTopic(path);
@@ -187,7 +197,7 @@ describe('TopicPage layout while the body loads', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(topic.date)).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: BACKLINKS })).not.toBeInTheDocument();
-    expect(screen.queryByText('This comes up in:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Used in these case studies:')).not.toBeInTheDocument();
     expect(screen.queryAllByRole('navigation')).toHaveLength(0);
     // Only the back link to the section remains among the links.
     expect(screen.getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
@@ -196,6 +206,7 @@ describe('TopicPage layout while the body loads', () => {
   });
 
   it('adds both navigations after the body once it loads, in the order body, backlinks, prev/next', async () => {
+    const { topic, prev, next, caseStudies, path } = fixture();
     const { promise, resolve } = deferred();
     state.override = () => promise;
     renderTopic(path);
@@ -206,11 +217,13 @@ describe('TopicPage layout while the body loads', () => {
     );
     expect(prose).not.toBeNull();
     const backlinks = await screen.findByRole('navigation', { name: BACKLINKS });
-    expect(backlinks).toHaveTextContent('This comes up in:');
+    expect(backlinks).toHaveTextContent('Used in these case studies:');
+    expect(backlinks).not.toHaveTextContent('This comes up in:');
     const links = within(backlinks).getAllByRole('link');
     expect(links.map((a) => a.getAttribute('href'))).toEqual(
-      questions.map((q) => `/system-design/${q.slug}`),
+      caseStudies.map((c) => `/system-design/${c.slug}`),
     );
+    expect(links.map((a) => a.textContent)).toEqual(caseStudies.map((c) => c.title));
 
     const pagerLinks = [
       screen.getByRole('link', { name: `← ${prev!.title}` }),

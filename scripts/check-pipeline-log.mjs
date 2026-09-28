@@ -67,9 +67,10 @@ if (headerAt === -1) {
     }
     const [date, run, gates, findings, rounds, retro] = row;
     if (!isValidDate(date)) violations.push(`${at}: Date must be a real YYYY-MM-DD date`);
-    if (!/^(\/feature|add-topic) \S/.test(run)) {
+    if (!/^(\/feature|add-topic|add-case-study) \S/.test(run)) {
       violations.push(
-        `${at}: Run must start with "/feature <spec>" or "add-topic <topic>"`,
+        `${at}: Run must start with "/feature <spec>", "add-topic <topic>" or ` +
+          '"add-case-study <case study>"',
       );
     }
     const gateCount = /^(\d+)\b/.exec(gates);
@@ -77,7 +78,12 @@ if (headerAt === -1) {
     const found = /^(\d+)\/(\d+)\/(\d+)(, pre:\d+)?$/.exec(findings);
     if (!found)
       violations.push(`${at}: Findings must look like "H/M/L" or "H/M/L, pre:N"`);
-    if (!/^[0-2]$/.test(rounds)) violations.push(`${at}: Fix rounds must be 0, 1 or 2`);
+    // Past the cap of two, a round happens only when the user authorizes it.
+    if (!/^(?:[0-2]|(?:[3-9]|[1-9]\d+) \(user-authorized\))$/.test(rounds)) {
+      violations.push(
+        `${at}: Fix rounds must be 0, 1 or 2, or "N (user-authorized)" for N of 3 or more`,
+      );
+    }
     const bareRetro = retro
       .toLowerCase()
       .replace(/[\s.,;:!—–-]+/g, ' ')
@@ -86,15 +92,18 @@ if (headerAt === -1) {
     const placeholderRetro = ['n/a', 'na', 'none', 'nothing', 'tbd', 'todo'].includes(
       bareRetro,
     );
-    if (placeholderRetro && !(bareRetro === 'n/a' && run.startsWith('add-topic '))) {
+    // The content skills have no retrospective stage, so their rows may say n/a.
+    const contentRun = /^(add-topic|add-case-study) /.test(run);
+    if (placeholderRetro && !(bareRetro === 'n/a' && contentRun)) {
       violations.push(
-        `${at}: Retro "${retro}" says nothing; only an add-topic row may use n/a`,
+        `${at}: Retro "${retro}" says nothing; only an add-topic or add-case-study row may use n/a`,
       );
     }
     const hadFriction =
       (gateCount && Number(gateCount[1]) > 0) ||
       (found && Number(found[1]) + Number(found[2]) + Number(found[3]) > 0);
-    if (hadFriction && (bareRetro === 'nothing to change' || bareRetro === '')) {
+    // An empty Retro cell was already reported above; report it once.
+    if (hadFriction && bareRetro === 'nothing to change') {
       violations.push(
         `${at}: the run had gate failures or findings, so the Retro cell must say why none ` +
           'called for a change, not just "nothing to change"',

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Question, Topic } from '@/types';
+import type { CaseStudy, Topic } from '@/types';
 import * as searchModule from './search';
 import { createSearchIndex, type SearchResult } from './search';
 
@@ -21,17 +21,19 @@ const TOPIC_B: Topic = {
   date: '2026-01-02',
 };
 
-const QUESTION: Question = {
+// Case studies are metadata only, like topics: the body comes from
+// `loadCaseStudyBodies` (keyed by slug) on the full-text path.
+const CASE_STUDY: CaseStudy = {
   slug: 'flux-capacitor',
-  title: 'Why is my flux capacitor so slow?',
+  title: 'Design a Flux Capacitor Service',
   summary: 'Diagnosing temporal hardware.',
   date: '2026-01-03',
   order: 1,
-  body: 'Replace the tungstenresonance coil before anything else.\n',
 };
 
 const BODY_A = 'The obsidianlattice reconciliation step runs at dawn.\n';
 const BODY_B = 'Nothing distinctive here beyond quokka habitats.\n';
+const CASE_STUDY_BODY = 'Replace the tungstenresonance coil before anything else.\n';
 
 function bodiesMap(): Map<string, string> {
   return new Map([
@@ -40,19 +42,28 @@ function bodiesMap(): Map<string, string> {
   ]);
 }
 
+function caseStudyBodiesMap(): Map<string, string> {
+  return new Map([['flux-capacitor', CASE_STUDY_BODY]]);
+}
+
 function keys(results: SearchResult[]): string[] {
   return results.map((r) =>
     r.kind === 'topic'
       ? `topic:${r.topic.section}/${r.topic.slug}`
-      : `question:${r.question.slug}`,
+      : `caseStudy:${r.caseStudy.slug}`,
   );
 }
 
-function makeIndex(loadTopicBodies: () => Promise<Map<string, string>>) {
+function makeIndex(
+  loadTopicBodies: () => Promise<Map<string, string>>,
+  loadCaseStudyBodies: () => Promise<Map<string, string>> = async () =>
+    caseStudyBodiesMap(),
+) {
   return createSearchIndex({
     topics: [TOPIC_A, TOPIC_B],
-    questions: [QUESTION],
+    caseStudies: [CASE_STUDY],
     loadTopicBodies,
+    loadCaseStudyBodies,
   });
 }
 
@@ -77,10 +88,28 @@ describe('createSearchIndex before full text loads (criterion 5)', () => {
     );
   });
 
-  it('finds a question by a phrase only in its body', () => {
+  it('finds a case study by title and by summary (criterion 11)', () => {
     const index = makeIndex(async () => bodiesMap());
-    expect(keys(index.searchContent('tungstenresonance'))).toContain(
-      'question:flux-capacitor',
+    expect(keys(index.searchContent('Flux Capacitor Service'))).toContain(
+      'caseStudy:flux-capacitor',
+    );
+    expect(keys(index.searchContent('Diagnosing temporal hardware'))).toContain(
+      'caseStudy:flux-capacitor',
+    );
+  });
+
+  it('carries the full CaseStudy on a case-study result', () => {
+    const index = makeIndex(async () => bodiesMap());
+    const hit = index
+      .searchContent('Flux Capacitor Service')
+      .find((r) => r.kind === 'caseStudy');
+    expect(hit).toEqual({ kind: 'caseStudy', caseStudy: CASE_STUDY });
+  });
+
+  it('does not find a case study by a phrase only in its body (criterion 11)', () => {
+    const index = makeIndex(async () => bodiesMap());
+    expect(keys(index.searchContent('tungstenresonance'))).not.toContain(
+      'caseStudy:flux-capacitor',
     );
   });
 
@@ -108,7 +137,15 @@ describe('createSearchIndex after ensureFullTextSearch (criterion 6)', () => {
     );
   });
 
-  it('still finds titles, summaries and question bodies afterwards', async () => {
+  it('finds a case study by a phrase only in its body afterwards (criterion 11)', async () => {
+    const index = makeIndex(async () => bodiesMap());
+    await index.ensureFullTextSearch();
+    expect(keys(index.searchContent('tungstenresonance'))).toContain(
+      'caseStudy:flux-capacitor',
+    );
+  });
+
+  it('still finds titles and summaries afterwards', async () => {
     const index = makeIndex(async () => bodiesMap());
     await index.ensureFullTextSearch();
     expect(keys(index.searchContent('Bioluminescent Squid'))).toContain(
@@ -117,8 +154,52 @@ describe('createSearchIndex after ensureFullTextSearch (criterion 6)', () => {
     expect(keys(index.searchContent('Cephalopods that glow'))).toContain(
       'topic:alpha/bioluminescent-squid',
     );
+    expect(keys(index.searchContent('Flux Capacitor Service'))).toContain(
+      'caseStudy:flux-capacitor',
+    );
+  });
+
+  it('keeps the flag false until the case-study bodies have loaded too', async () => {
+    let resolve!: (bodies: Map<string, string>) => void;
+    const pending = new Promise<Map<string, string>>((r) => {
+      resolve = r;
+    });
+    const index = makeIndex(
+      async () => bodiesMap(),
+      () => pending,
+    );
+
+    const ensured = index.ensureFullTextSearch();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(index.isFullTextSearchReady()).toBe(false);
+
+    resolve(caseStudyBodiesMap());
+    await ensured;
+    expect(index.isFullTextSearchReady()).toBe(true);
     expect(keys(index.searchContent('tungstenresonance'))).toContain(
-      'question:flux-capacitor',
+      'caseStudy:flux-capacitor',
+    );
+  });
+
+  it('loads case-study bodies once across repeated calls, and retries after a case-study load fails', async () => {
+    const loadCaseStudyBodies = vi
+      .fn<() => Promise<Map<string, string>>>()
+      .mockRejectedValueOnce(new Error('case study chunk failed'))
+      .mockResolvedValueOnce(caseStudyBodiesMap());
+    const index = makeIndex(async () => bodiesMap(), loadCaseStudyBodies);
+
+    await expect(index.ensureFullTextSearch()).rejects.toThrow('case study chunk failed');
+    expect(index.isFullTextSearchReady()).toBe(false);
+    expect(keys(index.searchContent('Flux Capacitor Service'))).toContain(
+      'caseStudy:flux-capacitor',
+    );
+
+    await index.ensureFullTextSearch();
+    await index.ensureFullTextSearch();
+    expect(loadCaseStudyBodies).toHaveBeenCalledTimes(2);
+    expect(index.isFullTextSearchReady()).toBe(true);
+    expect(keys(index.searchContent('tungstenresonance'))).toContain(
+      'caseStudy:flux-capacitor',
     );
   });
 
@@ -213,14 +294,15 @@ describe('the default search instance (criteria 5, 6, 7)', () => {
     );
   });
 
-  it('still finds a topic by title and a question by its title before full text loads', async () => {
+  it('still finds a topic by title and the URL shortener by its title before full text loads', async () => {
     const search = await import('./search');
-    const { QUESTIONS } = await import('./system-design');
+    const { getCaseStudy } = await import('./system-design');
     expect(keys(search.searchContent('prompt engineering'))).toContain(
       'topic:ai-and-ml/prompt-engineering',
     );
-    expect(keys(search.searchContent(QUESTIONS[0].title))).toContain(
-      `question:${QUESTIONS[0].slug}`,
+    expect(search.isFullTextSearchReady()).toBe(false);
+    expect(keys(search.searchContent(getCaseStudy('url-shortener')!.title))).toContain(
+      'caseStudy:url-shortener',
     );
   });
 

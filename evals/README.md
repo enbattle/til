@@ -3,7 +3,7 @@
 `docs/SDLC.md` and the skills under `.claude/skills/` define how a Claude
 Code session is supposed to build changes in this repo — spec → TDD →
 implementation → review for a real feature, a lighter draft → review
-loop for a new topic, direct edits for anything genuinely small. This
+loop for a new topic or case study, direct edits for anything genuinely small. This
 directory answers a different question: **does that machinery actually
 work, and does a fresh session actually follow it?**
 
@@ -30,28 +30,17 @@ own safety nets instead of a running service.
   change over time — a session can build something _well_ while still
   having picked the wrong process for it. Run via the `skill-routing-eval`
   skill rather than by hand.
-- `content-review/` — once `add-topic`'s Stage 3 review actually runs,
-  does it catch a deliberately planted content-quality violation
-  (undefined jargon, AI-patterned tone, over-explained figurative
-  language, an unverified technical claim), or rubber-stamp the draft? A
+- `content-review/` — once `add-topic`'s or `add-case-study`'s Stage 3
+  review actually runs, does it catch a deliberately planted content-quality
+  violation (undefined jargon, AI-patterned tone, over-explained figurative
+  language, an unverified technical claim, and for a case study a wrong
+  estimate or a deep dive that doesn't compare options), or rubber-stamp the
+  draft? A
   different failure surface than `skill-routing`: that category checks
   whether the right skill gets chosen, this one checks whether the
   chosen skill's review step actually works, including a false-positive
   control (a clean draft that should draw no findings). Run via the
   `content-review-eval` skill.
-
-- `system-design-navigation/` — starting from a symptom with no topic
-  names in it, does the System Design section's question list (titles
-  and summaries) get a fresh reader to the right question and the right
-  catalog topics? A third failure surface: the others check process
-  (routing, review); this one checks the _content_ a reader navigates by,
-  which `npm run test:run` can't judge (it proves no dead links and
-  full coverage of `systems-and-infrastructure`, not that a person with a
-  problem would find the right page). Includes ambiguous-by-design
-  scenarios and a control whose right answer is "no question covers this."
-  Its Expected answers depend on the current question set, so it has a
-  "when the question set changes" step in `HOW_TO_RUN.md`. Run via the
-  `system-design-navigation-eval` skill.
 
 - `feature-review/` — once `/feature`'s Stage 4 review runs, does it catch a
   planted defect in a diff (the current set is in its `scenarios.md`)
@@ -76,8 +65,7 @@ scenario. That's a deliberate, judged expense for a personal site, not
 something to run on every commit. Use the `skill-routing-eval` skill to
 run it — see `skill-routing/HOW_TO_RUN.md` for the underlying procedure
 the skill wraps. The other categories work the same way, each through its
-own skill (`content-review-eval`, `system-design-navigation-eval`,
-`feature-review-eval`).
+own skill (`content-review-eval`, `feature-review-eval`).
 
 **Re-run whenever it matters**, not on a fixed schedule: after any change
 the table below names; `.claude/hooks/nudge-sdlc.js` reminds a session
@@ -88,18 +76,17 @@ edit that read fine on its own quietly made the routing rule worse.
 
 Which eval to run depends on what changed:
 
-| You changed                                                                                                                   | Run                                                                                                                                            |
-| ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                                               | `skill-routing-eval`                                                                                                                           |
-| The Writing Standard, `add-topic`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                                       | `content-review-eval`                                                                                                                          |
-| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review                 | `feature-review-eval`                                                                                                                          |
-| Added or widened a `check:*` script                                                                                           | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
-| A question page's title, summary or topic links; added, renamed or reordered a question; placed a new systems topic under one | `system-design-navigation-eval`                                                                                                                |
+| You changed                                                                                                   | Run                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                               | `skill-routing-eval`                                                                                                                           |
+| The Writing Standard, `add-topic`'s or `add-case-study`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md` | `content-review-eval`                                                                                                                          |
+| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review | `feature-review-eval`                                                                                                                          |
+| Added or widened a `check:*` script                                                                           | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
 
 ## Grading philosophy
 
 Not every scenario has exactly one right answer — `evals/skill-routing/scenarios.md`
-and `evals/system-design-navigation/scenarios.md` mark some as **ambiguous by design** (e.g., a new section where `CLAUDE.md` itself allows either
+marks some as **ambiguous by design** (e.g., a new section where `CLAUDE.md` itself allows either
 the plain 3-step process or the full pipeline). Grade those against
 whether the session's reasoning was defensible, not against a single
 fixed string. A useful eval scenario set includes real judgment calls,

@@ -37,7 +37,7 @@ cut, both of which the spec explicitly keeps.
 ```diff
 --- a/src/lib/frontmatter.ts
 +++ b/src/lib/frontmatter.ts
-@@ -35,7 +35,7 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
+@@ -35,6 +35,6 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
      const separator = lines[i].indexOf(':');
      if (separator === -1) continue;
      const key = lines[i].slice(0, separator).trim();
@@ -78,20 +78,20 @@ way if a check ever starts catching unnamed buttons.
 ```diff
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
-@@ -128,6 +128,14 @@ export function TopicPage() {
-           </nav>
+@@ -84,6 +84,13 @@ export function TopicPage() {
+                 )}
+               </nav>
+             )}
++            <button
++              type="button"
++              onClick={() => window.scrollTo({ top: 0 })}
++              className="mt-8 rounded-full border border-border p-2 text-text-secondary hover:text-accent"
++            >
++              <span aria-hidden="true">↑</span>
++            </button>
+           </>
          )}
-       </TopicBody>
-+      <button
-+        type="button"
-+        onClick={() => window.scrollTo({ top: 0 })}
-+        className="mt-8 rounded-full border border-border p-2 text-text-secondary hover:text-accent"
-+      >
-+        <span aria-hidden="true">↑</span>
-+      </button>
-     </article>
-   );
- }
+       </LazyBody>
 ```
 
 **Expected finding:** the button has no accessible name (the arrow is
@@ -120,7 +120,7 @@ failing criterion 1.
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -48,7 +48,12 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -74,7 +74,12 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
    useEffect(() => {
      function onKeyDown(event: KeyboardEvent) {
 -      if (event.key === 'Escape') onClose();
@@ -176,11 +176,12 @@ whether a reviewer follows the call chain.
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -26,1 +26,3 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -52,2 +52,4 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
    const results = searchContent(query);
 +  const SHOWN = 8;
 +  const hidden = Math.max(0, results.length - SHOWN);
-@@ -136,3 +138,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+
+@@ -155,3 +157,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
            })}
          </ul>
 +        {hidden > 0 && (
@@ -218,7 +219,7 @@ diff (a real polish point). It fails if it reports a defect that isn't there.
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -157,4 +157,12 @@ export function recentTopics(count: number): Topic[] {
+@@ -159,3 +159,10 @@ export function recentTopics(count: number): Topic[] {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -231,7 +232,7 @@ diff (a real polish point). It fails if it reports a defect that isn't there.
 +}
 --- a/src/lib/content.test.ts
 +++ b/src/lib/content.test.ts
-@@ -6,6 +6,7 @@ import {
+@@ -6,5 +6,6 @@ import {
    loadAllTopicBodies,
    recentTopics,
 +  readingMinutes,

@@ -6,9 +6,10 @@
 const ROUTING_REMINDER =
   'Reminder (CLAUDE.md): for a nontrivial app-code change, use the /feature ' +
   'skill (spec -> TDD -> implementation -> review). For adding a new topic ' +
-  'markdown file to an existing section under src/content/ (and, for a ' +
-  'systems-and-infrastructure topic, placing it under a question in ' +
-  'src/system-design/questions/), use the add-topic skill. Genuinely small, unambiguous changes (a typo, a ' +
+  'markdown file to an existing section under src/content/, use the add-topic ' +
+  'skill; for a System Design case study under src/system-design/case-studies/ ' +
+  '(and its diagrams), use the add-case-study skill. Genuinely small, ' +
+  'unambiguous changes (a typo, a ' +
   "one-line fix) can skip both, per CLAUDE.md's own carve-out.";
 
 const EVALS_REMINDER =

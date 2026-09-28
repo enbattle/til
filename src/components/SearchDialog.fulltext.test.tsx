@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TOPICS, loadAllTopicBodies } from '@/lib/content';
-import { QUESTIONS } from '@/lib/system-design';
+import { CASE_STUDIES, getCaseStudy } from '@/lib/system-design';
 import { SearchDialog } from './SearchDialog';
 
 // The dialog's search module is swapped for one whose index is built fresh for
@@ -30,6 +30,7 @@ vi.mock('@/lib/search', async () => {
 const LOADING = 'Loading full-text search…';
 const BODY_ONLY_PHRASE = 'thin vertical slice';
 const BODY_ONLY_TOPIC = /Plan Before You Build/i;
+const CASE_STUDY_BODY_WORD = 'zanzibarquokkatron';
 
 let bodies: Map<string, string>;
 beforeAll(async () => {
@@ -53,8 +54,14 @@ beforeEach(async () => {
   pending.catch(() => {});
   state.index = actual.createSearchIndex({
     topics: TOPICS,
-    questions: QUESTIONS,
+    caseStudies: CASE_STUDIES,
     loadTopicBodies: () => pending,
+    // Case-study bodies load on the same full-text path; this fixture body holds
+    // a word no title, summary or topic body contains.
+    loadCaseStudyBodies: async () =>
+      new Map([
+        ['url-shortener', `Some prose. ${CASE_STUDY_BODY_WORD} appears only here.\n`],
+      ]),
   });
   ensureSpy = vi.fn(() => state.index.ensureFullTextSearch());
   state.ensure = ensureSpy as unknown as () => Promise<void>;
@@ -276,6 +283,43 @@ describe('SearchDialog existing behavior with full-text loading (criterion 8)', 
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('location-display')).toHaveTextContent(
       '/engineering-practices/plan-before-you-build',
+    );
+  });
+});
+
+describe('SearchDialog full-text search over case studies (criterion 11)', () => {
+  function caseStudyResult() {
+    const { title } = getCaseStudy('url-shortener')!;
+    return screen.queryByRole('button', {
+      name: new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    });
+  }
+
+  it('does not find a case study by a body-only word while full text is pending', async () => {
+    const user = userEvent.setup();
+    renderDialog();
+    await user.type(box(), CASE_STUDY_BODY_WORD);
+    expect(
+      await screen.findByText(/no topics match/i, { selector: 'li' }),
+    ).toBeInTheDocument();
+    expect(caseStudyResult()).not.toBeInTheDocument();
+  });
+
+  it('finds the case study by a body-only word once full text loads, and navigates to it', async () => {
+    const user = userEvent.setup();
+    const onClose = renderDialog();
+    await act(async () => {
+      gate.resolve();
+    });
+    await waitFor(() => expect(statusText()).toBe(''));
+    await user.type(box(), CASE_STUDY_BODY_WORD);
+    await waitFor(() => expect(caseStudyResult()).toBeInTheDocument());
+    const result = caseStudyResult()!;
+    expect(result).toHaveTextContent('System Design');
+    await user.click(result);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('location-display')).toHaveTextContent(
+      '/system-design/url-shortener',
     );
   });
 });

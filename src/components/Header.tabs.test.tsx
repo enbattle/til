@@ -2,7 +2,6 @@ import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { QUESTIONS } from '@/lib/system-design';
 import { Header } from './Header';
 
 function renderHeader(onOpenSearch = vi.fn(), onOpenNav = vi.fn(), path = '/') {
@@ -25,7 +24,7 @@ describe('Header', () => {
       '/ai-and-ml/prompt-engineering',
       '/not-found',
     ];
-    const systemDesignPaths = ['/system-design', `/system-design/${QUESTIONS[0]?.slug}`];
+    const systemDesignPaths = ['/system-design', '/system-design/url-shortener'];
 
     function primaryNav() {
       return screen.getByRole('navigation', { name: 'Primary' });

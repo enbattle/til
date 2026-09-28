@@ -8,9 +8,9 @@ running a single scenario by hand or checking exactly what the skill
 does.
 
 This eval answers a different question than `skill-routing`: not "does a
-fresh session pick the right skill," but **"once `add-topic`'s Stage 3
-review actually runs, does it catch what it's supposed to catch?"** —
-review-efficacy, not routing-correctness.
+fresh session pick the right skill," but **"once `add-topic`'s (or
+`add-case-study`'s) Stage 3 review actually runs, does it catch what it's
+supposed to catch?"** — review-efficacy, not routing-correctness.
 
 ## Why the reviewer instruction is never copied into this file
 
@@ -22,6 +22,19 @@ moment the real prompt changes. So every run reads
 reviewer instruction (the "Review this new til topic adversarially..."
 block) verbatim into the agent prompt below, rather than storing a
 snapshot of it here.
+
+## Case-study scenarios (`CS-*`)
+
+The `CS-*` scenarios run the same procedure against `add-case-study`'s
+review: read `.claude/skills/add-case-study/SKILL.md` fresh and copy its
+Stage 3 instruction (the "Review this new System Design case study
+adversarially..." block) instead of `add-topic`'s; build the draft from the
+base draft plus the scenario's replacement, as `scenarios.md` describes, and
+give the reviewer the base diagram source too; and in place of sibling topics,
+give it the titles and slugs of the real case studies
+(`ls src/system-design/case-studies/`). Everywhere below that says
+`add-topic`, read `add-case-study` for a `CS-*` scenario, and `CS-03` is
+graded like `CR-05` (the false-positive control).
 
 ## Procedure
 
@@ -61,7 +74,7 @@ For each scenario in `scenarios.md`:
      clearly naming it; note why, don't force a grade.
 5. **Log the run** to `results/<YYYY-MM-DD>.md` (copy the template
    below). Keep every past run — the point is seeing drift over time as
-   `add-topic`'s Stage 3 prompt or the Writing Standard evolve, not just
+   the Stage 3 prompts or the Writing Standard evolve, not just
    the latest snapshot.
 
 ## Result log template
@@ -87,18 +100,21 @@ scenario.
 
 ## When to run this
 
-- After editing `add-topic/SKILL.md`'s Stage 3 prompt, or `CLAUDE.md`'s
+- After editing `add-topic/SKILL.md`'s or `add-case-study/SKILL.md`'s
+  Stage 3 prompt (run the matching `CR-*` or `CS-*` scenarios), or `CLAUDE.md`'s
   Writing Standard section, or `docs/NON_NEGOTIABLES.md` — the three inputs
   this eval depends on (see the table in `evals/README.md`).
-- Whenever a real `add-topic` review misses something in actual use —
+- Whenever a real `add-topic` or `add-case-study` review misses something
+  in actual use —
   that's a live failure; turn it into a new scenario before fixing the
   root cause, so this eval catches it if it comes back.
 
 ## Adding a new scenario
 
-Found a real case where `add-topic`'s review missed something, or a new
-violation category worth covering? Add it to `scenarios.md` in the same
-format: **Section**, **Planted violation**, the fabricated draft itself,
+Found a real case where `add-topic`'s or `add-case-study`'s review missed
+something, or a new violation category worth covering? Add it to
+`scenarios.md` in the same format (a `CS-*` scenario for a case study, as
+`scenarios.md`'s case-study section describes): **Section**, **Planted violation**, the fabricated draft itself,
 **Expected finding**, and **Fails if**. Prefer a scenario sourced from a
 real miss over a speculative one, same principle `skill-routing`'s
 `HOW_TO_RUN.md` already states.

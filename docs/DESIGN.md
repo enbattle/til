@@ -11,12 +11,16 @@ notebook than a product. The UI follows that:
 - **Type**: a serif (Lora) for headings paired with a plain sans (IBM Plex
   Sans) for body text and a distinct mono (IBM Plex Mono) for code. The
   serif headings are what mark this as "writing" rather than "app UI."
+  The faces come from one Google Fonts stylesheet in `index.html`;
+  `src/main.tsx` starts loading the few only the lazy markdown bodies use at
+  startup, and lists them by hand, so a face dropped or renamed in one must
+  change in the other too (each file's comment points at the other).
 - **Color**: warm paper tones instead of neutral gray — an off-white
   background in light mode, a warm charcoal (not pure black) in dark mode
   — with a warm amber/ochre accent standing in for a highlighter pen
   rather than a generic interface blue.
 - **Layout**: a persistent left-side section/topic nav (`SectionNav`, or
-  `QuestionNav` on System Design routes — see "Question navigation" below)
+  `CaseStudyNav` on System Design routes — see "Case study navigation" below)
   alongside a centered content column (`max-w-3xl`), inside a wider
   `max-w-5xl` shell. Above the `lg` breakpoint the nav is a sticky panel
   that scrolls with the page and then holds in place once it reaches its
@@ -57,32 +61,70 @@ notebook than a product. The UI follows that:
   sidebar navs use for the current page — so it isn't marked by color
   alone. System Design is active on `/system-design` and everything under
   it; Catalog is active on every other route, including topic pages a
-  question links to (following a link into the catalog switches tabs). The
+  case study links to (following a link into the catalog switches tabs). The
   tabs are visible at every width. Above the `sm` breakpoint they sit in
   the logo row right after the logo; below it they wrap onto their own row
   under it (the header is `flex-wrap`, the nav `w-full`), so 375 px shows
   them without crowding the Menu / Search / theme controls or scrolling the
-  page sideways.
-- **Question navigation**: on `/system-design` and `/system-design/*` the
-  persistent sidebar and `MobileNav` show `QuestionNav` instead of
+  page sideways. The theme toggle is an icon-only button of fixed size (see
+  the accessibility checklist), so the header wraps to the same number of
+  rows whichever theme is stored; a text label ("System" vs. "Light") once
+  made it three rows at 375px with no stored theme and two otherwise.
+- **Case study navigation**: on `/system-design` and `/system-design/*` the
+  persistent sidebar and `MobileNav` show `CaseStudyNav` instead of
   `SectionNav`; every other route, including topic pages and not-found,
-  keeps `SectionNav`. It is the same tree shape: each question is a link
-  (its title, wrapping rather than truncating, with the same bold plus
-  accent-border current signal and `aria-current="page"`), a sibling
-  disclosure `<button>` (`aria-expanded`, `aria-controls`, an
-  `Expand <title>` / `Collapse <title>` label), and a nested `<ul>` of that
-  question's catalog topics toggled with `hidden`. The expand/collapse
-  behavior (only the current question starts open; navigating to another
-  expands it without collapsing one the user opened) lives in the shared
-  `useExpandedGroups` hook that `SectionNav` also uses. Topic links in the
-  tree go to the ordinary catalog page, where the sidebar becomes the
-  section tree; the way back is the "This comes up in:" list a topic page
-  shows for the questions that link to it. On desktop both trees stay
-  mounted and the inactive one sits in a `hidden`, `display: contents`
-  wrapper (out of the accessibility tree at every width), so a group the user
-  opened survives a round trip between the two tabs.
+  keeps `SectionNav`. It is a flat ordered list, one link per case study
+  (its number, hidden from screen readers since the `<ol>` already conveys
+  order, then its title, wrapping rather than truncating), with the same bold
+  plus accent-border current signal and `aria-current="page"`. There is
+  nothing to expand: each case study page carries its own **Contents** box
+  (a `<nav aria-label="Contents">` on `bg-secondary`, listing the body's
+  `##` sections as in-page anchors; the headings' `scroll-margin-top` is the
+  sticky header's measured height plus 0.75rem, which `Header` publishes as
+  `--header-height`, because the header's height varies with width: one row
+  of about 68px from `sm` up, two rows of about 105px at 375px, three on the
+  narrowest phones. So the header never covers a heading a Contents link
+  jumps to. Opening a topic or case study at a `#<heading-id>` URL works too:
+  the body loads after the browser's own jump, so `LazyBody` scrolls the
+  heading into view once the body renders, and the same scroll margin applies;
+  after that it re-aligns the heading whenever layout above it shifts, for at
+  least 1.5 seconds and until `document.fonts.ready`, never past 5 seconds. It
+  stops at once on the reader's first wheel, touch, key or pointer press, and
+  on any scroll it didn't cause itself (a scrollbar drag, find-in-page,
+  assistive technology), so it never fights the reader). The way back from a catalog topic is the
+  "Used in these case studies:" list a topic page shows for the case studies
+  that link to it. On desktop both navs stay mounted and the inactive one sits
+  in a `hidden`, `display: contents` wrapper (out of the accessibility tree
+  at every width), so a section group the user opened survives a round trip
+  between the two tabs.
+- **Diagrams**: case-study diagrams are D2 sources rendered at build time to
+  one SVG per theme, colored from the tokens below (the render script maps
+  them onto D2's theme slots: paper surfaces and `accent-soft` for fills,
+  `accent` for strokes and arrows, the text tokens for labels, and checks
+  label contrast on every fill). The page swaps the `.light`/`.dark` file
+  with the theme rather than recoloring at runtime, shows it as a plain
+  `<img>` scaled to the content column, and wraps it in a link that opens it
+  full size in a new tab (focus ring from the global `:focus-visible` style).
+  That link is its one tab stop on a wide screen; on a narrow one, where the
+  diagram scrolls sideways (below), the scroll region is a second. The alt text is announced once: the link is named
+  "Open diagram full size: <alt>", and the scroll region below is named only
+  "Diagram, scrolls sideways". A diagram on its own line renders without a
+  wrapping `<p>`, and its box is a block `span`, so the HTML stays valid. It never scales below 75% of its rendered size
+  (labels stay about 12px): on a narrower column, such as 375px, it keeps that
+  width inside its own horizontally scrolling box, which becomes a focusable
+  `role="region"` with an aria-label only while it overflows, so the page
+  itself never scrolls sideways. That box is `useSideScroll`
+  (`src/hooks/useSideScroll.ts`), shared with tables.
+- **Tables**: every markdown table sits in its own horizontally scrolling box
+  (the same `useSideScroll` as a diagram's), so a wide one scrolls inside the
+  content column instead of widening the page at 375px. While the table
+  overflows, the box is a focusable `role="region"` named "Table, scrolls
+  sideways", so a keyboard user can Tab to it and scroll with the arrow keys;
+  a table that fits adds no tab stop and no region. The table itself is
+  unchanged.
 - **Thin, on-theme scrollbar**: both nav scroll containers (the desktop
-  sidebar wrapper in `App.tsx` and `MobileNav`'s panel) use a
+  sidebar wrapper in `App.tsx` and `MobileNav`'s panel), and the
+  sideways-scrolling box of a diagram or table, use a
   `.scrollbar-thin` utility (`src/index.css`) built from the standard
   `scrollbar-width: thin` / `scrollbar-color` properties, colored from the
   existing `--color-border` token. Deliberately styled rather than hidden
@@ -118,10 +160,11 @@ are defined) or `src/content/` (published prose, not app code).
 | `accent-hover`   | `#7c3609` | `#f7bb5c` |
 | `accent-soft`    | `#f3e3c8` | `#3d2f16` |
 
-`accent-soft` is defined but not yet referenced by any component — kept
-as a reserved, muted-accent option (e.g. a subtle highlight background)
-rather than removed, since the theme is meant to be extended from these
-tokens rather than a new one added ad hoc.
+`accent-soft` is not referenced by any component; its one use is as the
+node fill in the rendered case-study diagrams (see "Diagrams" above), where
+it marks a diagram's boxes with the accent without the contrast cost of the
+full accent color. The theme is meant to be extended from these tokens rather
+than a new one added ad hoc.
 
 ## Accessibility checklist
 
@@ -144,11 +187,18 @@ tokens rather than a new one added ad hoc.
   document structure a screen reader announces matches the visual
   hierarchy.
 - **Color isn't the only signal**: links are underlined (not
-  color-only), and the theme toggle and section labels are text, not
-  icon-only.
+  color-only), and section labels are text, not icon-only. The theme toggle
+  is the one icon-only control: a different outline shape per state (sun,
+  moon, monitor), all the same size, with the state and the next action in
+  its `aria-label` and `title` ("Theme: System. Click for Light.").
+- **Every control has an accessible name**: visible text, or for an
+  icon-only control (whose icon is `aria-hidden`) an `aria-label`, so a
+  screen reader never announces an unnamed "button".
 - **Keyboard reachability**: search opens via `Ctrl`/`Cmd`+K, closes via
-  `Escape`, and every result is a real `<button>` — reachable and
-  activatable without a mouse.
+  `Escape`, `Enter` in the box opens the first result, and every result is a
+  real `<button>` — reachable and activatable without a mouse. A diagram or
+  table that scrolls sideways is a focusable region, scrolled with the arrow
+  keys.
 
 Any new component should be checked against this list before it's
 considered done, not just against "does it look right."
