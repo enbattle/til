@@ -93,11 +93,14 @@ existing test files to match style/conventions (e.g.
 this instruction, close to verbatim:
 
 > Write tests covering every acceptance criterion in the spec above. Only
-> create or edit `*.test.ts` / `*.test.tsx` files (and test fixture content
-> under `src/content/` or `src/system-design/` only if the spec requires new
-> seed content to test against). Do not write or modify any implementation file. Run the suite
-> yourself when done and confirm the new tests fail — report exactly which
-> tests are red and why (missing implementation, not a typo in the test).
+> create or edit test files (any `*.test.*` or `*.spec.*` JS or TS file, such as
+> `*.test.ts`, `*.test.tsx` or `*.test.mjs`: what `check:test-lock` locks; a
+> guard script's planted-violation cases go in `scripts/checks.test.mjs`), and
+> test fixture content under `src/content/` or `src/system-design/` only if
+> the spec requires new seed content to test against. Do not write or modify
+> any implementation file. Run the suite yourself when done and confirm the
+> new tests fail — report exactly which tests are red and why (missing
+> implementation, not a typo in the test).
 
 This has to be a separate agent, not just a separate turn in your own
 context: even across two turns of the same session, you'd still be
@@ -127,8 +130,8 @@ has to fail if the edit encodes the new behavior.)
 
 A content fixture under `src/content/` or `src/system-design/` ships as real
 content, so it is held to the Writing Standard too. Once locked, only a Stage 2
-re-run may change it; a review finding about a fixture's prose goes back
-through that re-run, not through Stage 4a.
+re-run may change it; a review finding about a fixture's prose goes to the
+test-writer step of Stage 4a, not to its fixer.
 
 Once the gate passes, lock the tests, naming every content fixture the
 test-writer created or changed (from the `git status` output above) so it is
@@ -169,7 +172,9 @@ it should treat them as ground truth, not something to question lightly).
 Instruction, close to verbatim:
 
 > Implement the spec above so the failing tests listed pass. Do not edit,
-> delete or add any `*.test.ts` / `*.test.tsx` file, anything under
+> delete or add any test file (any `*.test.*` or `*.spec.*` JS or TS file, such as
+> `*.test.ts`, `*.test.tsx` or `*.test.mjs`, including
+> `scripts/checks.test.mjs`), anything under
 > `src/test/`, a vitest snapshot, the `test` block of `vite.config.ts`, the
 > `test*` scripts in `package.json`, a `vitest.config.*` file, or these fixture files: <the fixture paths
 > locked in Stage 2, or "none">. They are locked, and a check will fail if
@@ -307,18 +312,36 @@ being separate from Stage 3.
 
 ### Stage 4a — Capped fix loop
 
-Up to **2 rounds**:
+Up to **2 rounds**. Each round, in this order:
 
-1. Spawn a **fresh** `general-purpose` agent (not the Stage 3 agent) with
-   the findings and the spec: "Fix these findings. Do not edit, delete or
-   add any locked file (the same list as Stage 3's instruction)." Same
-   verification gate as Stage 3.
-2. Re-run Stage 4's review on the updated diff (`npm run review:diff` again).
+1. **A test first, for every finding a test can encode** (a behavior bug, a
+   vector a guard misses). Spawn a **fresh** test-writer with Stage 2's
+   instruction, scoped to those findings: each new test must fail for the
+   finding's reason. Gate it like Stage 2's re-run after Stage 3 started (no
+   implementation file changes in `git status --porcelain -uall`, and
+   `npm run check:test-lock -- --verify` lists only test files or fixtures
+   for those findings), then re-take the snapshot. Findings only prose, docs
+   or layout can express skip this step, except prose in a locked content
+   fixture: the fixer can't edit it, so this test-writer changes it instead.
+   These runs are neither Stage 2 re-runs nor gate failures: they don't count
+   against Stage 2's "Cap: **2 re-runs per feature**" and aren't logged.
+2. Spawn a **fresh** `general-purpose` fixer (not the Stage 3 agent) with
+   the findings, the spec and any new tests: "Fix these findings. Do not
+   edit, delete or add any locked file (the same list as Stage 3's
+   instruction)." Same verification gate as Stage 3.
+3. Re-run Stage 4's review on the updated diff (`npm run review:diff` again).
 
-If findings remain after 2 rounds, **stop** — report the remaining
-findings to the user directly rather than attempting a third round
+"Findings remain" uses Stage 4's triage: only real findings the diff
+introduced count; cosmetic ones and ones that were already there go to the
+Stage 5 list. If findings remain after 2 rounds, **stop** — report the
+remaining findings to the user directly rather than attempting a third round
 yourself. This mirrors the cap the user chose: bounded automation, not an
-unbounded loop.
+unbounded loop. Each round past the cap needs the user's explicit go-ahead,
+one round per go-ahead: it runs the same three steps, and if findings remain
+after it, stop and report again (NON_NEGOTIABLES #12). A blanket instruction
+such as "keep going until it's clean" authorizes one round, not an open
+loop; say so when you report back. The log records the rounds as
+`N (user-authorized)`.
 
 ## Stage 5 — Final gate and handoff
 
