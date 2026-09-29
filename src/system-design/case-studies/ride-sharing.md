@@ -84,7 +84,7 @@ are rounded, and the roundings are stated.
 
 **Ride requests.**
 
-- Average: 25,000,000 Ã· 86,400 â‰ˆ 289 a second.
+- Average: 25,000,000 ÷ 86,400 ≈ 289 a second.
 - Peak, at ten times average: about **2,900 requests a second**, which also
   covers a concert or a football match letting out in one city.
 
@@ -93,26 +93,26 @@ agree with the ride count. Assume a trip occupies its driver for 25 minutes
 (5 to reach the pickup, 20 with the rider), and that drivers spend half their
 online time on trips.
 
-- Driver time on trips: 25,000,000 Ã— 25 = 625 million driver-minutes a day.
+- Driver time on trips: 25,000,000 × 25 = 625 million driver-minutes a day.
 - Online time, at half busy: 1.25 billion driver-minutes a day.
-- Average online: 1,250,000,000 Ã· 1,440 minutes â‰ˆ 868,000 drivers.
+- Average online: 1,250,000,000 ÷ 1,440 minutes ≈ 868,000 drivers.
 - Busiest hour, at three times average: about 2.6 million, so planning for
   **3 million** leaves some room.
 
 **Location updates.** One every 4 seconds per online driver:
 
-- Peak: 3,000,000 Ã· 4 = **750,000 updates a second**.
-- Average: 868,000 Ã· 4 â‰ˆ 217,000 a second.
+- Peak: 3,000,000 ÷ 4 = **750,000 updates a second**.
+- Average: 868,000 ÷ 4 ≈ 217,000 a second.
 - On the wire, an update is about 100 bytes of payload (driver, time, latitude,
   longitude, heading, speed, accuracy, sequence number), call it 200 bytes with
-  framing and encryption. At peak: 750,000 Ã— 200 = 150 MB a second, about
+  framing and encryption. At peak: 750,000 × 200 = 150 MB a second, about
   1.2 gigabits a second arriving at the gateways.
 
 **Latest positions in memory.** One entry per online driver, about 200 bytes
-with the index structures around it: 3,000,000 Ã— 200 = **600 MB**. That fits
+with the index structures around it: 3,000,000 × 200 = **600 MB**. That fits
 in one machine's memory many times over. What doesn't fit on one machine is
 the write rate. Assume one in-memory index node applies about 200,000 updates
-a second, and plan it at half that to leave headroom: 750,000 Ã· 100,000 = 7.5,
+a second, and plan it at half that to leave headroom: 750,000 ÷ 100,000 = 7.5,
 so at least 8 nodes. The index is split by area (the geospatial deep dive
 explains why), and areas are uneven, so plan **12 index shards** and move
 areas between them as load shifts.
@@ -120,27 +120,27 @@ areas between them as load shifts.
 **Location history.** Every update is also appended to a log, kept 3 days for
 the batch jobs that read it:
 
-- Per day: 217,000 Ã— 86,400 â‰ˆ 18.7 billion updates.
+- Per day: 217,000 × 86,400 ≈ 18.7 billion updates.
 - At 100 bytes stored each: about 1.9 TB a day, 5.6 TB for 3 days, and about
   17 TB with three copies.
 
 The updates sent during a trip are also archived for good, as the trip's route
 (for receipts, disputes and safety reviews). A 25-minute trip at one update
-every 4 seconds is 25 Ã— 60 Ã· 4 = 375 updates, 37.5 KB. Across 25 million
+every 4 seconds is 25 × 60 ÷ 4 = 375 updates, 37.5 KB. Across 25 million
 trips that is about 0.94 TB a day, **about 340 TB a year** before compression,
 in cheap object storage.
 
 **Trips in progress and live tracking.**
 
-- Average concurrent trips: 25,000,000 Ã— 25 minutes Ã· 1,440 â‰ˆ 434,000.
+- Average concurrent trips: 25,000,000 × 25 minutes ÷ 1,440 ≈ 434,000.
 - Busiest hour, three times that: about 1.3 million.
 - Each rider on a trip gets their driver's position every 4 seconds:
-  1,300,000 Ã· 4 = **325,000 pushes a second** at peak.
+  1,300,000 ÷ 4 = **325,000 pushes a second** at peak.
 
 **Open connections.** Every online driver holds a persistent connection (it
 carries offers), and so does every rider with a trip under way:
 3,000,000 + 1,300,000 = 4.3 million at peak. Assume a gateway server holds
-200,000 connections and plan at half: 4,300,000 Ã· 100,000 = 43, so about
+200,000 connections and plan at half: 4,300,000 ÷ 100,000 = 43, so about
 **45 gateway servers**.
 
 **Trip and driver state writes.** A trip's row is written about six times over
@@ -149,25 +149,25 @@ finished), and its driver's row about four (claimed for an offer, then
 accepted or released, and freed at the end, with 1.43 offers per request as
 worked out below).
 
-- Trip rows: 25,000,000 Ã— 6 = 150 million writes a day, 1,736 a second on
+- Trip rows: 25,000,000 × 6 = 150 million writes a day, 1,736 a second on
   average, about **17,400 a second** at the ten-times peak.
-- Driver rows: 25,000,000 Ã— 4 = 100 million a day, about **11,600 a second**
+- Driver rows: 25,000,000 × 4 = 100 million a day, about **11,600 a second**
   at peak.
 - Outbox rows, on the trip shards: about five events per trip (two at
   request, three at completion; a cancellation writes its own instead), each
-  inserted and later marked sent by the relay, so 10 writes. 25,000,000 Ã— 10
+  inserted and later marked sent by the relay, so 10 writes. 25,000,000 × 10
   = 250 million a day, about **29,000 a second** at peak.
 - Together 17,400 + 11,600 + 29,000 = 58,000 writes a second at peak. Assume
   one database primary (defined in the data model) handles 5,000 such
-  single-row writes a second with headroom: 58,000 Ã· 5,000 â‰ˆ 12, so plan
+  single-row writes a second with headroom: 58,000 ÷ 5,000 ≈ 12, so plan
   **16 shards**.
-- Stored trips: at 2 KB a row, 25,000,000 Ã— 2 KB = 50 GB a day, about 18 TB a
+- Stored trips: at 2 KB a row, 25,000,000 × 2 KB = 50 GB a day, about 18 TB a
   year.
 
 **Offers.** Assume 70% of offers are accepted and the rest are declined or
 ignored. The number of offers until one is accepted then averages
-1 Ã· 0.7 â‰ˆ 1.43, so about 2,900 Ã— 1.43 â‰ˆ **4,100 offers a second** at peak. A
-request needs three or more failed offers 0.3 Ã— 0.3 Ã— 0.3 â‰ˆ 2.7% of the time.
+1 ÷ 0.7 ≈ 1.43, so about 2,900 × 1.43 ≈ **4,100 offers a second** at peak. A
+request needs three or more failed offers 0.3 × 0.3 × 0.3 ≈ 2.7% of the time.
 
 What the estimates say: the location path is a write-heavy stream about 260
 times the size of the ride path (750,000 against 2,900 a second), made of
@@ -190,7 +190,7 @@ driver entry (one per online driver)
   trip_id       the trip the phone says it is on, if any
   cell          the grid cell the position falls in
 
-cell â†’ set of driver_ids currently in that cell
+cell → set of driver_ids currently in that cell
 ```
 
 `status_hint` is only a filter for choosing candidates. The authoritative
@@ -258,14 +258,14 @@ Everything else is ordinary HTTPS.
 **Driver app, over its WebSocket:**
 
 ```text
-â†’ location  { "lat": 51.5033, "lng": -0.1196, "heading": 270, "speed": 8.3,
+→ location  { "lat": 51.5033, "lng": -0.1196, "heading": 270, "speed": 8.3,
               "accuracy": 6, "device_time": "2026-09-28T18:04:12.200Z",
               "session": 81, "seq": 5213, "status": "on_trip",
               "trip_id": "t-9" }
-â† offer     { "offer_id": "t-9#2", "pickup": {...}, "pickup_eta_s": 240,
+← offer     { "offer_id": "t-9#2", "pickup": {...}, "pickup_eta_s": 240,
               "expires_in_s": 15 }
-â†’ accept    { "offer_id": "t-9#2" }       or  decline { "offer_id": "t-9#2" }
-â† offer_result { "offer_id": "t-9#2", "result": "matched" | "expired" | "cancelled" }
+→ accept    { "offer_id": "t-9#2" }       or  decline { "offer_id": "t-9#2" }
+← offer_result { "offer_id": "t-9#2", "result": "matched" | "expired" | "cancelled" }
 ```
 
 Going online and offline is `POST /v1/drivers/me/status` with
@@ -279,7 +279,7 @@ POST /v1/quotes
 { "pickup": {"lat": 51.5007, "lng": -0.1246}, "dropoff": {...}, "product": "standard" }
 
 200 OK
-{ "quote": "eyJwcmljZSI6...", "price": "Â£14.20", "surge": 1.3,
+{ "quote": "eyJwcmljZSI6...", "price": "£14.20", "surge": 1.3,
   "pickup_eta_s": 300, "expires_at": "2026-09-28T18:09:00Z" }
 ```
 
@@ -500,8 +500,8 @@ the areas are common.
 **Geohash cells.** A **geohash** cuts the world into a grid of rectangles by
 repeatedly halving longitude and latitude, and names each cell with a short
 string; each extra character splits a cell into 32 smaller ones. At the
-equator, 5 characters is a cell of about 4.9 Ã— 4.9 km, 6 characters about
-1.2 km wide by 0.61 km tall, and 7 characters about 153 Ã— 153 m. Points in the
+equator, 5 characters is a cell of about 4.9 × 4.9 km, 6 characters about
+1.2 km wide by 0.61 km tall, and 7 characters about 153 × 153 m. Points in the
 same cell share a prefix, so "nearby" becomes "same prefix," which ordinary
 sorted structures handle well; Redis's geospatial commands, for instance, keep
 members in a sorted set scored by a 52-bit geohash and answer radius queries
@@ -515,7 +515,7 @@ neighbours, and four of those neighbours touch only at a corner, so their
 centres are about 1.4 times farther away than the other four: the search area
 is a lumpy square, not a circle. The second is that the cells are fixed in
 degrees, so they narrow as latitude rises. A 6-character cell is 1.2 km wide at
-the equator, about 0.92 km in New York and about 0.6 km at 60Â° north. A
+the equator, about 0.92 km in New York and about 0.6 km at 60° north. A
 per-area count (such as surge's supply and demand) then compares areas of
 different sizes from city to city.
 
@@ -533,11 +533,11 @@ with density, so there's no stable area to attach a surge price to.
 
 **A hexagonal grid (H3-style).** H3 is an open-source system that tiles the
 globe with hexagons at 16 resolutions, each resolution's cells about one
-seventh the area of the one above. Resolution 8 cells average about 0.74 kmÂ²
-(roughly 0.9 km across), and resolution 7 cells about 5.2 kmÂ². A hexagon has
+seventh the area of the one above. Resolution 8 cells average about 0.74 km²
+(roughly 0.9 km across), and resolution 7 cells about 5.2 km². A hexagon has
 six neighbours, every one sharing a full edge and every one's centre the same
 distance away, so "this cell and its neighbours" is a much rounder area than a
-3 Ã— 3 block of squares. The cells are close to equal in area everywhere, which
+3 × 3 block of squares. The cells are close to equal in area everywhere, which
 makes counts per cell comparable across cities. The costs: converting a
 latitude and longitude to a cell is more arithmetic than a geohash (still
 trivial next to a network round trip), there is a library to depend on, and hexagons don't
@@ -555,8 +555,8 @@ most about one update in 16 (roughly 45,000 a second at peak, fewer since
 many drivers are parked) touches two sets.
 
 A search starts with the pickup's cell and the ring around it, 7 cells,
-about 5.2 kmÂ². If that yields fewer than 10 available drivers, it widens to
-the next ring, 19 cells and about 14 kmÂ², and so on up to a limit. The
+about 5.2 km². If that yields fewer than 10 available drivers, it widens to
+the next ring, 19 cells and about 14 km², and so on up to a limit. The
 candidates are sorted by straight-line distance and the closest 10 go to the
 routing service for driving times in one call, because 300 m across a river
 with no bridge can be a 10-minute drive. At 2,900 requests a second that's
@@ -569,7 +569,7 @@ movement itself.
 **Splitting the index across shards.** The 12 shards could divide drivers by
 driver ID, which spreads updates perfectly evenly, but then every search has
 to ask all 12 shards and merge the answers. Or they could divide by area: each
-resolution-4 cell (about 1,770 kmÂ², a few tens of kilometres across) is
+resolution-4 cell (about 1,770 km², a few tens of kilometres across) is
 assigned to one shard, and a driver's updates go to the shard owning the
 area they're in. A search then usually touches one shard, or two near an area
 edge. The cost of splitting by area is hot spots: the shard holding central
@@ -756,10 +756,10 @@ started by a phone on a mobile network, which may time out, retry, or send the
 same tap twice.
 
 ```text
-requested   â†’ matched, cancelled
-matched     â†’ arriving, in_progress, cancelled
-arriving    â†’ in_progress, cancelled
-in_progress â†’ completed
+requested   → matched, cancelled
+matched     → arriving, in_progress, cancelled
+arriving    → in_progress, cancelled
+in_progress → completed
 completed   (terminal)
 cancelled   (terminal)
 ```
