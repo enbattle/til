@@ -1,0 +1,22 @@
+# One login code sent by SMS, from the auth service's request to the carrier's
+# delivery receipt. Only the send is on the hot path; the receipt arrives later.
+shape: sequence_diagram
+
+auth: Auth
+api: API
+fanout: Fan-out
+sender: SMS sender
+sms: SMS provider
+tracking: Tracking
+
+auth -> api: "POST\n/v1/notifications"
+api -> fanout: "high queue"
+api -> auth: "202"
+fanout -> fanout: "prefs, locale"
+fanout -> sender: "sms-high"
+sender -> sender: "claim\n(send state)"
+sender -> sms: "send text"
+sms -> sender: "accepted, ID"
+sender -> sender: "mark sent\n(send state)"
+sender -> tracking: "sent\n(status queue)"
+sms -> tracking: "receipt\n(webhook,\nstatus queue)"

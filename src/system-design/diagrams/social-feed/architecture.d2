@@ -1,0 +1,44 @@
+# High-level architecture of the social feed. Images go straight to object
+# storage and out through a CDN (one node here). Posts, likes and follows
+# become events that workers turn into resized images, timeline edits and
+# counts; a worker republishes each celebrity post for the app servers'
+# in-memory lists. The feed is read from a timeline and hydrated from the
+# post store and the post cache in front of it (one node here).
+direction: down
+
+client: Mobile or web client
+app: App servers {
+  style.multiple: true
+}
+queue: Event queue {
+  shape: queue
+}
+workers: Workers {
+  style.multiple: true
+}
+timelines: Timeline cache {
+  shape: stored_data
+}
+posts: "Post store\n+ post cache" {
+  shape: cylinder
+}
+graph: Follow graph {
+  shape: cylinder
+}
+media: "Object storage\n+ CDN" {
+  shape: cylinder
+}
+
+client -> app: "API calls"
+client -> media: "upload,\nimages"
+app -> timelines: "read,\nown post"
+app -> posts: "writes,\nreads, likes"
+app -> graph: "follows"
+app -> queue: "posts, likes,\nfollows"
+queue -> workers
+workers -> queue: "celebrity\nposts"
+queue -> app: "celebrity\nposts"
+workers -> media: "resize"
+workers -> posts: "live, counts,\nauthor_posts"
+workers -> graph: "followers"
+workers -> timelines: "push,\nremove IDs"
