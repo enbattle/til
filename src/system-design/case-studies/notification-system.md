@@ -17,13 +17,12 @@ SMS gateway that passes texts on to the phone carriers. The notification system
 never talks to a phone directly; it hands each message to a provider and hears
 back, sometimes, whether it arrived.
 
-It is a good design exercise because almost nothing about it is a hard
-computation. The difficulty is in the plumbing: one event turns into many
-sends, the sends share providers that cap how fast you may call them, a login
-code and a sale announcement compete for the same capacity, and every step can
-fail after it has already had an effect. What follows is one plausible design
-for a service like this, not a description of how any particular company built
-theirs.
+The difficulty is in the plumbing: one event turns into many sends, the sends
+share providers that cap how fast you may call them, a login code and a sale
+announcement compete for the same capacity, and every step can fail after it
+has already had an effect.
+What follows is one plausible design for a service like this, not a
+description of how any particular company built theirs.
 
 ## At a glance
 
@@ -66,7 +65,7 @@ theirs.
 
 - What if a user opts out while their message is queued? Preferences are
   checked at fan-out, and campaign pacing keeps only about two minutes queued
-  ([preferences](#deep-dive-preferences-quiet-hours-and-templates)).
+  ([priority](#deep-dive-priority-and-per-channel-queues)).
 - How is a provider's limit shared? Both email pools draw from one counter of
   20,000 a second; the campaign gets 20,000 minus the larger of transactional
   usage and a 4,000 floor
@@ -85,7 +84,7 @@ The components, and one login code's path through them, are in
 
 ## Requirements
 
-Functional requirements say what the system does:
+Functional requirements:
 
 - **Send.** Another backend service asks for a notification of a registered
   **type** (such as `order_shipped` or `login_code`) to one user, with the
@@ -94,25 +93,22 @@ Functional requirements say what the system does:
   in-app.
 - **Priority.** Every type is either **transactional**, something the user
   is waiting for or must know (a login code, a password reset, an order
-  update, a security alert), or **marketing** (a sale, a newsletter, a "we
-  miss you"). Transactional messages go first, always.
-- **Preferences.** Users can turn off a category of notification per channel
-  ("no marketing email", "no SMS at all"), and set **quiet hours**, a nightly
-  window in their own time zone when the phone shouldn't buzz. Both are
-  checked before anything is sent.
-- **Templates and languages.** Message text comes from templates written once
-  per type, channel and language, filled in with the request's values in the
-  user's own language.
+  update, a security alert), or **marketing** (a sale, a newsletter).
+  Transactional messages go first, always.
+- **Preferences.** Users can turn off a category per channel ("no marketing
+  email"), and set **quiet hours**, a nightly window in their own time zone
+  when the phone shouldn't buzz.
+- **Templates.** Message text comes from templates per type, channel and
+  language, filled in with the request's values.
 - **Campaigns.** A marketing team can send one type to a large list of users,
   and cancel it part way through.
 - **Tracking.** Each send records its progress (sent, delivered, opened or
-  failed), and the calling service can look up what happened.
+  failed) for the caller to look up.
 
-Out of scope: building the audience lists that campaigns go to (they arrive
-as a finished list of user IDs), writing and approving templates (they are
-already stored), A/B tests, a reporting dashboard, and chat messages between
-users, which have their own delivery and ordering needs. How a provider gets
-a message from its servers to the phone is its business, not ours.
+Out of scope: building campaign audience lists (they arrive as a finished list
+of user IDs), writing templates, A/B tests, a reporting dashboard, and chat
+messages between users. How a provider gets a message from its servers to the
+phone is its business, not ours.
 
 Non-functional requirements, as numbers:
 
@@ -127,8 +123,7 @@ Non-functional requirements, as numbers:
 - **Latency:** a transactional message is handed to its provider within
   2 seconds of the request being accepted, at the 99th percentile (p99, the
   time 99% of messages beat), and that holds while the largest campaign is
-  running. Login codes usually expire within about 10 minutes, so a code
-  that arrives late is a failed login.
+  running. Login codes usually expire within about 10 minutes.
 - **Availability:** accepting requests 99.99% (about 4.3 minutes of downtime
   in a 30-day month: 30 × 24 × 60 = 43,200 minutes, and 0.01% of that is
   4.32). If the notification system can't accept a login code, nobody who
@@ -139,18 +134,16 @@ Non-functional requirements, as numbers:
 - **Tracking lag:** a send's status is queryable within a minute, and kept
   for 90 days.
 
-The delivery requirement holds the central tension. "Never lost" and "never
-twice" pull against each other, and the section on sending exactly once
-explains why the design can't have both perfectly.
+"Never lost" and "never twice" pull against each other, and the exactly-once
+deep dive explains why the design can't have both perfectly.
 
 ## Back-of-the-envelope estimates
 
-The estimates find which parts of the design are under pressure. Two rules of
-thumb from
+Two rules of thumb from
 [numbers every engineer should know](/engineering-practices/numbers-every-engineer-should-know)
 are used: one million requests a day is about 12 a second, and a system should
 be planned for a peak of about ten times its average. A day is
-24 × 60 × 60 = 86,400 seconds.
+86,400 seconds.
 
 **Transactional requests and sends.**
 
@@ -170,8 +163,7 @@ email per recipient.
 **The worst hour.** A campaign can run during the transactional peak, so the
 senders are planned for both at once: 24,000 + 14,000 = 38,000 sends a
 second, provisioned as **about 40,000**. The campaign alone is more than a
-third of that (14,000 ÷ 38,000 ≈ 37%), which is why the priority deep dive
-matters.
+third of that (14,000 ÷ 38,000 ≈ 37%).
 
 **By channel.** Splitting the day's 500 million sends (200 million
 transactional plus 300 million marketing) with assumed shares:
@@ -185,24 +177,21 @@ SMS        10 million       none         10 million
 ```
 
 - SMS: 10,000,000 ÷ 86,400 ≈ 116, about **120 a second on average and 1,200
-  at peak**. Small in volume, but it is the channel users are least patient
-  with, and each text costs money (under a cent in some countries, tens of
-  cents in others), so a duplicate text has a price.
+  at peak**. Small in volume, but each text costs money (under a cent in some
+  countries, tens of cents in others), so a duplicate text has a price.
 - Transactional email: 30,000,000 ÷ 86,400 ≈ 347, about **350 a second
   on average and 3,500 at peak**, the capacity the email channel must keep
   free for password resets while a campaign is running.
 
-**Tracking writes.** Each send produces up to four status updates over its
-life (queued, from fan-out; sent; then delivered or failed; then, for some,
-opened). Counting all four also covers the `skipped` records fan-out writes
-for channels a user has turned off, since only a fraction of sends are opened.
+**Tracking writes.** Each send produces up to four status updates (queued,
+sent, delivered or failed, and for some opened); counting all four also covers
+fan-out's `skipped` records, since only a fraction of sends are opened.
 
 - 500,000,000 × 4 = 2 billion updates a day; 2,000,000,000 ÷ 86,400 ≈
   23,148, about **23,000 a second on average**.
 - In the worst hour, 38,000 sends a second can produce up to 38,000 × 4 =
   **152,000 updates a second**, though deliveries and opens trail the sends by
-  seconds to hours. Writing each one on its own as it arrives would make
-  tracking the heaviest write load in the system.
+  seconds to hours.
 
 **Delivery log storage.** Allow 500 bytes per send, covering its IDs, channel,
 template, provider message ID, each status with a timestamp, and the store's
@@ -218,14 +207,12 @@ settings: 100,000,000 × 1 KB = **100 GB**. It is read once per request and
 once per campaign recipient, 12,000 + 14,000 = **26,000 reads a second at
 peak**, which a cache in front of the store handles comfortably.
 
-What the estimates say: no single number here is large for modern hardware.
-The pressure comes from sharing: 14,000 marketing sends a second competing
-with 24,000 transactional ones for the same providers, and 152,000 status
-updates a second that must not slow either of them down.
+No single number here is large for modern hardware. The pressure comes from
+sharing: 14,000 marketing sends a second competing with 24,000 transactional
+ones for the same providers, and 152,000 status updates a second that must not
+slow either of them down.
 
 ## Data model
-
-Five kinds of data, each with its own access pattern.
 
 **Requests**, one row per accepted request, keyed by an ID that doubles as
 the duplicate check (the exactly-once deep dive explains how it's built):
@@ -242,11 +229,10 @@ notification_requests
   fanned_out       boolean               true once all its sends are queued
 ```
 
-Rows are kept for 30 days: 100 million a day at about 1 KB each is
-100,000,000 × 1 KB × 30 = 3 TB. Campaign recipients don't get rows here. Each
-gets a notification ID built from the campaign ID and the user ID, and the
-campaign scheduler records how far through its list it has got, so a restart
-repeats at most one batch, whose sends the senders recognize as already made.
+Rows are kept for 30 days: 100,000,000 × 1 KB × 30 = 3 TB. Campaign
+recipients don't get rows here: each gets a notification ID built from the
+campaign and user IDs, and the scheduler records its place in the list, so a
+restart repeats at most one batch, whose sends the senders recognize.
 
 **Users and preferences**, read by user ID on every request:
 
@@ -264,8 +250,7 @@ preferences
   channels            which of push, email, SMS, in-app are allowed
 ```
 
-A **device token** is the address a push provider gives an app on one phone;
-sending to a user means sending to each of their current tokens.
+A **device token** is the address a push provider gives an app on one phone.
 
 **Types and templates**, a few thousand rows that change rarely and are cached
 in every worker's memory:
@@ -290,25 +275,19 @@ send_state
 
 There is no row until a sender claims the send, so a send that succeeds first
 time is written twice (claim, then result), at up to 2 × 38,000 = 76,000
-writes a second. Every write is **conditional** (the exactly-once deep dive
-gives the rules), so it needs a store that does conditional writes on one key
-cheaply. A key-value store fits, with
-rows expiring after 7 days: 500 million rows a day at about 200 bytes, kept 7
-days, is 500,000,000 × 200 × 7 = 700 GB.
+writes a second. Every write is **conditional**, so it needs a store that does
+conditional writes on one key cheaply. A key-value store fits, with rows
+expiring after 7 days: 500 million rows a day at about 200 bytes, kept 7 days,
+is 500,000,000 × 200 × 7 = 700 GB.
 
-**Delivery log**, the history callers and support staff query ("what did we
-send this user this week, and did it arrive?"), keyed by notification ID, with
-each send's status changes under it. That serves campaign sends too, whose IDs
-come from the campaign and user, for the full 90 days. A second table keyed by
-user ID and time lists each user's notification IDs, written once per send.
-Its load is almost all writes, appended in time order and deleted after
-90 days, which suits a
-wide-column store such as Cassandra: rows grouped under a key and sorted by a
-second column, with old data expiring on its own.
-[SQL vs. NoSQL](/systems-and-infrastructure/sql-vs-nosql) covers why that kind
-of store fits this shape and what it gives up. Users and preferences, by
-contrast, are small and edited by people, and a relational database with a
-cache in front is the simpler choice there.
+**Delivery log**, the history callers and support staff query, keyed by
+notification ID with each send's status changes under it, plus a table keyed
+by user ID and time. Its load is almost all writes, appended in time order and
+deleted after 90 days, which suits a wide-column store such as Cassandra: rows
+grouped under a key, sorted by a second column, expiring on their own
+([SQL vs. NoSQL](/systems-and-infrastructure/sql-vs-nosql)). Users and
+preferences are small and edited by people, so a relational database with a
+cache in front is simpler there.
 
 ## API design
 
@@ -329,24 +308,22 @@ Content-Type: application/json
 ```
 
 - `202 Accepted` with `{ "notification_id": "n_7Qf3k9" }`. **202** means
-  "received, will be processed", not "delivered": the sending happens
-  afterwards, and the caller can follow it with the ID.
+  "received, will be processed", not "delivered"; the caller can follow the
+  sending with the ID.
 - `400 Bad Request` for an unknown type or missing params the templates need.
 - `429 Too Many Requests` if the caller is over its request limit.
 
 The caller does not choose the priority. The type's registration does, so a
 team can't mark its marketing type "urgent" to jump the queue. The
 `Idempotency-Key` is a string the caller chooses once per intent and sends on
-every retry of it; the exactly-once deep dive shows what the system does with
-it.
+every retry of it.
 
-A service that sends notifications about its own database changes has a
-problem of its own before this call is even made: if it commits the order and
-then crashes before calling, the customer never hears about it. The
+A service that commits an order and then crashes before calling this API
+leaves the customer uninformed. The
 [outbox pattern](/systems-and-infrastructure/outbox-pattern) fixes that on the
 caller's side, by writing the request to a table in the same transaction as
-the order and sending it afterwards, and it pairs naturally with this API,
-because the outbox's retries arrive with the same idempotency key.
+the order and sending it afterwards, and its retries arrive with the same
+idempotency key.
 
 **Follow a notification:** `GET /v1/notifications/{id}` returns each send
 with its channel and status (`queued`, `sent`, `delivered`, `opened`,
@@ -357,16 +334,15 @@ with its channel and status (`queued`, `sent`, `delivered`, `opened`,
 start time returns `202` and a campaign ID; `POST /v1/campaigns/{id}/cancel`
 stops it sending further messages.
 
-**User-facing endpoints**, called by the apps: `PUT /v1/me/preferences` and
-`PUT /v1/me/quiet-hours`; `POST /v1/me/devices` to register a phone's push
-token when the app starts; `GET /v1/me/inbox` for the in-app list; and
-`POST /v1/me/notifications/{send_id}/events` for the app to report that a push
-arrived or was opened.
+**User-facing endpoints**, called by the apps: `PUT /v1/me/preferences`,
+`PUT /v1/me/quiet-hours`, `POST /v1/me/devices` to register a push token,
+`GET /v1/me/inbox`, and `POST /v1/me/notifications/{send_id}/events` to report
+that a push arrived or was opened.
 
 **Provider webhooks:** `POST /v1/webhooks/{provider}` receives the providers'
-own reports ("delivered", "bounced", "opened"). A **webhook** is an HTTP
-request a provider makes to our server when something happens on its side.
-Each is checked against the provider's signature before it is believed.
+reports ("delivered", "bounced"). A **webhook** is an HTTP request a provider
+makes to our server when something happens on its side; each is checked
+against the provider's signature.
 
 ## High-level architecture
 
@@ -375,122 +351,112 @@ Each is checked against the provider's signature before it is believed.
 The pieces, from the top:
 
 - The **Notification API** checks the caller, validates the request, works
-  out its notification ID and puts it on the high or low **request queue**
-  according to the type's priority, then answers `202`. It does no sending
-  itself, so it stays fast and available even when a provider is down.
-- The **campaign scheduler** turns a campaign into a stream of recipients,
-  released in batches at the pace the senders can take (the priority deep
-  dive).
+  out its notification ID, puts it on the high or low **request queue** by the
+  type's priority, and answers `202`. It does no sending, so it stays up when
+  a provider is down.
+- The **campaign scheduler** releases a campaign's recipients in batches at
+  the pace the senders can take (the priority deep dive).
 - **Fan-out workers** turn one request into its sends. For each request they
   read the user, their preferences and their devices; drop channels the user
   has turned off; apply quiet hours; choose the language; and put one message
   per send onto the right **channel queue**. They also publish a `queued`
   status for each send, and a `skipped` one, with its reason, for each channel
-  they dropped. "Fan-out" is the step where one
-  thing becomes many: `order_shipped` for a user with two phones and push,
-  email and in-app enabled becomes four sends (two push, one email, one
-  in-app).
+  they dropped. `order_shipped` for a user with two phones and push, email and
+  in-app enabled becomes four sends (two push, one email, one in-app).
 - **Channel queues** are separate
   [message queues](/systems-and-infrastructure/message-queues) per channel
   and per priority: `push-high`, `push-low`, `email-high`, `email-low`,
-  `sms-high` and `inapp-high`. A queue keeps each message until a
-  sender confirms it was handled, and gives it to another sender if the first
-  one dies, so a crash doesn't lose messages.
-- **Channel senders** are pools of workers, one pool per queue, each taking
-  a message, recording in the send-state store that it is sending, filling in
-  the template (loaded from the templates store and kept in memory), calling
-  the provider, and recording the result. The in-app sender's "provider" is our
-  own inbox store, plus a nudge over the app's live connection if it has one
-  open
-  ([WebSockets vs. SSE vs. long polling](/systems-and-infrastructure/websockets-vs-sse-vs-long-polling)
-  compares the ways of keeping one).
+  `sms-high` and `inapp-high`. A queue keeps each message until a sender
+  confirms it, so a crashed sender's message goes to another.
+- **Channel senders** are pools of workers, one pool per queue, each claiming
+  a send in the send-state store, filling in the template, calling the
+  provider and recording the result. The in-app sender's "provider" is our own
+  inbox store, plus a nudge over the app's live connection if one is open
+  ([WebSockets vs. SSE vs. long polling](/systems-and-infrastructure/websockets-vs-sse-vs-long-polling)).
 - The **dead-letter queue** collects messages that failed in a way retrying
   won't fix (the retry deep dive).
-- The **status endpoints** are the webhook and app-report endpoints from the
-  API section, run apart from the send API so a flood of receipts can't slow
-  requests down. They check each report and put it on the **status queue**,
-  where fan-out's and the senders' status events also go.
+- The **status endpoints** take the webhooks and app reports, run apart from
+  the send API so a flood of receipts can't slow requests down, and put each
+  checked report on the **status queue**, where fan-out's and the senders'
+  status events also go.
 - **Tracking workers** read the status queue and write to the **delivery
   log** in batches.
 
-Following one login code through it, as in the sequence below: the auth
-service calls `POST /v1/notifications` with type `login_code` and the code in
-`params`. The API puts it on the high request queue and answers `202`. A
-fan-out worker reads the user: SMS is allowed and the security category ignores
-quiet hours. It picks the template in the user's language, builds the send ID
-and puts one message on `sms-high`. An SMS sender claims that send ID in the
-send-state store, calls the SMS provider, gets back the provider's
-accepted-with-an-ID answer, and marks the send `sent`. It publishes a "sent"
-event for tracking without waiting for it to be stored. Seconds later, the
-carrier reports the text as delivered; the provider passes that on by webhook
-to the status endpoints, which put it on the status queue for tracking.
+One login code's path, in the sequence below: the API queues it on the high
+request queue and answers `202`; a fan-out worker finds SMS allowed (security
+ignores quiet hours), picks the template and puts one message on `sms-high`;
+an SMS sender claims the send, calls the provider, marks it `sent` and
+publishes a "sent" event without waiting; the delivery receipt arrives later
+by webhook.
 
 ![Sequence of one login code sent by SMS. The auth service (Auth) sends POST /v1/notifications to the Notification API (API), which puts it on the high request queue for a fan-out worker (Fan-out) and answers 202 Accepted. The fan-out worker checks preferences and picks the locale, then puts the message on the sms-high queue. The SMS sender claims the send in the send-state store, sends the text to the SMS provider, gets back "accepted" with the provider's message ID, and marks the send as sent in the send-state store. It puts a "sent" event on the status queue for tracking without waiting. Later, the SMS provider sends the delivery receipt by webhook to the status endpoints, which put it on the status queue for tracking.](/diagrams/notification-system/login-code-sequence.svg)
 
+**What fan-out decides.** Preferences are checked once, at fan-out, from the
+cache (26,000 reads a second at peak), not again in the sender just before the
+provider call, which would cost up to 38,000 more reads a second and make
+senders know about users. The gap is a user who opts out while their message
+waits in a queue; campaign pacing (the priority deep dive) keeps that to a
+couple of minutes. Unsubscribes, including one-click email unsubscribes and
+SMS STOP replies, arrive as ordinary preference updates that also delete the
+user's cache entry. For **quiet hours**, the campaign scheduler holds
+marketing by releasing each time zone's recipients in its daytime; a single
+marketing message from the API that meets quiet hours is recorded `skipped`
+with reason `quiet_hours`, since a nudge that arrives next morning has lost its point; non-urgent transactional messages go out as silent
+pushes rather than being held, since holding them would need a store of delayed sends and something to wake them; and the **security** category (login codes, "was this you?" alerts)
+goes out at any hour. The template is chosen by type, channel and **locale**
+(a language plus an optional region, such as `pt-BR`), falling back along
+`pt-BR` → `pt` → `en`. It's rendered in the sender, not at fan-out: at 30 KB
+of marketing HTML, 1.9 million queued campaign emails would be about 57 GB of
+queue. The queue message carries the template's **version**, so a retry an
+hour later renders exactly what the first attempt did.
+
 **Tracking stays off the send path.** Only the send-state writes are on the
 path a message travels, because they decide whether to send. Everything
-tracking stores is published and forgotten by the sender, then gathered by the
-tracking workers and written to the delivery log in batches every few
-seconds instead of one write per status. At 152,000 status updates a
-second in the worst hour, that batching is the difference between a
-delivery log that keeps up and one that slows the senders down;
-[batching and asynchronous writes](/systems-and-infrastructure/batching-and-asynchronous-writes)
-covers the trade. Here it costs a status that's a few seconds stale. Status
-events and webhook receipts wait on a status queue until their batch is
-written, so a tracking worker that dies mid-batch causes a replay, not a loss,
-and replaying is harmless because recording "delivered" twice leaves the same
-record as recording it once.
+tracking stores is published and forgotten by the sender, then written to the
+delivery log in batches every few seconds instead of one write per status. At
+152,000 status updates a second in the worst hour, that batching keeps the
+delivery log from slowing the senders down
+([batching and asynchronous writes](/systems-and-infrastructure/batching-and-asynchronous-writes)
+covers the trade), at the cost of a status that's a few seconds stale. A
+tracking worker that dies mid-batch causes a replay from the status queue,
+and recording "delivered" twice leaves the same record as recording it once.
 
-What "delivered" means depends on the channel. For in-app, it means the entry
-was written to the user's inbox. An SMS provider passes on the carrier's
-**delivery receipt**. An email provider reports whether the receiving mail
-server accepted or rejected the message (a **bounce**), which says the mailbox
-took it, not that anyone saw it. The push services confirm that they accepted a
-message but don't call the
-sender back per message when it reaches the phone (FCM can export Android
-delivery data in bulk after the fact, which is useful for statistics but not
-for one send's live status), so the app reports that itself: it calls the
-events endpoint when a notification arrives or is tapped. "Opened" for email
-comes from a tiny image in the message that loads when it's viewed, and some
-mail apps now download every image in advance
-through a proxy whether or not the message is read, so email opens are an
-estimate.
+"Delivered" differs by channel: written to the inbox for in-app, the
+carrier's **delivery receipt** for SMS, the receiving mail server's acceptance
+(or rejection, a **bounce**) for email. The push services confirm only that
+they accepted a message, so the app reports arrival and taps itself. Email
+"opened" comes from a tiny image that some mail apps fetch in advance, so it
+is an estimate.
 
 ## Deep dive: priority and per-channel queues
 
 The requirement is that a login code reaches its provider within 2 seconds
 while a 50-million-message campaign is going out. Consider the email channel,
 assuming the email provider lets this account send **20,000 messages a
-second**. The campaign's fan-out can produce messages far faster than that,
-since checking a preference and choosing a template takes microseconds, so
-millions of campaign emails can be waiting in a queue within minutes.
+second**. Fan-out can produce campaign messages far faster than that, so
+millions can be waiting within minutes.
 
 **One queue for everything.** Every send, of every channel and priority,
 goes into one queue, first in, first out. It's the least to build and run. A
 password-reset email that arrives behind the campaign waits for all of it:
-up to 50,000,000 ÷ 20,000 = 2,500 seconds, about **42 minutes**, well past the
-2-second target and past the reset link's usefulness. A single slow provider
-also stalls everything: if the SMS gateway starts timing out, SMS messages hold
-up the push and email messages behind them.
+up to 50,000,000 ÷ 20,000 = 2,500 seconds, about **42 minutes**. A single slow
+provider also stalls everything: if the SMS gateway starts timing out, SMS
+messages hold up the push and email messages behind them.
 
-**A priority field in one queue.** Some brokers can hand out higher-priority
-messages first from a single queue. That fixes the ordering, but the
-priorities still share one pool of workers and one provider limit: if every
-worker is busy waiting on a slow marketing send, the login code has no one to
-pick it up. Many popular queues also don't offer this at all. A
-**partitioned log**, for instance, stores messages as an append-only list split
-into partitions and hands each partition's messages out strictly in the order
-they were written, so there is no way for one to jump ahead.
+**A priority field in one queue.** Some brokers hand out higher-priority
+messages first. That fixes the ordering, but the priorities still share one
+pool of workers and one provider limit: if every worker is waiting on a slow
+marketing send, the login code has no one to pick it up. A **partitioned
+log** can't do it at all, since it hands out messages strictly in order.
 
 **Separate queues per channel and per priority.** One queue per
 (channel, priority), each with its own pool of senders. A backed-up
-`email-low` doesn't touch `email-high`, whose senders are idle and waiting when
-the reset arrives, and a failing SMS gateway only fills `sms-high`. The costs:
-six queues and pools (`push-high`, `push-low`, `email-high`, `email-low`,
-`sms-high`, `inapp-high`) to size, watch and scale instead of one; capacity
-held back for the high queues that sits partly idle most of the day; and a
-rule for sharing each provider's limit between the two priorities, since the
-provider sees one account, not two queues.
+`email-low` doesn't touch `email-high`, whose senders are idle when the reset
+arrives, and a failing SMS gateway only fills `sms-high`. The costs: six
+queues and pools to size, watch and scale instead of one; capacity held back
+for the high queues that sits partly idle most of the day; and a rule for
+sharing each provider's limit between the two priorities, since the provider
+sees one account, not two queues.
 
 This design uses separate queues. Both email pools draw from one shared
 counter of 20,000 sends a second
@@ -498,117 +464,32 @@ counter of 20,000 sends a second
 such a limit hold across many machines). The high pool may take whatever it
 needs. The low pool may take 20,000 minus the larger of two numbers: what the
 high pool is using right now, or a floor of **4,000 a second**, the
-3,500-a-second transactional email peak from the estimates, rounded up. As
-long as transactional email stays within its 4,000, which covers the estimated
-peak, the campaign gets 20,000 − 4,000 = 16,000 a second, above the 14,000 it
-needs to finish in an hour. The floor keeps 4,000 a second of provider
-capacity free even when transactional email is quiet, so a sudden burst of
-resets finds room up to that rate at once. A surge beyond 4,000 eats into the
-campaign's share, and because usage is measured over the last second, the
-first moments of one can push combined demand past 20,000 and draw `429`s
-from the provider. Those land on both pools; a `429` pauses the low pool for
-the provider's `Retry-After` time while rejected transactional sends are
-retried first, so the campaign absorbs the overshoot. If a campaign also goes
-out by push, `push-low` is paced the same way against the push services'
-limits.
+3,500-a-second transactional email peak rounded up. While transactional email
+stays within that floor, the campaign gets 20,000 − 4,000 = 16,000 a second,
+above the 14,000 it needs to finish in an hour, and a sudden burst of resets
+finds room at once. A surge beyond 4,000 eats into the campaign's share; its
+first moments can push combined demand past 20,000 and draw `429`s, and a
+`429` pauses the low pool for the provider's `Retry-After` time while rejected
+transactional sends are retried first. If a campaign also goes out by push,
+`push-low` is paced the same way.
 
 Each pool's size follows from its rate and how long one provider call takes.
-If a call to the email provider takes about 100 ms, the two email pools
-together, sending up to 20,000 a second, have 20,000 × 0.1 = **2,000 calls in
-flight** at any moment, so they need that many concurrent workers or
-connections between them. That is Little's law, rate times time in the
-system, from
+At about 100 ms a call, the two email pools sending 20,000 a second have
+20,000 × 0.1 = **2,000 calls in flight**, so they need that many concurrent
+workers or connections between them. That is Little's law, from
 [latency vs. throughput](/systems-and-infrastructure/latency-vs-throughput);
-[worker pools](/systems-and-infrastructure/worker-pools) covers using queue
-depth to tell when a pool needs more workers.
+[worker pools](/systems-and-infrastructure/worker-pools) covers scaling a pool
+on queue depth.
 
 **The campaign scheduler doesn't dump the whole list at once.** It feeds the
 fan-out only while `email-low` holds less than about two minutes of sending,
-16,000 × 120 ≈ 1.9 million messages, and waits when it's above that. This is
-[backpressure](/systems-and-infrastructure/backpressure): the slow stage (the
-provider's limit) sets the pace of the fast one (the fan-out), rather than a
-queue swelling to 50 million. It buys two things here. Cancelling a campaign
-stops it within about two minutes, because only the queued messages are
-already committed. And a preference changed mid-campaign ("stop sending me
-these") is read when that user's batch is fanned out, not an hour earlier.
-
-## Deep dive: preferences, quiet hours and templates
-
-Before a send exists, three questions are asked for its user: is this channel
-allowed for this category, is it the middle of their night, and what language
-and words should it use. Where and when to ask is the design choice.
-
-**When to check preferences.** One option is to check only at fan-out, when
-sends are created. That's one read per request, 26,000 a second at peak,
-answered from the cache. Its weakness is the gap between fan-out and sending:
-a user who opts out of marketing email while their message waits in
-`email-low` still gets it. The other option is to check again in the sender,
-immediately before the provider call. That closes the gap, at the cost of a
-second preference read per send (up to 38,000 a second, also from the cache)
-and a sender that needs to know about users rather than only about providers.
-
-The design checks at fan-out and keeps the gap short, rather than checking
-twice. With backpressure, a campaign message waits at most a couple of
-minutes, and transactional queues are nearly empty. For marketing, an opt-out
-that takes effect within minutes is what users expect. It must be honored
-promptly: anti-spam laws in many countries require marketing messages to carry
-a working opt-out, large mailbox providers also require bulk senders to offer
-one-click unsubscribe (a standard email header), and SMS recipients can reply
-STOP. Those unsubscribes arrive at the
-preferences store as ordinary updates, and the cache entry for that user is
-deleted at the same time, so the next fan-out reads the new setting.
-
-**Quiet hours.** A message whose user is in their quiet hours can be dropped,
-delivered anyway without sound, or held until the window ends. Dropping loses
-messages people wanted ("your order has shipped"). Holding is right for
-marketing, and for a campaign it comes almost free: the scheduler already
-walks the audience in batches, so it groups recipients by time zone and
-releases each group when it's daytime there, and a user whose own quiet hours
-differ from the default is simply put back for a later batch. A single
-marketing message from the API, such as an abandoned-cart reminder, that meets
-the user's quiet hours is dropped and recorded as `skipped` with reason
-`quiet_hours`: a nudge that arrives the next morning has lost its point, and
-dropping it avoids building a store of delayed sends. For a single
-transactional message, holding would need a store of delayed sends and
-something that wakes them up; the design instead sends non-urgent
-transactional messages at night silently (push services let a notification
-arrive quietly, without a sound and, on recent phones, without lighting the
-screen, to be seen in the morning). The **security** category, login codes and
-"was this you?" alerts, goes out normally at any hour: a login code is useless
-by morning, and a warning about someone else signing in is urgent whenever it
-happens.
-
-**Templates and languages.** The fan-out worker picks each send's template by
-type, channel and **locale**, a language plus an optional region such as
-`pt-BR` (Portuguese as written in Brazil). When a translation is missing it
-falls back along a chain, `pt-BR` → `pt` → `en`, so a new language never
-blocks a send. Two ways to fill the template in:
-
-- **Render at fan-out**, putting the finished text into the queue message.
-  The sender stays simple and every retry sends identical text. But a
-  marketing email's HTML is often tens of kilobytes; at 30 KB, 1.9 million
-  queued campaign emails are about 57 GB of queue, against a few hundred
-  bytes per message otherwise.
-- **Render in the sender**, with the queue message carrying the template's ID,
-  its **version** and the values. Queues stay small, and the templates, a few
-  thousand of them, sit in each sender's memory. Pinning the version at
-  fan-out keeps the one property that matters from the first option: a retry
-  an hour later renders exactly what the first attempt did, even if someone
-  edited the template in between.
-
-The design renders in the sender. One localization detail changes costs on
-the SMS channel. A text is billed per **segment**. The **GSM alphabet** is the
-7-bit character set SMS was designed around: unaccented Latin letters, digits,
-common punctuation and a handful of accented letters. A text written entirely
-in it fits 160 characters in one segment; a longer one is split into parts of
-153, since each part gives up room to a header that lets the phone join them
-back together. One character outside the alphabet,
-which includes most non-Latin scripts, every emoji, and accented letters such
-as Portuguese ã and õ, switches the whole text to a 16-bit encoding that fits
-70 characters, or 67 per part. A login code template that fits one segment in
-English can need two in Russian, or in Portuguese once a single ã appears, so
-each template's rendered length per locale is worth checking when it's
-written.
+16,000 × 120 ≈ 1.9 million messages. This is
+[backpressure](/systems-and-infrastructure/backpressure): the provider's limit
+sets the pace of the fan-out, rather than a queue swelling to 50 million. It
+buys two things. Cancelling a campaign stops it within about two minutes,
+because only the queued messages are already committed. And a preference
+changed mid-campaign ("stop sending me these") is read when that user's batch
+is fanned out, not an hour earlier.
 
 ## Deep dive: exactly-once processing, but not exactly-once delivery
 
@@ -617,27 +498,22 @@ message twice, after a crash or a retry, and each step needs its own duplicate
 check. [Idempotency](/systems-and-infrastructure/idempotency) is the property
 being built: doing a step twice has the same effect as doing it once.
 
-**At the API and fan-out.** The caller's `Idempotency-Key` and the caller's
-name are hashed together into the `notification_id`, so a retry of the same
-request gets the same ID. The API only enqueues the request and answers `202`
-with that ID; a retry puts a second copy on the queue. The fan-out worker
-inserts the request into `notification_requests` only if the ID is new. If the
-row is already there and marked `fanned_out`, the copy is a duplicate and is
-dropped. If it's there but not marked, an earlier worker died part way through,
-so this one fans out again.
-
-The check lives in fan-out, not in the API, so that the API makes one durable
-write before answering. If the API recorded "seen this key" and then enqueued,
-a crash between the two would leave a key that turns away every retry for a
-request no worker ever received.
+**At the API and fan-out.** The caller's `Idempotency-Key` and name are
+hashed into the `notification_id`, so a retry gets the same ID. The API only
+enqueues and answers `202`; a retry puts a second copy on the queue. Fan-out
+inserts the request into `notification_requests` only if the ID is new: a row
+marked `fanned_out` means the copy is dropped, an unmarked one means an
+earlier worker died part way, so this one fans out again. The check lives in
+fan-out so the API makes one durable write before answering; an API that
+recorded "seen this key" and crashed before enqueuing would turn away every
+retry of a request no worker received.
 
 **Send IDs.** Each send's ID is built from the notification ID, the channel
-and the address (the device token, email address or phone number), so
-re-running fan-out for the same request produces the same send IDs, not new
-ones. A send enqueued twice is then two copies of the same send, which the
-sender can catch.
+and the address (device token, email address or phone number), so re-running
+fan-out produces the same send IDs, and a send enqueued twice is two copies of
+one send.
 
-**At the sender**, which is where the hard case lives. Every `send_state`
+**At the sender**, the hard case. Every `send_state`
 write is a **compare-and-set**: it succeeds only if `lease_version` is still
 the value the sender just read, and it bumps the version. To claim a send, the
 sender creates the row as `sending` with a **lease**, a deadline (say 30
@@ -646,40 +522,32 @@ lease run out. Then it calls the provider and writes the outcome. `sent`,
 `failed` and `expired` are final, and a copy that finds one is dropped. A
 temporary failure writes `retrying`, which releases the lease, and puts the
 message back on the queue with a delay. A copy that finds a live lease goes
-back with a delay too, in case the holder dies. A lease is the same device a
-[distributed lock](/systems-and-infrastructure/distributed-locks) uses, with
-the same weakness: it can run out while its holder is still working.
+back with a delay too, in case the holder dies. The lease has the weakness a
+[distributed lock](/systems-and-infrastructure/distributed-locks) has: it can
+run out while its holder is still working.
 
-The trouble comes in three shapes. A sender crashes after the provider
-accepted the message and before `sent` was written. A provider call times out,
-or fails with an ambiguous server error (the retry deep dive lists which), so
-the sender itself doesn't know. Or a sender stalls past
-its lease, in a long garbage-collection pause (the runtime freezing the
-program while it reclaims memory) or a slow provider call, and carries on
-sending after another sender has taken the send over. In the first
-two, whoever handles the message next, the timed-out sender itself or the one
-that finds the expired lease, cannot tell whether the text already went out.
-There are two ways to resolve that:
+The trouble comes in three shapes: a sender crashes after the provider
+accepted the message and before `sent` was written; a provider call times out
+or fails with an ambiguous server error; or a sender stalls past its lease (a
+long garbage-collection pause or a slow call) and sends after another sender
+has taken over. In the first two, whoever handles the message next can't tell
+whether the text already went out, and has two choices:
 
 - **Send again**, which is at-least-once. Nothing is lost; a user
   occasionally gets two copies.
 - **Mark it failed and don't send**, which is at-most-once. Nothing is
   duplicated; a user occasionally gets nothing.
 
-Writing `sent` before calling the provider doesn't escape the choice; it only
-picks the second option for every crash in that gap. The underlying reason is
-that the provider and the send-state store are separate systems with no shared
-transaction: the provider's "accepted" can be lost on the network after the
-provider acted, and nothing on our side can undo a text that is already on its
-way to a phone. Past the provider, delivery to the device is outside our
-control altogether. Exactly-once _processing_ inside our own system is
-achievable with the checks above; exactly-once _effect_ on a phone is not.
+Writing `sent` before calling the provider only picks the second option for
+every crash in that gap. The provider and the send-state store share no
+transaction, and nothing on our side can recall a text already on its way to
+a phone. Exactly-once _processing_ inside our own system is achievable with
+the checks above; exactly-once _effect_ on a phone is not.
 
 The design chooses per category. **Transactional** sends are resent: a
-second copy of a login code is a mild annoyance, a missing one is a user who
-can't sign in. **Marketing** sends are marked `failed` with reason
-`unknown_outcome` and not resent: a missed sale email costs little, while a
-duplicate promotion is exactly the kind of annoyance that makes people
+second login code is a mild annoyance, a missing one is a user who can't sign
+in. **Marketing** sends are marked `failed` with reason `unknown_outcome`: a
+missed sale email costs little, while a duplicate promotion makes people
 unsubscribe. Where a provider accepts a caller-chosen idempotency key, as some
 email and SMS APIs do, the send ID goes there and the provider drops a second
 copy in all three cases; the per-category rule matters for providers that
@@ -688,153 +556,115 @@ don't.
 The stalled sender is narrowed rather than solved. Each provider call has a
 10-second timeout, well inside the 30-second lease, and a sender doesn't start
 a call with less than 15 seconds of lease left, so only a stall of many
-seconds gets through. The lease version in `send_state` works as the
-**fencing token** the distributed-locks topic describes: a stalled sender's
-late `sent` write carries an old version and is rejected, so it can't
-overwrite its replacement's record. The provider can't check our token, so
-without a provider idempotency key a transactional send caught this way goes
-out twice, which this design accepts as rare. (A marketing send can't double
-this way: its replacement doesn't resend.)
+seconds gets through. The lease version works as a **fencing token**: a
+stalled sender's late `sent` write carries an old version and is rejected, so
+it can't overwrite its replacement's record. The provider can't check our
+token, so without a provider idempotency key a transactional send caught this
+way goes out twice, which this design accepts as rare. (A marketing send can't
+double this way: its replacement doesn't resend.)
 
-On push, the notification ID is also passed as the collapse identifier
-(APNs's `apns-collapse-id`, at most 64 bytes, which a send ID holding a long
-device token could exceed; on Android, the notification `tag` through FCM).
-If the first copy is still on screen, the second replaces it, though it may
-still buzz; if the first was already opened or swiped away, the second shows
-up fresh. Collapse IDs soften duplicates rather than hide them.
-
-A plain redelivery never causes a duplicate. One needs a crash in the fraction
-of a second between the provider's acceptance and the `sent` write, a provider
-call that times out or fails ambiguously after the provider acted, or a stall longer than the lease
-allows for, and then only through a provider without idempotency keys.
+On push, the notification ID also goes in the collapse identifier (APNs's
+`apns-collapse-id`, at most 64 bytes; FCM's notification `tag`), so a second
+copy replaces the first if it's still on screen, though it may still buzz.
 
 ## Deep dive: retries, provider limits and the dead-letter queue
 
-Provider calls fail constantly at this volume, and not all failures are
-alike. Sorting them is the first job:
+Provider calls fail constantly at this volume, and the failures sort into
+three kinds:
 
-- **Temporary**, such as `429 Too Many Requests` (we went over our allowed
-  rate) or a `503 Service Unavailable` the provider documents as refused
-  before processing. Retry later. A timeout, a `502` or `504` (a proxy in
-  front of the provider gave up waiting) or any other `5xx` (HTTP's codes for
-  "the server failed", possibly after it acted) is temporary too, but it's
-  also the unknown outcome above, so it follows the per-category rule first:
-  transactional sends are retried, marketing ones marked `unknown_outcome`.
+- **Temporary**, such as `429 Too Many Requests` or a `503 Service
+Unavailable` the provider documents as refused before processing. Retry
+  later. A timeout, a `502`, `504` or any other `5xx` (possibly after the
+  provider acted) is temporary too, but it's also the unknown outcome above,
+  so transactional sends are retried and marketing ones marked
+  `unknown_outcome`.
 - **Permanent for this address**, such as a push token the provider says is no
   longer registered (the app was uninstalled), an email that **hard
   bounced** (the mailbox doesn't exist), or a number that can't receive SMS.
-  Don't retry; remove the token or mark the address unusable so no future
-  send tries it, and record the send as `failed`.
+  Don't retry; remove the token or mark the address unusable, and record the
+  send as `failed`.
 - **Our own bug**, such as a template that fails to render with this user's
-  values, or an error code the sender doesn't recognize. Retrying won't help
-  and nobody has decided what to do, so a person needs to look.
+  values, or an error code the sender doesn't recognize. A person needs to
+  look.
 
-**How to wait before retrying.** Waiting in place, with the worker sleeping
-until it's time, is the simplest, but with 2,000 calls in flight on the email
-channel a provider outage would soon leave every worker asleep and nothing
-moving, including sends to healthy providers if pools were shared. The
-alternative is to put the message back on its queue with a delay, which many
-queues support directly (or can mimic with a small set of retry queues with
-fixed delays, such as 10 seconds, 1 minute and 10 minutes, feeding back into
-the main one). The worker is free at once, and a retry costs a queue write
-instead of a sleeping worker. The design re-queues with a delay.
+**How to wait before retrying.** Sleeping in the worker is simplest, but with
+2,000 calls in flight on the email channel a provider outage would soon leave
+every worker asleep. Re-queuing the message with a delay, which many queues
+support directly (or mimic with a few fixed-delay retry queues), frees the
+worker at once for the cost of a queue write. The design re-queues.
 
 The delays double from 1 second and stop growing at 64, and each is
-randomized so failed sends don't all come back at once.
-[Exponential backoff](/systems-and-infrastructure/exponential-backoff) covers
-why both are needed; here they are what stops 16,000 campaign sends a second
-from hammering a provider that has just started refusing them. When a provider
-answers `429` with a `Retry-After`
-time, that wins over the schedule, and the shared rate counter is lowered for a
-while, since the provider's limit is evidently lower than configured.
+randomized so failed sends don't all come back at once
+([exponential backoff](/systems-and-infrastructure/exponential-backoff));
+that is what stops 16,000 campaign sends a second from hammering a provider
+that has just started refusing them. A `429` with a `Retry-After` time wins
+over the schedule, and the shared rate counter is lowered for a while.
 
 Retrying stops at a deadline per category, not after a fixed count. A login
 code's deadline is its `expires_at`, about 10 minutes out, room for at least
 14 retries (the first seven waits add up to at most 127 seconds, then at most
 64 each). An order update gets 6 hours, a marketing email 3. A sender that
 picks up a login code or a marketing message past its deadline records
-`expired` and drops it: neither is worth a person's time, and a long outage
-then ends in `expired` rows rather than millions of dead letters.
+`expired` and drops it, so a long outage ends in `expired` rows rather than
+millions of dead letters.
 
 **When any other transactional message passes its deadline, or the failure
-is our own bug**, the message goes to
-the [dead-letter queue](/systems-and-infrastructure/dead-letter-queue),
-where it stops being retried and stops blocking anything, and an alert tells
-someone it's there. Permanent address failures deliberately don't go there:
-they are an expected, handled outcome, and millions of dead tokens a day would
-bury the few messages that need a person. A dead-lettered message's
-send-state row stays `retrying`, not final, so once the bug is fixed a replay
-can claim it, while a copy of anything already sent still finds `sent` and is
-dropped.
+is our own bug**, the message goes to the
+[dead-letter queue](/systems-and-infrastructure/dead-letter-queue), where it
+stops being retried and an alert tells someone it's there. Permanent address
+failures don't: millions of dead tokens a day would bury the few messages that
+need a person. A dead-lettered message's send-state row stays `retrying`, so
+once the bug is fixed a replay can claim it, while a copy of anything already
+sent still finds `sent` and is dropped.
 
-**A provider that is down, not just slow.** If a provider fails every call
-for minutes, backoff alone still sends each message's retries into it. A
+**A provider that is down, not just slow.** Backoff alone still sends each
+message's retries into a dead provider. A
 [circuit breaker](/systems-and-infrastructure/circuit-breaker) per provider
 stops calling it after repeated failures, and messages stay on their queues
-until it recovers. For login codes there's a better fallback than waiting. The
-breakers live in the senders, so each sender pool publishes its breaker's state
-to a small shared key in the cache, and fan-out reads that key when it picks
-channels. While the SMS breaker is open, a new login code for a user with the
-app installed goes out by push or email instead, if the type's registration
+until it recovers. Each sender pool publishes its breaker's state to a small
+shared key in the cache, and fan-out reads that key when it picks channels.
+While the SMS breaker is open, a new login code for a user with the app
+installed goes out by push or email instead, if the type's registration
 allows it; codes already on `sms-high` wait there and expire.
 
 ## Failure modes and bottlenecks
 
 **A provider outage.** Its channel's queues grow while everything else keeps
-flowing, because every channel has its own queues and pools. The queues must
-hold the backlog: an hour of SMS at the 1,200-a-second peak is 1,200 × 3,600
-≈ 4.3 million messages, trivial for a queue. Login codes expire during a long
-outage regardless, which is why the SMS-to-push-or-email fallback exists, and
-marketing past its 3-hour deadline is recorded `expired`, not dead-lettered.
+flowing. An hour of SMS at the 1,200-a-second peak is 1,200 × 3,600 ≈ 4.3
+million messages, trivial for a queue.
 
-**A campaign in a bad state.** A marketing type with a broken template, or
-aimed at the wrong list, can do damage at 14,000 sends a second. The
-backpressure limit means cancelling it stops everything past the two minutes
-already queued, and a template that fails to render sends its messages to the
-dead-letter queue rather than out to users. A new campaign can also start with
-a small slice of its audience, a few thousand users, and continue only once
-that slice's failure rate looks normal.
+**A campaign in a bad state.** A broken template or the wrong list can do
+damage at 14,000 sends a second. Cancelling stops everything past the two
+minutes already queued, and a template that fails to render dead-letters its
+messages. A new campaign can also start with a few thousand users and continue
+only once their failure rate looks normal.
 
-**The users and preferences store is down.** Fan-out needs a user's addresses
-and preferences for every request. Users whose entries are cached keep being
-served; for the rest, requests wait on their queues until the store is back.
-The one thing fan-out must not do is fall back to default settings and send,
-because the defaults are "opted in", and messaging someone who opted out is
-the more expensive mistake. Login codes for uncached users can expire in the
-meantime, which is one reason the store is replicated and the cache is sized
-to hold every user, the 100 GB from the estimates.
+**The users and preferences store is down.** Cached users keep being served;
+for the rest, requests wait on their queues. Fan-out must not fall back to
+default settings, which are "opted in": messaging someone who opted out is the
+more expensive mistake. Uncached users' login codes can expire meanwhile, so
+the store is replicated and the cache holds every user, the 100 GB from the
+estimates.
 
-**Stale device tokens.** Users uninstall apps without telling anyone, and
-their tokens keep being sent to until the push service answers "unregistered".
-Removing tokens on that answer, and dropping any not refreshed by the app in a
-couple of months, keeps a growing share of push sends from being wasted calls.
+**Stale device tokens.** Removing tokens the push service calls
+"unregistered", and any the app hasn't refreshed in a couple of months, keeps
+uninstalled apps from wasting a growing share of push calls.
 
-**Duplicates.** Covered in the exactly-once deep dive: a plain redelivery
-never causes one, and neither does anything else at a provider that takes an
-idempotency key. Elsewhere a transactional send goes out twice when a sender
-dies, or its provider call times out or fails ambiguously, after the provider
-accepted it, or when
-a stalled sender outlives its lease. On push,
-the second copy merges with the first only if the first is still on screen.
+**Duplicates.** A plain redelivery never causes one, and nothing does at a
+provider that takes an idempotency key. Elsewhere a transactional send goes
+out twice when a sender dies, or its call times out or fails ambiguously,
+after the provider accepted it, or when a stalled sender outlives its lease.
+On push, the second copy merges with the first only if the first is still on
+screen.
 
-**Tracking falls behind.** If the delivery log is slow, status events pile up
-on their queue; sends are unaffected, and statuses show up late. That is the
-point of keeping tracking off the send path.
-
-**Knowing any of this is happening.** Worth watching: queue depth and the age
-of the oldest message per channel queue (a growing age on a `-high` queue is a
-page, one on `-low` is a note), p99 time from accept to provider for
-transactional types, provider error rates split by the three failure kinds,
-the dead-letter queue's size, the share of expired login codes, and the SMS
-delivery-receipt rate by country.
-[Observability](/systems-and-infrastructure/observability) covers how metrics,
-logs and traces divide that work; a trace that follows one notification ID
-from the API to its receipt is the quickest way to answer "why didn't this
-user get their code?"
+**Knowing any of this is happening.** Watch the age of the oldest message per
+channel queue (a page on `-high`, a note on `-low`), p99 accept-to-provider
+time for transactional types, provider error rates by failure kind, the
+dead-letter queue's size and the share of expired login codes
+([observability](/systems-and-infrastructure/observability)). A trace that
+follows one notification ID answers "why didn't this user get their code?"
 
 ## Trade-offs
-
-The design is a set of choices, each with a price:
 
 - **Queues per channel and priority over one queue.** A campaign can't delay
   a login code and one failing provider can't stall the others. The bill is
@@ -849,7 +679,8 @@ The design is a set of choices, each with a price:
 - **Rendering in the sender, with the template version pinned.** Keeps queues
   small, and makes senders heavier.
 - **Batched, asynchronous tracking**, which means sends never wait on the
-  delivery log and statuses run a few seconds behind.
+  delivery log, even when it falls behind, and statuses run a few seconds
+  behind.
 - **Pacing campaigns by queue depth.** Cancellation within minutes and
   preferences read close to send time. The scheduler has to refill the queue
   before it runs dry, or the campaign loses sending time it can't get back
@@ -858,7 +689,6 @@ The design is a set of choices, each with a price:
 What would change the design: if SMS became a large share of volume, its cost
 would justify checking preferences again in the sender and spending more
 effort on avoiding duplicate texts. If callers needed a delivery confirmation
-before continuing, for example a login flow that waits for "delivered" before
-showing the code-entry screen, tracking for those types would move onto a
-faster path, and the channel-specific meaning of "delivered" would become a
-product question rather than a footnote.
+before continuing, for example a login flow that waits for "delivered", those
+types would need a faster tracking path, and the channel-specific meaning of
+"delivered" would become a product question.
