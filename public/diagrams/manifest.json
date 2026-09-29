@@ -42,12 +42,12 @@
     }
   },
   "ecommerce-checkout/architecture.d2": {
-    "sha256": "4ec6a2a69accfd3465c9dbba48a2a31bd74a1a10f104b87acc773fb845b0b28c",
-    "width": 764,
-    "height": 1700,
+    "sha256": "482d31cd833aa0a7b631fbeca1a4397c4d7cc3ddabb79f3a900d06dc99a57c4e",
+    "width": 785,
+    "height": 1650,
     "svgs": {
-      "light": "90394ff40cc4b482ad64c83a388f355755db26b26d523d6fd166fce6bb547d71",
-      "dark": "ded5e1e6d08c67941281a10a8351641a38b15e4cd5fc523c39a8b939822cb966"
+      "light": "fbcafa1fc7be6085312318eb76b850283cbcc10523512c5f99d8b3ffff7d4761",
+      "dark": "82c18248d2a135c6bb51567e673de436de092da5a57cbf4ff07e25ebb06b8ed0"
     }
   },
   "ecommerce-checkout/checkout-saga.d2": {

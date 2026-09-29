@@ -100,7 +100,8 @@ measured numbers.
 The main chunk used to carry every topic body (search indexed them at load), so
 each new topic grew it: its limit was raised three times for content alone, up
 to 183 KB (179 KB brotlied). Loading bodies on demand is done: the main chunk
-is now about 91 KB brotlied with a 104 KB limit (it was 100 KB until the eager
+is now well under its 104 KB limit (`npm run size` prints the current
+figure) (it was 100 KB until the eager
 System Design question pages were replaced by lazily loaded case studies), and
 each topic and case-study body is its own chunk. Adding content no longer
 touches it; a case study's topic links reach it as a small build-time list (the

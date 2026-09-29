@@ -47,9 +47,9 @@ list into roughly-even parallel batches rather than one massive agent
 call — by section is the natural split (mirrors how this repo's own
 first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
-section is unusually large. The case studies are one more batch of their
-own (each is long and links into many topics, so keep the batch small; check
-4 below applies to them).
+section is unusually large. The case studies get batches of their
+own, split so each agent can read its share in full (each is 5,000–8,000
+words, so about three per agent); check 4 below applies to them.
 
 ## Stage 2 — Independent audit, per batch
 
@@ -117,7 +117,10 @@ and this instruction, close to verbatim:
 > comparing at least one alternative and its cost; flag a diagram (read the
 > `.d2` source under `src/system-design/diagrams/`) that disagrees with the
 > prose; and flag any claim about how a specific named company builds its
-> system. Read the linked topic when deciding.
+> system. Check the `At a glance` section against the body: every figure in
+> it must match, each decision and follow-up must be what the body argues,
+> and each in-page link must point to the section that covers it. Read the
+> linked topic when deciding.
 >
 > **5. Systems topics only (skip for other sections and case studies) —
 > is the closing `## Where you'll meet this` section general and true?**
