@@ -30,6 +30,62 @@ counted in. A card payment usually happens in two stages: an
 An authorization that is no longer wanted can be **voided**, which releases
 the held amount without the customer ever being charged.
 
+## At a glance
+
+**Requirements.**
+
+- One press of "Place order": a confirmed order authorized for exactly the
+  total shown, or a clean failure with nothing charged or held.
+- 50 million daily shoppers, 1 billion product page views and 10 million
+  orders a day, 2.5 lines per order.
+- At p99: product page data under 100 ms, a cart change under 200 ms, placing
+  an order under 3 seconds.
+- Never charge twice for one order; confirmed orders later cancelled for lack
+  of stock stay below 1 in 10,000.
+- Product pages may be a minute stale; the price charged never comes from
+  them.
+
+**Key numbers.** From the estimates:
+
+- About 120,000 product page reads a second at peak (1 billion ÷ 86,400 ≈
+  12,000, times ten).
+- 6,000 catalog database reads a second at peak (120,000 × the 5% that miss
+  the 100 GB cache).
+- About 1,200 orders a second at peak (10 million ÷ 86,400 ≈ 120, times ten).
+- 9,000 inventory writes a second at peak (3,000 order lines × 3: reserve,
+  then commit or release, then ship).
+- About 18 TB of orders a year (10 million × 5 KB = 50 GB a day).
+
+**Key decisions.**
+
+- Reserve stock before payment, with a 10-minute TTL: a stock failure happens
+  before the card is touched ([reserving inventory](#deep-dive-reserving-inventory)).
+- A saga orchestrated by the order service, not two-phase commit: the payment
+  service can't take part in 2PC, and 2PC would lock a SKU for a whole payment
+  call ([the checkout saga](#deep-dive-the-checkout-saga)).
+- The idempotency key stored on the order row: one transaction writes both, so
+  the key never exists without its order, and a retry finds that order or
+  safely creates it
+  ([idempotency](#deep-dive-idempotency-and-order-events)).
+
+**Likely follow-ups.**
+
+- What if two shoppers buy the last unit? A conditional `UPDATE` on the stock
+  row lets only one reservation succeed
+  ([reserving inventory](#deep-dive-reserving-inventory)).
+- What if the order service crashes mid-checkout? A recovery sweeper resumes
+  each order from its recorded status, and every step is safe to repeat
+  ([the checkout saga](#deep-dive-the-checkout-saga)).
+- How does the warehouse hear about an order? The event is an outbox
+  row written in the confirming transaction, and consumers deduplicate by
+  event ID ([order events](#deep-dive-idempotency-and-order-events)).
+- What happens when the payment service is down? A circuit breaker refuses new
+  orders with `503` before any stock is reserved
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+The services and the steps of one order are in
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements say what the system does:

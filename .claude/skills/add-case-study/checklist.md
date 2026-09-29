@@ -5,9 +5,9 @@ before Stage 2. Each item is a problem class that independent reviewers found
 repeatedly in the first batch of case studies (2026-09). Each one cost a
 review round when missed.
 
-**Length.** Aim for about 4,500 words (the URL shortener is about 5,500), with
-three deep dives and two diagrams. More depth isn't more teaching. The drafts
-that ran to 8,000 words drew the most findings.
+**Length.** Aim for about 5,000–5,500 words of prose, with three deep dives
+and two diagrams. More depth isn't more teaching. The drafts that ran to 8,000
+words drew the most findings.
 
 1. **Dual writes.** Any "write to the store, then publish to a queue or
    another store" step loses the second write if the process dies in between.
@@ -59,6 +59,11 @@ that ran to 8,000 words drew the most findings.
 10. **Requirements match the design.** If the design can't meet a stated
     requirement (latency, availability, "never lose", "exactly once"), change
     one of them and say so.
+11. **At a glance matches the body.** Every figure in it is copied from the
+    body (grep each one), the three decisions and the follow-up answers say
+    only what the body argues, and each in-page link lands on the section that
+    covers it. When a body number changes, this section is one of the places
+    item 4's grep must reach.
 
 Link earlier case studies (`/system-design/<slug>`) where a design reuses
 their mechanism instead of re-deriving it. Examples: push delivery (the

@@ -22,6 +22,64 @@ API key. What follows is one plausible design for a limiter like the one in
 front of a large public developer API, not a description of how any
 particular company built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Check each request against every applicable limit: per API key (free 60
+  a minute, Pro 1,200), per user (free 120, Pro 3,000), per IP (6,000, and 10
+  on login) and a global 20,000 a second on search.
+- Reject with `429` and `Retry-After`; report the remaining allowance.
+- Rules live in config, with a shadow mode for new ones.
+- 5 billion requests a day, a check under 2 ms at p99, and limits that hold
+  fleet-wide.
+- The API targets 99.99% and answers when the limiter's store fails,
+  except on endpoints marked to refuse.
+
+**Key numbers.** From the [estimates](#back-of-the-envelope-estimates):
+
+- About 580,000 requests/s at peak (5 billion ÷ 86,400 ≈ 58,000/s, 10× for
+  peak).
+- 40 gateway nodes (580,000 ÷ 15,000 planned per node ≈ 38.7).
+- 1.16 million store calls/s (two per request), so 24 Redis shards at 50,000
+  each, 48 nodes with replicas.
+- About 700 MB of buckets (7 million keys × 100 bytes), against
+  10.4 GB for a sliding-window log.
+- About 0.5 ms per store round trip within one datacenter, which fits the 2 ms
+  budget; a 50 ms cross-country trip would not.
+
+**Key decisions.**
+
+- A token bucket for every per-client rule: constant state, a deliberate
+  burst, and no clock-aligned reset
+  ([algorithm](#deep-dive-choosing-the-algorithm)).
+- One atomic Lua script per check on the shared store: exact across 40 nodes
+  for one round trip; the global search limit uses local shares to
+  avoid a hot key ([counting](#deep-dive-counting-across-many-gateway-nodes)).
+- A failure policy per endpoint: reads fail open, login counts locally, text
+  sends fail closed ([store down](#deep-dive-when-the-counter-store-is-down)).
+
+**Likely follow-ups.**
+
+- Why not a separate limiter service? Its extra round trip would spend a
+  quarter of the 2 ms budget on deployment independence a versioned library
+  mostly gives ([placement](#deep-dive-where-the-limiter-sits)).
+- Why not count locally and sync every 100 ms? One Pro key could spend its
+  burst of 100 on each of 40 nodes, up to 4,000 requests in 100 ms
+  ([counting](#deep-dive-counting-across-many-gateway-nodes)).
+- How is a hung shard noticed? A 5 ms timeout per call and a per-shard circuit
+  breaker applying the fallback
+  ([store down](#deep-dive-when-the-counter-store-is-down)).
+- What about one key sending 100,000 requests a second? Nodes remember "reject
+  until the next token", cutting its store calls to 800 a second for a Pro key (40 for a free one)
+  ([failure modes](#failure-modes-and-bottlenecks)).
+- What changes across regions? Each region keeps its own store and a
+  share of each limit, rebalanced as traffic moves
+  ([trade-offs](#trade-offs)).
+
+The components are under
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements say what the limiter does:

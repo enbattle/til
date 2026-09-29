@@ -387,6 +387,49 @@ config file, and get back a link they can share. Opening the link shows the
 text. This is one plausible design for a service like Pastebin.com, not a
 description of how any company built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Create a paste of up to 512 KB and get back a link that can't be guessed.
+- Read a paste by opening its link; there are no accounts.
+- Expiry of 1 to 365 days (default 365), with expired text deleted within a
+  day.
+- 1 million new pastes a day, 10 reads for each, and reads under 500 ms at
+  p99.
+
+**Key numbers.**
+
+- About 120 creates/s at peak (1,000,000 ÷ 86,400 ≈ 12, 10× for peak).
+- At most about 3.65 TB of text (1,000,000 × 10 KB = 10 GB a day, × 365).
+- 4 GB of cache for the most-read 20% of a day's 2 million pastes.
+- About 73 GB of metadata (200 bytes × 365 million pastes).
+- 62⁷ ≈ 3.5 trillion IDs, so about 1 guess in 9,600 finds a paste.
+
+**Key decisions.**
+
+- Contents in an object store: the database holds 73 GB of metadata instead
+  of 3.65 TB of text ([contents](#deep-dive-where-paste-contents-live)).
+- Expiry checked on every read and swept daily: exact expiry, with storage
+  reclaimed within a day ([expiry](#deep-dive-expiring-pastes)).
+- IDs from a counter and a keyed encryption step: never reused, and random to
+  anyone without the key ([data model](#data-model)).
+
+**Likely follow-ups.**
+
+- What removes an object whose row insert failed? A lifecycle rule deleting
+  anything older than 366 days ([contents](#deep-dive-where-paste-contents-live)).
+- Why delete the object before the row? A failure in between leaves an
+  expired row the next run finds again ([expiry](#deep-dive-expiring-pastes)).
+- What if the cache node is lost? Reads slow down but still beat 500 ms, at
+  around 200 ms for a slow miss ([failure modes](#failure-modes-and-bottlenecks)).
+- How is guessing held back? An address with 100 `404`s in an hour is blocked
+  for the rest of it, about one paste found every four days
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+The components are drawn under
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 - **Create a paste** from up to 512 KB of text, and get back a link such as
@@ -654,7 +697,9 @@ cleanup -> db: "then delete expired rows"
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
 **Planted violation (the only one):** the average read rate is off by ten:
 10,000,000 ÷ 86,400 is about 116, not 1,160, and the peak derived from it is
-ten times too high as well.
+ten times too high as well. The base draft's `At a glance` section leaves
+the read rate out of its key numbers on purpose, so this error appears only in
+the estimates and the scenario stays as hard as before the section existed.
 **Replacement in the base draft:** replace the "Reads" bullet with:
 
 ```markdown
@@ -697,8 +742,9 @@ extra request on a cache miss, two writes that can half-succeed), contrary to
 the checklist's "each deep dive compares at least two options." A reviewer may
 also note that the data model promises a comparison this deep dive doesn't
 make, or that Trade-offs and the expiry deep dive name costs (a second system,
-orphaned objects the lifecycle rule catches) the body never argues; all are
-the same planted gap.
+orphaned objects the lifecycle rule catches) the body never argues, or that
+the `At a glance` decision linking to this deep dive gives a reason the deep
+dive no longer argues; all are the same planted gap.
 **Fails if:** the review doesn't flag the missing comparison, or flags only
 the other deep dive.
 
@@ -729,7 +775,9 @@ the latency target is checked against the miss path; the failure modes cover
 the cache, the database, the cleanup job and the object store; both deep
 dives compare two options with their costs; and the diagram shows exactly the
 components the prose names (the counter is a row in the metadata database and
-the lifecycle rule a setting of the object store, not components).
+the lifecycle rule a setting of the object store, not components); and the
+`At a glance` section has the four lead-ins in order, every figure in it
+matches the body, and every in-page link resolves to a heading id.
 **Expected finding:** no finding that is false of the draft. Real gaps, such
 as its thinness next to the reference case study or a missing sequence
 diagram, are acceptable and go in the run's notes.

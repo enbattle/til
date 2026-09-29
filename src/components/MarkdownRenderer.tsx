@@ -107,10 +107,15 @@ const components: Components = {
   // `/ai-and-ml/prompt-engineering`). A plain `<a>` would ignore the router's
   // basename (breaking under the GitHub Pages `/til/` subpath) and force a
   // full page reload — routing it through `Link` keeps it client-side and
-  // basename-aware. An external link stays a plain, new-tab `<a>`.
+  // basename-aware. An in-page `#id` link (a case study's At a glance section
+  // linking to its own headings) stays a plain same-tab `<a>`, so the browser
+  // scrolls to the id natively. An external link stays a plain, new-tab `<a>`.
   a({ href, children }) {
     if (href?.startsWith('/')) {
       return <Link to={href}>{children}</Link>;
+    }
+    if (href?.startsWith('#')) {
+      return <a href={href}>{children}</a>;
     }
     return (
       <a href={href} target="_blank" rel="noreferrer">

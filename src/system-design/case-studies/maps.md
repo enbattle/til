@@ -18,6 +18,61 @@ road travel times that change every minute and come from the phones being
 routed. What follows is one plausible design for a service like Google Maps
 or an OpenStreetMap-based app, not a description of how any of them is built.
 
+## At a glance
+
+**Requirements.**
+
+- Show the map, search places, reverse geocode, and route with up to three
+  alternatives, each with an ETA.
+- 100 million daily active users; 20 million navigation sessions a day, 25
+  minutes each.
+- A tile in under 100 ms at p99, a suggestion in under 150 ms, a route in under
+  1 second.
+- A slowdown seen by phones reaches routing within 3 minutes.
+- Tiles 99.99% available, search and routing 99.95%; routing falls back to
+  typical speeds if live traffic fails.
+
+**Key numbers.** From the estimates, at a 3× peak:
+
+- ≈ 350,000 tile requests/s (10 billion a day ÷ 86,400 × 3); 17,500/s reach
+  the tile store after a 95% CDN hit rate.
+- ≈ 1 million concurrent sessions (500 million session-minutes ÷ 1,440 × 3),
+  so 1 million probes/s.
+- About 20,000 route searches/s (3,500 new routes + 16,700 reroute checks), 200
+  cores at 10 ms each.
+- A 70 GB road graph (700 million segments × 100 bytes) and a 1.4 GB live speed
+  array (2 bytes a segment).
+
+**Key decisions.**
+
+- Vector tiles to zoom 14: about 2.1 TB serves every style and screen, against
+  petabytes of raster images ([tiles](#deep-dive-serving-map-tiles)).
+- Customizable route planning: a few milliseconds a search, with weights
+  refreshed every minute ([routing](#deep-dive-routing-with-live-traffic)).
+- Streamed traffic published as delta files and a pointer: meets the 3-minute
+  target, and a restarting server loads one snapshot and at most ten deltas
+  ([live traffic](#deep-dive-live-traffic-from-probes)).
+
+**Likely follow-ups.**
+
+- How does a map release avoid a cold CDN? Each zoom-6 block has its own
+  version in the tile URL, so only changed blocks miss
+  ([tiles](#deep-dive-serving-map-tiles)).
+- How do you update a driver's ETA every 10 seconds? The session's routing
+  server keeps the route in memory (1 million × 20 KB = 20 GB across the
+  fleet), because resending a 20 KB route token with every update would be
+  2 GB/s ([API design](#api-design)).
+- What if an aggregator crashes mid-window? It marks the probes as consumed only
+  after the delta file is written and the pointer moved by compare-and-set, so
+  the next owner replays the window from the queue without publishing it
+  twice; epochs fence off a stalled old owner ([live traffic](#deep-dive-live-traffic-from-probes)).
+- What if a region goes down? Every server holds the whole graph, so the other
+  two regions absorb it at 61% CPU
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+How the pieces connect is in the
+[high-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

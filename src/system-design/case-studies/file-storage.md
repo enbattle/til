@@ -24,6 +24,61 @@ decisions follow from that split.
 This is one plausible design for a service like Google Drive or Dropbox, not a
 description of how either company built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Upload files of up to 50 GB, resuming after interruptions, and sync changes
+  to every device, including offline edits.
+- Share folders with viewers and editors, checked on every read and write.
+- Keep replaced versions and deleted files for 30 days; never lose either of
+  two conflicting edits.
+- 50 million users, 10 million active a day, each storing 4 GB in 2,000 files.
+- Eleven nines of durability; changes reach other online devices within 10
+  seconds and metadata calls take under 200 ms, both at p99.
+
+**Key numbers.** From the estimates:
+
+- About 4,600 commits a second at peak (40 million saves a day ÷ 86,400 ≈ 460,
+  × 10).
+- 200 PB of file contents (50 million users × 4 GB).
+- About 56 Gbit/s of uploads at peak (60 TB a day ≈ 5.6 Gbit/s, × 10), and
+  110 Gbit/s of downloads (twice the uploads).
+- About 230,000 metadata reads a second at peak (20 million sync clients × 100
+  requests a day ÷ 86,400 ≈ 23,000, × 10).
+- About 80 TB of metadata, 63 TB of it split by namespace over 32 shards of
+  about 2 TB.
+
+**Key decisions.**
+
+- Content-addressed 4 MB chunks, uploaded straight to the object store:
+  resuming, editing and version history all become "upload the missing chunks"
+  ([chunked uploads](#deep-dive-chunked-uploads-and-deduplication)).
+- Notify, then pull from the journal: every change is applied one way, so a
+  lost notification only delays it ([the sync protocol](#deep-dive-the-sync-protocol)).
+- Conflicted copies over last writer wins: the service can't merge arbitrary
+  bytes, and neither edit may be lost
+  ([conflicting edits](#deep-dive-conflicting-edits)).
+
+**Likely follow-ups.**
+
+- Why not deduplicate across all users? Saying a chunk exists anywhere leaks
+  what others store, so clients see only their namespace's chunks, though
+  storage keeps one copy ([deduplication](#deep-dive-chunked-uploads-and-deduplication)).
+- Why not poll? Polling every 30 seconds misses the 10-second target and costs
+  about 333,000 requests a second
+  ([the sync protocol](#deep-dive-the-sync-protocol)).
+- When are a chunk's bytes deleted? Once no namespace uses it and 7 days pass
+  with no new reference ([deleting the bytes](#deep-dive-versions-trash-and-storage-tiers)).
+- What does cold storage save? Moving the 80% of bytes unread for 90 days cuts
+  $4,000,000 a month to about $1,490,000
+  ([storage tiers](#deep-dive-versions-trash-and-storage-tiers)).
+- What about a shared folder with 5,000 members? One commit means 10,000
+  notifications, so API servers cache journal pages and notifications go out
+  with a random delay ([failure modes](#failure-modes-and-bottlenecks)).
+
+The [high-level architecture](#high-level-architecture) follows one edit from a laptop to a desktop.
+
 ## Requirements
 
 Functional requirements:

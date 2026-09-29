@@ -20,6 +20,61 @@ count that is off by a few percent is an overcharge or a refund. What follows
 is one plausible design for this kind of pipeline, not a description of how
 any particular ad network builds theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Record each click and redirect, adding under 20 ms at p99.
+- Count clicks per ad per minute: provisional within 60 seconds at p99, final
+  once the day is settled for billing.
+- Count each impression ID once; clicks on an impression more than 24 hours
+  old aren't billable.
+- Keep a top 100 over the last 1, 5 and 60 minutes, refreshed every 15 seconds.
+- 1 billion clicks a day across 10 million live ads; click endpoint 99.99%
+  available.
+
+**Key numbers.** From the estimates:
+
+- ≈ 12,000 clicks/s on average (1 billion ÷ 86,400); ≈ 120,000/s at peak (10×
+  average), with capacity for 200,000.
+- 10 aggregator processes (200,000 ÷ 20,000 events/s each), over 32 queue
+  partitions.
+- 20.7 GB of dedup state (432 million click IDs in an hour at peak × 48 bytes),
+  about 650 MB per partition.
+- ≈ 33,000 count-row writes/s at peak (500,000 ads changed per 15-second
+  flush).
+
+**Key decisions.**
+
+- An exact set of the last hour's click IDs per partition, with absolute
+  counts versioned by queue offset: a replay or a stalled old owner rewrites
+  the same rows ([counting once](#deep-dive-counting-each-click-once)).
+- A stream for provisional counts, a daily batch over the raw archive for
+  final ones: dashboards stay fresh and billing is recomputed independently
+  ([late events](#deep-dive-late-events-and-batch-reconciliation)).
+- Exact top-K merged from the 32 partitions' lists: about 1 GB of state, and
+  the list matches the dashboards ([top-K](#deep-dive-top-k-most-clicked-ads)).
+
+**Likely follow-ups.**
+
+- Why not a Bloom filter for dedup? A 1% false-positive rate discards 1% of
+  real clicks ([counting once](#deep-dive-counting-each-click-once)).
+- What happens to a click that arrives 40 minutes late? Minutes stay open for
+  an hour of event time, so the next flush rewrites that minute's row
+  ([late events](#deep-dive-late-events-and-batch-reconciliation)).
+- How does an aggregator restart without double counting? It loads a
+  30-second checkpoint and replays from its offset, and the store keeps the
+  highest version per row ([counting once](#deep-dive-counting-each-click-once)).
+- What about one very popular ad? Above 2% of all clicks it is split across 4
+  sub-keys, and reads sum them ([failure modes](#failure-modes-and-bottlenecks)).
+- Why not a Count-Min sketch for top-K? Exact counts cost only about 1 GB across the
+  cluster and match the dashboards, while a 540 KB sketch errs by up to 720
+  clicks at the peak minute, enough to reorder the bottom of the list
+  ([top-K](#deep-dive-top-k-most-clicked-ads)).
+
+How the pieces connect is in the
+[high-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:
