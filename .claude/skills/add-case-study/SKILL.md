@@ -76,8 +76,8 @@ example for depth, tone and how estimates are laid out.
   specific company builds its system.
 - **Diagrams**: at least one in `High-level architecture`; add a
   `shape: sequence_diagram` diagram where a request flow is the point. One
-  diagram per file at `src/system-design/diagrams/<slug>/<name>.d2`, roughly
-  6-10 nodes, no colors (the theme comes from the tokens), laid out for the
+  diagram per file at `src/system-design/diagrams/<slug>/<name>.d2`, sized by
+  checklist.md item 5 (nodes, participants, width), no colors (the theme comes from the tokens), laid out for the
   ~720px content column. Run `npm run diagrams`, then look at the rendered
   `public/diagrams/<slug>/<name>.light.svg` and `.dark.svg` yourself (open
   them in a browser, or screenshot them) at 720px wide: labels readable,

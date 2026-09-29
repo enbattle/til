@@ -37,8 +37,8 @@ add a fourth or fifth worker agent for those without a specific,
 articulable bias it would prevent — see docs/SDLC.md for the reasoning.
 
 A role can run as several agents when its content files add up to more than
-one agent can read in full. This run needed that for about 110,000 words across
-16 case studies. Keep one agent per role as the owner: it does all code, doc
+one agent can read in full. (The 2026-09 case-study summaries run needed it: 16 studies,
+about 110,000 words.) Keep one agent per role as the owner: it does all code, doc
 and UI work for that role (the implementer's code changes, or the reviewer's
 code, docs, NON_NEGOTIABLES and browser checks, on the full diff) plus its own
 share of the content. Each extra agent in the role gets the spec,

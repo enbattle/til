@@ -32,7 +32,7 @@ usual flat `key: value`, plus one more required field:
 title: Design a URL Shortener (like TinyURL)
 summary: One plain-text sentence — the hook shown on the landing page and in search.
 date: YYYY-MM-DD
-order: 2
+order: 1
 ---
 ```
 
@@ -106,7 +106,7 @@ order: 2
   in a comment is fine). A `.d2` can't import another file (`...@x`,
   `x: @../y`): the imported file would escape the source hash and the color
   guard, so both `check:diagrams` and `npm run diagrams` reject it. Changing a `--color-*` token the
-  diagrams use means re-running `npm run diagrams` too. Keep a diagram to roughly 6-10 nodes laid out to fit the ~720px
+  diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 5: nodes, participants, width) and lay it out to fit the ~720px
   content column (`direction: down` usually fits better than `right`), use
   `shape: sequence_diagram` for a request flow, and look at the rendered SVG
   in both themes before committing. Commit the source, both SVGs and

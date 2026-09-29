@@ -77,7 +77,8 @@ run `npm run verify` as their gate). The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
 doesn't fail open, can't be bypassed by local config. Branch protection is
-enabled, but in practice commits are pushed straight to `main` (as of
+enabled, and every change now lands through a pull request (CLAUDE.md, "How changes
+land"); before that rule, commits were pushed straight to `main` (as of
 2026-09-24, no human-authored change had arrived through a PR; Dependabot's
 auto-merged PRs are the exception), and on 2026-09-21 two commits whose CI failed
 (fdd0db5, 00f2f84) reached `main` and deployed. That was this entry's

@@ -1,6 +1,6 @@
 ---
 name: docs-audit
-description: Audit every documentation file in this repo (CLAUDE.md, README.md, docs/**, evals/**, every SKILL.md) against the current code, config, and process for staleness — a fact that's no longer true, a convention nothing describes, a reference to something removed. Use when asked to check for stale docs, after a batch of changes has landed, or when nudged by the nudge-precommit hook before a commit/push.
+description: Audit every documentation file in this repo (CLAUDE.md, README.md, docs/**, evals/**, every file under .claude/skills/) against the current code, config, and process for staleness — a fact that's no longer true, a convention nothing describes, a reference to something removed. Use when asked to check for stale docs, after a batch of changes has landed, or when nudged by the nudge-precommit hook before a commit/push.
 ---
 
 # Docs audit
@@ -32,7 +32,8 @@ of staleness this skill exists to catch:
 - everything under `docs/`
 - everything under `evals/` (`README.md`, every scenario/how-to-run file,
   and the `results/` logs)
-- every `SKILL.md` under `.claude/skills/`, and the reminder text in
+- every file under `.claude/skills/` (each `SKILL.md` and any file beside
+  it, such as `add-case-study/checklist.md`), and the reminder text in
   `.claude/hooks/*.js` (it names skills and docs, so it can go stale the same way)
 - (explicitly **not** in scope: `src/content/**` and
   `src/system-design/case-studies/**` — the published topic and case-study
@@ -100,6 +101,7 @@ resolve it yourself or ask the user rather than applying it blindly.
 npm run format:check
 npm run check:tokens
 npm run check:npm-refs
+npm run check:claude-md
 ```
 
 The latter two are exactly this skill's own failure mode caught
