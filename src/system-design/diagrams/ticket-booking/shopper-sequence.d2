@@ -1,0 +1,38 @@
+# One shopper on a protected on-sale: waiting room, a hold that expires and is
+# released by the hold sweeper (drawn on the database's lifeline to keep the
+# diagram to five participants), a second hold, then payment and confirm.
+shape: sequence_diagram
+
+user: User
+wr: Waiting room
+booking: Booking service
+db: Inventory DB
+pay: Payment service
+
+user -> wr: "join"
+wr -> user: "queue token,\nposition 184,213"
+user -> wr: "status? (cached)"
+wr -> user: "admitted_up_to\n184,500"
+user -> wr: "admit"
+wr -> user: "admission token"
+user -> booking: "hold 114-K-11, 114-K-12"
+booking -> db: "conditional update:\nheld by h1"
+booking -> user: "h1, expires in 10 min"
+
+The user walks away for 10 minutes: {
+  db -> db: "hold sweeper\nreleases h1"
+  user -> booking: "confirm h1"
+  booking -> db: "h1 active to paying?"
+  db -> booking: "no: expired"
+  booking -> user: "409 hold expired"
+}
+
+user -> booking: "hold the same seats"
+booking -> db: "conditional update:\nheld by h2"
+booking -> user: "h2, expires in 10 min"
+user -> booking: "confirm h2"
+booking -> db: "h2 active to paying,\nextend deadline"
+booking -> pay: "charge, key h2"
+pay -> booking: "charged"
+booking -> db: "h2 confirmed,\nseats sold, order,\noutbox row"
+booking -> user: "200 order"

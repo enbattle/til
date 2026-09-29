@@ -1,0 +1,53 @@
+# High-level architecture of the video streaming service: uploads go straight
+# to the object store, an outbox row starts a processing workflow whose tasks
+# run on the transcode workers, viewers fetch segments from CDN edges backed by
+# an origin shield, and player events flow through a log to stream workers.
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+direction: down
+
+client: Clients {
+  style.multiple: true
+}
+api: API servers {
+  style.multiple: true
+}
+edge: CDN edges {
+  style.multiple: true
+}
+shield: Origin shield
+objects: Object store {
+  shape: cylinder
+}
+meta: "Metadata DB\n+ cache" {
+  shape: cylinder
+}
+wf: Workflow engine
+workers: Transcode workers {
+  style.multiple: true
+}
+log: Event log {
+  shape: queue
+}
+stream: Stream workers
+stores: "Progress and\ncounts stores" {
+  shape: cylinder
+}
+
+client -> api: "upload, play,\nevents"
+client -> objects: "upload parts"
+client -> edge: "manifests,\nsegments"
+edge -> shield: "misses"
+shield -> objects: "misses"
+api -> meta
+api -> log: "events"
+api -> stores: "resume, counts"
+meta -> wf: "outbox: start"
+wf -> workers: "tasks"
+wf -> meta: "status"
+workers -> objects: "read original,\nwrite renditions"
+log -> stream
+stream -> stores
