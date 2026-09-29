@@ -1,0 +1,28 @@
+# One home-page request and its p99 latency budget. Candidate retrieval runs
+# its two sources in parallel; the served record is logged without waiting.
+shape: sequence_diagram
+
+svc: "Recommendation\nservice"
+fs: "Feature\nstore"
+ann: "ANN\nindex"
+rank: "Ranking\nservice"
+log: "Event\nlog"
+
+svc -> fs: "user features (10 ms)"
+fs -> svc: "last 100 watches"
+svc -> svc: "user tower (5 ms)"
+
+Candidates, in parallel (25 ms): {
+  svc -> ann: "nearest 300 (15 ms)"
+  svc -> fs: "lists (10 ms)"
+  ann -> svc: "300 IDs"
+  fs -> svc: "about 250 IDs"
+}
+
+svc -> svc: "merge, filter (5 ms)"
+svc -> rank: "about 500 candidates"
+rank -> fs: "cache misses (15 ms)"
+fs -> rank: "video features"
+rank -> svc: "scores (45 ms in all)"
+svc -> svc: "diversify (10 ms)"
+svc -> log: "served record (no wait)"
