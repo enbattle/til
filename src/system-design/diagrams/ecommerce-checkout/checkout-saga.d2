@@ -1,0 +1,36 @@
+# One checkout, order o_5521, through the saga: reserve stock, authorize
+# payment, then either confirm or compensate by releasing the reservation.
+shape: sequence_diagram
+
+client: Client
+order: Order service
+inv: Inventory service
+pay: Payment service
+events: Event stream
+
+client -> order: "POST /orders + key"
+order -> order: "insert o_5521 PENDING"
+order -> inv: "reserve, TTL 10 min"
+inv -> order: "reserved"
+order -> order: "RESERVED"
+order -> pay: 'authorize $81.20, o_5521:auth-1'
+
+Payment approved: {
+  pay -> order: "authorized au_77f"
+  order -> order: "AUTHORIZED"
+  order -> inv: "commit reservation"
+  inv -> order: "committed"
+  order -> order: "CONFIRMED, outbox row"
+  order -> client: "201 CONFIRMED"
+  order -> events: "OrderConfirmed (relay)"
+}
+
+Payment declined: {
+  pay -> order: "declined"
+  order -> order: "CANCELLING"
+  order -> inv: "release reservation"
+  inv -> order: "released"
+  order -> order: "CANCELLED, outbox row"
+  order -> client: "422 payment declined"
+  order -> events: "OrderCancelled (relay)"
+}
