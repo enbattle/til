@@ -233,55 +233,110 @@ claim itself.
 terms, builds up from first principles, uses a concrete example, and
 makes no unverified claims. The eval here is whether the review
 reports only things that are true of the text, rather than inventing a
-defect to justify itself. It is declared under `engineering-practices` (whose
-existing topics don't overlap it) so that the near-duplicate check has
-nothing to match and the closing "Where you'll meet this" rule for
-`systems-and-infrastructure` topics doesn't apply; the subject matter is
-not what this scenario tests. An earlier version (2026-09-16) left
-"container", "orchestrator" and "Kubernetes" undefined and had no worked
-example, and the review rightly flagged both; this version fixes those.
+defect to justify itself. It is declared under `engineering-practices`, and
+no topic in any section covers versioning or dependency updates, so the
+near-duplicate check has nothing to match and the closing "Where you'll meet
+this" rule for `systems-and-infrastructure` topics doesn't apply; the subject
+matter is not what this scenario tests. Until 2026-09-28 the control was a
+"Liveness vs. Readiness Probes" draft, which every run from 2026-09-21 on
+rightly called a near-duplicate of `self-healing-systems` (same distinction,
+same cache warm-up example), so the control moved to this subject.
+Its claims follow the Semantic Versioning 2.0.0 specification (semver.org:
+the reset rule, `0.y.z` as initial development where anything may change) and
+npm's documentation: the caret and tilde ranges, including the caret's
+leftmost-nonzero rule below `1.0.0` (`^0.3.1` is `>=0.3.1 <0.4.0`, `^0.0.3`
+is `>=0.0.3 <0.0.4`); the default `^` save prefix; `package-lock.json`,
+written by default since npm 5, which a plain `npm install` follows while it
+still satisfies `package.json`; `npm ci` removing `node_modules`, erroring
+when the lockfile and `package.json` disagree, and never writing either file;
+and `npm update` moving packages to the newest version their ranges allow.
+Python's version scheme is PEP 440, not SemVer.
 
 ```markdown
 ---
-title: Liveness vs. Readiness Probes
-summary: Two different questions an orchestrator asks about a running container, and why conflating them causes bad restarts or traffic sent to a service that isn't ready yet.
-date: 2026-09-16
+title: Semantic Versioning
+summary: What the three numbers in a version like 2.4.1 promise, and how a package manager (for example, npm) relies on that promise to decide which updates to install without asking.
+date: 2026-09-28
 ---
 
-A **container** is a packaged program that runs in isolation from the
-other programs on the same machine, and a **container orchestrator**
-such as Kubernetes is the system that starts containers, restarts them
-when they fail, and decides which ones should receive traffic. To do
-that automatically it needs a way to tell whether a running container is
-healthy enough to keep, and whether it is ready enough to receive
-traffic. These turn out to be two different questions, answered by two
-different checks.
+Most projects are built on **dependencies**: libraries, meaning code someone
+else wrote and published, that your project calls. A **package manager**
+such as npm (for JavaScript) or pip (for Python) downloads them for you. Each
+library keeps publishing new versions, and every time it does you face the
+same question: can I take this update without anything breaking? A version
+number like `4.17.21` can't answer that on its own, unless the library's
+authors have agreed on what the numbers mean.
 
-A **liveness probe** asks "is this process still working, or is it stuck
-in a way it will never recover from on its own?" It is usually a
-periodic HTTP request or command run against the container. If it fails
-several times in a row, the orchestrator concludes the process is wedged
-(deadlocked, stuck in an infinite loop, out of memory and unresponsive)
-and restarts the container. For example, if the probe runs every 10
-seconds and the orchestrator is set to act after 3 failures in a row, a
-container that wedges is restarted about 30 seconds later. A liveness
-probe answering "no" is a statement about the process's internal health,
-independent of whether anything is currently trying to talk to it.
+Semantic Versioning, or SemVer, is that agreement, written down as a
+short specification at semver.org (the current version is 2.0.0). A version
+has three parts, `MAJOR.MINOR.PATCH`, and each one is a promise about the library's
+**public API**: the functions, options and behavior its authors document for
+other people to use, as opposed to the internals they're free to rewrite.
+Compared with the release before it:
 
-A **readiness probe** asks a narrower question: "is this container ready
-to receive traffic right now?" A process can be alive (it hasn't
-crashed) but not ready — for example, a service that's still loading a
-large cache into memory at startup, or one that's lost its database
-connection temporarily and is retrying. While a readiness probe is
-failing, the orchestrator stops routing new traffic to that container
-without restarting it, since restarting wouldn't fix a slow cache warm-up
-or a database outage and would just make things worse.
+- PATCH goes up for a bug fix that leaves the API as it was.
+- MINOR goes up when something is added, such as a new function or option,
+  and everything that already existed works as before.
+- MAJOR goes up for any change that isn't backward compatible, meaning code
+  written against the previous version could stop working: something removed
+  or renamed, or documented behavior changed.
 
-Conflating the two causes two different failure modes: using only a
-liveness probe means a container that's alive but not ready still
-receives traffic and returns errors; using only a readiness probe means
-a deadlocked container never gets restarted, since nothing is checking
-whether it's stuck or just temporarily busy.
+Raising one number resets the numbers to its right to zero, so the release
+after `1.4.2` is `1.4.3`, `1.5.0` or `2.0.0`.
+
+Take a date-formatting library at `1.4.2`. Its `formatDate` function prints
+the wrong month for December dates; the fix ships as `1.4.3`. Next, the
+authors add `formatRelative`, which turns a date into text like "3 days ago".
+Nothing that existed changed, so that's `1.5.0`. Then they rename
+`formatDate` to `format` and drop the old name. Every project calling
+`formatDate` would now fail, so that release has to be `2.0.0`.
+
+Versions below `1.0.0` are a special case. The specification treats `0.y.z`
+as initial development, where anything may change at any time, and `1.0.0`
+is the release where the authors commit to a public API.
+
+## How npm uses it
+
+npm leans on these numbers directly. (Not every ecosystem does: Python's
+tools follow their own rules, PEP 440, instead.) A JavaScript project
+lists its dependencies in a `package.json` file at its root, and because the
+numbers carry meaning, it can say which versions of each it accepts instead
+of **pinning** one, that is, naming a single exact version such as `1.4.2`.
+`^1.4.2` (a caret) accepts anything from `1.4.2` up to but not including
+`2.0.0`: later fixes and additions, but no breaking changes. `~1.4.2` (a
+tilde) is stricter and accepts only patches, from `1.4.2` up to but not
+including `1.5.0`. When you add a package with `npm install <name>`, npm
+records it with a caret by default.
+
+Below `1.0.0`, where the specification promises nothing, npm adds a
+convention of its own: the caret treats a change to the leftmost nonzero
+number as breaking. So `^0.3.1` accepts later `0.3` patches but not `0.4.0`,
+treating a new `0.y` as a breaking release, and `^0.0.3` accepts only `0.0.3`
+itself.
+
+With ranges alone, every install resolves them again, usually to the newest version each one accepts, so two machines
+installing a week apart can end up running different code. And the promise
+is only as good as the people making it: a bug fix can break a project that
+relied on the bug, and authors sometimes misjudge what counts as breaking.
+
+So npm also writes a **lockfile**, `package-lock.json`, recording the exact
+version of every package it installed, including the dependencies of your
+dependencies. With the lockfile committed, a plain `npm install` on another
+machine installs those locked versions, as long as they still satisfy the
+ranges in `package.json`. `npm ci`, meant for automated builds, is stricter:
+it deletes any installed packages (the `node_modules` folder) first, fails if
+the lockfile and `package.json` disagree, and never rewrites the lockfile.
+
+A dependency then changes version when someone changes the lockfile: by
+running `npm update`, which moves each package to the newest version its
+range allows, by installing a specific version with
+`npm install <name>@<version>`, or by editing a range in `package.json` and
+reinstalling (the locked version only moves if it no longer fits the new
+range). Dependency bots such as Dependabot open pull requests, proposed
+changes for someone to review, that do the same. Each route shows up as a
+change to `package-lock.json`, so an upgrade becomes a
+deliberate change that can be reviewed and tested like any other, instead of
+something that arrives unnoticed on the next install.
 ```
 
 **Expected finding:** no finding that is false of the text. A thorough
@@ -289,11 +344,14 @@ reviewer will usually still raise real gaps in any draft (a missing
 worked example, a nearby topic that overlaps, whether the subject fits
 the section); those are acceptable and are recorded in the run's notes,
 not graded as failures. A literal "nothing to flag" bar would punish
-exactly the rigor the review is supposed to have, and two runs (2026-09-16
-and 2026-09-21) both produced real findings on this control.
+exactly the rigor the review is supposed to have, and every run from
+2026-09-16 to 2026-09-28 (all on the earlier probes draft) produced real
+findings on this control.
 **Fails if:** the review reports a defect that isn't true of the draft: a
 fabricated claim, a misreading of what the text says, or a correct
-technical statement called wrong.
+technical statement called wrong (for example, calling the caret's
+narrower `0.y.z` range, `^0.0.3` matching only `0.0.3`, a plain `npm install`
+following the lockfile, or a bug fix shipping as a patch, an error).
 
 ---
 
@@ -319,7 +377,7 @@ near-duplicate check, as the skill does.
 ```markdown
 ---
 title: Design a Pastebin (like Pastebin.com)
-summary: Storing millions of text snippets behind short links, and why the text itself belongs somewhere other than the database.
+summary: Keeping a year of text snippets behind short links, and why the text itself belongs somewhere other than the database.
 date: 2026-09-28
 order: 2
 ---
@@ -331,103 +389,239 @@ description of how any company built theirs.
 
 ## Requirements
 
-- **Create a paste** from up to 512 KB of text, and get back a link.
-- **Read a paste** by its link.
-- **Expiry (optional):** a paste can expire after a chosen time; the default
-  is never.
+- **Create a paste** from up to 512 KB of text, and get back a link such as
+  `https://paste.example/aZ3kQ9x`.
+- **Read a paste** by opening its link. There are no accounts, so the link is
+  the only thing keeping a paste from strangers, and it must not be guessable.
+- **Expiry:** the creator picks how many days a paste lasts, from 1 to 365;
+  the default, and the maximum, is 365. After that it can't be read, and its
+  text is deleted within a day.
 
 Out of scope: accounts, editing a paste, syntax highlighting and search.
 
 Non-functional: 1 million new pastes a day, 10 reads for every paste
-created, reads under 100 ms at the 99th percentile (the time 99% of reads
-beat), and pastes kept for one year unless they expire sooner.
+created, and reads answered in under 500 ms at the 99th percentile (the time
+99% of reads beat), measured at our servers. A paste is a page someone opens
+by hand, not an API called in a loop, so half a second is acceptable.
 
 ## Back-of-the-envelope estimates
 
 A day has 86,400 seconds, and a peak of ten times the average is a common
-planning assumption.
+planning assumption. Sizes are decimal: 1 KB is 1,000 bytes.
 
 - Writes: 1,000,000 ÷ 86,400 ≈ 12 per second on average, about 120 at peak.
 - Reads: 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
   peak.
-- Storage: at an average paste of 10 KB, 1,000,000 × 10 KB = 10 GB a day,
-  and 10 GB × 365 ≈ 3.65 TB a year.
-- Cache: holding 20% of a day's reads is 0.2 × 10,000,000 = 2,000,000
-  pastes, and at 10 KB each that's 20 GB.
+- Storage: assume an average paste of 10 KB, far below the 512 KB limit
+  since most pastes are a screen or two of text. 1,000,000 × 10 KB = 10 GB a
+  day. No paste outlives 365 days, so storage levels off at about
+  10 GB × 365 ≈ 3.65 TB, and less if many pastes expire sooner.
+- Cache: assume a day's 10 million reads land on about 2 million distinct
+  pastes, five reads each on average, and that they're skewed the familiar
+  80/20 way. A paste linked from a busy forum thread is read thousands of
+  times while most are read once or twice, so the most-read 20% of pastes
+  draw about 80% of reads. Caching everything read in a day would take
+  2,000,000 × 10 KB = 20 GB. Caching the most-read 20% takes
+  0.2 × 2,000,000 = 400,000 pastes, and at 10 KB each, 4 GB, which fits in
+  one server's memory.
 
 Writes and reads are both modest. The number that shapes the design is
-storage: terabytes of text a year.
+storage: terabytes of text.
 
 ## Data model
 
-Two kinds of data with different shapes. Metadata is small and structured:
-an ID, creation time, expiry and size, about 200 bytes a paste. Contents are
-large, opaque blobs of text that are only ever read whole. Metadata goes in a
-relational table keyed by paste ID; contents go in an object store, a service
-that stores files by key and charges per gigabyte (the first deep dive
-compares this with keeping them in the table).
+Two kinds of data with different shapes. **Metadata** is small and
+structured: the paste's ID, creation time and `expires_at`, about 200 bytes a
+paste once the database's per-row overhead and indexes are counted.
+**Contents** are the text itself: large, opaque, and only ever read whole.
+Metadata goes in a relational database (one that keeps rows in tables and is
+queried with SQL), in a table whose **primary key** is the paste ID. The
+primary key is the column that identifies each row: the database refuses two
+rows with the same one, and keeps an
+[index](/systems-and-infrastructure/database-indexing) on it, a lookup
+structure that finds a row without reading the others. A second index, on
+`expires_at`, finds expired rows the same way. Contents go in an **object
+store**, a service that keeps each blob of bytes under a key, hands it back by
+that key, and charges per gigabyte stored and per request (the first deep dive compares this with
+keeping them in the table).
+
+A paste ID is seven base62 characters (the digits and the lower- and
+upper-case letters), so there are 62⁷ ≈ 3.5 trillion possible IDs. They come
+from the scheme the [URL shortener](/system-design/url-shortener) works
+through. A counter, kept as one row in the metadata database, hands out
+blocks of 10,000 numbers to each app server, which uses them from memory.
+Each number then goes through an encryption step over the range 0 to
+62⁷ − 1, keyed with a secret that only the app servers hold, and is written
+as seven characters, padded with leading zeros. The counter never repeats a
+number and the encryption is one-to-one, so an ID is never reused, and 3.5
+trillion IDs last over 9,000 years at 365 million a year. Without the key the
+IDs look random, so guessing one is no better than picking at random: with at
+most 365 million live pastes, 365,000,000 ÷ 62⁷ ≈ 0.01%, about 1 guess in
+9,600, finds a paste. The failure modes cover how fast one address may guess.
 
 ## API design
 
 - `POST /pastes` with `{ "content": "...", "expires_in_days": 7 }` returns
-  `201 Created` and `{ "id": "aZ3kQ9", "url": "https://paste.example/aZ3kQ9" }`.
-- `GET /pastes/aZ3kQ9` returns `200 OK` with the text, `404 Not Found` for an
-  unknown ID, or `410 Gone` once it has expired.
+  `201 Created` and
+  `{ "id": "aZ3kQ9x", "url": "https://paste.example/aZ3kQ9x" }`. Leaving out
+  `expires_in_days` means 365. It returns `400 Bad Request` if
+  `expires_in_days` isn't 1 to 365, `413 Content Too Large` over 512 KB, and
+  `429 Too Many Requests` over the per-address limit in the failure modes.
+- `GET /aZ3kQ9x`, the shared link itself, returns `200 OK` with the text,
+  `404 Not Found` for an unknown ID, or `410 Gone` for a paste that has
+  expired but that the daily cleanup job hasn't deleted yet. After the job
+  deletes it, at most a day after expiry, nothing of the paste is kept and its
+  ID answers `404`; either way, the client learns the paste is gone.
 
 ## High-level architecture
 
-![Clients call a load balancer, which forwards to app servers. App servers read pastes through a cache, store metadata in a relational database, and store paste contents in an object store.](/diagrams/pastebin/architecture.svg)
+![A client calls a load balancer, which forwards to app servers. To read a paste, the app servers check a cache first; on a miss they read the metadata database and the object store and fill the cache. To create one, they store its contents in the object store and its metadata in the metadata database. A daily cleanup job deletes expired pastes' contents from the object store and their rows from the metadata database.](/diagrams/pastebin/architecture.svg)
 
-A read goes to the load balancer, then an app server, which checks the cache
-for the paste; on a miss it reads the metadata row, checks expiry, fetches
-the contents from the object store, and fills the cache. A create writes the
-contents to the object store first, then inserts the metadata row, so a row
-never points at contents that don't exist.
+- The **load balancer** receives every request and spreads them across the
+  app servers.
+- The **app servers** run the service's code. They keep nothing between
+  requests, so any of them can handle any request, and adding one adds
+  capacity.
+- The **cache** holds recently read pastes in memory, keyed by ID, the
+  pattern [caching](/systems-and-infrastructure/caching) covers. Memory
+  answers in well under a millisecond, so a read the cache can answer (a
+  **hit**) skips the database and the object store. It's capped at the
+  estimate's 4 GB, and when full it evicts the least recently used entry
+  (**LRU**), which keeps roughly the most-read pastes, since a popular paste
+  is read again before it reaches the back. The share of reads that hit is
+  the **hit rate**; the 80/20 assumption puts it at about 80%, a little less
+  in practice, since a paste's first read always misses and LRU only
+  approximates the most-read 20%.
+- The **metadata database** and **object store** are the two stores from the
+  data model, and the **daily cleanup job** is in the expiry deep dive.
+
+A read goes to the load balancer, then an app server, which asks the cache
+for the paste. A cache entry holds the contents and `expires_at`, and on a
+hit the app server checks `expires_at` before answering. On a miss it reads
+the metadata row (answering `404` if there's none and `410` if it has
+expired), fetches the contents from the object store, and puts both in the
+cache with a **TTL** (time to live: how long the cache keeps the entry) of
+one day, cut short to `expires_at` if that comes sooner. Without the cap,
+those entries would add up to everything read in a day, about 20 GB. A create
+writes the contents to the object store first, then inserts the metadata
+row, so a live row never points at contents that don't exist.
+
+**Checking the latency target.** A hit takes a few milliseconds. A miss adds
+a lookup by primary key in the database, a few milliseconds more, and an
+object-store fetch, which for a small object typically takes tens of
+milliseconds and can reach a couple of hundred. With about one read in five
+missing, the slowest 1% of reads are all misses, so the 500 ms target holds
+if 95 in 100 misses beat it (1% of reads is 5% of the misses). At around
+200 ms for a slow miss, they do, with room to spare.
 
 ## Deep dive: where paste contents live
 
 **In the database row.** One write, one read, and a single system to back
-up. The cost is that the database carries 3.65 TB of text a year that it never
-queries, which makes its backups, replicas and restores slow and its disks
+up. The cost is that the database carries up to 3.65 TB of text that it never
+queries, which makes its backups, copies and restores slow and its disks
 expensive, since database storage costs far more per gigabyte than object
 storage.
 
-**In an object store.** Cheap per gigabyte and built to grow without limit,
-and the database stays small (200 bytes × 365 million pastes ≈ 73 GB a year).
-The cost is a second system on every request, an extra network round trip on
-a cache miss, and two writes that can half-succeed: contents stored but the
-row insert failed, which leaves an orphaned object that a periodic cleanup
-job has to delete.
+**In an object store.** Cheap per gigabyte, though each upload is billed as a
+request too (at list prices, a million creates a day costs more in requests
+than 3.65 TB costs to store), and built to grow without limit,
+and the database stays small (200 bytes × 365 million pastes, a year's worth,
+≈ 73 GB). The cost is a second system on every create, an extra network
+request on every cache miss, and two writes that can half-succeed: contents
+stored but the row insert failed, which leaves an orphaned object that no row
+points at. Finding those by comparing the store's keys with the table would
+mean listing about 365 million keys, 365,000 list calls a day at 1,000 keys a
+call, and it would race creates in flight, whose object exists a moment
+before their row. Instead, a **lifecycle rule** on the object store, a
+setting that deletes every object older than a given age, removes anything
+older than 366 days. No paste lives longer than 365 days, so the rule never
+touches a live one, and an orphan costs at most a year of storage.
 
-The object store wins here because storage is the dominant number; the
-[caching](/systems-and-infrastructure/caching) layer hides the extra round
-trip for popular pastes.
+The object store wins here because storage is the dominant number. The cache
+hides the extra request for popular pastes, and the latency check above
+already counts it for the rest.
 
 ## Deep dive: expiring pastes
 
+Every paste has an `expires_at`, so expiry has two jobs: stop serving a paste
+once that time passes, and delete it so storage stays at a year's worth.
+
 **Check on read.** The app server compares `expires_at` with the current time
-and answers `410` if it has passed. It's exact and costs nothing extra, but
-expired pastes keep using storage forever.
+on every read, hit or miss, and answers `410` if it has passed; a cache
+entry's TTL, capped at `expires_at`, also drops it from memory at that
+moment. It's exact and costs one comparison, but on its own it deletes
+nothing: expired text would pile up past the 3.65 TB estimate, and the
+requirement that it's deleted would go unmet.
 
-**A background sweep.** A daily job deletes expired rows and their objects.
-It reclaims storage, but on its own leaves up to a day in which an expired
-paste could still be served.
+**A background sweep.** A daily job uses the index to find rows whose
+`expires_at` has passed, and for each one deletes the object and then the
+row. Once the service has run for a year, that's about a million pastes a
+day, the same rate they're created. It reclaims storage, but on its own
+leaves up to a day in which an expired paste could still be served.
 
-Doing both gives exactness on read and reclaimed storage within a day.
+Doing both gives exact expiry on read and storage reclaimed within a day.
+Deleting the object before the row means a failure between the two leaves an
+expired row with no object. Reads of it answer `410` from the row without
+fetching anything, and the next run finds the row again, deletes the
+already-missing object, which is harmless, and removes the row. The other
+order would leave an object that no row points at, which only the 366-day
+lifecycle rule would ever remove.
 
 ## Failure modes and bottlenecks
 
-Anyone can create pastes, so creation is limited per IP address with
-[rate limiting](/systems-and-infrastructure/rate-limiting). If the object
-store is slow, cached pastes still load and uncached ones slow down; the
-cache hit rate is the number to watch.
+**The cache node is lost.** Every read misses until the cache refills: about
+1,160 reads a second at peak, each a primary-key lookup in the database and a
+fetch from the object store. That load is well within what one relational
+database and an object store serve, and at around 200 ms a slow miss still
+beats the 500 ms target, so reads get slower but keep working while popular
+pastes fill the cache again. The per-address counts in the abuse limits
+below, kept in the cache, start over.
+
+**The metadata database is unavailable.** Creates fail, since there's nowhere
+to insert the row, and so do cache misses. Cache hits still work, because an
+entry holds the contents and `expires_at`, so about four reads in five keep
+being answered. A standby copy of the database, kept up to date and promoted
+when the main one fails, keeps that window short.
+
+**The cleanup job stops running.** Reads still answer `410` on time, so
+nothing looks wrong, but expired text is no longer deleted within a day, as
+the requirements promise; rows pile up, and the lifecycle rule removes the
+contents only at 366 days. The job records when it last finished, and an
+alert fires if that was more than 26 hours ago.
+
+**The object store is slow.** Cached pastes still load and uncached ones slow
+down. The latency check assumed a slow miss takes around 200 ms and about one
+read in five misses, so watch both numbers: the object store's fetch latency,
+and the hit rate, since a lower hit rate puts more reads on the slow path.
+
+**Abuse.** Anyone can create pastes, so creation is limited per IP address
+with [rate limiting](/systems-and-infrastructure/rate-limiting), counted in
+the cache that every app server shares: 10 creates a minute per address. An
+address at the limit makes one create every 6 seconds, 1/720 of the
+120-a-second peak, so no single sender can flood the service. The cost falls
+on people who share one address, such as an office or school behind one
+router that translates many devices to a single public address (NAT): they
+share the limit too and see `429` sooner. Reads get a limit aimed at
+guessing: an address that gets 100 `404`s in an hour is blocked for the rest
+of that hour, which holds it to about 100 × 0.01% ≈ 0.01 pastes found an
+hour, one every four days.
 
 ## Trade-offs
 
-- Object storage over database rows: cheaper and simpler to scale, at the cost
-  of a second system and orphan cleanup.
-- Check-on-read plus a sweep over either alone: one more job to run, in
-  exchange for both exact expiry and reclaimed storage.
+- **Object storage for contents.** It keeps 3.65 TB of text out of the
+  database and is cheap per gigabyte; the price is a second system on every
+  create and a lifecycle rule to catch orphans.
+- Expiry is enforced twice, by the check on read and by the daily sweep.
+  That's one more job to run and alert on, and it's what gives both exact
+  expiry and storage that stops growing at a year of pastes.
+- IDs come from a keyed encryption step rather than a scramble anyone could
+  undo, which puts a secret key on the app servers; an undoable scramble would
+  let anyone list the IDs actually issued. Seven characters rather than six
+  make every link one character longer, and in return a guess finds a paste
+  about once in 9,600 tries instead of once in 156.
+- A deleted paste's ID answers `404`, not `410`. An exact answer would
+  mean keeping a record of every expired ID, and here nothing of an expired
+  paste is kept.
 ```
 
 Base diagram source (`src/system-design/diagrams/pastebin/architecture.d2`,
@@ -439,15 +633,18 @@ client: Client
 lb: Load balancer
 app: App servers
 cache: Cache
-db: Metadata DB {
+db: Metadata database {
   shape: cylinder
 }
 objects: Object store
+cleanup: Daily cleanup job
 client -> lb
 lb -> app
-app -> cache: "read first"
+app -> cache: "check first, fill on miss"
 app -> db: "metadata"
 app -> objects: "contents"
+cleanup -> objects: "delete expired contents"
+cleanup -> db: "then delete expired rows"
 ```
 
 ---
@@ -486,18 +683,22 @@ contents in the database or says what the choice costs.
 
 ```markdown
 Paste contents go in an object store. On a create, the app server uploads the
-text under the paste's ID, then inserts the metadata row with the object's
-key. On a read, it fetches the row, then the object, and caches the result.
-Objects are stored in one bucket, and the
-[caching](/systems-and-infrastructure/caching) layer keeps popular pastes in
-memory so most reads never reach the object store.
+text under the paste's ID, then inserts the metadata row. On a cache miss, it
+reads the row, then fetches the object, and puts both in the cache. The cache
+keeps popular pastes in memory, so most reads never reach the object store. A
+**lifecycle rule** on the object store, a setting that deletes every object
+older than a given age, removes anything older than 366 days.
 ```
 
 **Expected finding:** flags that this deep dive picks object storage without
 comparing any alternative (keeping contents in the database row is the
 obvious one) and without saying what the choice costs (a second system, an
-extra round trip, two writes that can half-succeed), contrary to the
-checklist's "each deep dive compares at least two options."
+extra request on a cache miss, two writes that can half-succeed), contrary to
+the checklist's "each deep dive compares at least two options." A reviewer may
+also note that the data model promises a comparison this deep dive doesn't
+make, or that Trade-offs and the expiry deep dive name costs (a second system,
+orphaned objects the lifecycle rule catches) the body never argues; all are
+the same planted gap.
 **Fails if:** the review doesn't flag the missing comparison, or flags only
 the other deep dive.
 
@@ -507,11 +708,28 @@ the other deep dive.
 
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
 **Planted violation:** none. The base draft, verbatim. Its estimates are
-correct (1,000,000 ÷ 86,400 ≈ 11.6; 10,000,000 ÷ 86,400 ≈ 115.7;
-1,000,000 × 10 KB = 10 GB; 10 GB × 365 = 3,650 GB; 200 B × 365,000,000 =
-73 GB; 0.2 × 10,000,000 × 10 KB = 20 GB), both deep dives compare two options
-with their costs, and the diagram shows exactly the components the prose
-names.
+correct and each follows from a stated requirement or assumption
+(1,000,000 ÷ 86,400 ≈ 11.6; 10,000,000 ÷ 86,400 ≈ 115.7; 1,000,000 × 10 KB =
+10 GB; 10 GB × 365 = 3,650 GB; 10,000,000 ÷ 2,000,000 = 5 reads a paste;
+2,000,000 × 10 KB = 20 GB; 0.2 × 2,000,000 × 10 KB = 4 GB; 1% of reads ÷ 20%
+missing = 5% of misses; 200 B × 365,000,000 = 73 GB; 62⁷ = 3,521,614,606,208,
+which at 365,000,000 a year is about 9,648 years; 365,000,000 ÷ 62⁷ ≈ 0.0104%,
+1 in about 9,648, against 62⁶ ÷ 365,000,000 ≈ 156 for six characters;
+365,000,000 keys ÷ 1,000 a list call = 365,000 calls; 120 ÷ (10 ÷ 60) = 720;
+100 guesses × 0.0104% ≈ 0.0104 pastes an hour, one every 96 hours). IDs come
+from the URL shortener's counter-plus-keyed-encryption scheme, with the
+counter in the metadata database and the key on the app servers, and the
+guess odds are stated and rate-limited. Retention is one rule (every paste
+expires within 365 days) that the check on read and the daily sweep enforce,
+with a 366-day lifecycle rule as the backstop for orphans; the sweep deletes
+the object before the row, so a failure leaves an expired row the next run
+finds again; expiry is checked on cache hits as well as misses; the cache is
+capped at 4 GB with LRU eviction; the API says when `410` gives way to `404`;
+the latency target is checked against the miss path; the failure modes cover
+the cache, the database, the cleanup job and the object store; both deep
+dives compare two options with their costs; and the diagram shows exactly the
+components the prose names (the counter is a row in the metadata database and
+the lifecycle rule a setting of the object store, not components).
 **Expected finding:** no finding that is false of the draft. Real gaps, such
 as its thinness next to the reference case study or a missing sequence
 diagram, are acceptable and go in the run's notes.
