@@ -20,7 +20,7 @@ staleness (`CLAUDE.md`, `docs/`, `evals/`, every `SKILL.md`) against
 current repo state; this one covers the prose _quality_ of the published
 topics themselves under `src/content/**` and the System Design case
 studies under `src/system-design/case-studies/`, against
-[CLAUDE.md](../../../CLAUDE.md)'s Writing Standard. Neither one's scope
+the [Writing Standard](../../../docs/writing-standard.md). Neither one's scope
 includes the other's.
 
 ## Why an independent read, not a self-check
@@ -55,7 +55,7 @@ own (each is long and links into many topics, so keep the batch small; check
 
 Spawn a **fresh** `general-purpose` agent per batch (never `fork` — it
 must not inherit any prior read of these files). Give each agent its
-batch's file list, [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard, the path of
+batch's file list, the [Writing Standard](../../../docs/writing-standard.md), the path of
 `docs/NON_NEGOTIABLES.md` (a violation there is always a real finding),
 and this instruction, close to verbatim:
 
@@ -121,7 +121,7 @@ and this instruction, close to verbatim:
 >
 > **5. Systems topics only (skip for other sections and case studies) —
 > is the closing `## Where you'll meet this` section general and true?**
-> It should name kinds of systems (CLAUDE.md's reference set) and say what the
+> It should name kinds of systems (the reference set in docs/content.md) and say what the
 > topic does
 > there, without re-teaching the mechanism. Flag any claim about how a
 > specific named company builds something (it can't be verified), any

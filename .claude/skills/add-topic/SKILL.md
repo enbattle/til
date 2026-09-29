@@ -1,14 +1,14 @@
 ---
 name: add-topic
-description: Add a new topic markdown file to an existing section in this til repo, with an independent review against CLAUDE.md's Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow CLAUDE.md's "Adding a new section" steps, or use /feature if it should get full review) and not for anything touching app code.
+description: Add a new topic markdown file to an existing section in this til repo, with an independent review against the Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow the "Adding a new section" steps in docs/content.md, or use /feature if it should get full review) and not for anything touching app code.
 ---
 
 # Add a topic
 
 A new topic file is the most common change in this repo, and the least
 code-shaped: there's no behavior to spec or TDD against, just prose held to
-[CLAUDE.md](../../../CLAUDE.md)'s Writing Standard and frontmatter
-contract. Running it through the full `/feature` pipeline (spec, TDD,
+the [Writing Standard](../../../docs/writing-standard.md) and the frontmatter
+contract in [docs/content.md](../../../docs/content.md). Running it through the full `/feature` pipeline (spec, TDD,
 fresh implementer) would be ceremony with nothing behind it — but skipping
 review entirely means the repo's most frequent change gets _less_ scrutiny
 than a one-line code fix, which is the gap this skill exists to close. See
@@ -21,7 +21,7 @@ This skill is for a topic file in an **existing** section only. If the
 request also needs a new section (a `registry.ts` change), a change to
 `content.ts`/`frontmatter.ts`, or any other app code, stop — that's a
 `/feature`-shaped change (or, if it's genuinely just the 3-step "Adding a
-new section" process in CLAUDE.md with no ambiguity, just do that
+new section" process in docs/content.md with no ambiguity, just do that
 directly). Don't stretch this skill to cover code changes.
 
 ## Stage 1 — Draft the topic
@@ -29,8 +29,8 @@ directly). Don't stretch this skill to cover code changes.
 Write the file yourself, directly — drafting prose has no adversarial bias
 to guard against (the same reasoning `docs/SDLC.md` gives for keeping spec-writing
 with the orchestrating session), so there's no reason to burn a subagent on
-a first draft. Follow the contract in CLAUDE.md's "Content architecture"
-and "Writing standard" sections exactly:
+a first draft. Follow the contract in docs/content.md ("Content architecture") and
+docs/writing-standard.md exactly:
 
 - File at `src/content/<section-slug>/<topic-slug>.md`, slug kebab-case,
   matching an existing section folder.
@@ -51,7 +51,7 @@ and "Writing standard" sections exactly:
   link-only; any other prose change to an existing topic is its own change.
   List them for the Stage 3 reviewer.
 - **If the section is `systems-and-infrastructure`, end the topic with a
-  `## Where you'll meet this` section.** CLAUDE.md has the convention, the
+  `## Where you'll meet this` section.** docs/content.md has the convention, the
   reference systems and the rules; `src/content/where-youll-meet-this.test.ts`
   fails without it. General claims only: never how a specific company builds
   something.
@@ -80,7 +80,7 @@ never needs its own test.
 
 Spawn a **fresh** `general-purpose` agent (never `fork` — it must not
 inherit your own read of the draft). Give it: the new file's full content,
-CLAUDE.md's "Writing standard" section, the path of
+`docs/writing-standard.md`, the path of
 `docs/NON_NEGOTIABLES.md` (a violation there is always a real finding), and
 the titles/slugs of the other
 topics already in the same section (so it can check for a near-duplicate).

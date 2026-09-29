@@ -43,7 +43,7 @@ For each scenario in `scenarios.md`:
 1. **Read fresh inputs, don't reuse a cached copy:**
    - `add-topic/SKILL.md`'s current Stage 3 reviewer instruction, copied
      verbatim.
-   - `CLAUDE.md`'s current "Writing standard" section, copied verbatim.
+   - `docs/writing-standard.md` as it stands now, copied verbatim.
    - The scenario's declared **Section**'s current topic titles/slugs
      (e.g. `ls src/content/systems-and-infrastructure/`), globbed at run
      time — not a hardcoded list, the corpus grows.
@@ -101,8 +101,8 @@ scenario.
 ## When to run this
 
 - After editing `add-topic/SKILL.md`'s or `add-case-study/SKILL.md`'s
-  Stage 3 prompt (run the matching `CR-*` or `CS-*` scenarios), or `CLAUDE.md`'s
-  Writing Standard section, or `docs/NON_NEGOTIABLES.md` — the three inputs
+  Stage 3 prompt (run the matching `CR-*` or `CS-*` scenarios), or
+  `docs/writing-standard.md`, or `docs/NON_NEGOTIABLES.md` — the three inputs
   this eval depends on (see the table in `evals/README.md`).
 - Whenever a real `add-topic` or `add-case-study` review misses something
   in actual use —

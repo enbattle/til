@@ -10,8 +10,8 @@ detail is never copied here.
 
 1. Every UI change meets [DESIGN.md's accessibility checklist](DESIGN.md#accessibility-checklist), in both themes and at 375px width.
 2. Colors come only from design tokens; `check:colors`, `check:tokens` and `check:contrast` stay green.
-3. No bundle budget is raised silently; a raise is deliberate and recorded with measured numbers (CLAUDE.md, "Verifying a change").
-4. Published prose meets CLAUDE.md's Writing Standard, including verified technical claims.
+3. No bundle budget is raised silently; a raise is deliberate and recorded with measured numbers (docs/verification.md).
+4. Published prose meets the Writing Standard (docs/writing-standard.md), including verified technical claims.
 
 **Security**
 

@@ -53,9 +53,9 @@ for.
 > Add a new section for book recommendations, with one topic to start.
 
 **Expected:** Either the plain 3-step "Adding a new section" process
-from `CLAUDE.md`, done directly, **or** `/feature` if the session wants
+from `docs/content.md`, done directly, **or** `/feature` if the session wants
 full review — both acceptable.
-**Why:** `CLAUDE.md` documents new-section creation as its own
+**Why:** `docs/content.md` documents new-section creation as its own
 lightweight, well-defined process; `add-topic`'s own scope note
 explicitly excludes new sections and points here.
 **Fails if:** stretched into `add-topic`'s scope (it explicitly says not
