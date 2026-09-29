@@ -84,7 +84,10 @@ notebook than a product. The UI follows that:
   `--header-height`, because the header's height varies with width: one row
   of about 68px from `sm` up, two rows of about 105px at 375px, three on the
   narrowest phones. So the header never covers a heading a Contents link
-  jumps to. Opening a topic or case study at a `#<heading-id>` URL works too:
+  jumps to. The same goes for in-body links: a markdown link whose href
+  starts with `#` (the "At a glance" section's links to headings) renders as
+  a plain same-tab anchor, a `/…` link is a router `Link`, and an external
+  link opens in a new tab with `rel="noreferrer"`. Opening a topic or case study at a `#<heading-id>` URL works too:
   the body loads after the browser's own jump, so `LazyBody` scrolls the
   heading into view once the body renders, and the same scroll margin applies;
   after that it re-aligns the heading whenever layout above it shifts, for at

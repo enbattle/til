@@ -41,9 +41,9 @@ order: 2
   throws at load time, naming the file and field, if any of the four fields is
   missing or `order` isn't a positive integer.
 - **The template is enforced.** The body's `##` headings are exactly, in
-  order: `Requirements`, `Back-of-the-envelope estimates`, `Data model`,
-  `API design`, `High-level architecture`, two or more `Deep dive: <topic>`,
-  `Failure modes and bottlenecks`, `Trade-offs`
+  order: `At a glance`, `Requirements`, `Back-of-the-envelope estimates`,
+  `Data model`, `API design`, `High-level architecture`, two or more
+  `Deep dive: <topic>`, `Failure modes and bottlenecks`, `Trade-offs`
   (`src/system-design/case-study-structure.test.ts`), and
   `High-level architecture` contains at least one diagram, written as an inline
   image, `![alt](/diagrams/<slug>/<name>.svg)` (the test doesn't count the
@@ -53,6 +53,28 @@ order: 2
   heading-id pass (`h2Headings` in `src/lib/headings.ts`), so every entry links
   to the id its heading renders with; still, keep them plain text. The URL shortener
   (`url-shortener.md`) is the reference example to copy.
+- **At a glance is a one-screen summary.** It comes after the intro and
+  before `Requirements`, about 250–400 words, and holds four paragraphs, each
+  opening with a bold lead-in and followed by a list, in this order:
+  `**Requirements.**` (4–6 bullets with their numbers), `**Key numbers.**`
+  (4–5 figures from the estimates, each with its one-line derivation),
+  `**Key decisions.**` (exactly 3, each "decision: one-line reason") and
+  `**Likely follow-ups.**` (4–6 interviewer questions, each with a
+  one-sentence answer). Every decision and follow-up links to the section that
+  argues it in full with an in-page link, `[text](#heading-id)`, using the id
+  the heading renders with (`headingId` in `src/lib/headings.ts`: "Deep dive:
+  the read path" is `#deep-dive-the-read-path`). It doesn't embed the
+  architecture diagram; it ends with a standalone paragraph linking to
+  `#high-level-architecture`. Every figure in it must match the body. The
+  structure test checks that `## At a glance` is the first `##` heading; that
+  the four bold lead-ins appear in that order; that every item (nested items
+  included) of every list under `Key decisions` and `Likely follow-ups`,
+  including a list inside a blockquote, has its own in-page link; that the
+  section's last block is a standalone paragraph linking to
+  `#high-level-architecture`; and that every in-page link anywhere in the body
+  resolves to the id of a `#` or `##` heading as the page renders it (a `###`
+  heading has no id, so a link to one fails). The renderer keeps a `#…` link in
+  the same tab.
 - **Links are the data.** A case study's catalog links are extracted at build
   time (the `?links` query, running `extractTopicRefs` from
   `src/lib/markdown-links.ts`), and the page's "Go deeper" list and each

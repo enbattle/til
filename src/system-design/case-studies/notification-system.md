@@ -25,6 +25,64 @@ fail after it has already had an effect. What follows is one plausible design
 for a service like this, not a description of how any particular company built
 theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Turn a backend service's request into push, email, SMS and in-app sends,
+  respecting the user's preferences and quiet hours.
+- 100 million users; 100 million transactional requests a day (200 million
+  sends) plus up to 300 million marketing sends.
+- Transactional messages reach their provider within 2 seconds at p99, even
+  during the largest campaign.
+- A 50-million-user campaign finishes within an hour and can be cancelled.
+- Requests accepted 99.99% of the time, never silently lost, almost never
+  sent twice.
+
+**Key numbers.** From the estimates:
+
+- 12,000 requests a second at peak: 100 million ÷ 86,400 ≈ 1,200, times ten.
+- 24,000 transactional sends a second at peak, two per request.
+- 14,000 campaign sends a second: 50 million ÷ 3,600 seconds.
+- About 40,000 sends a second for the worst hour: 24,000 + 14,000 = 38,000,
+  rounded up.
+- 152,000 status updates a second in that hour: 38,000 sends × up to four
+  updates.
+
+**Key decisions.**
+
+- A queue and sender pool per channel and priority: a campaign can't delay a login
+  code, and a failing provider can't stall the other channels
+  ([priority deep dive](#deep-dive-priority-and-per-channel-queues)).
+- On an unknown outcome, resend transactional and drop marketing: a second
+  login code is an annoyance, a missing one blocks a sign-in
+  ([exactly-once deep dive](#deep-dive-exactly-once-processing-but-not-exactly-once-delivery)).
+- Retries re-queued with a delay until a per-category deadline: workers stay
+  free during an outage, and expired login codes and marketing become
+  `expired` rows, not millions of dead letters
+  ([retries deep dive](#deep-dive-retries-provider-limits-and-the-dead-letter-queue)).
+
+**Likely follow-ups.**
+
+- What if a user opts out while their message is queued? Preferences are
+  checked at fan-out, and campaign pacing keeps only about two minutes queued
+  ([preferences](#deep-dive-preferences-quiet-hours-and-templates)).
+- How is a provider's limit shared? Both email pools draw from one counter of
+  20,000 a second; the campaign gets 20,000 minus the larger of transactional
+  usage and a 4,000 floor
+  ([priority](#deep-dive-priority-and-per-channel-queues)).
+- What if the SMS provider goes down? A circuit breaker stops calling it, and
+  new login codes go out by push or email where the type allows
+  ([retries](#deep-dive-retries-provider-limits-and-the-dead-letter-queue)).
+- Can a user get a message twice? Rarely: only a transactional send whose
+  outcome is unknown (a sender crash, a timeout or ambiguous `5xx` after the
+  provider accepted it, or a sender stalled past its lease), and never at a
+  provider that takes an idempotency key
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+The components, and one login code's path through them, are in
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements say what the system does:

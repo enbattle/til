@@ -22,6 +22,65 @@ reconciliation against the money that actually moved. It is one plausible
 design for a service like PayPal, not a description of how any particular
 company built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Card payments, top-ups, wallet payments, transfers, refunds and
+  chargebacks, with a balance and history for every account.
+- 50 million money movements a day for 100 million users and 2 million
+  merchants.
+- Money is never created or lost: every movement's records sum to zero, and a
+  retried request moves money at most once.
+- A confirmed movement survives the loss of a database server.
+- Wallet payments, transfers and our share of a card payment under 300 ms at
+  p99.
+- 99.95% availability, refusing payments during a failover rather than
+  accepting them on a guess.
+
+**Key numbers.** From the estimates:
+
+- About 5,800 movements a second at peak (50,000,000 ÷ 86,400 ≈ 580, times
+  ten).
+- About 22,800 database transactions a second at peak (197 million a day ÷
+  86,400 ≈ 2,280, times ten).
+- 16 shards at about 1,425 transactions a second each at peak (22,800 ÷ 16,
+  against a planning ceiling of 2,500).
+- About 182 million ledger entries a day (60M card + 10M top-up + 73.1M
+  wallet-payment + 38.8M transfer entries), about 3.6 per movement.
+- About 71 GB a day (36 GB of entries + 20 GB of payment records + 15 GB of
+  webhook events), about 26 TB a year (71 GB × 365).
+
+**Key decisions.**
+
+- A double-entry ledger whose entries are never edited: every transaction sums
+  to zero, or the commit refuses it
+  ([the ledger](#deep-dive-the-ledger-and-its-balances)).
+- Idempotency keys from the caller down to the processor: a retry after a
+  timeout gets the first result instead of a second charge
+  ([the processor](#deep-dive-paying-through-a-processor-you-don-t-control)).
+- Cross-shard transfers as a saga through clearing accounts, not two-phase
+  commit: every transaction stays on one shard, and no lock is held across a
+  network call ([sharding](#deep-dive-sharding-the-ledger-and-moving-money-between-shards)).
+
+**Likely follow-ups.**
+
+- What if a card authorization times out? Retries reuse the same key, and after
+  about 20 seconds the API answers `202` and workers resolve it
+  ([the processor](#deep-dive-paying-through-a-processor-you-don-t-control)).
+- How would you catch the processor charging twice? The daily reconciliation
+  matches every settlement-file line to a ledger transaction
+  ([reconciliation](#deep-dive-reconciliation)).
+- Why not cache every account's balance? A cached balance row is locked until
+  commit, about 250 updates a second, too few for the fee and merchant
+  accounts ([the ledger](#deep-dive-the-ledger-and-its-balances)).
+- What if a shard's primary fails? Its synchronous replica is promoted within
+  about a minute with nothing confirmed lost
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+The components are in
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

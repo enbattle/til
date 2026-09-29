@@ -16,6 +16,62 @@ at once, in a fraction of a second.
 What follows is one plausible design, sized well below the largest web search
 engines, not a description of how any company builds theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Return the ten best pages for a query, with title, URL and snippet, within
+  300 ms at p99.
+- Index 1 billion pages and answer 500 million queries a day.
+- Crawl by following links, obeying `robots.txt` and a polite rate per site.
+- Show a fetched change in results within 10 minutes; refetch 5 million
+  fast-changing pages hourly and the rest at least every 30 days.
+- Answer 99.9% of queries, where missing at most 2 of 100 shards still counts.
+
+**Key numbers.** From the estimates:
+
+- 60,000 queries/s at peak (500 million ÷ 86,400 ≈ 6,000, × 10); 36,000/s
+  reach the index after a 40% result-cache hit rate.
+- A 1.5 TB index (250 billion postings × 6 bytes), 15 GB per shard across 100
+  shards; with snippet text, ranking features and the day's changes, about
+  37 GB of memory per shard.
+- 2,400 index servers (100 shards × 24 replicas), each replica at 47% CPU at
+  peak.
+- ≈ 2,000 fetches/s for the crawler (1,390 fast set + 390 others + 40 new,
+  plus retries).
+- ≈ 400 changed pages/s (20% of refetches, plus new pages).
+
+**Key decisions.**
+
+- Split the index by page, not by word: load spreads evenly and nothing large
+  crosses the network
+  ([splitting the index](#deep-dive-splitting-the-index-across-machines)).
+- A ranking cascade inside each shard: cheap scoring picks 200 candidates, and
+  only those get the full model (2 ms)
+  ([ranking](#deep-dive-ranking-within-the-time-budget)).
+- An immutable daily base plus a small live index: changes are searchable
+  within seconds of reaching a replica
+  ([freshness](#deep-dive-keeping-the-index-fresh)).
+
+**Likely follow-ups.**
+
+- How do you keep a 100-shard fan-out fast? Only 37% of queries see every
+  shard beat its p99, so a replica that hasn't replied by 30 ms (its p95) gets
+  a hedged copy on a second replica, for about 5% more load, and a 100 ms
+  deadline caps the rare case where both are slow
+  ([splitting the index](#deep-dive-splitting-the-index-across-machines)).
+- How does a crawl reach the index without losing changes? The doc row and an
+  outbox row commit in one transaction, and replicas drop any record whose
+  version isn't higher ([freshness](#deep-dive-keeping-the-index-fresh)).
+- What if a whole region goes down? The other two carry the peak at 74% CPU
+  ([failure modes](#failure-modes-and-bottlenecks)).
+- What stops one bad query from crashing every shard? Aggregators refuse, for
+  an hour, a query linked to two replica crashes
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+How the pieces connect is in the
+[high-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

@@ -21,6 +21,61 @@ Claude, not a description of how any company runs theirs. Hardware and
 throughput figures are round assumptions chosen to make the arithmetic
 visible, not measurements of a particular product.
 
+## At a glance
+
+**Requirements.**
+
+- Stream each reply as it is generated; list, reopen and continue
+  conversations; stop or retry a reply.
+- 10 million daily active users sending 20 messages each, 200 million turns a
+  day.
+- First token within 2 seconds at p99 for new input under 8,000 tokens; at
+  least 20 tokens/s per reply at the median, with no gap over 100 ms at p99.
+- A per-plan token quota over a rolling five-hour window.
+- Sending 99.9% available, and a reply the user saw finish is never lost.
+
+**Key numbers.** From the estimates:
+
+- ≈ 7,000 turns/s at peak (200 million ÷ 86,400 ≈ 2,315, × 3).
+- 1,050 new prefill tokens a turn, not 3,000, with half of earlier turns in
+  the prefix cache (100 + 0.5 × 1,900).
+- 0.16 replica-seconds a turn (0.026 s prefill + 0.133 s decode).
+- 1,600 replicas, 12,800 GPUs (7,000 × 0.16 = 1,120 busy, ÷ 0.7).
+- 98,000 replies in progress at peak (7,000 × 14 seconds each).
+
+**Key decisions.**
+
+- Server-sent events, and the reply saved once at the end under a
+  `generation` check: a finished reply is always stored and a stalled server
+  can't overwrite a retry ([streaming](#deep-dive-streaming-and-saving-a-reply)).
+- Continuous batching with chunked prefill: about 100 replies share each
+  decode step (3,000 tokens/s per replica), and a step that also carries a
+  512-token prompt piece stays near 46 ms, inside the 100 ms gap limit
+  ([batching](#deep-dive-batching-and-the-kv-cache)).
+- Route by conversation with a bounded load, plus a short queue for
+  admission: the prefix-cache hits keep the fleet at 1,600 replicas instead of
+  about 2,080 ([routing](#deep-dive-routing-and-admission-control)).
+
+**Likely follow-ups.**
+
+- Why not WebSockets? Every reply answers a request the client just made, so a
+  one-way stream over plain HTTP is enough
+  ([streaming](#deep-dive-streaming-and-saving-a-reply)).
+- What happens when the phone drops the connection? The reply keeps
+  generating, and a rejoin proxies the stream from the owning chat server
+  ([streaming](#deep-dive-streaming-and-saving-a-reply)).
+- Why not batch statically? A new request would wait behind the longest reply,
+  over a minute for 2,000 tokens ([batching](#deep-dive-batching-and-the-kv-cache)).
+- What happens past the planned peak? Requests queue only if they can still
+  meet the 2-second target; the rest get `503`, free tier first
+  ([routing](#deep-dive-routing-and-admission-control)).
+- What if a GPU replica fails mid-reply? The chat server sends the prompt plus
+  the text so far to another replica, a pause of a second or two
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+How the pieces connect is in the
+[high-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

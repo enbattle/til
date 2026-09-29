@@ -25,6 +25,65 @@ channel. Each has an ID, such as `c-42`, and a list of members. **Fan-out**
 is turning one stored message into what each member's devices need: a live
 delivery, a pointer for their next sync, or a push notification.
 
+## At a glance
+
+**Requirements.**
+
+- Text messages in 1:1 chats, groups of up to 100 and channels of up to
+  50,000, in the same order for every member.
+- Sent, delivered and read states in chats and groups; offline users get a
+  push and the message on reconnect, on every device.
+- 200 million daily active users sending 50 messages a day each, history
+  kept indefinitely.
+- An online recipient gets a message within 500 ms at p99; the sender sees
+  "sent" within 200 ms.
+- Sending and receiving 99.99% available, and a message shown "sent" is
+  never lost.
+
+**Key numbers.** From the estimates:
+
+- 1.2 million messages a second at peak: 10 billion ÷ 86,400 ≈ 116,000,
+  times ten.
+- 5.1 million deliveries a second at peak: 4.4 users per message
+  (0.7 × 2 + 0.3 × 10) × 10 billion = 44 billion a day ÷ 86,400 ≈ 509,000 a second, times ten.
+- 50 million open connections on 200 gateways: a quarter of daily users
+  online, 250,000 per gateway.
+- 1.67 million heartbeats a second: 50 million connections ÷ 30 seconds.
+- About 1.8 PB of messages a year: 10 billion × 500 bytes = 5 TB a day.
+
+**Key decisions.**
+
+- A per-conversation sequence number from one owning instance: one order for
+  everyone, and gaps a device can detect
+  ([ordering deep dive](#deep-dive-ordering-messages)).
+- At-least-once delivery with deduplication by `message_id`: nothing
+  acknowledged is lost on a network that drops replies
+  ([delivery deep dive](#deep-dive-delivery-receipts-and-offline-users)).
+- Fan out on write up to 100 members, store once above: a 50,000-member
+  channel sending once a second would otherwise add about 10% to all
+  deliveries ([groups deep dive](#deep-dive-groups-and-large-channels)).
+
+**Likely follow-ups.**
+
+- How does a message find the recipient's connection? A session registry
+  maps each online user to their gateways
+  ([connections](#deep-dive-holding-50-million-connections)).
+- What does an offline phone get? A push, then a sync that reads its inbox
+  from its last processed position
+  ([delivery](#deep-dive-delivery-receipts-and-offline-users)).
+- Don't receipts swamp the system? They are cursors, "read up to 812", so 20
+  piled-up messages cost two receipts instead of 40
+  ([receipts](#deep-dive-delivery-receipts-and-offline-users)).
+- How is presence kept cheap? A change goes only to devices with that chat
+  open, about 12,000 notifications a second instead of 9.3 million
+  ([presence](#deep-dive-presence-and-typing-indicators)).
+- What happens when a gateway dies? Its 250,000 clients reconnect with
+  backoff over 30 seconds, about 8,300 a second, and sync what they missed
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+The components, and one message's path, are in
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

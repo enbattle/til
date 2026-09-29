@@ -32,6 +32,64 @@ can drift with no deploy at all) is the subject of
 This is one plausible design for a video site's "Recommended for you" grid,
 not a description of how YouTube or anyone else builds theirs.
 
+## At a glance
+
+**Requirements.** What the system must do:
+
+- Return 20 ordered videos for a signed-in user's home page within 150 ms at
+  p99.
+- 100 million daily active users loading the page 5 times a day; 50 million
+  videos, with about 200,000 new ones a day.
+- Lean toward what the session is watching within about a minute, and drop a
+  hidden or taken-down video within a minute.
+- Let a video uploaded today appear within an hour, and give a new user a
+  reasonable first list.
+- Some list 99.95% of the time, a personalized one 99.9%.
+
+**Key numbers.** From the estimates, at a 3× peak:
+
+- ≈ 18,000 requests/s at peak (500 million a day ÷ 86,400 ≈ 5,800, × 3).
+- 9 million candidate scores/s (18,000 × 500), 24 ranking servers of 32 cores
+  at 60%.
+- A 32 GB ANN index (50 million × 128 floats × 4 bytes, plus graph links),
+  on 15 replicas.
+- 900,000 feature-store reads/s after a 90% cache hit rate on 9 million
+  lookups.
+- 8 TB a day of served records (500 million × 16 KB), the largest store.
+
+**Key decisions.** The three that shape it:
+
+- Candidates from ANN over embeddings, co-watch lists and trending together:
+  each source covers another's gap, and losing one still leaves a list
+  ([candidate generation](#deep-dive-candidate-generation)).
+- Train the ranker on features logged at serving time: training matches
+  serving by construction
+  ([feature store](#deep-dive-the-feature-store-and-training-serving-skew)).
+- One exploration slot in 20 for videos under 48 hours old: about 1,500 seen
+  impressions and 75 clicks per new video
+  ([cold start](#deep-dive-cold-start)).
+
+**Likely follow-ups.** What an interviewer asks next:
+
+- Why not exact nearest-neighbour search? It would need 9,600 cores at 60%,
+  about 40 times ANN's, to recover about 15 missed candidates of 300
+  ([candidate generation](#deep-dive-candidate-generation)).
+- How do you stop a new user tower meeting an old index? One serving pointer
+  names both, flipped by a conditional write, and each request pins its
+  versions ([candidate generation](#deep-dive-candidate-generation)).
+- How does a replayed event not double a count? Online writes overwrite a
+  value guarded by its `as_of`, and repeated event IDs are dropped
+  ([feature store](#deep-dive-the-feature-store-and-training-serving-skew)).
+- What if the feature store is down? The service falls back to a regional
+  popular list held in memory
+  ([failure modes](#failure-modes-and-bottlenecks)).
+- What does a new user see? Picked topics if any, otherwise trending, and a
+  personal list by the second or third load
+  ([cold start](#deep-dive-cold-start)).
+
+How the pieces connect is in the
+[high-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

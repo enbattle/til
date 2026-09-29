@@ -20,6 +20,9 @@ like made concrete, not ceremony for its own sake.
 
 ## Why three agents, not one per step
 
+(These are three roles. A role can run as several agents when its content is
+too large for one context; the feature skill says how.)
+
 It's tempting to give every named step in a process like this its own
 agent — a spec agent, a test agent, an implementation agent, a review
 agent, a UI-checking agent, a docs agent. That's not what this repo does,

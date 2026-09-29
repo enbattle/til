@@ -22,6 +22,61 @@ write a seat, how fast, and what everyone else sees while they wait.
 What follows is one plausible design for a service like Ticketmaster, not a
 description of how any particular company built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Hold up to 8 seats, or a general-admission quantity, for one user for 10
+  minutes; unpaid holds go back on sale.
+- Never sell a seat twice; a charged user gets tickets or, rarely, a refund.
+- The largest on-sale: 50,000 seats, 2 million people in the first minute, up
+  to 5 at once.
+- A waiting room admits at a controlled rate: early arrivals in random order,
+  later ones in arrival order, one place per account.
+- Holds answer in under 500 ms at p99 once admitted; the seat map may be up to
+  10 seconds stale.
+
+**Key numbers.** From the estimates:
+
+- About 33,000 new visitors a second in the first minute (2,000,000 ÷ 60).
+- 20,000 orders can succeed, 1% of arrivals (50,000 seats ÷ 2.5 per order).
+- About 33,000 admitted shoppers are enough (20,000 orders ÷ the 60% who buy),
+  about 133 seconds at 250 a second.
+- About 500 holds a second behind the waiting room (250 admitted a second × 2
+  attempts).
+- About 500 changes a second is one row's ceiling (1 ÷ a 2 ms commit).
+
+**Key decisions.**
+
+- A virtual waiting room over a rate limit: a rejected request just retries,
+  while a place in line serves people in a chosen order
+  ([the waiting room](#deep-dive-the-on-sale-spike-and-the-waiting-room)).
+- Conditional updates on per-seat rows, with general-admission counters split
+  into 10 buckets: the check sits inside the write, and no row nears its
+  ceiling ([holding a seat](#deep-dive-holding-a-seat-without-selling-it-twice)).
+- Confirm moves the hold to `paying` before charging, keyed by the hold ID: the
+  sweeper leaves a paying hold's seats alone until its payment deadline, and a
+  retried confirm charges once
+  ([confirm](#deep-dive-hold-expiry-payment-and-an-idempotent-confirm)).
+
+**Likely follow-ups.**
+
+- How do lapsed holds go back on sale? A new hold can take over a lapsed
+  hold's seat, and a per-shard sweeper releases lapsed holds every 5 seconds
+  so the seats reappear on the map
+  ([hold expiry](#deep-dive-hold-expiry-payment-and-an-idempotent-confirm)).
+- How do 2 million browsers read the seat map? A per-event bitmap, rebuilt and
+  cached on the CDN each second
+  ([the seat map](#deep-dive-reading-the-seat-map-under-load)).
+- What if someone clicks a seat that's already taken? The conditional update
+  refuses it, and the `409` carries a fresh bitmap ([the seat map](#deep-dive-reading-the-seat-map-under-load)).
+- When would you switch to a single writer per event? When one event must take
+  many thousands of holds a second, such as without the waiting room
+  ([holding a seat](#deep-dive-holding-a-seat-without-selling-it-twice)).
+
+How the pieces fit together is in
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

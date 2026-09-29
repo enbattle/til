@@ -22,6 +22,61 @@ which turns two points into a driving time, is its own later case study, and
 here it is simply a service that answers "how long from A to B?". Payments are
 also a later case study: a finished trip hands off to them in one step.
 
+## At a glance
+
+**Requirements.**
+
+- Take a position from every online driver every 4 seconds, up to 3 million
+  drivers at peak.
+- Quote a price, then offer each of 25 million daily requests to nearby drivers
+  until one accepts.
+- First offer on a driver's phone within 2 seconds at p99, from positions at
+  most about 5 seconds old.
+- The rider sees the car move within 2 seconds of each update (p99).
+- Never two trips for a driver or two drivers for a request; trips 99.99%
+  available.
+
+**Key numbers.** From the estimates:
+
+- 750,000 location updates a second at peak (3 million drivers ÷ 4 seconds).
+- About 2,900 ride requests a second at peak (25 million ÷ 86,400 ≈ 289, × 10).
+- 600 MB of latest positions (3 million × 200 bytes), over 12 in-memory index
+  shards (750,000 ÷ 100,000 planned per node ≈ 8, plus room for uneven areas).
+- 4.3 million open WebSockets at peak (3 million drivers + 1.3 million riders
+  on trips), about 45 gateway servers.
+- 58,000 store writes a second at peak (17,400 trip + 11,600 driver + 29,000
+  outbox), over 16 shards.
+
+**Key decisions.**
+
+- Latest positions only in memory, every update also logged: a lost position
+  is replaced 4 seconds later, and durable writes would need about 150 shards
+  ([ingesting locations](#deep-dive-ingesting-driver-locations)).
+- A hexagonal grid for the index: neighbours share full edges, cells are
+  near-equal in area, and nothing restructures as drivers move
+  ([finding nearby drivers](#deep-dive-finding-nearby-drivers)).
+- One offer at a time, claimed with a conditional write: the closest driver
+  gets first refusal, and of two concurrent claims exactly one succeeds
+  ([matching](#deep-dive-matching-without-double-booking)).
+
+**Likely follow-ups.**
+
+- Why not offer to three drivers at once? Faster, but two who accept are told
+  "taken", and the fastest tapper beats the closest car
+  ([matching](#deep-dive-matching-without-double-booking)).
+- A match writes rows on two shards; what if it crashes between them? The
+  offer's timeout check reads both rows and makes them agree within 15 seconds
+  ([two rows, two shards](#deep-dive-matching-without-double-booking)).
+- How is surge priced? Once a minute a job turns each coarse hexagon's recent
+  requests over available drivers, read from the event log, into a smoothed,
+  capped multiplier that the signed quote locks in
+  ([pricing](#high-level-architecture)).
+- What if an index shard dies? Its areas show no drivers for 4 to 8 seconds,
+  until a standby takes over and fresh updates fill it
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+The [high-level architecture](#high-level-architecture) follows one ride from quote to drop-off.
+
 ## Requirements
 
 Functional requirements:

@@ -45,10 +45,21 @@ example for depth, tone and how estimates are laid out.
   positive integer; `ls src/system-design/case-studies/` and read the
   existing orders).
 - `##` headings exactly, in this order (the structure test enforces it):
-  `Requirements`, `Back-of-the-envelope estimates`, `Data model`,
-  `API design`, `High-level architecture`, at least two
+  `At a glance`, `Requirements`, `Back-of-the-envelope estimates`,
+  `Data model`, `API design`, `High-level architecture`, at least two
   `Deep dive: <topic>`, `Failure modes and bottlenecks`, `Trade-offs`. Plain
   text in headings; the page builds its Contents list from them.
+- **At a glance**: write it last, once the body is final, since it summarizes
+  it. About 250–400 words, in the shape `docs/case-studies.md` gives and
+  `url-shortener.md` shows: `**Requirements.**` (4–6 bullets with numbers),
+  `**Key numbers.**` (4–5 figures, each with its one-line derivation),
+  `**Key decisions.**` (exactly 3, "decision: one-line reason") and
+  `**Likely follow-ups.**` (4–6 questions, each with a one-sentence answer),
+  then one sentence linking to `#high-level-architecture`. Each decision and
+  follow-up ends with an in-page link, `[text](#heading-id)`, to the section
+  that argues it (the id is the heading's slug: "Deep dive: short codes" is
+  `#deep-dive-short-codes`). Copy every figure from the body, never
+  recompute it here; if a body number changes, update it here too.
 - **Requirements**: functional (what it does, with optional features marked),
   an explicit out-of-scope list, and non-functional targets as numbers
   (scale, latency percentile, availability).
@@ -88,8 +99,9 @@ to assume, which deep dives matter most), ask the user rather than guess.
 npm run verify
 ```
 
-`case-study-structure.test.ts` (heading template, a diagram in the
-architecture section), `system-design.test.ts` (frontmatter, unique `order`,
+`case-study-structure.test.ts` (heading template, the At a glance lead-ins,
+in-page links that resolve, a diagram in the architecture section),
+`system-design.test.ts` (frontmatter, unique `order`,
 dead links), `check:diagrams` (sources rendered, SVGs and tokens current,
 SVGs safe, no color named and no file imported in a `.d2`, every referenced diagram present),
 `check:colors` (no hex color value in `.d2` files) and
@@ -124,7 +136,11 @@ it can view images); `docs/writing-standard.md`; the path of
 > connections, same names) and flag any disagreement; (4) check that every
 > catalog link sits where the concept is actually used, and that the case
 > study doesn't re-teach a linked topic's mechanism; (5) flag any claim
-> about how a specific named company builds its system. Also check it isn't
+> about how a specific named company builds its system; (6) check the
+> `At a glance` section against the body: every figure in it must match the
+> body exactly, each decision and follow-up must be what the body argues
+> (not a new claim), each in-page link must point to the section that
+> actually covers it, and it must stay about 250–400 words. Also check it isn't
 > a near-duplicate of an existing case study (listed below). Do not edit
 > any file; review only. Report findings ranked by severity, quoting the
 > text and saying what's wrong and what's true, or say explicitly that you

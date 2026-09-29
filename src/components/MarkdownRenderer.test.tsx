@@ -35,6 +35,34 @@ describe('MarkdownRenderer', () => {
     expect(link).toHaveAttribute('rel', 'noreferrer');
   });
 
+  // At-a-glance spec, criterion 5: an in-page `#…` link (how a case study's
+  // At a glance section links into its own sections) stays in the same tab
+  // as a plain anchor, so the browser scrolls to the heading id natively.
+  it('renders an in-page #id link as a plain same-tab <a>, with no target or rel', () => {
+    const { container } = renderMarkdown('## Some id\n\nSee [the section](#some-id).');
+    const link = screen.getByRole('link', { name: 'the section' });
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '#some-id');
+    expect(link).not.toHaveAttribute('target');
+    expect(link).not.toHaveAttribute('rel');
+    expect(container.querySelector('#some-id')).not.toBeNull();
+  });
+
+  it('still routes / links through Link and opens https links in a new tab, beside a # link', () => {
+    renderMarkdown(
+      'See [here](#x), [a topic](/ai-and-ml/prompt-engineering) and [Shiki](https://shiki.style).',
+    );
+    const internal = screen.getByRole('link', { name: 'a topic' });
+    expect(internal).toHaveAttribute('href', '/ai-and-ml/prompt-engineering');
+    expect(internal).not.toHaveAttribute('target');
+    const external = screen.getByRole('link', { name: 'Shiki' });
+    expect(external).toHaveAttribute('target', '_blank');
+    expect(external).toHaveAttribute('rel', 'noreferrer');
+    const anchor = screen.getByRole('link', { name: 'here' });
+    expect(anchor).toHaveAttribute('href', '#x');
+    expect(anchor).not.toHaveAttribute('target');
+  });
+
   it('renders inline code distinctly from a fenced code block', () => {
     renderMarkdown('Use `git status` to check.');
     expect(screen.getByText('git status').tagName).toBe('CODE');

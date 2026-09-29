@@ -21,6 +21,65 @@ answer turns out to depend on who posted. What follows is one plausible
 design for an app like Instagram, not a description of how any particular
 company built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- A home feed of followed accounts' posts, 20 at a time, plus posting,
+  following, likes and comments.
+- 1 billion monthly and 500 million daily active users, 10 feed requests
+  each a day, 100 million new posts a day.
+- 200 followees per user on average; 10,000 accounts over 100,000
+  followers, the largest at 50 million.
+- A feed page in under 200 ms at p99; a new post in followers' feeds within
+  5 seconds normally, a minute at worst.
+- Feed reads 99.99% available, posting and liking 99.9%; counts may lag a
+  few seconds.
+
+**Key numbers.** From the estimates:
+
+- 580,000 feed requests a second at peak: 5 billion ÷ 86,400 ≈ 58,000, times
+  ten.
+- 451,000 timeline inserts a second if every post fanned out: 19 billion
+  ordinary plus 20 billion celebrity inserts a day, ÷ 86,400.
+- 116 million lookups a second at peak if feeds were gathered at read time:
+  580,000 × 200 followees.
+- 8 TB of timelines: 1 billion users × 500 entries × 16 bytes.
+- 1,400 likes a second on one post: 10% of 50 million followers in an hour.
+
+**Key decisions.**
+
+- Push ordinary accounts' posts, pull those of accounts over 100,000
+  followers: inserts fall to 220,000 a second, at most 100,000 per post
+  ([fan-out deep dive](#deep-dive-fan-out-on-write-fan-out-on-read-and-celebrities)).
+- Timelines of post IDs in memory: derived data, rebuilt from followees in
+  tens of milliseconds if lost
+  ([timeline deep dive](#deep-dive-timeline-storage-and-hydration)).
+- Like counts batched through a queue, one write per post a second: no counter
+  row takes thousands of writes a second
+  ([counting deep dive](#deep-dive-counting-likes-and-comments)).
+
+**Likely follow-ups.**
+
+- Why not push every post? One 50-million-follower post would hold the
+  whole fan-out fleet for about 11 seconds, delaying every post behind it
+  ([fan-out](#deep-dive-fan-out-on-write-fan-out-on-read-and-celebrities)).
+- How is the threshold chosen? 100,000 is a starting point, tuned against
+  fan-out lag and feed latency, with demotion only below 80,000
+  ([fan-out](#deep-dive-fan-out-on-write-fan-out-on-read-and-celebrities)).
+- How do IDs become posts quickly? Four batched calls issued at once
+  instead of 80 round trips
+  ([hydration](#deep-dive-timeline-storage-and-hydration)).
+- Why a cursor, not a page number? New posts shift a numbered list; a cursor
+  names a position in a stored feed session
+  ([pagination](#deep-dive-ranking-and-pagination)).
+- What if a timeline shard loses both copies? Its roughly 2.6 million
+  users' timelines are rebuilt by a pull as each user next opens the app
+  ([failure modes](#failure-modes-and-bottlenecks)).
+
+The components, and a post's path from upload to followers' timelines, are in
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements:

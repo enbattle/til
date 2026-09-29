@@ -48,7 +48,8 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
   e.g. `[prompt engineering](/ai-and-ml/prompt-engineering)` — the
   `MarkdownRenderer`'s `a` override routes these through React Router so
   they navigate client-side and respect the GitHub Pages base path. An
-  `https://` link renders as a normal new-tab external link.
+  `https://` link renders as a normal new-tab external link, and an in-page
+  `#heading-id` link as a plain same-tab anchor.
 
 ## Adding a topic to an existing section
 

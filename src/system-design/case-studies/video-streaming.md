@@ -26,6 +26,63 @@ This is one plausible design for a service like YouTube or Netflix, a large
 catalog that anyone can upload to, not a description of how either company
 built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Resumable uploads of up to 20 GB and 6 hours, transcoded into renditions
+  at several bitrates.
+- First frame within 2 seconds at p95 on 5 Mbit/s or faster, and under 0.5% of
+  watch time rebuffering.
+- Playable at up to 720p within 5 minutes of upload (p95) for videos up to an
+  hour, every H.264 rendition within 30 minutes.
+- Resume within 30 seconds of where the viewer stopped, on any device; view
+  counts that retries can't inflate.
+- 100 million viewers a day watching 60 minutes each, 500,000 uploads of 10
+  minutes, playback 99.95% available.
+
+**Key numbers.** Peak is 3 times the average:
+
+- 12.5 million concurrent streams at peak (100 million hours a day ÷ 24 ≈ 4.17
+  million, × 3).
+- 37.5 Tbit/s out at peak (12.5 million streams × 3 Mbit/s), about 4.05 EB a
+  month.
+- 6.25 million segment requests a second at peak (12.5 million streams × 2
+  requests every 4 seconds).
+- 770 TB stored a day (375 TB of originals + 395 TB of renditions), about
+  1.4 EB over five years.
+- About 75,000 transcoding cores at peak (17,400 busy on average, × 3, run at
+  most 70% busy).
+
+**Key decisions.**
+
+- Encode each rung as parallel 60-second pieces: a one-hour video's 720p takes
+  under a minute instead of 18 minutes
+  ([the pipeline](#deep-dive-the-upload-and-transcoding-pipeline)).
+- 4-second segments and a hybrid bitrate rule: the first segment fits the
+  start-up budget, and the buffer decides each step up
+  ([adaptive bitrate](#deep-dive-segments-manifests-and-adaptive-bitrate)).
+- Regional origin shields behind the CDN edges: object-store egress falls from
+  about $8.1 million to $1.6 million a month
+  ([the CDN](#deep-dive-delivery-through-the-cdn)).
+
+**Likely follow-ups.**
+
+- What does delivery cost? About $20 million a month; AV1 for videos past 1,000
+  views saves about $2.1 million for $75,000 of compute
+  ([fewer bytes per view](#deep-dive-delivery-through-the-cdn)).
+- And storage by year five? $28 million a month all hot, about $5.2 million
+  with originals archived and unwatched renditions in cold
+  ([storage tiers](#deep-dive-storage-tiers-for-the-long-tail)).
+- What if a transcode worker stalls? Its lease lapses after 60 seconds, the
+  task reruns, and the late result is rejected by its attempt number
+  ([leases](#deep-dive-the-upload-and-transcoding-pipeline)).
+- How do view counts avoid double counting? Each batch's transaction also
+  advances its partition's offset, so a worker's replay does nothing, and
+  workers drop a `view_id` resent within 10 minutes ([view counts](#deep-dive-view-counts-and-watch-progress)).
+
+The [high-level architecture](#high-level-architecture) follows one upload to its first viewer.
+
 ## Requirements
 
 Functional requirements:
