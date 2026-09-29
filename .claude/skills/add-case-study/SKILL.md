@@ -1,6 +1,6 @@
 ---
 name: add-case-study
-description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, with an independent review against CLAUDE.md's Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a chat app case study", "add the next case study") — not for a catalog topic under src/content/ (that's add-topic), not for editing an existing case study's prose quality (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
+description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a chat app case study", "add the next case study") — not for a catalog topic under src/content/ (that's add-topic), not for editing an existing case study's prose quality (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
 ---
 
 # Add a case study
@@ -11,8 +11,8 @@ pin down), but an independent review before it's done. It gets its own skill
 because it has more ways to be wrong than a topic does: worked estimates whose
 arithmetic has to hold, deep dives that have to compare options rather than
 announce one, and diagrams that have to agree with the prose. The review below
-checks each of those explicitly. See [CLAUDE.md](../../../CLAUDE.md)'s "System
-Design case studies" section for the file layout and rules, and
+checks each of those explicitly. See [docs/case-studies.md](../../../docs/case-studies.md) for the file
+layout and rules, and
 [docs/SDLC.md](../../../docs/SDLC.md) for why content gets this lighter
 process.
 
@@ -28,12 +28,14 @@ topics; it doesn't substitute for one). Never edit files under `src/content/`
 from this skill.
 
 `npm run diagrams` needs d2 v0.9.x on PATH (`d2 --version`). If it isn't
-installed, say so and give the install command CLAUDE.md lists; don't commit a
+installed, say so and give the install command docs/verification.md lists; don't commit a
 `.d2` source without its rendered SVGs, since `check:diagrams` would fail.
 
 ## Stage 1 — Draft the case study and its diagrams
 
 Write it yourself, directly, as `add-topic` does. Read
+[checklist.md](checklist.md) before drafting and check the draft against it
+before Stage 2: it lists the problems reviews most often find. Read
 `src/system-design/case-studies/url-shortener.md` first: it is the reference
 example for depth, tone and how estimates are laid out.
 
@@ -99,7 +101,7 @@ problems. A case study never needs its own test.
 Spawn a **fresh** `general-purpose` agent (never `fork`: it must not inherit
 your own read of the draft). Give it: the case study's full content; the full
 content of each of its `.d2` sources (and the paths of the rendered SVGs, if
-it can view images); CLAUDE.md's "Writing standard" section; the path of
+it can view images); `docs/writing-standard.md`; the path of
 `docs/NON_NEGOTIABLES.md`; the titles and slugs of the existing case studies
 (for a near-duplicate check); and this instruction, close to verbatim:
 

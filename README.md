@@ -61,6 +61,7 @@ npm run check:colors      # Fail if a component, stylesheet or .d2 diagram sourc
 npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src/index.css
 npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
 npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
+npm run check:claude-md   # Fail if CLAUDE.md passes 150 lines or links to a missing file
 npm run check:bundle      # After a build: fail if topic or case-study bodies are in the main chunk instead of lazy chunks
 npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink (dangerouslySetInnerHTML outside CodeBlock, innerHTML, outerHTML, insertAdjacentHTML, document.write) appears
 npm run check:diagrams    # Fail if a committed diagram SVG is stale, missing, orphaned or unsafe, its tokens drift from src/index.css or fail contrast, a .d2 names a color, imports a file or breaks the <case>/<name>.d2 naming rule, a stray file sits in public/diagrams/, or a case study references a missing diagram (no d2 needed)
@@ -74,10 +75,11 @@ npm run verify            # The whole chain: typecheck, lint, format, every chec
 ## Adding content
 
 There's no in-app editor — topics are markdown files added to the
-repository and shipped with the next build. See [CLAUDE.md](CLAUDE.md) for
-the exact steps: adding a topic to an existing section, adding a new
-section, System Design case studies (and their diagrams), and the writing
-standard topics are held to.
+repository and shipped with the next build. Topics and sections are covered in [docs/content.md](docs/content.md),
+System Design case studies and their diagrams in
+[docs/case-studies.md](docs/case-studies.md), and the bar all prose meets in
+[docs/writing-standard.md](docs/writing-standard.md);
+[CLAUDE.md](CLAUDE.md) routes to them.
 
 ## Repository settings this relies on
 

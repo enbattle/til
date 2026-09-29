@@ -185,8 +185,8 @@ Instruction, close to verbatim:
 > `.claude/skills/`, `evals/`) if it adds or changes a convention future
 > work should follow — most changes
 > won't need every file touched, update only what actually changed.
-> Run `npm run verify` (the whole chain in CLAUDE.md's "Verifying a
-> change") yourself before reporting done.
+> Run `npm run verify` (the whole chain; docs/verification.md explains each
+> check) yourself before reporting done.
 
 Docs stay with this agent rather than a separate one: whoever built the
 feature is well-positioned to describe it, and there's no bias to protect
@@ -281,7 +281,7 @@ Instruction, close to verbatim:
 > finding, say whether this diff introduced it or it was already there. If this
 > change adds or edits topic content (a file under `src/content/` or
 > `src/system-design/`), also
-> hold the prose itself to CLAUDE.md's Writing Standard section — terms
+> hold the prose itself to the Writing Standard in docs/writing-standard.md — terms
 > defined before use, built from first principles rather than an assumed
 > mental model, concrete examples over abstract description, and written
 > so a reader with zero prior background on the subject actually follows
