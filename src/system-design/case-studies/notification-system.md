@@ -134,13 +134,15 @@ SMS        10 million       none         10 million
   on average and 3,500 at peak**, the capacity the email channel must keep
   free for password resets while a campaign is running.
 
-**Tracking writes.** Each send produces about three status updates over its
-life (sent; then delivered or failed; then, for some, opened).
+**Tracking writes.** Each send produces up to four status updates over its
+life (queued, from fan-out; sent; then delivered or failed; then, for some,
+opened). Counting all four also covers the `skipped` records fan-out writes
+for channels a user has turned off, since only a fraction of sends are opened.
 
-- 500,000,000 × 3 = 1.5 billion updates a day; 1,500,000,000 ÷ 86,400 ≈
-  17,361, about **17,000 a second on average**.
-- In the worst hour, 38,000 sends a second can produce up to 38,000 × 3 =
-  **114,000 updates a second**, though deliveries and opens trail the sends by
+- 500,000,000 × 4 = 2 billion updates a day; 2,000,000,000 ÷ 86,400 ≈
+  23,148, about **23,000 a second on average**.
+- In the worst hour, 38,000 sends a second can produce up to 38,000 × 4 =
+  **152,000 updates a second**, though deliveries and opens trail the sends by
   seconds to hours. Writing each one on its own as it arrives would make
   tracking the heaviest write load in the system.
 
@@ -160,7 +162,7 @@ peak**, which a cache in front of the store handles comfortably.
 
 What the estimates say: no single number here is large for modern hardware.
 The pressure comes from sharing: 14,000 marketing sends a second competing
-with 24,000 transactional ones for the same providers, and 114,000 status
+with 24,000 transactional ones for the same providers, and 152,000 status
 updates a second that must not slow either of them down.
 
 ## Data model
@@ -371,7 +373,7 @@ to the status endpoints, which put it on the status queue for tracking.
 path a message travels, because they decide whether to send. Everything
 tracking stores is published and forgotten by the sender, then gathered by the
 tracking workers and written to the delivery log in batches every few
-seconds instead of one write per status. At 114,000 status updates a
+seconds instead of one write per status. At 152,000 status updates a
 second in the worst hour, that batching is the difference between a
 delivery log that keeps up and one that slows the senders down;
 [batching and asynchronous writes](/systems-and-infrastructure/batching-and-asynchronous-writes)
@@ -542,8 +544,7 @@ the SMS channel. A text is billed per **segment**. The **GSM alphabet** is the
 common punctuation and a handful of accented letters. A text written entirely
 in it fits 160 characters in one segment; a longer one is split into parts of
 153, since each part gives up room to a header that lets the phone join them
-back together. A few symbols, such as € and square or curly brackets, come
-from an extension table and count as two. One character outside the alphabet,
+back together. One character outside the alphabet,
 which includes most non-Latin scripts, every emoji, and accented letters such
 as Portuguese ã and õ, switches the whole text to a 16-bit encoding that fits
 70 characters, or 67 per part. A login code template that fits one segment in
@@ -592,8 +593,9 @@ back with a delay too, in case the holder dies. A lease is the same device a
 the same weakness: it can run out while its holder is still working.
 
 The trouble comes in three shapes. A sender crashes after the provider
-accepted the message and before `sent` was written. A provider call times out
-without an answer, so the sender itself doesn't know. Or a sender stalls past
+accepted the message and before `sent` was written. A provider call times out,
+or fails with an ambiguous server error (the retry deep dive lists which), so
+the sender itself doesn't know. Or a sender stalls past
 its lease, in a long garbage-collection pause (the runtime freezing the
 program while it reclaims memory) or a slow provider call, and carries on
 sending after another sender has taken the send over. In the first
@@ -639,15 +641,13 @@ this way: its replacement doesn't resend.)
 On push, the notification ID is also passed as the collapse identifier
 (APNs's `apns-collapse-id`, at most 64 bytes, which a send ID holding a long
 device token could exceed; on Android, the notification `tag` through FCM).
-Collapsing is per device anyway. If the first copy is still on screen, the
-second replaces it, though it may still buzz; if the first was already opened
-or swiped away, the second shows up fresh; and the Android `tag` covers only
-notifications the system displays, not data messages the app handles itself.
-Collapse IDs soften duplicates rather than hide them.
+If the first copy is still on screen, the second replaces it, though it may
+still buzz; if the first was already opened or swiped away, the second shows
+up fresh. Collapse IDs soften duplicates rather than hide them.
 
 A plain redelivery never causes a duplicate. One needs a crash in the fraction
 of a second between the provider's acceptance and the `sent` write, a provider
-call that times out after the provider acted, or a stall longer than the lease
+call that times out or fails ambiguously after the provider acted, or a stall longer than the lease
 allows for, and then only through a provider without idempotency keys.
 
 ## Deep dive: retries, provider limits and the dead-letter queue
@@ -655,10 +655,13 @@ allows for, and then only through a provider without idempotency keys.
 Provider calls fail constantly at this volume, and not all failures are
 alike. Sorting them is the first job:
 
-- **Temporary**, such as a `5xx` status (HTTP's codes for "the server
-  failed") from the provider, or `429 Too Many Requests` (we went over our
-  allowed rate). Retry later. A timeout is temporary too, but it's also the
-  unknown outcome above, so it follows the per-category rule first.
+- **Temporary**, such as `429 Too Many Requests` (we went over our allowed
+  rate) or a `503 Service Unavailable` the provider documents as refused
+  before processing. Retry later. A timeout, a `502` or `504` (a proxy in
+  front of the provider gave up waiting) or any other `5xx` (HTTP's codes for
+  "the server failed", possibly after it acted) is temporary too, but it's
+  also the unknown outcome above, so it follows the per-category rule first:
+  transactional sends are retried, marketing ones marked `unknown_outcome`.
 - **Permanent for this address**, such as a push token the provider says is no
   longer registered (the app was uninstalled), an email that **hard
   bounced** (the mailbox doesn't exist), or a number that can't receive SMS.
@@ -690,11 +693,13 @@ while, since the provider's limit is evidently lower than configured.
 Retrying stops at a deadline per category, not after a fixed count. A login
 code's deadline is its `expires_at`, about 10 minutes out, room for at least
 14 retries (the first seven waits add up to at most 127 seconds, then at most
-64 each); a sender that picks up a code past it records `expired` and drops
-it. An order update gets 6 hours, a marketing email 3.
+64 each). An order update gets 6 hours, a marketing email 3. A sender that
+picks up a login code or a marketing message past its deadline records
+`expired` and drops it: neither is worth a person's time, and a long outage
+then ends in `expired` rows rather than millions of dead letters.
 
-**When a deadline passes (for anything but a stale code), or the failure is
-our own bug**, the message goes to
+**When any other transactional message passes its deadline, or the failure
+is our own bug**, the message goes to
 the [dead-letter queue](/systems-and-infrastructure/dead-letter-queue),
 where it stops being retried and stops blocking anything, and an alert tells
 someone it's there. Permanent address failures deliberately don't go there:
@@ -721,7 +726,8 @@ allows it; codes already on `sms-high` wait there and expire.
 flowing, because every channel has its own queues and pools. The queues must
 hold the backlog: an hour of SMS at the 1,200-a-second peak is 1,200 × 3,600
 ≈ 4.3 million messages, trivial for a queue. Login codes expire during a long
-outage regardless, which is why the SMS-to-push-or-email fallback exists.
+outage regardless, which is why the SMS-to-push-or-email fallback exists, and
+marketing past its 3-hour deadline is recorded `expired`, not dead-lettered.
 
 **A campaign in a bad state.** A marketing type with a broken template, or
 aimed at the wrong list, can do damage at 14,000 sends a second. The
@@ -748,7 +754,8 @@ couple of months, keeps a growing share of push sends from being wasted calls.
 **Duplicates.** Covered in the exactly-once deep dive: a plain redelivery
 never causes one, and neither does anything else at a provider that takes an
 idempotency key. Elsewhere a transactional send goes out twice when a sender
-dies, or its provider call times out, after the provider accepted it, or when
+dies, or its provider call times out or fails ambiguously, after the provider
+accepted it, or when
 a stalled sender outlives its lease. On push,
 the second copy merges with the first only if the first is still on screen.
 

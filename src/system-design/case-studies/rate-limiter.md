@@ -78,12 +78,11 @@ Non-functional requirements, with numbers:
   thing that breaks it. If the limiter's own storage fails, the API keeps
   answering, apart from endpoints deliberately marked to refuse.
 
-The check has to be fast for every single request, and the store behind it has
-to absorb a very large number of small operations. Those are different
-properties, one per request and one in aggregate, and
+The check has to be fast for every request, and the store behind it has to
+absorb a huge number of small operations:
 [latency vs. throughput](/systems-and-infrastructure/latency-vs-throughput)
-covers why a design can have one without the other. Here the store's latency
-is paid on every request, and its throughput is what the estimates below size.
+covers why those differ. The store's latency is paid on every request, and its
+throughput is what the estimates below size.
 
 ## Back-of-the-envelope estimates
 
@@ -251,9 +250,8 @@ again in 3 seconds (`Reset`; (100 − 57.4) ÷ 20 per second ≈ 2.1, rounded up
 Well-behaved clients use `Remaining` to slow down before they hit zero. The
 `X-RateLimit-*` names are a widespread convention, not a standard, and APIs
 disagree about what `Reset` means (seconds from now, or a clock time), so the
-API documentation has to say. An IETF Internet-Draft, a proposal on the way to
-becoming a standard, covers the same idea under the names `RateLimit` and
-`RateLimit-Policy`; a gateway can send both while clients move over.
+API documentation has to say. An IETF draft standard covers the same idea as
+`RateLimit` and `RateLimit-Policy`; a gateway can send both meanwhile.
 
 **A rejected request**
 
@@ -271,9 +269,9 @@ Content-Type: application/json
 `429 Too Many Requests` (defined in RFC 6585) means this client sent too many;
 `Retry-After` (RFC 9110) gives a whole number of seconds, zero included, or a
 date. A Pro bucket refills one token every 50 ms, so the next token is at most
-0.05 seconds away. `Retry-After: 0` would be legal, but it tells the client to
-retry at once, which invites a tight retry loop; rounding up to 1 costs a
-throttled client under a second and is a deliberate choice. Naming the rule in
+0.05 seconds away. Rounding up to 1, where `Retry-After: 0` would be legal,
+costs a throttled client under a second and avoids inviting a tight retry
+loop. Naming the rule in
 the body tells the client whether to slow one key down or whether its whole
 office IP is over the limit. Clients should wait at least `Retry-After`, and
 after repeated rejections back off further with random jitter, as
@@ -284,12 +282,10 @@ rejections become their own load.
 A request turned away by the **global** search limit gets `503 Service
 Unavailable` with a `Retry-After` instead. The client did nothing wrong; the
 search cluster is at capacity, and a 429 would tell a well-behaved client that
-its own usage was the problem. The 503 has a cost here: it is a server error,
-so unless it is counted separately it eats into the 99.99% availability
-target, sets off alerts that watch the rate of 5xx responses, and triggers
-generic client libraries that retry every 5xx. The gateway therefore tags
-these responses so dashboards and alerts can tell them apart from real
-failures. That split is a judgment call, and some APIs use 429 for both. (The
+its own usage was the problem. The 503 has a cost: as a server error it eats
+into the 99.99% availability target, sets off 5xx alerts and triggers client
+libraries that retry every 5xx, unless the gateway tags these responses so
+dashboards and alerts can tell them apart from real failures. That split is a judgment call, and some APIs use 429 for both. (The
 sequence diagram below leaves this branch out and shows only the per-client
 buckets.)
 
@@ -549,27 +545,33 @@ it is one bucket, so as a single key in the store it would put every search
 request, 20,000 a second and more when demand spikes, on one shard. Each shard
 already carries 1,160,000 ÷ 24 ≈ 48,300 calls a second at peak, so that one
 would reach about 68,000, well past its planned 50,000. Instead, each node runs its own local token
-bucket for the rule, with a share of the rate and the burst: at an even split,
-20,000 ÷ 40 = 500 a second and a burst of 2,000 ÷ 40 = 50, a tenth of a
-second's worth. Every 100 ms each node reports its demand through the store,
-and shares move towards the nodes with more of it. While every node can reach
-the store, the fleet then admits at most 20,000 a second sustained, and at most 20,000 + 2,000 = 22,000 in any one
-second, a margin the search cluster is sized for.
+bucket for the rule, with a share of the rate and a burst of a tenth of a
+second's worth of it. The even split is 20,000 ÷ the current node count, since
+the fleet autoscales: at the peak's 40 nodes, 500 a second and a burst of 50.
+Every 100 ms each node reports its demand through the store, and shares move
+towards the nodes with more of it. The fleet then admits at most 20,000 a
+second sustained, and at most 20,000 + 2,000 = 22,000 in any one second, a
+margin the search cluster is sized for.
 
 Moving shares has to keep their sum at or under 20,000, or two nodes can
 briefly hold the same capacity. The share table lives in the store and only
 changes through an atomic script there, which makes the store the
 coordinator. A move is reduce-then-raise: the script raises one node's share
 only out of capacity another node has already confirmed giving up. Each share
-is a lease renewed by every 100 ms sync. A node that joins starts at zero. A
-node that hasn't synced for 1 second drops its own bucket to the even split,
-500 a second, and the script hands out a silent node's share only after 2
-seconds, so a node that is cut off from the store stops using its larger share
-before anyone else gets it. What remains is the even split each cut-off node
-keeps: if one node loses the store while the rest don't, the fleet can admit up
-to 500 a second (2.5%) over 20,000 until it reconnects or leaves the load
-balancer. When demand is uneven the fleet under-admits a little until the next
-rebalance, which is the right way for a capacity guard to be wrong.
+is a lease renewed by every sync, which also tells the node the current node
+count; the node's row records its **fallback**, the even split as of that
+sync. A node that joins starts at zero. A node that hasn't synced for 1 second drops its bucket to the smaller
+of its share and its fallback. After 2 seconds of silence the script takes
+back only the part of the share above the fallback; the rest stays held for
+that node until it leaves the fleet (it deletes its row on shutdown, and the
+autoscaler deletes a crashed node's row when it replaces it). A node that
+comes back takes whatever share the store holds for it on its first
+successful sync. So every node, synced or cut off, uses at most what the
+store holds for it, and the 20,000 holds even when a full store outage ends
+and the first node to sync finds every other row stale. The cost is
+under-admission: a cut-off node with a small share stays small, and a crashed
+node's share sits idle until its row goes, which is the right way for a
+capacity guard to be wrong.
 
 ## Deep dive: when the counter store is down
 
@@ -591,7 +593,9 @@ long as the shard is hung. So the calls also go through a
 [circuit breaker](/systems-and-infrastructure/circuit-breaker) per shard: once,
 say, 20% of calls to a shard fail within 10 seconds, the breaker opens and the
 nodes stop calling that shard, applying the fallback immediately, then let a
-few trial calls through after 10 seconds to see whether it has recovered.
+few trial calls through every second to see whether it has recovered (a
+failover, below, takes about 6 seconds, so a longer wait would only prolong
+the fallback).
 Until it opens, p99 is breached for that slice of traffic; after, those
 requests are fast again. The breaker also keeps 40 nodes' retries from piling
 onto a shard that is trying to come back.
@@ -606,13 +610,13 @@ onto a shard that is trying to come back.
   failure in the limiter's storage has become an outage of the API it protects,
   for every client on that shard, well-behaved or not. For most endpoints that
   turns a small incident into a large one.
-- **Fall back to local counting**: each node enforces the limit ÷ 40 from
-  memory, the even split from the "counting across many gateway nodes" deep
-  dive. A small burst split 40
+- **Fall back to local counting**: each node enforces the limit ÷ the
+  current node count (as of its last sync) from memory, the even split from
+  the "counting across many gateway nodes" deep dive. A small burst split 40
   ways rounds to nothing (5 ÷ 40 is an eighth of a token, which would never
   admit anyone), so each node's share of the burst has a floor of one token.
-  Accuracy drops (a client on one long connection gets a fortieth of the rate),
-  but some protection remains.
+  Accuracy drops (a client on one long connection gets one node's share, a
+  fortieth of the rate at 40 nodes), but some protection remains.
 
 **The choice** is made per endpoint, through the endpoints table's
 `on_store_down`, and applies to every per-client rule on that endpoint:
@@ -621,11 +625,12 @@ onto a shard that is trying to come back.
 | ------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Reads, such as `GET /v1/items`, `GET /v1/search` | open   | Availability matters most. Search keeps its global limit, which is local; `GET /v1/items` has no such backstop, and relies on its backend's spare capacity for the outage.                                                                  |
 | `POST /v1/login`                                 | local  | Unlimited login attempts are password guessing. With a burst of 1 and 10 ÷ 40 = 0.25 a minute per IP on each node, one IP spraying all 40 nodes gets 40 attempts at once, then 10 a minute: crude, but orders of magnitude below unlimited. |
-| `POST /v1/messages` (sends a text message)       | closed | Each call costs real money at the SMS provider, and unlimited sending is how fraudsters run that bill up. A few minutes of refused sends cost less than a few minutes of unguarded ones.                                                    |
+| `POST /v1/messages` (sends a text message)       | closed | Each call costs real money at the SMS provider, and unlimited sending is how fraudsters run that bill up. A failover's 7 seconds of refused sends, or a longer outage's minutes, cost less than the same time unguarded.                    |
 
 The global search limit needs no policy: it lives in node memory and keeps
-working when the store is gone. After a second without syncing, every node
-sits at the even split of 500 a second, which adds up to exactly 20,000.
+working when the store is gone. After a second without syncing, each node
+holds the smaller of its share and its fallback, so the fleet stays at or
+under 20,000, a little under where demand was uneven.
 
 ## Failure modes and bottlenecks
 
@@ -646,8 +651,10 @@ instead of 100,000. For a free key it is 40 a second.
 the last few milliseconds of bucket updates can be lost when the replica takes
 over. A client whose updates were lost gets back a few tokens it had spent: a
 small, bounded overshoot, once per failover. During the roughly 6 seconds the
-failover takes, requests whose buckets are on that shard follow their
-endpoint's `on_store_down` policy.
+failover takes, plus up to a second until the breaker's next trial call
+reaches the new primary, requests whose buckets are on that shard follow
+their endpoint's `on_store_down` policy: for `POST /v1/messages`, about 7
+seconds of refused sends for the keys on that shard.
 
 **Lots of clients behind one IP.** An office, a university or a mobile carrier
 can put thousands of users behind one public IPv4 address, which is why the
@@ -690,8 +697,8 @@ log line per rejection so a particular customer's 429s can be explained.
 - **Local shares for the global search limit.** No hot key and no store
   dependency for the limit that protects the search cluster, at the cost of
   under-admitting a little when demand moves between nodes faster than the
-  100 ms rebalance, the lease protocol that keeps shares from overlapping, and
-  up to 2.5% over per node cut off from the store.
+  100 ms rebalance and the lease protocol that keeps shares from overlapping,
+  and capacity held idle for nodes that are cut off or dead.
 - **A library in the gateway over a limiter service.** One round trip instead
   of two, at the cost of a library that every gateway (and every service that
   uses it) has to upgrade to change the algorithm.

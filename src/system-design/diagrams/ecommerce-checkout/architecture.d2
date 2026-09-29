@@ -1,0 +1,39 @@
+# High-level architecture of the e-commerce checkout: catalog reads from a
+# cache, carts in their own store, and the order service orchestrating
+# inventory and payment, with order events published through an outbox.
+direction: down
+vars: { d2-config: { layout-engine: elk } }
+
+client: Browser or app
+cdn: CDN
+gw: API gateway
+catalog: Catalog service
+ccache: Catalog cache {
+  shape: stored_data
+}
+cart: Cart service
+order: Order service
+orderdb: Order DB + outbox {
+  shape: cylinder
+}
+inv: Inventory service
+pay: Payment service
+events: Order event stream {
+  shape: queue
+}
+consumers: "Email, fulfilment"
+
+client -> cdn: "images, scripts"
+client -> gw: "HTTPS API"
+gw -> catalog: "product pages"
+gw -> cart: "cart"
+gw -> order: "quote, place order"
+catalog -> ccache: "read first"
+order -> cart: "read cart"
+catalog -> order: "current prices"
+order -> orderdb: "state + outbox"
+order -> inv: "reserve, commit, release"
+order -> pay: "authorize, void"
+orderdb -> events: "outbox relay"
+events -> cart: "clear cart"
+events -> consumers: "order events"

@@ -180,6 +180,7 @@ conversations           key conversation_id
 
 members                 partition key conversation_id, then user_id
   last_delivered_seq, last_read_seq     the member's receipt cursors
+  left              boolean     set on leaving; the cursors are kept
 
 user_conversations      partition key user_id, then conversation_id
   kind                                   the reverse of members
@@ -220,7 +221,15 @@ Their write path appends to a log and sorts in the background, which suits the
 5.1 million inbox writes a second at peak. Cursors, `head_seq` and
 `fanned_out_seq` must only move forward, yet they stay plain writes: each is
 written with its seq as the store's write timestamp, so the store's
-last-write-wins rule keeps the largest without reading first. Receipts alone
+last-write-wins rule keeps the largest without reading first. That holds only
+if nothing touches those cells at the default timestamp, the current time in
+microseconds (about 1.8 × 10¹⁵), which would outrank every seq for good. So
+every write and delete of them carries a seq timestamp, in a statement of its
+own, apart from normally timestamped columns like `member_count`: a new
+conversation's `head_seq` and `fanned_out_seq` start at 0, stamped 0; a
+joining member's cursors start at `head_seq`, stamped with it. Leaving sets
+`left` and keeps the cursors; rejoining clears it and raises them to the
+head. Receipts alone
 could send up to 787,000 cursor writes a second on average if none were
 coalesced. The message writes are harder: each
 is a conditional insert (the ordering deep dive says why), and on a store with
@@ -343,9 +352,12 @@ explains.
 
 Steps 3 and 4 are two writes to two systems, and an owner that dies between
 them would leave a stored, "sent" message that nobody delivers. So the owner
-raises `c-42`'s `fanned_out_seq` to 812 only after the queue accepts seq 812,
-and a new owner taking over `c-42` re-enqueues every stored seq above
-`fanned_out_seq`. Some may go twice, which downstream deduplication absorbs.
+raises `c-42`'s `fanned_out_seq` to 812 only once the queue has accepted every
+seq up to 812 (enqueues are pipelined, so 812 can be accepted before 811), and
+a new owner taking over `c-42` re-enqueues every stored seq above
+`fanned_out_seq`. An owner that loses a conditional insert (the ordering deep
+dive) enqueues the seqs it lost to, from that one up to the latest stored,
+since the owner that won them may have died before enqueuing. Some seqs go twice, which downstream deduplication absorbs.
 It is the [outbox pattern](/systems-and-infrastructure/outbox-pattern) with
 the message log itself as the outbox.
 
@@ -359,9 +371,8 @@ costs at this scale.
 
 **Long polling** works through any proxy that allows ordinary HTTP, but every
 delivered message ends a request, so each one also pays for a new request and
-its headers, often several hundred bytes, larger than the message. At 5.1
-million deliveries a second at peak, that overhead is paid millions of times a
-second.
+its headers, often several hundred bytes, larger than the message, 5.1
+million times a second at peak.
 
 **Server-sent events (SSE)** deliver cheaply but only one way, so every send,
 receipt and typing indicator needs its own HTTP request, and a chat client
@@ -417,12 +428,10 @@ worker treats Bob as offline for that message: a push, and his phone collects
 the message from its inbox entry on the next sync.
 
 **Why push is needed.** A phone's operating system suspends an app soon after
-it leaves the screen, taking its WebSocket with it; most of the 150 million
-daily users not online at a given moment are in that state. Only the
-operating system's push service, one connection per phone shared by every
-app, reaches them. The notification carries little (a message, and for a 1:1
-chat who from); the app, woken or opened, syncs the message itself, so a lost
-push delays a message and can't lose it.
+it leaves the screen, taking its WebSocket with it, and then only the
+system's push service, one connection per phone shared by every app, reaches
+it. The app, woken or opened, syncs the message itself, so a lost push delays
+a message and can't lose it.
 
 ## Deep dive: ordering messages
 
@@ -570,9 +579,9 @@ receipt isn't stored for a device that is offline; when Alice's phone opens
 the chat, it reads Bob's current cursors from the `members` row, one read, and
 catches up.
 
-Per-message receipts would give exact state for each message; cursors can
-only say "everything up to here", which is all a chat screen shows, since
-messages are delivered and read in order. Cursors are the choice.
+Cursors can only say "everything up to here", where per-message receipts
+would be exact, but messages are delivered and read in order, so that is all
+a chat screen shows.
 
 In a group, members' receipts are stored but not each forwarded to Alice.
 "Read by 7 of 9" is the count of members whose `last_read_seq` is at least
@@ -638,9 +647,7 @@ didn't.
 
 A reconnecting device asks for the `head_seq` of each big channel it belongs
 to (one batched read) and fetches only the channels it opens. Pushes go out
-only for
-mentions (`@bob`), and receipts are off, as the requirements said: a "read by
-31,207 of 50,000" would cost up to 50,000 cursor updates per message.
+only for mentions (`@bob`), and receipts are off, as the requirements said.
 
 A popular channel is also the hot partition the data model warned of: its
 latest messages are read by thousands of members opening it in the same
@@ -710,8 +717,11 @@ the store.
 **A message service instance dies.** Its conversations move to other
 instances by consistent hashing. Sends in flight get no ack, so their clients
 retry with the same message IDs after a timeout; the new owner finds the
-latest stored seq and re-enqueues every seq above `fanned_out_seq`, so no
-stored message goes undelivered; duplicates are caught by message ID, and the
+latest stored seq and re-enqueues every seq above `fanned_out_seq`. Seqs the
+old owner stored in the handover and died before enqueuing are enqueued when
+the new owner's next insert loses to them, so a stored message is delivered
+at worst with the conversation's next send; duplicates are caught by message
+ID, and the
 conditional insert stops two owners giving out one number during the
 handover. Senders see "sending" for a few seconds longer.
 

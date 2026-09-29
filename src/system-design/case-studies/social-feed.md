@@ -470,9 +470,13 @@ raises that limit (`zset-max-listpack-entries`) to 512, so a timeline is
 about 500 × 20 bytes = 10 KB plus about 100 bytes of key overhead. The price:
 an insert scans and shifts up to 10 KB and a range read scans it, a few
 microseconds, instead of following pointers. A set that passes 512 converts
-to the larger form and stays there even when trimmed, so every insert trims
-to 500, and bulk inserts (a rebuild, a new follow's copied posts) trim their
-candidates to 500 before adding them. For 1 billion users that is about
+to the larger form and stays there even when trimmed, so every write adds at
+most 12 members and trims the set back to its newest 500 as one atomic step
+(a `MULTI` transaction, which Redis runs with nothing in between). Bulk
+inserts (a rebuild, a new follow's copied posts, a demotion's copy) go in
+chunks of 12, sent together so a 500-entry rebuild still costs one round
+trip, and a timeline that takes pushes meanwhile never holds more than
+500 + 12 = 512. For 1 billion users that is about
 10.1 TB; planning 12 TB leaves about 20% for allocator slack, and a
 **replica** of each shard (a live copy that takes over if the original
 fails) doubles it to 24 TB. At 256 GB of usable memory per machine,

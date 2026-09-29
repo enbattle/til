@@ -1,0 +1,26 @@
+# The first playback of v9Qx, resuming at 312 s (segment 78): the play API,
+# the master and 480p playlists, one segment that misses the edge and the shield,
+# then a step up to 720p, fetched the same way.
+shape: sequence_diagram
+
+player: Player
+api: Play API
+edge: CDN edge
+shield: Origin shield
+objects: Object store
+
+player -> api: "GET /videos/v9Qx/play"
+api -> player: "manifest URL, token, resume 312 s"
+player -> edge: "GET master-2.m3u8"
+edge -> player: "rung list"
+player -> edge: "GET h264_480p.m3u8"
+edge -> player: "segment byte ranges"
+player -> edge: "480p segment 78"
+edge -> shield: "miss: byte range"
+shield -> objects: "miss: range GET"
+objects -> shield: "bytes"
+shield -> edge: "bytes (cached)"
+edge -> player: "segment 78"
+player -> player: "9 Mbit/s, 4 s buffered"
+player -> edge: "720p segment 79"
+edge -> player: "segment 79"

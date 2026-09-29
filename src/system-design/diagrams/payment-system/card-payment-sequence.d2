@@ -1,0 +1,24 @@
+# One $25.00 card payment, p_42: the authorize call times out, the retry with
+# the same idempotency key gets the first attempt's answer, the capture writes
+# the ledger entries once, and the late webhook for the same capture adds none.
+shape: sequence_diagram
+
+client: Checkout
+svc: Payment service
+db: Ledger shard
+proc: Processor
+
+client -> svc: "POST /payments\nIdempotency-Key k1"
+svc -> db: "insert p_42 authorizing,\nkey k1"
+svc -> proc: "authorize 2500\nkey p_42-auth"
+svc -> svc: "no answer in 8 s"
+svc -> proc: "authorize again\nsame key"
+proc -> svc: "approved, auth_77\n(first attempt's)"
+svc -> db: "p_42 authorized"
+svc -> proc: "capture auth_77\nkey p_42-cap"
+proc -> svc: "captured"
+svc -> db: "one transaction:\np_42 captured,\n3 entries"
+svc -> client: "201, captured"
+proc -> svc: "webhook evt_9:\ncapture succeeded"
+svc -> db: "evt_9 new; p_42\nalready captured,\nno entries"
+svc -> proc: "200"

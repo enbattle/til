@@ -192,7 +192,7 @@ ref_changes       namespace_id, seq, hash, added | removed
 split by hash:
 chunks            hash PK, object_key, size, tier, last_read, unreferenced_since
 chunk_refs        hash, namespace_id                     PK (hash, namespace_id)
-pending_uploads   hash, upload_id, user_id, object_key, expires_at
+pending_uploads   hash, upload_id, user_id, object_key, expires_at, claimed
 ```
 
 A file records its `parent_id` and `name` rather than its full path, so
@@ -657,7 +657,8 @@ kept conflicting would fill the folder with copies.
 This design keeps both, because the requirement is that neither edit is lost
 and the service can't understand the contents well enough to merge them. On a
 `409`, the client commits its version as a new file with the conflicted-copy
-name (its chunks are already uploaded, so this is a metadata-only commit),
+name (its chunks are uploaded and the failed commit kept their pending
+records, so this is a metadata-only commit),
 then downloads version 8 as usual.
 
 The same checks settle the other combinations:
@@ -736,11 +737,14 @@ This design updates asynchronously. Step by step:
    or the namespace's own past, first writes to that chunk's hash-split
    database, in one transaction. If the hash has no `chunks` row, it inserts
    one pointing at the caller's upload, with `unreferenced_since` set to now,
-   and deletes the pending-upload record, so the object now belongs to
+   and marks the pending-upload record `claimed`, so the object now belongs to
    `chunks`. If the row exists and `unreferenced_since` is set, it resets it to
    now. Only then does the namespace commit run, and only after that succeeds
-   is any duplicate upload deleted. If the row is gone and the caller has no
-   upload for it, the commit is refused with that hash listed as missing.
+   do the caller's pending records for those hashes go, each with its object
+   unless it was claimed. A commit that fails, or loses to a conflict, keeps
+   them, so its retry can still prove the upload. If the row is gone and the
+   caller has no upload for it, the commit is refused with that hash listed as
+   missing.
 
 The reset timer is what makes lagging workers and failed commits safe. A chunk
 that was just claimed can't be collected for 7 days; if its commit succeeded,
@@ -764,7 +768,8 @@ An occasional slow full scan compares `chunk_refs` with every namespace's
 `namespace_chunks` to catch drift. Uploads that were never committed (the
 client crashed between steps 2 and 3 of an upload) never reach `chunks`; their
 pending-upload records expire after 7 days and their objects are deleted with
-them.
+them. A `claimed` record expires alone, since its object belongs to `chunks`
+and leaves through the collector.
 
 **Hot and cold storage.** Most stored bytes are rarely read: photos from three
 years ago, finished projects. Object stores sell tiers at very different

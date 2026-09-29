@@ -1,0 +1,41 @@
+# High-level architecture of the ticket booking system: the CDN and waiting
+# room absorb the on-sale crowd, the booking service makes conditional writes
+# to the sharded inventory database, and confirmed orders leave via an outbox.
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+direction: down
+
+client: Browser
+cdn: CDN
+wr: Waiting room
+gw: "API gateway\n(admission token,\nrate limits)"
+booking: Booking service {
+  style.multiple: true
+}
+seatmap: Seat map service
+db: "Inventory DB\n(shards by event:\nprimary, standby,\nreplicas)" {
+  shape: cylinder
+}
+sweeper: Hold sweeper
+pay: Payment service
+relay: Outbox relay
+queue: Order events queue {
+  shape: queue
+}
+
+client -> cdn: "layout, availability,\nqueue status"
+client -> wr: "join, admit"
+client -> gw: "holds, confirm"
+cdn -> seatmap: "availability\non miss, 1 s TTL"
+gw -> booking
+booking -> db: "conditional writes"
+booking -> pay: "charge\n(key: hold ID)"
+booking -> wr: "load, seats left"
+seatmap -> db: "replica read,\n1/s per event"
+sweeper -> db: "release\nexpired holds"
+sweeper -> pay: "status of\nstuck payments"
+db -> relay: "outbox rows"
+relay -> queue: "to tickets, email"

@@ -1,0 +1,34 @@
+# One ride request through matching: the trip is stored, a matching worker
+# finds nearby drivers in the location index (a self-call here, to keep the
+# diagram to five participants) and ranks them, claims the first with a conditional write
+# and offers it; the offer times out, the driver is released, and the next
+# driver is claimed, offered, and accepts.
+shape: sequence_diagram
+
+rider: Rider app
+trip: Trip service
+store: "Trip and\ndriver store"
+match: Matching worker
+drivers: Driver apps
+
+rider -> trip: "POST /rides t-9"
+trip -> store: "insert t-9,\nmatch job"
+trip -> rider: "201 requested"
+store -> match: "match t-9\n(outbox, queue)"
+match -> match: "location index:\nd-17, d-42, d-8"
+match -> match: "rank by ETA:\nd-42, d-17, d-8"
+match -> store: "t-9: offer 1\nto d-42"
+match -> store: "claim d-42\nif available"
+match -> drivers: "offer t-9#1, 15 s"
+
+No answer in 15 s: {
+  match -> store: "release d-42\nif still t-9#1"
+  match -> store: "t-9: offer 2\nto d-17"
+  match -> store: "claim d-17\nif available"
+  match -> drivers: "offer t-9#2, 15 s"
+}
+
+drivers -> trip: "d-17 accepts t-9#2"
+trip -> store: "d-17 on trip\nif t-9#2 live"
+trip -> store: "t-9 matched\nif offer 2"
+trip -> rider: "matched: d-17"
