@@ -31,7 +31,9 @@ For each scenario in `scenarios.md`:
 4. Grade:
    - **PASS**: a finding substantively names the planted defect at medium
      severity or higher (`FR-02`: high, since it breaks a non-negotiable).
-     For `FR-04`: nothing flagged, or only findings true of the diff.
+     For `FR-04`: nothing flagged, or only findings true of the diff (one
+     labelled theoretical passes if it's true and not presented as blocking).
+     A planted defect labelled theoretical is a FAIL.
    - **FAIL**: the planted defect is missed, or only mentioned as low or
      cosmetic; or, for `FR-04`, a reported defect that isn't there.
    - **AMBIGUOUS**: a finding circles the defect without naming it. Say why.

@@ -16,11 +16,32 @@ toward the specific bugs listed here.
 
 ---
 
-### FR-01 — correctness: comment stripping breaks a legitimate `#`
+### FR-01 — correctness: inline comments break single-quoted values
 
-**Planted defect:** the diff cuts everything after the first `#`, so a value
-like `C# in five minutes` becomes `C` and a quoted value containing `#` is
-cut, both of which the spec explicitly keeps.
+**Planted defect:** the diff skips comment stripping only for a
+double-quoted value, so a single-quoted value containing ` #` is cut:
+`summary: 'Use # for comments'` becomes `'Use` (the closing quote goes with
+the comment, so `unquote` no longer strips the opening one). The spec's rule
+is that a `#` inside _a quoted value_ is kept, and criterion 3's example
+passes only because it uses double quotes. The realistic trigger is this
+repo's own convention: every quoted value under `src/content/` today (six
+titles) uses single quotes, and none uses double quotes, so the next author
+who quotes a value containing ` #` hits it. No current content does, which
+is what makes it a test of the "theoretical" label: a reviewer that names
+the bug but calls it theoretical or low grades FAIL.
+
+History: the first FR-01 cut at any `#` (`split('#')`), which broke three of
+the spec's four examples and was always the top finding. It was rotated on
+2026-09-29, when Stage 4 gained the realistic-trigger and "theoretical"
+wording, to a bug whose trigger the spec doesn't spell out.
+
+Known flaw, to fix at the next rotation: this diff has two more real
+defects than the one planted, both found in its first run (2026-09-29). A
+quoted value that contains ` #` and has a trailing comment
+(`"Use # for comments" # draft`) is cut at the inner `#`, and a
+double-quoted value containing its own `"` no longer matches the guard.
+Findings naming either are true of the diff, so they don't count against a
+reviewer, but the scenario no longer has exactly one defect.
 
 **Spec:**
 
@@ -37,18 +58,37 @@ cut, both of which the spec explicitly keeps.
 ```diff
 --- a/src/lib/frontmatter.ts
 +++ b/src/lib/frontmatter.ts
-@@ -35,6 +35,6 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
-     const separator = lines[i].indexOf(':');
-     if (separator === -1) continue;
+@@ -16,4 +16,6 @@ const DELIMITER = '---';
+  * (e.g. a summary like "Note: do X") still parses correctly. A value can
+  * optionally be wrapped in matching single or double quotes (handy when it
+- * ends with punctuation that could be misread), which are stripped.
++ * ends with punctuation that could be misread), which are stripped. A
++ * trailing inline comment (whitespace, then `#`, then anything) is dropped
++ * unless the value is quoted.
+  */
+@@ -37,3 +39,4 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
      const key = lines[i].slice(0, separator).trim();
 -    const value = unquote(lines[i].slice(separator + 1).trim());
-+    const value = unquote(lines[i].slice(separator + 1).split('#')[0].trim());
++    const rawValue = lines[i].slice(separator + 1).trim();
++    const value = unquote(/^"[^"]*"$/.test(rawValue) ? rawValue : stripComment(rawValue));
      if (key) data[key] = value;
-   }
+@@ -58,3 +61,8 @@ function unquote(value: string): string {
+       (value.startsWith("'") && value.endsWith("'")));
+   return isQuoted ? value.slice(1, -1) : value;
+ }
++
++/** Drops a trailing inline comment: whitespace, then `#`, then anything. */
++function stripComment(value: string): string {
++  return value.replace(/\s+#.*$/, '');
++}
 ```
 
-**Expected finding:** the split happens on any `#`, not whitespace-then-`#`,
-and before unquoting, so criteria 2, 3 and 4 fail.
+**Expected finding:** a single-quoted value keeps no `#`: the quoted-value
+exemption tests only for double quotes, so `'Use # for comments'` is cut to
+`'Use`, breaking the spec's rule for quoted values (and the new docstring's
+"unless the value is quoted"), with this repo's single-quote convention as
+the trigger. Medium severity or higher, and not labelled theoretical. Naming
+only a missing single-quote test, without the wrong output, is AMBIGUOUS.
 
 ---
 

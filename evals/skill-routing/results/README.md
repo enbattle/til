@@ -23,30 +23,25 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-09-25 | SR-08 re-check after the dependency-update note              | 3    | 0    | 0         | Fix held twice.                                              |
 | 2026-09-28 | Case studies replace question pages (SR-15..17)              | 16   | 0    | 0         | All live scenarios.                                          |
 | 2026-09-29 | CLAUDE.md split into a router plus docs                      | 4    | 0    | 0         | Scoped run.                                                  |
-| 2026-09-29 | At a glance and role splitting                               | 5    | 0    | 0         | Latest run, below.                                           |
+| 2026-09-29 | At a glance and role splitting                               | 5    | 0    | 0         | No regression.                                               |
+| 2026-09-29 | Finding triage and slimming (branch chore/review-triage)     | 4    | 0    | 0         | Scoped run; latest run, below.                               |
 
-## Latest run: 2026-09-29, at a glance and role splitting
+## Latest run: 2026-09-29, finding triage and slimming
 
 Run by: self
-Trigger: `.claude/skills/feature/SKILL.md` gained a Stage 1 bullet on
-markdown-reading checks and a paragraph on running one role as several
-agents; `.claude/skills/add-case-study/SKILL.md`'s template now starts with
-`At a glance` and its Stage 3 review gained check (6); `docs/SDLC.md` notes the
-three agents are roles. No skill was added or renamed, so only the scenarios
-whose routing depends on those files ran: the two `/feature` scenarios and the
-three case-study ones.
+Trigger: CLAUDE.md, feature/SKILL.md, SDLC.md and hooks edited (finding triage, slimming), branch chore/review-triage
+Scope: SR-01, SR-03, SR-05 and SR-16 only. The harness change renamed Stage 4's step to "finding triage" while Stage 0 keeps "bug triage", so SR-05 (bug of unknown size) is the scenario most at risk of confusing the two, alongside SR-03 (trivial fix) and SR-01 (new feature) as the /feature-versus-direct boundary. SR-16 covers the content edit. No skill was added or renamed, so the rest did not run.
 
-| ID    | Routing decision          | Reasoning (1 line)                                                                 | Grade |
-| ----- | ------------------------- | ---------------------------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`                | Search-dialog pagination changes app code and UI, so it needs the pipeline.        | PASS  |
-| SR-07 | `/feature`                | Reading time on cards and topic pages is a multi-component UI change.              | PASS  |
-| SR-15 | `add-case-study`          | A new case study with D2 diagrams is exactly that skill's scope.                   | PASS  |
-| SR-16 | `content-audit`, one file | Tightening an already-published case study's prose and claims.                     | PASS  |
-| SR-17 | `/feature`                | Page layout and render-script tooling are app code, which add-case-study excludes. | PASS  |
+| ID    | Routing decision             | Reasoning (1 line)                                                                                          | Grade |
+| ----- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`                   | Search-dialog pagination is a nontrivial app/UI change with existing tests.                                 | PASS  |
+| SR-03 | Direct, no skill             | CLAUDE.md says to skip the pipeline for a typo; no topic, case study or app code involved.                  | PASS  |
+| SR-05 | Direct, starting with triage | CLAUDE.md says triage a bug of unknown size first, then route by the cause; escalate to /feature if needed. | PASS  |
+| SR-16 | `content-audit`, one file    | Tightening an already-published case study's prose and checking its claims.                                 | PASS  |
 
 ### Notes
 
-Each agent routed from CLAUDE.md's table and the skill descriptions with at
-most a grep, so the new `SKILL.md` text didn't change any routing decision.
-The role-splitting paragraph and the `SDLC.md` note didn't pull anyone
-towards a different skill.
+SR-05's agent guessed the fix was probably small (one component) before
+triaging, but its answer was "triage first, escalate to `/feature` if the cause
+needs a design decision", which is the Expected answer. The "finding triage"
+rename in Stage 4 did not get confused with Stage 0's bug triage.
