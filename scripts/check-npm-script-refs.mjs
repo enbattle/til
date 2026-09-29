@@ -9,12 +9,15 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const EXCLUDED_DIRS = new Set(['node_modules', 'dist', '.git']);
+const WORKTREES = join(ROOT, '.claude', 'worktrees');
 const SCRIPT_REF = /npm run ([a-zA-Z0-9:_-]+)/g;
 
 function walk(dir, files = []) {
   for (const entry of readdirSync(dir)) {
     if (EXCLUDED_DIRS.has(entry)) continue;
     const path = join(dir, entry);
+    // Agent worktrees are full repo copies; their docs are checked in their own run.
+    if (path === WORKTREES) continue;
     const stats = statSync(path);
     if (stats.isDirectory()) {
       walk(path, files);

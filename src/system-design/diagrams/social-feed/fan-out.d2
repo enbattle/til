@@ -1,0 +1,28 @@
+# The hybrid fan-out. Both posts go through the workers. An ordinary
+# account's post is pushed into each follower's timeline; a celebrity's post
+# is only appended to author_posts and sent to every app server, which keeps
+# the celebrity lists in its own memory. Reading a feed merges the reader's
+# timeline with those in-memory lists.
+direction: down
+
+maya: "Post by @maya\n(400 followers)"
+star: "Post by @star\n(50M followers)"
+reader: "Reader opens the feed"
+workers: Workers {
+  style.multiple: true
+}
+timelines: Timeline cache {
+  shape: stored_data
+}
+authorposts: "Post store\n(author_posts)" {
+  shape: cylinder
+}
+feed: "App server\n(in-memory celebrity lists)"
+
+maya -> workers: "post event"
+star -> workers: "post event"
+workers -> timelines: "@maya only: push ID into 400 timelines"
+workers -> authorposts: "append ID (every post)"
+workers -> feed: "@star's post ID, via the queue"
+reader -> feed: "GET /feed"
+feed -> timelines: "read own timeline, merge"

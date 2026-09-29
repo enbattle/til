@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite';
+import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { existsSync, readFileSync } from 'node:fs';
@@ -99,5 +100,8 @@ export default defineConfig({
     // on first use; on a cold cache that alone can pass the 5s default, which
     // made `verify` (and so the deploy) fail intermittently.
     testTimeout: 15000,
+    // Agent worktrees (Claude Code `isolation: 'worktree'`) are full copies of
+    // the repo under .claude/worktrees/; their tests are theirs to run.
+    exclude: [...configDefaults.exclude, '.claude/worktrees/**'],
   },
 });

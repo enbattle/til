@@ -1,0 +1,27 @@
+# High-level architecture of the rate limiter: the check runs inside every
+# API gateway node, per-client buckets live in a shared counter store, and
+# only allowed requests reach the backend services.
+direction: down
+
+client: API clients
+lb: Load balancer
+rules: Rules config {
+  shape: stored_data
+}
+gw: "API gateway nodes\n(limiter library, global-limit shares)" {
+  style.multiple: true
+}
+store: "Counter store\n(Redis shards + replicas)" {
+  shape: cylinder
+}
+svc: Backend services {
+  style.multiple: true
+}
+metrics: Metrics
+
+client -> lb: "API requests"
+lb -> gw
+rules -> gw: "rules, pushed on change"
+gw -> store: "atomic bucket scripts,\nglobal-share sync"
+gw -> svc: "allowed requests"
+gw -> metrics: "decisions, 429s"

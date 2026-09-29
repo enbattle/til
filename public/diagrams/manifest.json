@@ -23,6 +23,96 @@
       "text-tertiary": "#a39683"
     }
   },
+  "file-storage/architecture.d2": {
+    "sha256": "83e83749c09b2178dd4e61ec40bc4ac4af841f0dd4b62fb64f68874f79596702",
+    "width": 999,
+    "height": 1420,
+    "svgs": {
+      "light": "f18b910c049a8117f10f18f4224bf9a28459b3aa733e4166a298a724c1600127",
+      "dark": "a19ebf90c03c557f778dd131adb2db38c0f903860efd9e5a1ebad5793512dd71"
+    }
+  },
+  "file-storage/edit-sync-sequence.d2": {
+    "sha256": "0a790eebc881f031beda435baeff5a4b3e6e777c3eaad1997aeed0bc69b63335",
+    "width": 1004,
+    "height": 1616,
+    "svgs": {
+      "light": "391f466450751796b6178c90e28989637efdcbf53cf506f609e20148cd89263b",
+      "dark": "350c76c3c3192fbabf49fa1508cad01dad9630b47a74b71869a35060ec6208d6"
+    }
+  },
+  "messaging/architecture.d2": {
+    "sha256": "f9e0931c9c5f7b1f4fd3d1449af7b70c601e34e4b636c67d216a487f35c27a10",
+    "width": 892,
+    "height": 1301,
+    "svgs": {
+      "light": "312cc77f8fefc91039b9c7d1fd13753b4ab959a5c374cb11167bde393dc56ec1",
+      "dark": "c1ff565738fb43dff7b4522521e9b40a536b7b0d202d20ad7efd1b595890d68a"
+    }
+  },
+  "messaging/delivery-sequence.d2": {
+    "sha256": "0fb6de3749e08df4b812dd7b4966ac42d373738eb804ef66739275d0133b5727",
+    "width": 917,
+    "height": 2383,
+    "svgs": {
+      "light": "f5589c9445d2c51b36e9d557ceefa35a23c7213d59253ba2d018f1434b050b15",
+      "dark": "0d2a34dd509db771ba9cf90fdf7efde96cebf939f7e0ba84acf8cdebb7a076c9"
+    }
+  },
+  "notification-system/architecture.d2": {
+    "sha256": "22b524f7400ee0a2e4d43ac893edea91c8c2fee48ef122cea24b6077b2ad3f65",
+    "width": 953,
+    "height": 1957,
+    "svgs": {
+      "light": "1c02424574564b87de9928281d4177550c87f6c1a98fb18075c2cd624fa85ce7",
+      "dark": "d46739000d867abcfe98a9ea3de2d39c8994b2839e7af50632e0527d8b61d670"
+    }
+  },
+  "notification-system/login-code-sequence.d2": {
+    "sha256": "82c87ac28c1ea7c979d1484d9b1dd14831a98b710499c84d0d07b4675a98dfe3",
+    "width": 953,
+    "height": 1310,
+    "svgs": {
+      "light": "40971bbfdc7d3f70d521b9f9bc3b56c2444ea58450ff278c44c55891f1ceca8e",
+      "dark": "12a34411adf1e7352311e3063a9f46b90c53c53a40d81b09798bfb07674c0360"
+    }
+  },
+  "rate-limiter/architecture.d2": {
+    "sha256": "ad3f6bbc8b0c4e0517beef816ab43d112eab1b0f7ff1b9fdbd6c7150ed6f402d",
+    "width": 658,
+    "height": 777,
+    "svgs": {
+      "light": "5468d96cf6d2ad7472101ee7ef1fab1841f6c3827b2045127d886f0b9ea0307d",
+      "dark": "ed413ed060c03288467caea98aafeacdfe4a344fb095e9e42700fe0272248d73"
+    }
+  },
+  "rate-limiter/check-sequence.d2": {
+    "sha256": "a5a24d81a3da0ad81d610786ab085412be44d30fa2f167904ac34c25aa69d193",
+    "width": 861,
+    "height": 1299,
+    "svgs": {
+      "light": "5d746ce8f73a6cbcc08f51f45bac6fda8892d9847f5ca86c3cb7659e19b8d483",
+      "dark": "4fbf7c748469a58c97b252ae373d35d9b6e0c81536432431fbf0ec99a4fba011"
+    }
+  },
+  "social-feed/architecture.d2": {
+    "sha256": "ace7c04ed32da760ac91804393edf657d45112a9a9c2e5f8cfffb76e779257f0",
+    "width": 898,
+    "height": 980,
+    "svgs": {
+      "light": "f7ad16347f1e8033b7a188129b8505b3d5cd101b159c4fb0bec1b7a8c497f0ae",
+      "dark": "0821b1a33f61163c11d0c67e00db49a6ba5a291c6820ed27c10d08d182dcf03e"
+    }
+  },
+  "social-feed/fan-out.d2": {
+    "sha256": "171cad99d4a8ff5a8f8cdc3f721517d324376a72ae1b99da6415ab81d27b151d",
+    "width": 891,
+    "height": 761,
+    "svgs": {
+      "light": "2c3b427f9983ef60879c5b72923cf1fe7e0eb1bc6a09fa738a61cb2958b892f5",
+      "dark": "f6af8249d9da7ef7cd4bb98e3a09230517129e3e8773542e67207228bbc4ef29"
+    }
+  },
   "url-shortener/architecture.d2": {
     "sha256": "7309489d33e281837b8d1ac02b657d909d2c62cfd67db0e26cf616c38bb98608",
     "width": 811,

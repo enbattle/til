@@ -1,0 +1,59 @@
+# High-level architecture of the notification system: requests and campaigns
+# fan out into per-channel, per-priority queues; senders hand messages to the
+# providers or the in-app inbox; delivery tracking runs beside the send path.
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+direction: down
+
+services: Calling services {
+  style.multiple: true
+}
+campaigns: Campaign scheduler
+api: Notification API
+fanout: Fan-out workers {
+  style.multiple: true
+}
+userdata: "Users, preferences,\ntemplates" {
+  shape: cylinder
+}
+channelq: "Channel queues\n(channel × priority)" {
+  shape: queue
+}
+senders: Channel senders {
+  style.multiple: true
+}
+sendstate: Send state {
+  shape: cylinder
+}
+dlq: Dead-letter queue {
+  shape: queue
+}
+providers: "Providers (APNs, FCM,\nemail, SMS), in-app inbox"
+status: "Status endpoints\n(webhooks, app reports)"
+statusq: Status queue {
+  shape: queue
+}
+tracking: Tracking workers
+log: Delivery log {
+  shape: cylinder
+}
+
+services -> api: "POST /v1/notifications"
+api -> fanout: "request queues"
+campaigns -> fanout: "paced batches"
+fanout -> userdata: "read (cached)"
+fanout -> channelq
+fanout -> statusq: "queued,\nskipped"
+channelq -> senders
+senders -> userdata: "templates (in memory)"
+senders -> sendstate: "claim, mark sent"
+senders -> dlq: "gave up"
+senders -> providers
+senders -> statusq: "sent"
+providers -> status: "webhooks"
+status -> statusq
+statusq -> tracking
+tracking -> log
