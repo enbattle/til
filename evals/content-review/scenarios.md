@@ -379,7 +379,7 @@ near-duplicate check, as the skill does.
 title: Design a Pastebin (like Pastebin.com)
 summary: Keeping a year of text snippets behind short links, and why the text itself belongs somewhere other than the database.
 date: 2026-09-28
-order: 2
+order: 17
 ---
 
 A pastebin lets someone paste a block of text, such as a log excerpt or a
