@@ -89,9 +89,10 @@ finds something, and a reader of process edits at the retrospective.
 4. **Adversarial review (code + UI).** An independent pass over the diff —
    no visibility into either prior stage's reasoning, only the spec and
    the code as it stands — that also drives the feature in a browser if it
-   has a rendered surface. Confirmed findings go back for a fix, then back
-   for re-review, capped at two rounds so a stuck loop surfaces to a human
-   instead of running forever.
+   has a rendered surface. Confirmed findings go back for a fix (with a
+   fresh test-writer's failing test first, for any finding a test can
+   encode), then back for re-review, capped at two rounds so a stuck loop
+   surfaces to a human instead of running forever.
 5. **Final gate.** Every check green on the actual final diff, summarized
    for the user, who decides whether and when to commit and push. No stage
    in this process commits or pushes on its own. Findings the review made
@@ -114,9 +115,9 @@ finds something, and a reader of process edits at the retrospective.
 
 The standing constraints every stage is held to (accessibility, security,
 the process rules above), in one short numbered list that points to where
-each detail lives. The spec is checked against it before approval, and each
-change reviewer (`/feature` Stage 4, `add-topic` Stage 3, `content-audit`) is
-given it. When a spec and a line there conflict, the line wins
+each detail lives. The spec is checked against it before approval, and every
+reviewer of a change is given it (the file's own opening lists which stages
+those are). When a spec and a line there conflict, the line wins
 unless the user amends the file; a stage that finds the conflict stops and
 asks rather than choosing.
 
@@ -138,11 +139,9 @@ description, does a fresh session route it to the skill this document and
 `CLAUDE.md` intend, or a direct edit (`skill-routing`) — and, once the
 right skill runs, does its review step actually catch what it's supposed
 to catch instead of rubber-stamping the work (`content-review`, for
-`add-topic`'s Stage 3; `feature-review`, for `/feature`'s Stage 4), and — for the System Design section — does a
-reader starting from a symptom reach the right question and topics
-(`system-design-navigation`)? Run via the `skill-routing-eval`,
-`content-review-eval`, `feature-review-eval` and
-`system-design-navigation-eval` skills — see
+`add-topic`'s and `add-case-study`'s Stage 3; `feature-review`, for
+`/feature`'s Stage 4)? Run via the `skill-routing-eval`,
+`content-review-eval` and `feature-review-eval` skills — see
 `evals/README.md`. All are run
 manually/periodically, not on every commit — after the changes the table in
 `evals/README.md` names (the canonical list of which eval each change

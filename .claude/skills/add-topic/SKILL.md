@@ -40,22 +40,11 @@ and "Writing standard" sections exactly:
   use concrete examples over abstract description, and write it so a
   reader with zero prior background on the subject can actually follow it.
 
-- **If the section is `systems-and-infrastructure`, place the topic under a
-  System Design question too.** Add a plain
-  `[text](/systems-and-infrastructure/<slug>)` link to it, in running prose, in
-  the body of the question in `src/system-design/questions/` whose problem it
-  helps solve, following CLAUDE.md's "System Design questions" body convention:
-  state what the option buys, what it costs and when to pick it there, then
-  link, and don't re-explain the topic's mechanism in the question. CLAUDE.md's
-  "Links are the data" bullet lists the link forms that aren't counted. If no
-  existing question fits, add a new question file with the next free `order`
-  instead. `system-design.test.ts`'s coverage check fails the topic until this
-  is done. If the topic is the natural answer to a symptom no scenario in
-  `evals/system-design-navigation/scenarios.md` covers, add one first (its
-  `HOW_TO_RUN.md`, "When the question set changes", step 3). Afterward run
-  `system-design-navigation-eval` (the scenarios that touch that question, or
-  the whole set if you added one) to check a reader would actually land there.
-  Topics in other sections need no question.
+- **If a System Design case study already leans on the new topic's idea,**
+  you may add a link to it there, at the point the case study uses it (a
+  link-only edit to `src/system-design/case-studies/<slug>.md`; list it for
+  the Stage 3 reviewer). This is optional: case studies have no coverage
+  requirement, and a topic needs no case study.
 - **Link existing topics to the new one where they already lean on it.** If
   other topics use the new topic's central term without explaining it, link
   that term's first mention in each to the new topic. Keep these edits
@@ -68,7 +57,7 @@ and "Writing standard" sections exactly:
   something.
 
 If anything about scope or angle is genuinely ambiguous (which section it
-belongs in, which question it goes under, how deep to go), ask the user — don't guess on something only
+belongs in, how deep to go), ask the user — don't guess on something only
 they'd know.
 
 ## Stage 2 — Self-check
@@ -77,12 +66,12 @@ they'd know.
 npm run verify
 ```
 
-`content.test.ts`, `registry.test.ts`, `system-design.test.ts`,
-`catalog-gaps.test.ts` (which also fails on a dead link between systems
-topics) and `where-youll-meet-this.test.ts` already catch structural problems (missing
-frontmatter field, section/registry mismatch, a `systems-and-infrastructure`
-topic no question links, a dead question link, a systems topic without its
-closing "Where you'll meet this" section) — this stage is just confirming
+`content.test.ts`, `registry.test.ts`, `system-design.test.ts` (a dead
+link from a case study), `catalog-gaps.test.ts` (which also fails on a dead
+link between systems topics) and `where-youll-meet-this.test.ts` already
+catch structural problems (missing frontmatter field, section/registry
+mismatch, a systems topic without its closing "Where you'll meet this"
+section) — this stage is just confirming
 those still pass, not
 writing new tests. A topic file
 never needs its own test.
@@ -95,10 +84,9 @@ CLAUDE.md's "Writing standard" section, the path of
 `docs/NON_NEGOTIABLES.md` (a violation there is always a real finding), and
 the titles/slugs of the other
 topics already in the same section (so it can check for a near-duplicate).
-If Stage 1 also touched a System Design question, give it that question's
-full content too and have it check the added snippet against the Writing
-Standard's question-page rule (routes and compares, doesn't re-teach the
-mechanism, and no fact is stated in both places).
+If Stage 1 also added a link from a System Design case study, give it that
+paragraph too and have it check that the link sits where the case study
+uses the concept.
 If the topic is in `systems-and-infrastructure`, also have it check the
 closing `## Where you'll meet this` section: general kinds of systems only,
 every sentence true of the generic system, and no re-teaching of the topic.

@@ -15,6 +15,10 @@ Each scenario names the **section** the draft claims to belong to, so a
 real run can glob that section's current sibling topics for the
 near-duplicate check the same way a real `add-topic` review would.
 
+`CR-*` scenarios test `add-topic`'s review. The `CS-*` scenarios at the end
+test `add-case-study`'s review the same way, with a System Design case-study
+draft and that skill's Stage 3 instruction instead.
+
 ---
 
 ### CR-01 — undefined jargon (trap for "define terms before using them")
@@ -289,4 +293,229 @@ exactly the rigor the review is supposed to have, and two runs (2026-09-16
 and 2026-09-21) both produced real findings on this control.
 **Fails if:** the review reports a defect that isn't true of the draft: a
 fabricated claim, a misreading of what the text says, or a correct
+technical statement called wrong.
+
+---
+
+## Case-study scenarios (`add-case-study`)
+
+These test `add-case-study`'s Stage 3 review instead of `add-topic`'s. They
+share one fabricated base draft, a small Pastebin case study written to the
+case-study template, so that each scenario differs from the clean control by
+exactly the planted problem. Build a scenario's draft by taking the base draft
+below and applying that scenario's replacement verbatim; give the reviewer the
+result, plus the base diagram source, exactly as `add-case-study` Stage 3
+would give a real draft and its `.d2` files. These are fixtures for this eval
+only: never write them into `src/system-design/`. The base is deliberately
+shorter than a real case study (compare `url-shortener.md`); a reviewer
+noting that it's thin is a true finding, recorded in notes and not graded.
+
+There's no **Section** here: give the reviewer the titles and slugs of the
+real case studies in `src/system-design/case-studies/` for its
+near-duplicate check, as the skill does.
+
+### Base draft (the CS-03 control, verbatim)
+
+```markdown
+---
+title: Design a Pastebin (like Pastebin.com)
+summary: Storing millions of text snippets behind short links, and why the text itself belongs somewhere other than the database.
+date: 2026-09-28
+order: 2
+---
+
+A pastebin lets someone paste a block of text, such as a log excerpt or a
+config file, and get back a link they can share. Opening the link shows the
+text. This is one plausible design for a service like Pastebin.com, not a
+description of how any company built theirs.
+
+## Requirements
+
+- **Create a paste** from up to 512 KB of text, and get back a link.
+- **Read a paste** by its link.
+- **Expiry (optional):** a paste can expire after a chosen time; the default
+  is never.
+
+Out of scope: accounts, editing a paste, syntax highlighting and search.
+
+Non-functional: 1 million new pastes a day, 10 reads for every paste
+created, reads under 100 ms at the 99th percentile (the time 99% of reads
+beat), and pastes kept for one year unless they expire sooner.
+
+## Back-of-the-envelope estimates
+
+A day has 86,400 seconds, and a peak of ten times the average is a common
+planning assumption.
+
+- Writes: 1,000,000 ÷ 86,400 ≈ 12 per second on average, about 120 at peak.
+- Reads: 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
+  peak.
+- Storage: at an average paste of 10 KB, 1,000,000 × 10 KB = 10 GB a day,
+  and 10 GB × 365 ≈ 3.65 TB a year.
+- Cache: holding 20% of a day's reads is 0.2 × 10,000,000 = 2,000,000
+  pastes, and at 10 KB each that's 20 GB.
+
+Writes and reads are both modest. The number that shapes the design is
+storage: terabytes of text a year.
+
+## Data model
+
+Two kinds of data with different shapes. Metadata is small and structured:
+an ID, creation time, expiry and size, about 200 bytes a paste. Contents are
+large, opaque blobs of text that are only ever read whole. Metadata goes in a
+relational table keyed by paste ID; contents go in an object store, a service
+that stores files by key and charges per gigabyte (the first deep dive
+compares this with keeping them in the table).
+
+## API design
+
+- `POST /pastes` with `{ "content": "...", "expires_in_days": 7 }` returns
+  `201 Created` and `{ "id": "aZ3kQ9", "url": "https://paste.example/aZ3kQ9" }`.
+- `GET /pastes/aZ3kQ9` returns `200 OK` with the text, `404 Not Found` for an
+  unknown ID, or `410 Gone` once it has expired.
+
+## High-level architecture
+
+![Clients call a load balancer, which forwards to app servers. App servers read pastes through a cache, store metadata in a relational database, and store paste contents in an object store.](/diagrams/pastebin/architecture.svg)
+
+A read goes to the load balancer, then an app server, which checks the cache
+for the paste; on a miss it reads the metadata row, checks expiry, fetches
+the contents from the object store, and fills the cache. A create writes the
+contents to the object store first, then inserts the metadata row, so a row
+never points at contents that don't exist.
+
+## Deep dive: where paste contents live
+
+**In the database row.** One write, one read, and a single system to back
+up. The cost is that the database carries 3.65 TB of text a year that it never
+queries, which makes its backups, replicas and restores slow and its disks
+expensive, since database storage costs far more per gigabyte than object
+storage.
+
+**In an object store.** Cheap per gigabyte and built to grow without limit,
+and the database stays small (200 bytes × 365 million pastes ≈ 73 GB a year).
+The cost is a second system on every request, an extra network round trip on
+a cache miss, and two writes that can half-succeed: contents stored but the
+row insert failed, which leaves an orphaned object that a periodic cleanup
+job has to delete.
+
+The object store wins here because storage is the dominant number; the
+[caching](/systems-and-infrastructure/caching) layer hides the extra round
+trip for popular pastes.
+
+## Deep dive: expiring pastes
+
+**Check on read.** The app server compares `expires_at` with the current time
+and answers `410` if it has passed. It's exact and costs nothing extra, but
+expired pastes keep using storage forever.
+
+**A background sweep.** A daily job deletes expired rows and their objects.
+It reclaims storage, but on its own leaves up to a day in which an expired
+paste could still be served.
+
+Doing both gives exactness on read and reclaimed storage within a day.
+
+## Failure modes and bottlenecks
+
+Anyone can create pastes, so creation is limited per IP address with
+[rate limiting](/systems-and-infrastructure/rate-limiting). If the object
+store is slow, cached pastes still load and uncached ones slow down; the
+cache hit rate is the number to watch.
+
+## Trade-offs
+
+- Object storage over database rows: cheaper and simpler to scale, at the cost
+  of a second system and orphan cleanup.
+- Check-on-read plus a sweep over either alone: one more job to run, in
+  exchange for both exact expiry and reclaimed storage.
+```
+
+Base diagram source (`src/system-design/diagrams/pastebin/architecture.d2`,
+for every scenario):
+
+```d2
+direction: down
+client: Client
+lb: Load balancer
+app: App servers
+cache: Cache
+db: Metadata DB {
+  shape: cylinder
+}
+objects: Object store
+client -> lb
+lb -> app
+app -> cache: "read first"
+app -> db: "metadata"
+app -> objects: "contents"
+```
+
+---
+
+### CS-01 — estimate arithmetic error (trap for "estimates must hold")
+
+**Reviewed with:** `add-case-study`'s Stage 3 instruction.
+**Planted violation (the only one):** the average read rate is off by ten:
+10,000,000 ÷ 86,400 is about 116, not 1,160, and the peak derived from it is
+ten times too high as well.
+**Replacement in the base draft:** replace the "Reads" bullet with:
+
+```markdown
+- Reads: 10,000,000 ÷ 86,400 ≈ 1,160 per second on average, about 11,600
+  at peak.
+```
+
+**Expected finding:** recomputes the read estimate and flags that
+10,000,000 ÷ 86,400 ≈ 116 per second (peak ≈ 1,160), not 1,160 (peak
+11,600), noting that it's also inconsistent with the stated 10:1 read-to-write
+ratio against 12 writes a second.
+**Fails if:** the review doesn't flag the read rate, or flags only style
+while accepting the numbers.
+
+---
+
+### CS-02 — a deep dive that picks without comparing
+
+**Reviewed with:** `add-case-study`'s Stage 3 instruction.
+**Planted violation (the only one):** the first deep dive states the choice
+(object storage) and how to use it, but never compares it with keeping the
+contents in the database or says what the choice costs.
+**Replacement in the base draft:** replace everything between
+`## Deep dive: where paste contents live` and `## Deep dive: expiring pastes`
+(keeping both headings) with:
+
+```markdown
+Paste contents go in an object store. On a create, the app server uploads the
+text under the paste's ID, then inserts the metadata row with the object's
+key. On a read, it fetches the row, then the object, and caches the result.
+Objects are stored in one bucket, and the
+[caching](/systems-and-infrastructure/caching) layer keeps popular pastes in
+memory so most reads never reach the object store.
+```
+
+**Expected finding:** flags that this deep dive picks object storage without
+comparing any alternative (keeping contents in the database row is the
+obvious one) and without saying what the choice costs (a second system, an
+extra round trip, two writes that can half-succeed), contrary to the
+checklist's "each deep dive compares at least two options."
+**Fails if:** the review doesn't flag the missing comparison, or flags only
+the other deep dive.
+
+---
+
+### CS-03 — clean case study (false-positive control)
+
+**Reviewed with:** `add-case-study`'s Stage 3 instruction.
+**Planted violation:** none. The base draft, verbatim. Its estimates are
+correct (1,000,000 ÷ 86,400 ≈ 11.6; 10,000,000 ÷ 86,400 ≈ 115.7;
+1,000,000 × 10 KB = 10 GB; 10 GB × 365 = 3,650 GB; 200 B × 365,000,000 =
+73 GB; 0.2 × 10,000,000 × 10 KB = 20 GB), both deep dives compare two options
+with their costs, and the diagram shows exactly the components the prose
+names.
+**Expected finding:** no finding that is false of the draft. Real gaps, such
+as its thinness next to the reference case study or a missing sequence
+diagram, are acceptable and go in the run's notes.
+**Fails if:** the review reports a defect that isn't true of the draft: an
+arithmetic "error" in a correct line, a deep dive called one-sided when it
+compares two options, a diagram/prose mismatch that isn't there, or a correct
 technical statement called wrong.

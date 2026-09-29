@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { isSystemDesignPath } from '@/lib/system-design';
 import { ThemeToggle } from './ThemeToggle';
@@ -13,11 +14,38 @@ interface HeaderProps {
   onOpenNav: () => void;
 }
 
+/**
+ * Publishes the header's current height as `--header-height` on `<html>`, so
+ * an in-page anchor (a case study's Contents link) can scroll its heading
+ * clear of this sticky header. The header wraps to two rows under `sm`, and to
+ * three on the narrowest phones, so no fixed margin fits every width.
+ */
+function useHeaderHeightVariable() {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const header = ref.current;
+    if (!header) return;
+    const root = document.documentElement;
+    const update = () =>
+      root.style.setProperty('--header-height', `${header.offsetHeight}px`);
+    update();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
+
 export function Header({ onOpenSearch, onOpenNav }: HeaderProps) {
   const systemDesignActive = isSystemDesignPath(useLocation().pathname);
+  const ref = useHeaderHeightVariable();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-bg-primary/95 backdrop-blur">
+    <header
+      ref={ref}
+      className="sticky top-0 z-30 border-b border-border bg-bg-primary/95 backdrop-blur"
+    >
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
         <div className="flex items-center gap-2">
           <button

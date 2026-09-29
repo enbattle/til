@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignore": ["src/lib/diagram-refs.d.mts"],
+  "entry": [".claude/hooks/*.js"],
+  "ignoreBinaries": ["d2"]
+}

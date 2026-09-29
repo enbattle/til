@@ -2,17 +2,26 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseFrontmatter } from './src/lib/frontmatter.ts';
+import { extractTopicRefs } from './src/lib/markdown-links.ts';
 
 /**
- * `import meta from './topic.md?meta'` resolves to just that file's
- * frontmatter as a JSON object, so the app can list every topic (sidebar,
- * cards, sort order) without bundling any topic body. Bodies come in
- * separately through a lazy `?raw` glob (see `src/lib/content.ts`). Uses the
- * same `parseFrontmatter` as the runtime, so the flat `key: value` contract is
- * unchanged. Vitest reuses these plugins, so tests see the same module.
+ * Two build-time views of a markdown file, so the app can list and cross-link
+ * content without bundling any body. Bodies come in separately through a lazy
+ * `?raw` glob (see `src/lib/content.ts` and `src/lib/system-design.ts`).
+ *
+ * - `import meta from './topic.md?meta'` resolves to the file's frontmatter as
+ *   a JSON object (sidebar, cards, sort order, search titles). It uses the same
+ *   `parseFrontmatter` as the runtime, so the flat `key: value` contract is
+ *   unchanged.
+ * - `import links from './case.md?links'` resolves to the catalog topic links
+ *   in the file's body (`[{ section, slug }]`, first appearance first), from
+ *   the same `extractTopicRefs` the tests use. Case studies use it for "Go
+ *   deeper" and for the topic pages' back-links.
+ *
+ * Vitest reuses these plugins, so tests see the same modules.
  */
 function markdownMeta(): Plugin {
   return {
@@ -20,16 +29,61 @@ function markdownMeta(): Plugin {
     enforce: 'pre',
     load(id) {
       const [file, query = ''] = id.split('?');
-      if (!file.endsWith('.md') || !new URLSearchParams(query).has('meta')) return null;
+      if (!file.endsWith('.md')) return null;
+      const params = new URLSearchParams(query);
+      if (!params.has('meta') && !params.has('links')) return null;
       this.addWatchFile(file);
-      const { data } = parseFrontmatter(readFileSync(file, 'utf8'));
-      return `export default ${JSON.stringify(data)};`;
+      const { data, content } = parseFrontmatter(readFileSync(file, 'utf8'));
+      const value = params.has('meta') ? data : extractTopicRefs(content);
+      return `export default ${JSON.stringify(value)};`;
+    },
+  };
+}
+
+const DIAGRAM_MANIFEST = path.resolve(
+  import.meta.dirname,
+  'public/diagrams/manifest.json',
+);
+const DIAGRAM_SIZES = 'virtual:diagram-sizes';
+
+/**
+ * `import sizes from 'virtual:diagram-sizes'` resolves to each rendered
+ * diagram's intrinsic size, keyed `<case>/<name>` (e.g.
+ * `url-shortener/architecture`), read from the lock file `npm run diagrams`
+ * writes. A diagram's `<img>` takes its width/height from it so the page
+ * doesn't shift when the SVG arrives; the rest of the manifest (the source and
+ * SVG hashes, and the `$tokens` entry) stays out of the bundle.
+ */
+function diagramSizes(): Plugin {
+  const resolved = `\0${DIAGRAM_SIZES}`;
+  return {
+    name: 'diagram-sizes',
+    resolveId(id) {
+      return id === DIAGRAM_SIZES ? resolved : null;
+    },
+    load(id) {
+      if (id !== resolved) return null;
+      const sizes: Record<string, { width: number; height: number }> = {};
+      if (existsSync(DIAGRAM_MANIFEST)) {
+        this.addWatchFile(DIAGRAM_MANIFEST);
+        const manifest = JSON.parse(readFileSync(DIAGRAM_MANIFEST, 'utf8')) as Record<
+          string,
+          { width?: number; height?: number }
+        >;
+        // Only `<case>/<name>.d2` entries are diagrams; `$tokens` (the colors
+        // they were rendered with) is for check:diagrams, not the app.
+        for (const [source, { width, height }] of Object.entries(manifest)) {
+          if (!source.endsWith('.d2')) continue;
+          if (width && height) sizes[source.replace(/\.d2$/, '')] = { width, height };
+        }
+      }
+      return `export default ${JSON.stringify(sizes)};`;
     },
   };
 }
 
 export default defineConfig({
-  plugins: [markdownMeta(), react(), tailwindcss()],
+  plugins: [markdownMeta(), diagramSizes(), react(), tailwindcss()],
   base: '/til/',
   resolve: {
     alias: {

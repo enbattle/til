@@ -100,7 +100,8 @@
 }
 
 /* Thin, on-theme scrollbar for the nav's own scroll regions (the desktop
-   sidebar wrapper in App.tsx and MobileNav's panel). Styled rather than
+   sidebar wrapper in App.tsx and MobileNav's panel) and the sideways-scrolling
+   box a diagram or table gets on a phone (useSideScroll). Styled rather than
    hidden — a fully hidden scrollbar removes the "this is scrollable"
    affordance, which accessibility guidance advises against. Standard
    properties, well-supported across current browsers; built from the

@@ -56,7 +56,8 @@ export const TOPICS: Topic[] = Object.entries(metaFiles)
   .sort((a, b) => a.title.localeCompare(b.title));
 
 /**
- * Loads bodies on demand from `loaders` (key `section/slug`), remembering each
+ * Loads bodies on demand from `loaders` (keyed `section/slug` for topics, the
+ * slug for case studies in `system-design.ts`), remembering each
  * one. A promise is memoized per key so concurrent callers share one fetch,
  * and a rejected one is evicted so a retry re-invokes the loader instead of
  * replaying the stored failure forever. That does not guarantee the retry
@@ -73,7 +74,7 @@ export function createBodyStore(loaders: Record<string, () => Promise<string>>) 
     const cached = bodies.get(key);
     if (cached) return cached;
     if (!Object.hasOwn(loaders, key)) {
-      return Promise.reject(new Error(`No topic body registered for "${key}"`));
+      return Promise.reject(new Error(`No body registered for "${key}"`));
     }
     const promise = loaders[key]();
     bodies.set(key, promise);

@@ -1,17 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { TOPICS, getTopic, loadAllTopicBodies } from './content';
-import {
-  QUESTIONS,
-  extractTopicRefs,
-  getQuestion,
-  topicsForQuestion,
-} from './system-design';
+import { extractTopicRefs } from './markdown-links';
 
 /**
  * Structural checks for docs/specs/fill-catalog-gaps.md against the real
- * content: nine new systems topics, two new questions, and the link-level
- * edits to existing pages. Frontmatter validity, the closing-section
- * convention and question coverage are enforced by existing tests.
+ * content: nine new systems topics and the link-level edits to existing
+ * topics. (That spec's question pages were removed by
+ * docs/specs/system-design-case-studies.md, so their checks are gone.)
+ * Frontmatter validity and the closing-section convention are enforced by
+ * existing tests.
  */
 
 const SECTION = 'systems-and-infrastructure';
@@ -29,41 +26,6 @@ const NEW_TOPICS: [slug: string, title: string][] = [
     'WebSockets vs. Server-Sent Events vs. Long Polling',
   ],
   ['self-healing-systems', 'Self-Healing Systems'],
-];
-
-const NEW_QUESTIONS: [order: number, slug: string, title: string][] = [
-  [7, 'pushing-live-updates-to-users', 'How do I push live updates to users?'],
-  [
-    8,
-    'running-work-that-takes-too-long',
-    'How do I run work that takes too long for a single request?',
-  ],
-];
-
-const QUESTION_LINKS: [questionSlug: string, topicSlugs: string[]][] = [
-  [
-    'pushing-live-updates-to-users',
-    [
-      'websockets-vs-sse-vs-long-polling',
-      'backpressure',
-      'thundering-herd-problem',
-      'exponential-backoff',
-    ],
-  ],
-  [
-    'running-work-that-takes-too-long',
-    [
-      'message-queues',
-      'worker-pools',
-      'workflow-engines',
-      'dead-letter-queue',
-      'backpressure',
-      'idempotency',
-    ],
-  ],
-  ['database-cant-keep-up-with-reads', ['caching', 'read-replicas', 'cqrs']],
-  ['database-cant-keep-up-with-writes', ['batching-and-asynchronous-writes']],
-  ['one-failing-service-taking-down-others', ['self-healing-systems']],
 ];
 
 const TOPIC_LINKS: [topicSlug: string, linked: string[]][] = [
@@ -101,38 +63,6 @@ describe('the nine new systems topics exist (criterion 1)', () => {
     const topic = getTopic(SECTION, slug);
     expect(topic, `${SECTION}/${slug} should exist`).toBeDefined();
     expect(topic?.title).toBe(title);
-  });
-});
-
-describe('the two new questions exist (criterion 2)', () => {
-  it.each(NEW_QUESTIONS)(
-    'question %i (%s) has the specified title and order',
-    (order, slug, title) => {
-      const question = getQuestion(slug);
-      expect(question, `question ${slug} should exist`).toBeDefined();
-      expect(question?.order).toBe(order);
-      expect(question?.title).toBe(title);
-      expect(question?.title.endsWith('?')).toBe(true);
-    },
-  );
-
-  it('places the new questions after the six seed questions', () => {
-    expect(QUESTIONS.slice(6, 8).map((q) => q.slug)).toEqual(
-      NEW_QUESTIONS.map(([, slug]) => slug),
-    );
-  });
-});
-
-describe('question links to the new topics (criteria 2 and 3)', () => {
-  const cases = QUESTION_LINKS.flatMap(([questionSlug, topicSlugs]) =>
-    topicSlugs.map((topicSlug) => [questionSlug, topicSlug] as const),
-  );
-
-  it.each(cases)('question %s links %s', (questionSlug, topicSlug) => {
-    const question = getQuestion(questionSlug);
-    expect(question, `question ${questionSlug} should exist`).toBeDefined();
-    const linked = topicsForQuestion(question!).map((t) => `${t.section}/${t.slug}`);
-    expect(linked).toContain(`${SECTION}/${topicSlug}`);
   });
 });
 

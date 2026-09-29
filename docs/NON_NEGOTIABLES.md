@@ -1,7 +1,7 @@
 # Non-negotiables
 
 Constraints, not suggestions. Every reviewer of a change is given this file
-(`/feature` Stage 4, `add-topic` Stage 3, `content-audit`). If a spec conflicts with a line here, this file wins unless the
+(`/feature` Stage 4, `add-topic` Stage 3, `add-case-study` Stage 3, `content-audit`). If a spec conflicts with a line here, this file wins unless the
 user explicitly amends it, and a stage that hits the conflict stops and says
 so instead of choosing. Each line points to where the detail lives; the
 detail is never copied here.
@@ -16,7 +16,7 @@ detail is never copied here.
 **Security**
 
 5. No secrets in the repository or in `.env` files (Vite reads `.env` at build time, so anything there can end up in the bundle); agents never read `.env` files.
-6. Markdown never renders raw HTML (no `rehype-raw`); `dangerouslySetInnerHTML` only takes output from an escaping source (Shiki). `check:raw-html` enforces both, and also rejects `innerHTML`, `outerHTML`, `insertAdjacentHTML` and `document.write` in app code.
+6. Markdown never renders raw HTML (no `rehype-raw`); `dangerouslySetInnerHTML` only takes output from an escaping source (Shiki). `check:raw-html` enforces both, and also rejects `innerHTML`, `outerHTML`, `insertAdjacentHTML` and `document.write` in app code. A check that decides whether a file the site publishes as-is is safe (an SVG or other asset under `public/`, rendered markup; e.g. `check:diagrams`' SVG check) is an allowlist of what is expected, never a blocklist of known-bad patterns. This does not cover code-level lints over known sinks (such as `check:raw-html`) or source-authoring guards (such as the `.d2` style-key guard). Each of these allowlist checks keeps its own table of the vectors it must reject in `scripts/checks.test.mjs` (for the SVG check: the `svgProblems` vector table plus the encoding and character-reference cases).
 7. External links open with `rel="noreferrer"` (`MarkdownRenderer.test.tsx` checks it); no third-party scripts at runtime.
 
 **Process**

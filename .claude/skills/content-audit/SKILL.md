@@ -1,6 +1,6 @@
 ---
 name: content-audit
-description: Sweep published topic(s) under src/content/**/*.md, and System Design question pages under src/system-design/questions/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics "sound AI-written," or a quality check of one specific already-published topic (not a brand-new topic being drafted — that's add-topic's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
+description: Sweep published topic(s) under src/content/**/*.md, and System Design case studies under src/system-design/case-studies/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic and case study (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic or case study. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics or case studies "sound AI-written," or a quality check of one specific already-published topic or case study (not a brand-new topic being drafted — that's add-topic's job — not a brand-new case study — that's add-case-study's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
 ---
 
 # Content audit
@@ -18,8 +18,8 @@ where this repo does and doesn't spend a separate agent, and
 this one is structurally parallel to — that one covers meta-documentation
 staleness (`CLAUDE.md`, `docs/`, `evals/`, every `SKILL.md`) against
 current repo state; this one covers the prose _quality_ of the published
-topics themselves under `src/content/**` and the System Design question
-pages under `src/system-design/questions/`, against
+topics themselves under `src/content/**` and the System Design case
+studies under `src/system-design/case-studies/`, against
 [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard. Neither one's scope
 includes the other's.
 
@@ -35,7 +35,7 @@ that never held the draft in mind reads the tic on sight instead of
 ## Stage 0 — Scope the run
 
 Default: every file under `src/content/**/*.md` and
-`src/system-design/questions/*.md` (glob at run time — don't trust a cached
+`src/system-design/case-studies/*.md` (glob at run time — don't trust a cached
 file list, the corpus grows). If invoked with
 specific file or section names as arguments, scope to those instead and
 say so before starting.
@@ -47,9 +47,9 @@ list into roughly-even parallel batches rather than one massive agent
 call — by section is the natural split (mirrors how this repo's own
 first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
-section is unusually large. The question pages are one more batch of their
-own (they link across each other and into the topics, so read together they
-are the natural unit for check 4 below).
+section is unusually large. The case studies are one more batch of their
+own (each is long and links into many topics, so keep the batch small; check
+4 below applies to them).
 
 ## Stage 2 — Independent audit, per batch
 
@@ -106,18 +106,20 @@ and this instruction, close to verbatim:
 > being wrong, or internally inconsistent — quote the claim, say what's
 > wrong, and say what's actually true.
 >
-> **4. Question pages only (skip for a catalog topic) — does it route
-> and compare, or re-teach?** A System Design question page under
-> `src/system-design/questions/` answers its question by comparing options
-> and linking to catalog topics; it doesn't carry a topic's mechanism.
-> Flag a snippet that walks through how a topic works instead of stating
-> what the option buys, what it costs and when to pick it here, then
-> linking. Also flag any fact stated in two places: a claim a linked topic
-> already makes that the question restates rather than links, and a claim
-> repeated across two question pages instead of living in one and being
-> linked from the other. Read the linked topic when deciding.
+> **4. Case studies only (skip for a catalog topic) — does it apply
+> topics, or re-teach them, and do its numbers hold?** A System Design case
+> study under `src/system-design/case-studies/` applies catalog topics to
+> one design and links to them; it doesn't carry a topic's mechanism. Flag a
+> passage that walks through how a topic works instead of saying what the
+> choice buys and costs in this design, then linking. Recompute every
+> estimate line by line and flag arithmetic that's wrong or doesn't follow
+> from the stated requirements; flag a deep dive that picks an option without
+> comparing at least one alternative and its cost; flag a diagram (read the
+> `.d2` source under `src/system-design/diagrams/`) that disagrees with the
+> prose; and flag any claim about how a specific named company builds its
+> system. Read the linked topic when deciding.
 >
-> **5. Systems topics only (skip for other sections and question pages) —
+> **5. Systems topics only (skip for other sections and case studies) —
 > is the closing `## Where you'll meet this` section general and true?**
 > It should name kinds of systems (CLAUDE.md's reference set) and say what the
 > topic does

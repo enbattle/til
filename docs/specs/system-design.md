@@ -1,5 +1,11 @@
 # System Design: a question-first way in alongside the catalog
 
+> **Superseded by [system-design-case-studies.md](system-design-case-studies.md).**
+> The question pages, their loader, `QuestionPage`, `QuestionNav` and the
+> `system-design-navigation` eval described here were removed on 2026-09-28
+> and replaced by design case studies. Kept as a record of what was built and
+> why.
+
 ## Context
 
 The site is a catalog: topics grouped into five sections, listed

@@ -9,6 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readThemeTokens } from './css-tokens.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const CSS_PATH = join(ROOT, 'src', 'index.css');
@@ -27,26 +28,6 @@ const TEXT_TOKENS = [
 ];
 const SURFACE_TOKENS = ['bg-primary', 'bg-secondary', 'bg-tertiary'];
 
-// Anchored to the start of a line so a comment that merely mentions a selector
-// can't be mistaken for the block itself.
-function extractBlock(css, selector) {
-  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = new RegExp(`^${escaped}\\s*\\{`, 'm').exec(css);
-  if (!match) throw new Error(`Could not find a "${selector} {" block in ${CSS_PATH}`);
-  const end = css.indexOf('}', match.index);
-  return css.slice(match.index, end);
-}
-
-function extractTokens(block) {
-  const tokens = new Map();
-  const pattern = /--color-([a-z-]+):\s*(#[0-9a-fA-F]{6});/g;
-  let match;
-  while ((match = pattern.exec(block))) {
-    tokens.set(match[1], match[2]);
-  }
-  return tokens;
-}
-
 // WCAG 2.x relative luminance and contrast ratio.
 function luminance(hex) {
   const [r, g, b] = [1, 3, 5]
@@ -60,10 +41,19 @@ function contrastRatio(a, b) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-const css = readFileSync(CSS_PATH, 'utf8');
+// Every top-level `:root` (light) and `.dark` (dark) block, the later value
+// winning as in CSS, through the shared reader; a token it can't read the way
+// CSS applies it (a non-hex value, a declaration under @media) fails loudly.
+let read;
+try {
+  read = readThemeTokens(readFileSync(CSS_PATH, 'utf8'));
+} catch (error) {
+  console.error(`src/index.css: ${error.message}`);
+  process.exit(1);
+}
 const themes = {
-  light: extractTokens(extractBlock(css, ':root')),
-  dark: extractTokens(extractBlock(css, '.dark')),
+  light: new Map(Object.entries(read.light)),
+  dark: new Map(Object.entries(read.dark)),
 };
 
 const errors = [];

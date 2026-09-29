@@ -32,18 +32,20 @@
     "check:pipeline-log": "node scripts/check-pipeline-log.mjs",
     "check:raw-html": "node scripts/check-raw-html.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
+    "check:diagrams": "node scripts/check-diagrams.mjs",
+    "diagrams": "node scripts/render-diagrams.mjs",
     "check:test-lock": "node scripts/check-test-lock.mjs",
     "review:diff": "node scripts/review-diff.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:pipeline-log && npm run check:raw-html && npm run test:run && npm run build && npm run size && npm run check:bundle"
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:pipeline-log && npm run check:raw-html && npm run check:diagrams && npm run test:run && npm run build && npm run size && npm run check:bundle"
   },
   "size-limit": [
     {
-      "name": "Main chunk (app shell, topic metadata, question pages; topic bodies load lazily)",
+      "name": "Main chunk (app shell, topic and case-study metadata; bodies load lazily)",
       "path": "dist/assets/index-*.js",
       "limit": "104 KB"
     },
     {
-      "name": "MarkdownRenderer chunk (markdown + syntax highlighting, shared by TopicPage and QuestionPage)",
+      "name": "MarkdownRenderer chunk (markdown + syntax highlighting, shared by TopicPage and CaseStudyPage)",
       "path": "dist/assets/MarkdownRenderer-*.js",
       "limit": "95 KB"
     }
@@ -55,7 +57,10 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.18.4",
     "remark-gfm": "^4.0.1",
-    "shiki": "^4.4.3"
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "shiki": "^4.4.3",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@size-limit/file": "^13.1.1",
