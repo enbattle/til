@@ -35,14 +35,15 @@ For each scenario in `scenarios.md`:
      near-miss worth tracking even though it technically passed).
    - **AMBIGUOUS/UNCLEAR** — genuinely can't tell from the response;
      note why, don't force a grade.
-5. **Log the run** to `results/<YYYY-MM-DD>.md` (copy the template
-   below). Keep every past run — the point is seeing drift over time,
-   not just the latest snapshot.
+5. **Log the run** in `results/README.md`: add a row to its trend table
+   (date, trigger, counts, one-line note) and replace its "Latest run"
+   section with this run's full log (template below). The table shows drift
+   over time; git history keeps older full logs.
 
 ## Result log template
 
 ```markdown
-# Skill-routing eval — <YYYY-MM-DD>
+## Latest run: <YYYY-MM-DD>
 
 Run by: <human name, or "self" if an agent ran this on request>
 Trigger: <what prompted this run — e.g., "CLAUDE.md edited", "routine check">
@@ -53,7 +54,7 @@ Trigger: <what prompted this run — e.g., "CLAUDE.md edited", "routine check">
 | SR-02 | ...              | ...                | ...                 |
 | ...   |                  |                    |                     |
 
-## Notes
+### Notes
 
 Anything that stood out — a near-miss, a scenario whose Expected answer
 might need revisiting, a new failure mode worth turning into a scenario.

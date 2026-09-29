@@ -18,7 +18,7 @@ This run ships the **infrastructure plus one complete reference case study (URL 
 - Replace "This comes up in:" on topic pages with a case-study back-link list.
 - Write the URL shortener case study with at least 2 diagrams.
 - Add an `add-case-study` skill; extend the `content-review` eval with case-study scenarios; retire the `system-design-navigation` eval and its skill.
-- Update docs: CLAUDE.md, README, DESIGN.md, evals/README, the add-topic/content-audit/docs-audit skills, and skill-routing scenarios that mention questions. Mark `docs/specs/system-design.md` as superseded at the top rather than deleting it.
+- Update docs: CLAUDE.md, README, DESIGN.md, evals/README, the add-topic/content-audit/docs-audit skills, and skill-routing scenarios that mention questions. Mark `docs/specs/system-design.md` as superseded at the top rather than deleting it (it was deleted on 2026-09-29; git history has it).
 
 **Out**
 

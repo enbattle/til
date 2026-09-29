@@ -28,9 +28,8 @@ parallel (one message, several `Agent` calls).
 ## Stage 2 — Grade and log
 
 Grade each run against `scenarios.md`'s Expected finding using
-`HOW_TO_RUN.md`'s rules, and append the run to
-`evals/feature-review/results/<YYYY-MM-DD>.md`. Never overwrite a previous
-run.
+`HOW_TO_RUN.md`'s rules, and log it in `evals/feature-review/results/README.md` as `HOW_TO_RUN.md`
+step 6 says.
 
 ## Stage 3 — Escaped defect? Add a scenario first
 

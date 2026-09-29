@@ -66,25 +66,10 @@ and this instruction, close to verbatim:
 > rather than inventing a minor nitpick.
 >
 > **1. Tone — does this read like something a knowledgeable person
-> actually wrote, or a generically AI-patterned draft?** Flag:
->
-> - Triadic or overly symmetric rhetorical constructions ("It's not just
->   X — it's Y").
-> - Stock closing/summarizing phrases ("That's the actual X," "the real
->   Y," "at the end of the day").
-> - A bolded-lead-in-plus-dash bullet format used with total mechanical
->   uniformity throughout an entire list. A few of these is fine — this
->   repo's house style uses them — flag only when EVERY item in a list
->   follows the identical rhythm with zero variation.
-> - Filler intensifiers stacked without adding information
->   ("genuinely," "actually," "real," "worth noting," "in practice,"
->   repeated).
-> - Redundant restatement: a header's point immediately re-said almost
->   verbatim in the very next sentence.
-> - Meta-commentary about the explanation itself ("here's the
->   interesting part," "the key insight is").
-> - Exhaustive, evenly-weighted lists that read as trying to cover every
->   angle rather than a selective, opinionated take.
+> actually wrote, or a generically AI-patterned draft?** Read
+> docs/writing-standard.md and flag each pattern its tone bullet lists. A
+> bolded-lead-in bullet format is house style: flag it only when EVERY item
+> in a list follows the identical rhythm with zero variation.
 >
 > Explicitly do **NOT** flag: em-dashes in general (established house
 > style), technical precision, or headers that are simply clear and

@@ -59,8 +59,9 @@ words drew the most findings.
 10. **Requirements match the design.** If the design can't meet a stated
     requirement (latency, availability, "never lose", "exactly once"), change
     one of them and say so.
-11. **At a glance matches the body.** Every figure in it is copied from the
-    body (grep each one), the three decisions and the follow-up answers say
+11. **At a glance matches the body** (format: docs/case-studies.md). Every
+    figure in it is copied from the body (grep each one), the decisions and
+    follow-up answers say
     only what the body argues, and each in-page link lands on the section that
     covers it. When a body number changes, this section is one of the places
     item 4's grep must reach.

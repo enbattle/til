@@ -26,9 +26,8 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
   if none. Name each re-run's cause: `spec ambiguity` or `test bug`. A
   test-writer run inside a Stage 4a fix round is neither, and isn't counted.
   For `add-topic` and `add-case-study`, count failed `verify` runs.
-- **Findings** — the first review round's findings that the diff introduced,
-  as high/medium/low counts (CONFIRMED and credible PLAUSIBLE; cosmetic ones
-  the user would wave through don't count), plus `, pre:N` for findings that
+- **Findings** — first-round findings the diff introduced, counted before
+  triage, excluding cosmetic ones, as high/medium/low counts, plus `, pre:N` for findings that
   were already there. `add-topic` and `add-case-study` count their first
   Stage 3 round the same way. Example: `0/2/1, pre:1`.
 - **Fix rounds** — rounds of the capped fix loop used: `0`, `1` or `2`, or

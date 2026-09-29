@@ -1,4 +1,16 @@
-# Docs audit — 2026-09-29 (after PRs #19–#22)
+# Docs audit results
+
+One row per run, newest last. Add a row for your run and replace the
+"Latest run" section below with its full log (trigger, files audited, findings, fixed, left open); git history keeps
+older logs, including the dated files this folder held until 2026-09-29.
+
+| Date       | Trigger                              | Note                                                            |
+| ---------- | ------------------------------------ | --------------------------------------------------------------- |
+| 2026-09-24 | Process-hardening batch before merge | 14 inaccurate claims, 11 hand-copied facts; text fixes applied. |
+| 2026-09-24 | Pre-merge audit of PR #11            | 24 inaccurate claims, 15 copied facts; text fixes applied.      |
+| 2026-09-29 | After PRs #19 to #22                 | Latest run, below.                                              |
+
+## Latest run: 2026-09-29, after PRs #19 to #22
 
 Trigger: batches 2 and 3 of the case studies (#19, #20), the ride-sharing
 encoding fix (#21) and the `At a glance` feature with its retro edits (#22).

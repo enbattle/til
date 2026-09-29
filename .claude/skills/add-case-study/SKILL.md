@@ -44,22 +44,12 @@ example for depth, tone and how estimates are laid out.
   a one-sentence `summary`, `date` (today), and `order` (the next free
   positive integer; `ls src/system-design/case-studies/` and read the
   existing orders).
-- `##` headings exactly, in this order (the structure test enforces it):
-  `At a glance`, `Requirements`, `Back-of-the-envelope estimates`,
-  `Data model`, `API design`, `High-level architecture`, at least two
-  `Deep dive: <topic>`, `Failure modes and bottlenecks`, `Trade-offs`. Plain
-  text in headings; the page builds its Contents list from them.
-- **At a glance**: write it last, once the body is final, since it summarizes
-  it. About 250–400 words, in the shape `docs/case-studies.md` gives and
-  `url-shortener.md` shows: `**Requirements.**` (4–6 bullets with numbers),
-  `**Key numbers.**` (4–5 figures, each with its one-line derivation),
-  `**Key decisions.**` (exactly 3, "decision: one-line reason") and
-  `**Likely follow-ups.**` (4–6 questions, each with a one-sentence answer),
-  then one sentence linking to `#high-level-architecture`. Each decision and
-  follow-up ends with an in-page link, `[text](#heading-id)`, to the section
-  that argues it (the id is the heading's slug: "Deep dive: short codes" is
-  `#deep-dive-short-codes`). Copy every figure from the body, never
-  recompute it here; if a body number changes, update it here too.
+- **Headings and At a glance**: the `##` heading template and the At a glance
+  format (lead-ins, item counts, length, in-page links, closing link) are in
+  [docs/case-studies.md](../../../docs/case-studies.md) ("The template is
+  enforced", "At a glance is a one-screen summary"); `url-shortener.md` shows
+  both. Write At a glance last, once the body is final, copying every figure
+  from the body rather than recomputing it.
 - **Requirements**: functional (what it does, with optional features marked),
   an explicit out-of-scope list, and non-functional targets as numbers
   (scale, latency percentile, availability).
@@ -141,15 +131,22 @@ it can view images); `docs/writing-standard.md`; the path of
 > body exactly, each decision and follow-up must be what the body argues
 > (not a new claim), each in-page link must point to the section that
 > actually covers it, and it must stay about 250–400 words. Also check it isn't
-> a near-duplicate of an existing case study (listed below). Do not edit
-> any file; review only. Report findings ranked by severity, quoting the
+> a near-duplicate of an existing case study (listed below). For each finding, quote the text, or name a realistic trigger (for app
+> behavior, real inputs or content; for a guard or check, an edit an author
+> following docs/content.md or docs/case-studies.md could plausibly make, or a
+> shape a doc says the check covers); label anything else "theoretical".
+> Re-raise a decision listed below as already made only with new evidence. Do not edit any file; review only. Report findings ranked by severity, quoting the
 > text and saying what's wrong and what's true, or say explicitly that you
 > found nothing worth flagging.
 
 - No findings, or only cosmetic ones → done, go to Stage 4.
-- Real findings → fix them yourself (re-render with `npm run diagrams` if a
-  diagram changed), then re-run this stage with a new fresh agent on the
-  updated files. **Cap at 2 rounds**, matching `add-topic` and `/feature`'s
+- Real findings → finding triage, then fix. Confirm each against the files yourself
+  (a finding about code or a check goes to a fresh agent), and give it one of
+  `/feature` Stage 4's outcomes; record each Reject and Known limitation with
+  a one-line reason in the handoff, and give the re-review that list. A Reject
+  must quote the text or source that disproves the finding. Fix the rest
+  yourself (re-render with `npm run diagrams` if a diagram changed), then
+  re-run this stage with a new fresh agent on the updated files. **Cap at 2 rounds**, matching `add-topic` and `/feature`'s
   fix loops. If findings persist after the second round, stop and surface
   them to the user rather than continuing to iterate alone.
 

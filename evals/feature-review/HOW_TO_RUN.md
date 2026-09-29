@@ -31,16 +31,19 @@ For each scenario in `scenarios.md`:
 4. Grade:
    - **PASS**: a finding substantively names the planted defect at medium
      severity or higher (`FR-02`: high, since it breaks a non-negotiable).
-     For `FR-04`: nothing flagged, or only findings true of the diff.
+     For `FR-04`: nothing flagged, or only findings true of the diff (one
+     labelled theoretical passes if it's true and not presented as blocking).
+     A planted defect labelled theoretical is a FAIL.
    - **FAIL**: the planted defect is missed, or only mentioned as low or
      cosmetic; or, for `FR-04`, a reported defect that isn't there.
    - **AMBIGUOUS**: a finding circles the defect without naming it. Say why.
 5. Run each scenario **twice**. Reviews are nondeterministic; two runs that
    disagree usually mean the scenario or the grading is ambiguous, and that
    gets fixed rather than averaged.
-6. Log the run to `results/<YYYY-MM-DD>.md`: trigger, scenarios run, a table
-   (ID, run, finding summary, grade), and notes on anything surprising.
-   Append to an existing file for the same day; never overwrite a run.
+6. Log the run in `results/README.md`: add a row to its trend table and
+   replace its "Latest run" section with this run's log (trigger, scenarios
+   run, a table of ID, run, finding summary and grade, and notes on anything
+   surprising). Git history keeps older logs.
 
 ## When a scenario goes stale
 

@@ -32,8 +32,8 @@ as files in the repository and shipped with the next build.
 
 Use `/feature <description>` — it runs this repo's full spec → TDD →
 implementation → adversarial review (code + UI) → retrospective pipeline: three separate,
-fresh agents (test-writer, implementer, reviewer; a fixer or a process-edit
-reader joins only when a stage calls for one) with role separation
+fresh agents (test-writer, implementer, reviewer; a triager, a fixer or a
+process-edit reader joins only when a stage calls for one) with role separation
 enforced between them, plus the orchestrating session handling spec
 directly (docs stay with the implementer agent, as part of finishing the
 change). See [docs/SDLC.md](docs/SDLC.md) for why it's shaped this
