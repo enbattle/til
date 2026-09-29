@@ -1,0 +1,35 @@
+# High-level architecture of the LLM chat service: chat servers own each turn,
+# routers admit and place generation requests on GPU replicas, and token usage
+# reaches the quota store through an outbox relay.
+direction: down
+
+clients: Browsers and apps {
+  style.multiple: true
+}
+lb: Load balancer
+chat: Chat servers {
+  style.multiple: true
+}
+store: Conversation store {
+  shape: cylinder
+}
+quota: Quota store {
+  shape: stored_data
+}
+relay: Usage relay
+router: Inference routers {
+  style.multiple: true
+}
+replicas: GPU replicas {
+  style.multiple: true
+}
+
+clients -> lb: "HTTPS, streamed replies"
+lb -> chat
+chat -> store: "turns, history, outbox"
+chat -> quota: "reserve tokens"
+chat -> router: "generate"
+router -> replicas: "place by conversation"
+replicas -> router: "load reports"
+store -> relay: "outbox rows"
+relay -> quota: "true-ups, refunds"

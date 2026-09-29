@@ -1,0 +1,41 @@
+# High-level architecture of the ad click aggregator: click servers record
+# each click to the click queue and redirect; stream aggregators turn the
+# queue into per-minute counts and top-K lists; the archiver keeps raw events
+# for the daily batch reconciliation, whose final counts billing reads.
+direction: down
+vars: { d2-config: { layout-engine: elk } }
+
+user: "Browser or app"
+clicks: "Click servers" {
+  style.multiple: true
+}
+queue: "Click queue\n(32 partitions)" {
+  shape: queue
+}
+agg: "Stream aggregators" {
+  style.multiple: true
+}
+archive: "Raw archive\n(object storage)" {
+  shape: stored_data
+}
+batch: "Batch reconciliation\n(daily)"
+counts: "Counts store" {
+  shape: cylinder
+}
+topk: "Top-K cache" {
+  shape: stored_data
+}
+api: "Query API"
+billing: "Billing"
+
+user -> clicks: "GET /c/{token}, 302 back"
+clicks -> queue: "click events"
+queue -> agg
+queue -> archive: "archiver, files"
+agg -> counts: "versioned counts"
+agg -> topk: "top 100 per window"
+archive -> batch
+batch -> counts: "final counts"
+counts -> api
+topk -> api
+counts -> billing: "final rows only"

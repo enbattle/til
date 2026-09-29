@@ -1,0 +1,22 @@
+# One minute of live traffic for one partition P: map-matched probes are
+# averaged in window W, written as an immutable delta file named by epoch e, and published by
+# a compare-and-set (CAS) on P's pointer row. Routing servers poll the
+# pointers and fetch the delta.
+shape: sequence_diagram
+
+phone: Phone
+queue: Probe queue
+agg: Aggregator
+store: Snapshot store
+routing: Routing server
+
+phone -> queue: "session, seq"
+queue -> agg: "traversals"
+agg -> agg: "close W"
+agg -> store: "write P/W/e"
+agg -> store: "CAS W-1 to W"
+agg -> queue: "commit"
+routing -> store: "poll pointers"
+store -> routing: "P is at W"
+routing -> store: "fetch P/W/e"
+store -> routing: "speeds"

@@ -1,0 +1,42 @@
+# High-level architecture of the maps service. Tiles are static files served
+# through a CDN. Search, routes and probe uploads go through the API gateway.
+# Probes flow through a queue to the traffic aggregators, which publish speed
+# deltas that the routing servers poll. The offline map build produces the
+# tiles, the road graph and the place index.
+direction: down
+
+client: Mobile or web client
+cdn: CDN
+gateway: API gateway
+tiles: "Tile store\n(object storage)" {
+  shape: cylinder
+}
+search: "Search service\n+ place index" {
+  style.multiple: true
+}
+routing: Routing servers {
+  style.multiple: true
+}
+queue: Probe queue {
+  shape: queue
+}
+agg: Traffic aggregators {
+  style.multiple: true
+}
+speeds: "Speed snapshot store" {
+  shape: cylinder
+}
+build: "Map build pipeline\n(offline)"
+
+client -> cdn: "tiles,\nmanifest"
+cdn -> tiles: "on a miss"
+client -> gateway: "search, routes,\nprobe uploads"
+gateway -> search
+gateway -> routing
+gateway -> queue: "probes"
+queue -> agg
+agg -> speeds: "deltas,\npointer"
+routing -> speeds: "poll,\nload deltas"
+build -> tiles: "tiles"
+build -> routing: "road graph"
+build -> search: "places"

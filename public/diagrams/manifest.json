@@ -23,6 +23,24 @@
       "text-tertiary": "#a39683"
     }
   },
+  "ad-click-aggregator/architecture.d2": {
+    "sha256": "c7d721a55ee397cbb9314720781292048c1f5aeabc9b067eba0235e2b9cb1782",
+    "width": 494,
+    "height": 1582,
+    "svgs": {
+      "light": "e6c54c0486ae2bf619e0f212f1bcd933a412e8bc57d42852a58369c7a1b6a8ad",
+      "dark": "f4e94daac90be7df7a7ed23081d88f8d8f11d5995705e7b19f4319d681b25b0b"
+    }
+  },
+  "ad-click-aggregator/count-once-sequence.d2": {
+    "sha256": "aba7dca4f437fd6189da789a8555268f1c991541d51e97ffcb11baab6425ce2e",
+    "width": 870,
+    "height": 1429,
+    "svgs": {
+      "light": "0d90ce14863f4e060bb5bdd4a204ab1cf4e013b72953cb3ecef4b8b72bcd4b5f",
+      "dark": "46a3ce274aab986df7087a7e2706167b0f274fd01957287a24636270a7935eda"
+    }
+  },
   "file-storage/architecture.d2": {
     "sha256": "83e83749c09b2178dd4e61ec40bc4ac4af841f0dd4b62fb64f68874f79596702",
     "width": 999,
@@ -39,6 +57,42 @@
     "svgs": {
       "light": "391f466450751796b6178c90e28989637efdcbf53cf506f609e20148cd89263b",
       "dark": "350c76c3c3192fbabf49fa1508cad01dad9630b47a74b71869a35060ec6208d6"
+    }
+  },
+  "llm-chat-serving/architecture.d2": {
+    "sha256": "3e30969ca10c55c8d7a542d88a5037013dab4095413882d71e5f3752935c98e7",
+    "width": 610,
+    "height": 1093,
+    "svgs": {
+      "light": "e275c21603414a315c35cb109804437feef9298086f650a2eccc2fe5b45652dd",
+      "dark": "7cc0ee7936d973c63c10bf4b324d50fbd2363cb33e52140fd1e2a3a1277e66c7"
+    }
+  },
+  "llm-chat-serving/turn-sequence.d2": {
+    "sha256": "39560580b1dc5562a794c2345633ec7bed00b9de84cd7328e2d633d681a948fc",
+    "width": 942,
+    "height": 986,
+    "svgs": {
+      "light": "b73ac80af85d4958715e0b72e14df74390672a42dbbef20d35209b03ed859907",
+      "dark": "36e49ecfbc5413c912db95b82806d5f55e4257a1c28479d1762c89378cb929fd"
+    }
+  },
+  "maps/architecture.d2": {
+    "sha256": "f29e136739c107eac45ccb5a0a1a63eb7c4ba8c5aeab58807a60706a089946ba",
+    "width": 902,
+    "height": 1011,
+    "svgs": {
+      "light": "f4f2b13b26ea846fc2a651e9add96d4ff9832adfe2944acf9946b8946db1879d",
+      "dark": "6f4f121a61caeb52fe2be5d4e94aa461d1226bba0327897ce482743de6132d67"
+    }
+  },
+  "maps/traffic-sequence.d2": {
+    "sha256": "9dd66c57c1679827131faf493cc5b8249926d52239659ee7e53e0085362fce8a",
+    "width": 849,
+    "height": 1101,
+    "svgs": {
+      "light": "bfa086f872b457a9c570543aeec45a7cea77414bf050d1ff1f54e1df7fc47a14",
+      "dark": "8fbb2a9c2f7eaf3576bb8b2f9ee64dd9389e906ff66e0808e4faf936cae4f1ab"
     }
   },
   "messaging/architecture.d2": {
@@ -93,6 +147,42 @@
     "svgs": {
       "light": "5d746ce8f73a6cbcc08f51f45bac6fda8892d9847f5ca86c3cb7659e19b8d483",
       "dark": "4fbf7c748469a58c97b252ae373d35d9b6e0c81536432431fbf0ec99a4fba011"
+    }
+  },
+  "recommendation-system/architecture.d2": {
+    "sha256": "20fbc8b26e8b4769ba8c1e5a6fe1312df59b3306fd6c305b6ca943455cd70117",
+    "width": 780,
+    "height": 2160,
+    "svgs": {
+      "light": "00e71c313ad9039798dfea08518cd24b4fcdaf9d643c1a3e087e9e677610ffd7",
+      "dark": "eee36fb5b84da6e3b6eb3b40578edacc4c66144f50b5ca54d6c6f457b608f0fd"
+    }
+  },
+  "recommendation-system/serve-sequence.d2": {
+    "sha256": "911f54a42bec019285713d853c2a4168106702df9e524610f21de31d28488001",
+    "width": 828,
+    "height": 1558,
+    "svgs": {
+      "light": "87a885474fdeab549d96fea5f0ac2de096ae5e4ef49f5646ef7b70b5835c5324",
+      "dark": "fd5b0074eb2aadd48fc6090f0d7a2cee871ca67104ea110238e2f2cc4f0329f2"
+    }
+  },
+  "search-engine/architecture.d2": {
+    "sha256": "77a4a29428b9fe2d7080bd3ba73f7abbafd20c7f3183d8ac41084db8f2f27563",
+    "width": 920,
+    "height": 1577,
+    "svgs": {
+      "light": "f48658063980de515188f9079f3d469a4b51c1fa399d0a079a01d890b2c2e12b",
+      "dark": "9006614177a1bf6ec557b1fa00649c5624032eee07d7da58939239c4cfcae3bc"
+    }
+  },
+  "search-engine/query-sequence.d2": {
+    "sha256": "8c71e666988d96a683001ff9b1f19ccc249464d8ca7d524d0eacd6c858e82b32",
+    "width": 893,
+    "height": 1371,
+    "svgs": {
+      "light": "201539fdeee740f72710009cc83dfd2caa582a3b19fbc6c4a49d43737f3b85c1",
+      "dark": "c2308315ec25793579abdb15ee1499adf70bb8421df2011cace32f4571d4a6d2"
     }
   },
   "social-feed/architecture.d2": {

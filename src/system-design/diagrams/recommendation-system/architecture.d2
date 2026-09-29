@@ -1,0 +1,53 @@
+# High-level architecture of the recommendation system. The serving path
+# retrieves candidates from the ANN index and candidate lists, ranks them with
+# features from the online feature store, and logs what it served. The
+# learning path turns logged events into fresh features, offline history,
+# retrained models and rebuilt indexes.
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+direction: down
+
+client: Web or mobile app
+svc: Recommendation service {
+  style.multiple: true
+}
+ann: ANN index {
+  style.multiple: true
+}
+rank: Ranking service {
+  style.multiple: true
+}
+fs: "Online feature store\n+ candidate lists" {
+  shape: cylinder
+}
+collector: Event collector
+log: Event log {
+  shape: queue
+}
+stream: Stream jobs
+lake: "Data lake\n(offline store)" {
+  shape: cylinder
+}
+batch: "Batch and\ntraining jobs"
+registry: Model registry
+
+client -> svc: "GET /recommendations"
+client -> collector: "POST /events"
+svc -> fs: "user features,\nlists"
+svc -> ann: "user embedding"
+svc -> rank: "500 candidates"
+rank -> fs: "video features"
+svc -> log: "served records"
+collector -> log: "client events"
+log -> stream
+stream -> fs: "fresh features"
+stream -> lake: "archive"
+lake -> batch
+batch -> fs: "batch features,\nlists"
+batch -> registry: "models,\nembeddings"
+registry -> rank: "ranking model"
+registry -> ann: "index build"
+registry -> svc: "user tower,\nserving pointer"
