@@ -36,6 +36,18 @@ and docs describing a change are normally written by whoever made it. Don't
 add a fourth or fifth worker agent for those without a specific,
 articulable bias it would prevent — see docs/SDLC.md for the reasoning.
 
+A role can run as several agents when its content files add up to more than
+one agent can read in full. This run needed that for about 110,000 words across
+16 case studies. Keep one agent per role as the owner: it does all code, doc
+and UI work for that role (the implementer's code changes, or the reviewer's
+code, docs, NON_NEGOTIABLES and browser checks, on the full diff) plus its own
+share of the content. Each extra agent in the role gets the spec,
+docs/NON_NEGOTIABLES.md and only its own content files, and never sees another
+role's work. The stage's gate runs once, after all of them finish. Stage 4a's
+rounds and cap count for the whole stage, not per agent, and a round's fixes
+go to one fixer. content-audit's Stage 1 batches files the same way. Don't
+split small work just to finish sooner.
+
 ## Stage 0 — Scope the request
 
 Read the user's request. If it's small and unambiguous (a copy tweak, a
@@ -68,6 +80,14 @@ The plan you write must include, explicitly:
   should work better," but "typing a query that matches a topic's summary
   but not its title still returns that topic." These become the test
   cases in Stage 2, so vague criteria here means a vague test suite later.
+- If a criterion adds a check that reads markdown content, say in the spec
+  that it parses with `markdownParser()` (`src/lib/diagram-refs.mjs`), the
+  stack the renderer uses, not a regex. Also say how the rule treats each
+  shape that can carry what it checks: a list split by a paragraph or a
+  bullet-marker change, a nested list, a list inside a blockquote, a
+  reference-style or `<…>` link, and a line folded into the list item above
+  it. Each of those shapes cost the case-study summary check a fix round
+  (docs/pipeline-log.md, its row).
 - Scope: what's in, what's explicitly out.
 - Files/modules touched.
 - Whether this change has a user-facing UI surface (decides whether

@@ -22,6 +22,14 @@ file that doesn't exist. `CLAUDE.md` is loaded into every session and
 subagent on every turn, so it stays a router and detail lives in the docs it
 links; raise the limit only deliberately, like a size budget.
 
+`src/lib/text-encoding.test.ts` (part of `test:run`) fails on any tracked text
+file holding double-encoded UTF-8. That happens when a UTF-8 file is read as
+Windows-1252 and written back, as Windows PowerShell 5.1's
+`Get-Content`/`Set-Content` do. It also fails on U+FFFD, which is what a file
+saved in the ANSI code page decodes to. It scans `git ls-files` output (plus
+untracked, unignored files) by extension and skips `public/`. A topic that
+needs to show mojibake as an example would need an exemption there.
+
 `npm run check:test-lock` and `npm run review:diff` are not part of `verify`
 or CI: `/feature` uses them inside a run. `check:test-lock` proves no test
 file or test-runner config changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
