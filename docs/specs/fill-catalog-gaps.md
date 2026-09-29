@@ -46,7 +46,7 @@ about how a company internally builds something.
 ## Two new questions
 
 Ordered after the six seed questions (orders 7 and 8), in the same shape as
-the existing ones (`docs/specs/system-design.md`; CLAUDE.md "System Design
+the existing ones (`docs/specs/system-design.md`, since deleted; CLAUDE.md "System Design
 questions").
 
 | order | slug                               | title                                                       |

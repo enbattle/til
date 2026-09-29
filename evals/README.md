@@ -51,7 +51,7 @@ own safety nets instead of a running service.
   the reviewer instruction changes so the instruction can't learn the answers.
   Run via the `feature-review-eval` skill.
 
-- `docs-audit/` — not an eval. `results/` holds a dated log of each docs
+- `docs-audit/` — not an eval. `results/README.md` logs each docs
   audit, written by the `docs-audit` skill's Stage 4, so whether an audit
   ran after a batch of changes can be checked later.
 

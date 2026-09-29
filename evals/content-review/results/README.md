@@ -1,4 +1,21 @@
-# Content-review eval — 2026-09-29 (case-study summaries)
+# Content-review eval results
+
+One row per run, newest last. Add a row for your run and replace the
+"Latest run" section below with its full log (template in `../HOW_TO_RUN.md`); git history keeps
+older logs, including the dated files this folder held until 2026-09-29.
+
+| Date       | Trigger                                              | Pass | Fail | Ambiguous | Note                                                 |
+| ---------- | ---------------------------------------------------- | ---- | ---- | --------- | ---------------------------------------------------- |
+| 2026-09-16 | First run of the eval                                | 4    | 0    | 1         | CR-05 control needed redesign, not a review failure. |
+| 2026-09-21 | docs-audit flagged the CR-05 control                 | 1    | 0    | 0         | CR-05 only.                                          |
+| 2026-09-24 | add-topic Stage 3 prompt and NON_NEGOTIABLES changed | 5    | 0    | 0         | Every reviewer read NON_NEGOTIABLES.                 |
+| 2026-09-24 | CR-01 and CR-05 fixtures corrected                   | 4    | 0    | 0         | CR-05 tone clean.                                    |
+| 2026-09-24 | CR-01 moved to engineering-practices                 | 2    | 0    | 0         | Structural findings gone.                            |
+| 2026-09-28 | `add-case-study` and the CS-* scenarios added        | 8    | 0    | 0         | New scenarios passed first run.                      |
+| 2026-09-28 | Controls fixed                                       | 4    | 0    | 0         | Re-run.                                              |
+| 2026-09-29 | add-case-study check (6), At a glance                | 3    | 0    | 0         | Latest run, below.                                   |
+
+## Latest run: 2026-09-29, case-study summaries
 
 Run by: self
 Trigger: `add-case-study`'s Stage 3 review gained check (6), which checks the
@@ -13,7 +30,7 @@ the `CS-*` scenarios ran.
 | CS-02 | First deep dive picks object storage without comparing | Yes, as its first High: "compares nothing", naming the data model's promised comparison and the costs a fair comparison has to weigh                           | PASS  |
 | CS-03 | None (false-positive control)                          | No false defect. Every finding is true of the draft: the order clash, per-sender storage, file-storage overlap, per-IP limits, the diagram's missing find step | PASS  |
 
-## Notes
+### Notes
 
 - All three reviewers flagged `order: 2` in the base draft, which now clashes
   with `rate-limiter.md`. This finding is true of the fixture, which predates the rate

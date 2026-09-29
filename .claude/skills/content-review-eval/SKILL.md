@@ -54,11 +54,9 @@ calls) rather than sequentially.
 ## Stage 2 — Grade and log
 
 Compare each result to `scenarios.md`'s Expected finding (PASS / FAIL /
-AMBIGUOUS, per `HOW_TO_RUN.md`'s grading rules). Append a new
-dated/labeled section to today's file under
-`evals/content-review/results/` (create it if this is the first run
-today) — never overwrite a prior run. Use the result-log template in
-`HOW_TO_RUN.md`.
+AMBIGUOUS, per `HOW_TO_RUN.md`'s grading rules). Log it in
+`evals/content-review/results/README.md` as `HOW_TO_RUN.md` step 5 says (a
+trend-table row, and the run's full log in place of the previous one).
 
 ## Stage 3 — New violation type or reviewing skill? Add a scenario first
 

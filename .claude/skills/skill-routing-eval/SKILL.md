@@ -61,10 +61,9 @@ calls) rather than sequentially.
 
 Compare each result to `scenarios.md`'s Expected (PASS / FAIL /
 AMBIGUOUS, per the grading rules in `evals/README.md` and
-`HOW_TO_RUN.md`). Append a new dated/labeled section to today's file
-under `evals/skill-routing/results/` (create it if this is the first run
-today) — never overwrite a prior run, the point is seeing drift across
-runs over time. Use the result-log template in `HOW_TO_RUN.md`.
+`HOW_TO_RUN.md`). Log it in `evals/skill-routing/results/README.md` as
+`HOW_TO_RUN.md` step 5 says (a trend-table row, and the run's full log in
+place of the previous one).
 
 ## Stage 3 — New skill? Add a scenario first
 

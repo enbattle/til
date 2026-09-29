@@ -95,28 +95,27 @@ Instruction, close to verbatim:
 > Review this new til topic adversarially against the Writing Standard
 > below — assume nothing about it is fine until you've checked it
 > yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line
-> there is always a real finding. Check specifically: are terms defined before they're used, is
-> it built up from first principles rather than assuming a mental model
-> the reader may not have, does it use concrete examples rather than
-> staying abstract, would a reader with zero prior background on this
-> subject actually follow it, and is the frontmatter `summary` a single
-> scannable sentence rather than a restated paragraph. Also check it
-> against the Writing Standard's tone, figurative-language, and
-> technical-correctness criteria — does the prose read as generically
-> AI-patterned rather than something a knowledgeable person actually
-> wrote, is any analogy or casual phrase over-explained instead of
-> trusted to land, and is every substantive technical claim actually
-> verified rather than just confidently stated. Also check it isn't
-> a near-duplicate of an existing topic in this section (listed below). Do
+> there is always a real finding. Read docs/writing-standard.md and check
+> the topic against every bullet in it, tone, figurative language and
+> verified technical claims included. Also check it isn't
+> a near-duplicate of an existing topic in this section (listed below). For each finding, quote the text, or name a realistic trigger (for app
+> behavior, real inputs or content; for a guard or check, an edit an author
+> following docs/content.md or docs/case-studies.md could plausibly make, or a
+> shape a doc says the check covers); label anything else "theoretical".
+> Re-raise a decision listed below as already made only with new evidence. Do
 > not edit the file — review only. Report findings ranked by severity, or
 > say explicitly you found nothing worth flagging.
 
 - No findings, or only cosmetic ones → done, go to Stage 4.
-- Real findings → fix them yourself (this is a content edit, not a
-  correctness-critical code change, so no need for a separate fix agent),
-  then re-run this stage on the updated file. Cap at 2 rounds, matching
-  `/feature`'s fix-loop cap — if findings persist after that, stop and
-  surface them to the user rather than continuing to iterate alone.
+- Real findings → finding triage, then fix. Confirm each against the file yourself
+  (a finding about code or a check goes to a fresh agent), and give it one of
+  `/feature` Stage 4's outcomes; record each Reject and Known limitation with
+  a one-line reason in the handoff, and give the re-review that list. A Reject
+  must quote the text or source that disproves the finding. Fix the rest
+  yourself (no separate fix agent for a content edit), then re-run this
+  stage on the updated file. Cap at 2 rounds, matching `/feature`'s
+  fix-loop cap — if findings persist after that, stop and surface them to
+  the user rather than continuing to iterate alone.
 
 ## Stage 4 — Final gate
 
