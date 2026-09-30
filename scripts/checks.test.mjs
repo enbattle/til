@@ -518,6 +518,26 @@ describe('check-diagrams', () => {
     expect(status).toBe(0);
   });
 
+  // A diagram wider than 960 px scales below 0.75 in the ~720 px column
+  // (add-case-study checklist item 5), so its recorded width fails the check.
+  const wideSvg = (width) =>
+    SVG().replace(
+      'viewBox="0 0 100 50" width="100"',
+      `viewBox="0 0 ${width} 50" width="${width}"`,
+    );
+  it.each([
+    [960, 0],
+    [961, 1],
+  ])('checks the recorded width: %i px exits %i', (width, expected) => {
+    const { root, result } = repo();
+    write(root, 'public/diagrams/demo/flow.light.svg', wideSvg(width));
+    plantSvg('public/diagrams/demo/flow.dark.svg', wideSvg(width))(root);
+    const { status, stderr } = result();
+    expect(status).toBe(expected);
+    if (expected) expect(stderr).toMatch(/demo\/flow\.d2: .*961 px wide.*960/);
+    else expect(stderr).toBe('');
+  });
+
   it.each([
     [
       'an edited .d2 without re-render',

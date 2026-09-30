@@ -62,6 +62,34 @@ describe('readThemeTokens', () => {
     },
   );
 
+  it('ignores non-color @theme declarations', () => {
+    expect(() =>
+      readThemeTokens(
+        base + block('@theme', "  --font-sans: 'X', sans-serif;\n  --spacing: 4px;"),
+      ),
+    ).not.toThrow();
+  });
+
+  it.each([
+    ['a hex', '#ff0000'],
+    ['an rgb()', 'rgb(255 0 0)'],
+    ['an oklch()', 'oklch(0.6 0.2 30)'],
+    ['a var to an undefined token', 'var(--color-nope)'],
+    ['a var with a fallback', 'var(--color-accent, #fff)'],
+    ['a var to a non-color property', 'var(--gap)'],
+  ])('throws, naming the declaration, on %s inside @theme inline', (_label, value) => {
+    const css = base + block('@theme inline', `  --color-danger: ${value};`);
+    expect(() => readThemeTokens(css)).toThrow(/--color-danger in "@theme"/);
+  });
+
+  it('throws on an @theme var to a token only one theme defines', () => {
+    const css =
+      block(':root', '  --color-accent: #111111;\n  --color-only-light: #222222;') +
+      block('.dark', '  --color-accent: #333333;') +
+      block('@theme inline', '  --color-x: var(--color-only-light);');
+    expect(() => readThemeTokens(css)).toThrow(/--color-x in "@theme"/);
+  });
+
   it('throws when a theme block is missing', () => {
     expect(() => readThemeTokens(block(':root', '  --color-accent: #111111;'))).toThrow(
       /\.dark/,

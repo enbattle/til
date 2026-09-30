@@ -15,8 +15,8 @@ export function HomePage() {
           til
         </h1>
         <p className="mt-3 max-w-xl text-text-secondary">
-          A running, searchable log of things learned across programming, tech, AI, and
-          how to focus and learn well — {totalTopics}{' '}
+          A searchable reference of programming, systems, AI and learning topics, plus
+          worked System Design case studies for interview prep. {totalTopics}{' '}
           {totalTopics === 1 ? 'topic' : 'topics'} so far, grouped into sections below.
         </p>
       </section>

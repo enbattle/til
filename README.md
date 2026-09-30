@@ -1,8 +1,8 @@
 # til
 
-A running, searchable log of things learned across programming, tech, AI,
-and how to focus and learn well — short-to-long write-ups grouped into
-sections, deployed as a static site.
+A searchable reference of programming, systems, AI and learning topics, plus
+worked System Design case studies for interview prep. Topics are grouped into
+sections, and the whole thing is deployed as a static site.
 
 **[enbattle.github.io/til](https://enbattle.github.io/til)**
 
@@ -64,7 +64,7 @@ npm run check:npm-refs    # Fail if a doc references an npm script that no longe
 npm run check:claude-md   # Fail if CLAUDE.md passes 150 lines or links to a missing file
 npm run check:bundle      # After a build: fail if topic or case-study bodies are in the main chunk instead of lazy chunks
 npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink (dangerouslySetInnerHTML outside CodeBlock, innerHTML, outerHTML, insertAdjacentHTML, document.write) appears
-npm run check:diagrams    # Fail if a committed diagram SVG is stale, missing, orphaned or unsafe, its tokens drift from src/index.css or fail contrast, a .d2 names a color, imports a file or breaks the <case>/<name>.d2 naming rule, a stray file sits in public/diagrams/, or a case study references a missing diagram (no d2 needed)
+npm run check:diagrams    # Fail if a committed diagram SVG is stale, missing, orphaned or unsafe, its tokens drift from src/index.css or fail contrast, a diagram is wider than 960 px, a .d2 names a color, imports a file or breaks the <case>/<name>.d2 naming rule, a stray file sits in public/diagrams/, or a case study references a missing diagram (no d2 needed)
 npm run diagrams          # Render the .d2 sources to light/dark SVGs and rewrite public/diagrams/manifest.json (needs d2 v0.9.x; not in verify or CI)
 npm run check:pipeline-log # Fail if a docs/pipeline-log.md row is malformed or closes friction with a bare "nothing to change"
 npm run check:test-lock   # /feature only: -- --snapshot locks test files and test-runner config, -- --verify fails if any changed, -- --clear
