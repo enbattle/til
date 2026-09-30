@@ -1,6 +1,6 @@
 ---
 name: feature-review-eval
-description: Run this repo's feature-review eval — checks whether /feature's Stage 4 reviewer actually catches a deliberately planted defect in a diff (see evals/feature-review/scenarios.md for the current set) instead of rubber-stamping it, including a clean control it must not invent findings for. Use when asked to run/check the feature-review eval, after editing Stage 4's reviewer instruction in feature/SKILL.md or docs/NON_NEGOTIABLES.md, or after a defect escaped a /feature review (add a scenario for it first).
+description: Run this repo's feature-review eval — checks whether /feature's Stage 4 reviewer actually catches a deliberately planted defect in a diff (see evals/feature-review/scenarios.md for the current set) instead of rubber-stamping it, including a clean control it must not invent findings for. Use when asked to run/check the feature-review eval, after editing Stage 4's reviewer or finding-triage instruction in feature/SKILL.md or docs/NON_NEGOTIABLES.md, or after a defect escaped a /feature review (add a scenario for it first).
 ---
 
 # Feature-review eval
@@ -13,8 +13,8 @@ It is the `/feature` counterpart of `content-review-eval`: that one checks
 
 ## Stage 0 — Scope the run
 
-All scenarios (`FR-01`..`FR-05`) by default, and always after an edit to
-Stage 4's reviewer instruction or to `docs/NON_NEGOTIABLES.md`. Before
+All scenarios (`FR-01`..`FR-07`; FR-06 and FR-07 test finding triage) by
+default, and always after an edit to Stage 4's reviewer or triage instruction or to `docs/NON_NEGOTIABLES.md`. Before
 running after such an edit, rotate one scenario's planted defect as
 `scenarios.md` asks, and say which.
 

@@ -317,7 +317,10 @@ new section only when nothing fits); (3) a new sentence, only if neither
 applies. A retro aims for no net added words in process files; when it adds,
 the pipeline-log row's Retro cell says what it removed. Don't skip a real issue because it's small. A bug
 this change didn't cause goes on the Stage 5 list, and a problem in a topic is
-fixed in 4a or listed there; neither is a retro edit.
+fixed in 4a or listed there; neither is a retro edit. When the row's Agents
+count is high, name the stage that cost the most before proposing any change,
+since an agent earns its cost only where its independence prevents a bias
+(docs/SDLC.md).
 
 If a [deferred practice's](../../../docs/DEFERRED_PRACTICES.md) revisit
 condition came true, propose adopting it (a large one is its own `/feature`)

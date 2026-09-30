@@ -25,23 +25,25 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-09-29 | CLAUDE.md split into a router plus docs                      | 4    | 0    | 0         | Scoped run.                                                  |
 | 2026-09-29 | At a glance and role splitting                               | 5    | 0    | 0         | No regression.                                               |
 | 2026-09-29 | Finding triage and slimming (branch chore/review-triage)     | 4    | 0    | 0         | Scoped run; latest run, below.                               |
+| 2026-09-29 | add-case-study batch mode (branch chore/harness-practices)   | 1    | 0    | 0         | SR-15 only; prompt refreshed; latest run, below.             |
 
-## Latest run: 2026-09-29, finding triage and slimming
+## Latest run: 2026-09-29, add-case-study batch mode
 
 Run by: self
-Trigger: CLAUDE.md, feature/SKILL.md, SDLC.md and hooks edited (finding triage, slimming), branch chore/review-triage
-Scope: SR-01, SR-03, SR-05 and SR-16 only. The harness change renamed Stage 4's step to "finding triage" while Stage 0 keeps "bug triage", so SR-05 (bug of unknown size) is the scenario most at risk of confusing the two, alongside SR-03 (trivial fix) and SR-01 (new feature) as the /feature-versus-direct boundary. SR-16 covers the content edit. No skill was added or renamed, so the rest did not run.
+Trigger: `add-case-study/SKILL.md` gained a batch-mode section (branch chore/harness-practices)
+Scope: SR-15 only. It is the one scenario whose Expected answer is `add-case-study`; the new section changes how the skill runs, not what it's for, so the other scenarios didn't run.
 
-| ID    | Routing decision             | Reasoning (1 line)                                                                                          | Grade |
-| ----- | ---------------------------- | ----------------------------------------------------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`                   | Search-dialog pagination is a nontrivial app/UI change with existing tests.                                 | PASS  |
-| SR-03 | Direct, no skill             | CLAUDE.md says to skip the pipeline for a typo; no topic, case study or app code involved.                  | PASS  |
-| SR-05 | Direct, starting with triage | CLAUDE.md says triage a bug of unknown size first, then route by the cause; escalate to /feature if needed. | PASS  |
-| SR-16 | `content-audit`, one file    | Tightening an already-published case study's prose and checking its claims.                                 | PASS  |
+**Scenario fixed before running:** SR-15's prompt asked for "a chat app like WhatsApp", but that case study now exists (`messaging.md`, "Design a Chat App (like WhatsApp and Slack)"), which makes the prompt arguably a request to edit an existing one (`content-audit`, per SR-16). The prompt now names a collaborative document editor like Google Docs, which has no case study yet. Expected is unchanged.
+
+| ID    | Routing decision | Reasoning (1 line)                                                                                                                     | Grade |
+| ----- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| SR-15 | `add-case-study` | A new "design X" case study with diagrams; not a catalog topic, not an existing case study's prose, not app code; checked none exists. | PASS  |
 
 ### Notes
 
-SR-05's agent guessed the fix was probably small (one component) before
-triaging, but its answer was "triage first, escalate to `/feature` if the cause
-needs a design decision", which is the Expected answer. The "finding triage"
-rename in Stage 4 did not get confused with Stage 0's bug triage.
+The agent checked `src/system-design/case-studies/` for an existing
+collaborative-editor case study before deciding, so the existence check that
+made the old prompt stale is one a real session does make. The batch-mode
+section didn't pull a single-case-study request toward some other route.
+`add-case-study`'s own description still gives "a chat app case study" as an
+example trigger, which now names an existing case study.

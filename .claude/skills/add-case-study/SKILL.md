@@ -1,6 +1,6 @@
 ---
 name: add-case-study
-description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a chat app case study", "add the next case study") — not for a catalog topic under src/content/ (that's add-topic), not for editing an existing case study's prose quality (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
+description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a collaborative editor case study", "add the next case study") — not for a catalog topic under src/content/ (that's add-topic), not for editing an existing case study's prose quality (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
 ---
 
 # Add a case study
@@ -158,9 +158,27 @@ and ignores changes already committed on the branch). Summarize the case study a
 user. Append a row for this run to
 [docs/pipeline-log.md](../../../docs/pipeline-log.md) (its header defines the
 columns; Retro is `n/a`, since this skill has no retrospective stage; Gate
-failures counts failed `verify` runs), then run
+failures counts failed `verify` runs; Agents counts every agent you started,
+a batch drafter included), then run
 `npx prettier --write docs/pipeline-log.md` and `npm run check:pipeline-log`.
 The row goes in the case study's commit, together with the `.md`, the `.d2`
 sources, the rendered SVGs and `public/diagrams/manifest.json`. Ask before
 committing or pushing: this skill leaves the working tree ready, it doesn't
 ship it.
+
+## Batch mode — several case studies at once
+
+1. One drafter agent per study, in parallel, each in its own worktree
+   (`isolation: "worktree"`), runs Stages 0–2 only, within
+   [checklist.md](checklist.md)'s length.
+2. Each study gets one fresh Stage 3 reviewer, whose instruction adds: "Report
+   only High and Medium correctness findings."
+3. Its findings go through Stage 3's finding triage. You apply the fixes once,
+   with no re-review of that round (Fix rounds `1`); a High found then goes to
+   the user.
+4. Integrate: copy each study's `.md` and `.d2` files from its worktree, run
+   `npm run diagrams` once, then `npm run verify`, and add one pipeline-log row
+   per study ([docs/case-studies.md](../../../docs/case-studies.md) has the
+   file rules).
+5. After the user's go-ahead, open one pull request for the batch, then remove
+   the worktrees and their `worktree-agent-*` branches.
