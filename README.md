@@ -41,7 +41,7 @@ npm install
 npm run dev
 ```
 
-Then open the printed `localhost` URL. Node 22.12 or newer is required (see
+Then open the printed `localhost` URL. Node 22.22.2+ (or 24.15+) is required (see
 `engines` in `package.json`).
 
 ## Commands
