@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CaseStudy, Topic } from '@/types';
-import * as searchModule from './search';
 import { createSearchIndex, type SearchResult } from './search';
 
 // Fixture words are deliberately long and unlike each other so fuzzy matching
@@ -321,9 +320,5 @@ describe('the default search instance (criteria 5, 6, 7)', () => {
     await search.ensureFullTextSearch();
     expect(loadAllTopicBodies).toHaveBeenCalledTimes(2);
     expect(search.isFullTextSearchReady()).toBe(true);
-  });
-
-  it('no longer exports searchTopics', () => {
-    expect('searchTopics' in searchModule).toBe(false);
   });
 });

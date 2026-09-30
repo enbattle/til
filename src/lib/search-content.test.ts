@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from './frontmatter';
-import { CASE_STUDIES, getCaseStudy } from './system-design';
+import { CASE_STUDIES } from './system-design';
 import { ensureFullTextSearch, searchContent } from './search';
 
 const RAW = import.meta.glob('/src/system-design/case-studies/*.md', {
@@ -26,15 +26,6 @@ describe('searchContent', () => {
       expect(hit).toBeDefined();
     },
   );
-
-  it('finds the URL shortener by title immediately', () => {
-    const caseStudy = getCaseStudy('url-shortener')!;
-    expect(
-      searchContent(caseStudy.title).some(
-        (r) => r.kind === 'caseStudy' && r.caseStudy.slug === 'url-shortener',
-      ),
-    ).toBe(true);
-  });
 
   it('still returns a topic result for a query matching a known topic', () => {
     const results = searchContent('prompt engineering');

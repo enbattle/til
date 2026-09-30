@@ -1,166 +1,75 @@
 // The one reader of the `--color-*` design tokens in src/index.css, shared by
 // check-contrast, check-design-tokens and diagram-manifest (diagramTokens), so
-// the checks and the rendered diagrams never disagree about a value. It does
-// not model everything CSS applies: top-level `@theme` blocks are skipped (in
-// src/index.css they only alias each token to itself for Tailwind), so a
-// color set there would bypass these checks.
+// the checks and the rendered diagrams never disagree about a value. It also
+// holds the WCAG contrast ratio both contrast checks use.
 //
-// The supported shape is deliberately narrow: tokens are declared only in
-// top-level `:root { ... }` (light) and `.dark { ... }` (dark) blocks, as 3- or
-// 6-digit hex. Every such block is read in order and a later declaration wins,
-// as in CSS. A `--color-*` token declared anywhere else (under `@media`, in a
-// compound selector, in a nested rule) or with any other kind of value throws,
-// naming the token, rather than being silently read or skipped: a value the
-// scripts can't read the way CSS applies it must fail loudly. Top-level
-// `@theme` / `@theme inline` blocks (Tailwind's mapping of utilities onto the
-// tokens) are skipped. Comments are ignored wherever they appear.
+// The supported shape is deliberately narrow, matching src/index.css: exactly
+// one `:root { ... }` (light) and one `.dark { ... }` (dark) block, each
+// starting at column 0 with no nested rules, declaring tokens as 3- or 6-digit
+// hex. Top-level `@theme` blocks (Tailwind's mapping of utilities onto the
+// tokens) are skipped. Anything else throws, naming the problem, rather than
+// being silently read or skipped: a second block for a theme, a missing one, a
+// non-hex value, or a `--color-*` declared anywhere else (under `@media`, in a
+// compound selector, nested in a rule). Comments are ignored.
 //
 // Only `node:` imports, or none: check-contrast and check-design-tokens are
 // tested by copying them next to this file in a throwaway directory.
 
-const THEMES = { ':root': 'light', '.dark': 'dark' };
-const DECLARATION = /(?:^|[\s;{])(--color-[\w-]+)\s*:/;
+const BLOCK = /^(:root|\.dark)\s*\{([^{}]*)\}/gm;
+const THEME_BLOCK = /^@theme\b[^{]*\{[^{}]*\}/gm;
+const DECLARATION = /(--color-[\w-]+)\s*:\s*([^;}]*)/g;
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
-/** The CSS with every comment replaced by a space (strings kept intact). */
-function stripComments(css) {
-  let out = '';
-  let i = 0;
-  while (i < css.length) {
-    const ch = css[i];
-    if (ch === '"' || ch === "'") {
-      const end = stringEnd(css, i);
-      out += css.slice(i, end);
-      i = end;
-    } else if (css.startsWith('/*', i)) {
-      const end = css.indexOf('*/', i + 2);
-      i = end === -1 ? css.length : end + 2;
-      out += ' ';
-    } else {
-      out += ch;
-      i++;
-    }
-  }
-  return out;
-}
-
-/** Index just past the string literal starting at `start`. */
-function stringEnd(css, start) {
-  const quote = css[start];
-  let i = start + 1;
-  while (i < css.length && css[i] !== quote) i += css[i] === '\\' ? 2 : 1;
-  return Math.min(i + 1, css.length);
-}
-
-/** Splits comment-free CSS into its top-level items: `{ prelude, body }` for
- * a block (body without the outer braces, null for a `;` statement) and
- * `{ prelude: text, body: null }` for loose text. */
-function topLevel(css) {
-  const items = [];
-  let depth = 0;
-  let start = 0;
-  let open = -1;
-  for (let i = 0; i < css.length; i++) {
-    const ch = css[i];
-    if (ch === '"' || ch === "'") {
-      i = stringEnd(css, i) - 1;
-    } else if (ch === '{') {
-      if (depth === 0) open = i;
-      depth++;
-    } else if (ch === '}') {
-      depth--;
-      if (depth < 0) throw new Error('src/index.css has an unmatched "}"');
-      if (depth === 0) {
-        items.push({ prelude: css.slice(start, open), body: css.slice(open + 1, i) });
-        start = i + 1;
-      }
-    } else if (ch === ';' && depth === 0) {
-      items.push({ prelude: css.slice(start, i), body: null });
-      start = i + 1;
-    }
-  }
-  if (depth !== 0) throw new Error('src/index.css has an unclosed "{"');
-  items.push({ prelude: css.slice(start), body: null });
-  return items;
-}
-
-/** Throws if `text` declares a `--color-*` token; `where` says where. */
-function rejectDeclarations(text, where) {
-  const found = DECLARATION.exec(text);
-  if (found) {
-    throw new Error(
-      `${found[1]} is declared ${where}; declare --color-* tokens only in top-level ` +
-        '":root {" or ".dark {" blocks',
-    );
-  }
-}
-
-/** Reads one `:root`/`.dark` block body into `values`. Declarations are the
- * text outside any nested rule; a nested rule may not declare a token. */
-function readBlock(body, selector, values) {
-  const flat = [];
-  let depth = 0;
-  let nestedStart = 0;
-  let last = 0;
-  for (let i = 0; i < body.length; i++) {
-    const ch = body[i];
-    if (ch === '"' || ch === "'") {
-      i = stringEnd(body, i) - 1;
-    } else if (ch === '{') {
-      if (depth === 0) {
-        // The nested rule's selector is the text since the last `;`.
-        const cut = body.lastIndexOf(';', i) + 1;
-        const from = Math.max(cut, last);
-        flat.push(body.slice(last, from));
-        nestedStart = from;
-      }
-      depth++;
-    } else if (ch === '}') {
-      depth--;
-      if (depth === 0) {
-        rejectDeclarations(
-          body.slice(nestedStart, i + 1),
-          `in a rule nested in "${selector}"`,
-        );
-        last = i + 1;
-      }
-    }
-  }
-  flat.push(body.slice(last));
-  for (const declaration of flat.join(';').split(';')) {
-    const colon = declaration.indexOf(':');
-    if (colon === -1) continue;
-    const name = declaration.slice(0, colon).trim();
-    if (!name.startsWith('--color-')) continue;
-    const value = declaration.slice(colon + 1).trim();
-    if (!HEX.test(value)) {
-      throw new Error(
-        `${name} in "${selector}" is "${value}"; tokens must be 3- or 6-digit hex colors`,
-      );
-    }
-    const hex = value.toLowerCase();
-    values[name.slice('--color-'.length)] =
-      hex.length === 4 ? `#${[...hex.slice(1)].map((c) => c + c).join('')}` : hex;
-  }
-}
-
 /**
- * The `--color-*` tokens of a stylesheet: `light` from its top-level `:root`
- * blocks, `dark` from its top-level `.dark` blocks, keyed without the prefix,
- * as 6-digit lowercase hex. Throws, naming the token, on a value it can't read
- * or a token declared anywhere else.
+ * The `--color-*` tokens of a stylesheet: `light` from its `:root` block,
+ * `dark` from its `.dark` block, keyed without the prefix, as 6-digit
+ * lowercase hex. Throws on any shape it doesn't support (see above).
  */
 export function readThemeTokens(css) {
-  const tokens = { light: {}, dark: {} };
-  for (const { prelude, body } of topLevel(stripComments(css))) {
-    const selector = prelude.trim().replace(/\s+/g, ' ');
-    if (body === null) {
-      rejectDeclarations(prelude, 'outside any block');
-    } else if (Object.hasOwn(THEMES, selector)) {
-      readBlock(body, selector, tokens[THEMES[selector]]);
-    } else if (!/^@theme(?:\s|$)/.test(selector)) {
-      rejectDeclarations(body, `in "${selector}"`);
+  const code = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const tokens = {};
+  for (const [, selector, body] of code.matchAll(BLOCK)) {
+    const theme = selector === ':root' ? 'light' : 'dark';
+    if (tokens[theme])
+      throw new Error(`src/index.css has more than one "${selector} {" block`);
+    tokens[theme] = {};
+    for (const [, name, raw] of body.matchAll(DECLARATION)) {
+      const value = raw.trim();
+      if (!HEX.test(value)) {
+        throw new Error(
+          `${name} in "${selector}" is "${value}"; tokens must be 3- or 6-digit hex colors`,
+        );
+      }
+      const hex = value.toLowerCase();
+      tokens[theme][name.slice('--color-'.length)] =
+        hex.length === 4 ? `#${[...hex.slice(1)].map((c) => c + c).join('')}` : hex;
     }
   }
+  for (const [theme, selector] of [
+    ['light', ':root'],
+    ['dark', '.dark'],
+  ]) {
+    if (!tokens[theme])
+      throw new Error(`src/index.css has no top-level "${selector} {" block`);
+  }
+  const rest = code.replace(BLOCK, '').replace(THEME_BLOCK, '');
+  const stray = /--color-[\w-]+(?=\s*:)/.exec(rest);
+  if (stray) {
+    throw new Error(
+      `${stray[0]} is declared outside the ":root {" and ".dark {" blocks; declare --color-* tokens only there`,
+    );
+  }
   return tokens;
+}
+
+/** WCAG 2.x contrast ratio between two `#rrggbb` colors. */
+export function contrastRatio(a, b) {
+  const luminance = (hex) => {
+    const [r, g, bl] = [1, 3, 5]
+      .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
 }

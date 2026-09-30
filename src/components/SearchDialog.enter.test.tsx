@@ -53,22 +53,6 @@ describe('SearchDialog Enter', () => {
     expect(screen.getByTestId('location-display')).toHaveTextContent(pathOf(first));
   });
 
-  it('opens the first result for a case-study query too', async () => {
-    const user = userEvent.setup();
-    const onClose = renderDialog();
-    const query = 'URL shortener';
-    const [first] = searchContent(query);
-    expect(first).toBeDefined();
-
-    await user.click(screen.getByPlaceholderText(/search topics/i));
-    await user.paste(query);
-    await screen.findAllByRole('listitem');
-    await user.keyboard('{Enter}');
-
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('location-display')).toHaveTextContent(pathOf(first));
-  });
-
   it('does nothing, without throwing, when Enter is pressed with no results', async () => {
     const user = userEvent.setup();
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});

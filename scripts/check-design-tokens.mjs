@@ -13,9 +13,8 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const CSS_PATH = join(ROOT, 'src', 'index.css');
 const DESIGN_PATH = join(ROOT, 'docs', 'DESIGN.md');
 
-// Read through the shared reader, so every top-level `:root`/`.dark` block
-// counts (the later value winning, as in CSS) and a token it can't read the way
-// CSS applies it fails loudly.
+// Read through the shared reader, which fails loudly on a token it can't read
+// the way CSS applies it.
 let themes;
 try {
   themes = readThemeTokens(readFileSync(CSS_PATH, 'utf8'));

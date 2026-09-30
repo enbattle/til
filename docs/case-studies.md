@@ -45,10 +45,9 @@ order: 1
   `Data model`, `API design`, `High-level architecture`, two or more
   `Deep dive: <topic>`, `Failure modes and bottlenecks`, `Trade-offs`
   (`src/system-design/case-study-structure.test.ts`), and
-  `High-level architecture` contains at least one diagram, written as an inline
-  image, `![alt](/diagrams/<slug>/<name>.svg)` (the test doesn't count the
-  reference style there, though `check:diagrams` resolves it for other
-  diagrams). The page builds its Contents
+  `High-level architecture` contains at least one diagram with alt text, such
+  as `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page,
+  so the reference style counts too). The page builds its Contents
   list from these headings, parsed with the renderer's own markdown stack and
   heading-id pass (`h2Headings` in `src/lib/headings.ts`), so every entry links
   to the id its heading renders with; still, keep them plain text. The URL shortener
@@ -101,9 +100,8 @@ order: 1
   script derives the D2 theme from the `--color-*` tokens in `src/index.css`
   (and checks text contrast on every fill); `check:diagrams` rejects a `.d2`
   that sets `fill`, `stroke`, `font-color` or a theme by any syntax or uses a
-  hex color as a value (`"#ff0000"`, e.g. in `vars`), and `check:colors`
-  rejects the same hex values (a `#` inside a label, such as `"Issue #123"`, or
-  in a comment is fine). A `.d2` can't import another file (`...@x`,
+  hex color as a value (`"#ff0000"`, e.g. in `vars`); a `#` inside a label,
+  such as `"Issue #123"`, or in a comment is fine. A `.d2` can't import another file (`...@x`,
   `x: @../y`): the imported file would escape the source hash and the color
   guard, so both `check:diagrams` and `npm run diagrams` reject it. Changing a `--color-*` token the
   diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 5: nodes, participants, width) and lay it out to fit the ~720px

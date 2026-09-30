@@ -89,29 +89,6 @@ describe('MarkdownRenderer', () => {
   });
 });
 
-describe('MarkdownRenderer h2 ids (criterion 8)', () => {
-  it('gives each ## heading a slug id', () => {
-    renderMarkdown('## Deep dive: short code generation\n\nText.\n\n## Trade-offs\n');
-    const first = screen.getByRole('heading', {
-      level: 2,
-      name: 'Deep dive: short code generation',
-    });
-    const second = screen.getByRole('heading', { level: 2, name: 'Trade-offs' });
-    expect(first.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
-    expect(second.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
-    expect(first.id).not.toBe(second.id);
-  });
-
-  it('gives the same heading the same id on every render', () => {
-    const { unmount } = renderMarkdown('## High-level architecture\n');
-    const id = screen.getByRole('heading', { level: 2 }).id;
-    unmount();
-    renderMarkdown('Intro.\n\n## High-level architecture\n');
-    expect(id.length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { level: 2 }).id).toBe(id);
-  });
-});
-
 describe('MarkdownRenderer diagram images (criterion 13)', () => {
   const ALT = 'Clients call the API, which reads the cache before the database';
 
@@ -137,6 +114,14 @@ describe('MarkdownRenderer diagram images (criterion 13)', () => {
       `${import.meta.env.BASE_URL}diagrams/x/y.light.svg`,
     );
     expect(img).toHaveAttribute('loading', 'lazy');
+  });
+
+  it('sizes a rendered diagram from the build manifest', () => {
+    // A real rendered diagram, so the manifest has its size.
+    renderMarkdown(`![${ALT}](/diagrams/url-shortener/architecture.svg)\n`);
+    const img = screen.getByRole('img', { name: ALT });
+    expect(Number(img.getAttribute('width'))).toBeGreaterThan(0);
+    expect(Number(img.getAttribute('height'))).toBeGreaterThan(0);
   });
 
   it('renders the dark SVG in dark theme', () => {

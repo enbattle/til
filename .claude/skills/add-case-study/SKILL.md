@@ -93,8 +93,7 @@ npm run verify
 in-page links that resolve, a diagram in the architecture section),
 `system-design.test.ts` (frontmatter, unique `order`,
 dead links), `check:diagrams` (sources rendered, SVGs and tokens current,
-SVGs safe, no color named and no file imported in a `.d2`, every referenced diagram present),
-`check:colors` (no hex color value in `.d2` files) and
+SVGs safe, no color named and no file imported in a `.d2`, every referenced diagram present) and
 `check:bundle` (the body stays out of the main chunk) catch the structural
 problems. A case study never needs its own test.
 
