@@ -48,11 +48,11 @@ read), `src/lib/diagram-refs.d.mts` is used by tsc rather than imported, and
 `npm run check:diagrams` needs no d2: it proves the committed SVGs match their
 `.d2` sources and their own recorded bytes (the source and SVG hashes in
 `public/diagrams/manifest.json`), that the `--color-*` tokens recorded there
-under `$tokens` still match `src/index.css` (every top-level `:root`/`.dark`
-block, the later value winning as in CSS; `check:contrast` and `check:tokens`
-read them through the same `readThemeTokens` in `scripts/css-tokens.mjs`,
-which fails loudly on a `--color-*` token declared anywhere else, such as
-under `@media`, or with a value other than 3- or 6-digit hex)
+under `$tokens` still match `src/index.css` (its one top-level `:root` and one
+`.dark` block; `check:contrast` and `check:tokens` read them through the same
+`readThemeTokens` in `scripts/css-tokens.mjs`, which fails loudly on a second
+block for a theme, a `--color-*` token declared anywhere else, such as under
+`@media`, or a value other than 3- or 6-digit hex)
 and keep diagram text at 4.5:1 on every fill, that no `.d2` names a color or imports a file, that every `.d2`
 sits at `<case>/<name>.d2` in lowercase kebab-case (the rule `npm run diagrams`
 renders by, `SOURCE_PATH`), that no SVG is missing or orphaned and nothing

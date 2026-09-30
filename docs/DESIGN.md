@@ -147,8 +147,9 @@ regardless of the system setting. Components reference the tokens
 file. `npm run check:colors` (`scripts/check-hex-colors.mjs`, wired into
 CI) enforces this mechanically rather than relying on review to catch a
 raw hex literal creeping into a component — it fails if one shows up
-in any `.ts`, `.tsx`, `.css` or `.d2` file under `src/` outside `src/index.css` itself (where the tokens
-are defined) or `src/content/` (published prose, not app code).
+in any `.ts`, `.tsx` or `.css` file under `src/` outside `src/index.css` itself (where the tokens
+are defined) or `src/content/` (published prose, not app code). A `.d2`
+diagram source is checked by `check:diagrams` instead.
 
 | Token            | Light     | Dark      |
 | ---------------- | --------- | --------- |

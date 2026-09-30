@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readThemeTokens } from './css-tokens.mjs';
+import { contrastRatio, readThemeTokens } from './css-tokens.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const CSS_PATH = join(ROOT, 'src', 'index.css');
@@ -28,22 +28,8 @@ const TEXT_TOKENS = [
 ];
 const SURFACE_TOKENS = ['bg-primary', 'bg-secondary', 'bg-tertiary'];
 
-// WCAG 2.x relative luminance and contrast ratio.
-function luminance(hex) {
-  const [r, g, b] = [1, 3, 5]
-    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
-    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function contrastRatio(a, b) {
-  const [lighter, darker] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-// Every top-level `:root` (light) and `.dark` (dark) block, the later value
-// winning as in CSS, through the shared reader; a token it can't read the way
-// CSS applies it (a non-hex value, a declaration under @media) fails loudly.
+// The `:root` (light) and `.dark` (dark) blocks, through the shared reader,
+// which fails loudly on a token it cannot read the way CSS applies it.
 let read;
 try {
   read = readThemeTokens(readFileSync(CSS_PATH, 'utf8'));

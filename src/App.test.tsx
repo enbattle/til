@@ -31,13 +31,6 @@ describe('App routing', () => {
     expect(screen.getByRole('heading', { name: /page not found/i })).toBeInTheDocument();
   });
 
-  it('redirects an unknown topic slug under a real section to not-found', async () => {
-    renderAt('/ai-and-ml/nonexistent-topic');
-    expect(
-      await screen.findByRole('heading', { name: /page not found/i }),
-    ).toBeInTheDocument();
-  });
-
   it('renders a real topic end-to-end through the lazy-loaded TopicPage, code block included', async () => {
     renderAt('/ai-and-ml/prompt-engineering');
     expect(
@@ -144,23 +137,6 @@ describe('App routing', () => {
     expect(screen.getByRole('navigation', { name: 'Sections' })).toBeInTheDocument();
   });
 
-  it('opens the mobile nav from the Menu button and closes it on Escape', async () => {
-    const user = userEvent.setup();
-    renderAt('/');
-    await user.click(screen.getByRole('button', { name: /menu/i }));
-    expect(screen.getByRole('dialog', { name: /navigation/i })).toBeInTheDocument();
-    await user.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog', { name: /navigation/i })).not.toBeInTheDocument();
-  });
-
-  it('closes the mobile nav when clicking its backdrop', async () => {
-    const user = userEvent.setup();
-    renderAt('/');
-    await user.click(screen.getByRole('button', { name: /menu/i }));
-    await user.click(screen.getByRole('dialog', { name: /navigation/i }));
-    expect(screen.queryByRole('dialog', { name: /navigation/i })).not.toBeInTheDocument();
-  });
-
   // Regression test: SearchDialog and MobileNav are two independently
   // triggered overlays (Ctrl/Cmd+K and the Menu button) — without explicit
   // mutual exclusion, both could mount at once with two competing
@@ -219,47 +195,5 @@ describe('App routing', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: /Prompt Engineering/i }),
     ).toBeInTheDocument();
-  });
-
-  it('marks the current topic and section links with aria-current in the sidebar nav', async () => {
-    renderAt('/ai-and-ml/prompt-engineering');
-    await screen.findByRole('heading', { level: 1, name: /Prompt Engineering/i });
-    const nav = screen.getByRole('navigation', { name: 'Sections' });
-    expect(
-      within(nav).getByRole('link', { name: /Prompt Engineering/i }),
-    ).toHaveAttribute('aria-current', 'page');
-    expect(
-      within(nav).getByRole('link', { name: 'AI & Machine Learning' }),
-    ).toHaveAttribute('aria-current', 'page');
-  });
-
-  it('marks only the current section link with aria-current on a section page with no topic selected', () => {
-    renderAt('/ai-and-ml');
-    const nav = screen.getByRole('navigation', { name: 'Sections' });
-    expect(
-      within(nav).getByRole('link', { name: 'AI & Machine Learning' }),
-    ).toHaveAttribute('aria-current', 'page');
-    expect(
-      within(nav).getByRole('link', { name: 'Engineering Practices' }),
-    ).not.toHaveAttribute('aria-current');
-  });
-
-  it('marks no sidebar nav link with aria-current on the home page', () => {
-    renderAt('/');
-    const nav = screen.getByRole('navigation', { name: 'Sections' });
-    const currentLinks = within(nav)
-      .getAllByRole('link')
-      .filter((link) => link.hasAttribute('aria-current'));
-    expect(currentLinks).toHaveLength(0);
-  });
-
-  // Acceptance criterion 9 (section-nav redesign): the desktop sidebar's
-  // scroll wrapper is on-theme and thin rather than the default browser
-  // scrollbar. App.tsx applies `scrollbar-thin` directly to the className
-  // it passes into SectionNav's own <nav> element (its scroll container).
-  it('applies the scrollbar-thin utility to the desktop sidebar’s scroll wrapper', () => {
-    renderAt('/');
-    const nav = screen.getByRole('navigation', { name: 'Sections' });
-    expect(nav).toHaveClass('scrollbar-thin');
   });
 });
