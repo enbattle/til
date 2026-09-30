@@ -241,8 +241,12 @@ review catches anything.
 
 ### SR-15 — new System Design case study
 
-> Write a System Design case study for a chat app like WhatsApp, with the
-> usual architecture diagram.
+> Write a System Design case study for a collaborative document editor like
+> Google Docs, with the usual architecture diagram.
+
+(The prompt used to name a chat app like WhatsApp; that case study now exists
+as `messaging.md`, which made the prompt a request to edit an existing one.
+Keep the prompt naming a case study that doesn't exist yet.)
 
 **Expected:** `add-case-study`
 **Why:** Exactly that skill's scope: a new file under
