@@ -48,9 +48,11 @@ describe('check-pipeline-log', () => {
       gates = '0',
       findings = '0/0/0',
       rounds = '0',
+      agents = '3',
       run = '/feature docs/specs/x.md',
     } = {},
-  ) => `|  2026-09-23  | ${run} | ${gates} | ${findings} | ${rounds} |  ${retro}  |  |`;
+  ) =>
+    `|  2026-09-23  | ${run} | ${gates} | ${findings} | ${rounds} | ${agents} |  ${retro}  |  |`;
   function check(...rows) {
     const file = join(tempDir(), 'log.md');
     writeFileSync(file, `${header.trimEnd()}\n${rows.join('\n')}\n`);
@@ -69,7 +71,12 @@ describe('check-pipeline-log', () => {
       ),
     ).toBe(0);
     expect(
-      check(row('n/a', { run: 'add-case-study src/system-design/case-studies/x.md' })),
+      check(
+        row('n/a', {
+          run: 'add-case-study src/system-design/case-studies/x.md',
+          agents: '—',
+        }),
+      ),
     ).toBe(0);
   });
 
@@ -84,6 +91,7 @@ describe('check-pipeline-log', () => {
     ['a run with no path', row('n/a', { run: 'add-topic' })],
     ['a bad findings cell', row('ok', { findings: '1 high' })],
     ['a fix round past the cap without authorization', row('ok', { rounds: '3' })],
+    ['an Agents cell that is not a count', row('ok', { agents: '0' })],
     ['a wrong cell count', '| 2026-09-23 | /feature x | 0 |'],
   ])('fails %s', (_label, bad) => {
     expect(check(bad)).toBe(1);

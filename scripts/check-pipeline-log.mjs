@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Guardrail for docs/pipeline-log.md (column definitions in its header): every
-// row has the seven columns in their format, and a run that had gate failures
+// row has the eight columns in their format, and a run that had gate failures
 // or findings can't close with a bare "nothing to change" retro, the rule a
 // self-graded retro would otherwise break silently. Rows are parsed by cell
 // because Prettier re-pads the table whenever a row is added.
@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const LOG =
   process.argv[2] ?? fileURLToPath(new URL('../docs/pipeline-log.md', import.meta.url));
 const HEADER =
-  'Date|Run|Gate failures|Findings (H/M/L, pre)|Fix rounds|Retro|Escaped defect';
+  'Date|Run|Gate failures|Findings (H/M/L, pre)|Fix rounds|Agents|Retro|Escaped defect';
 // Each column's format, by position; the last (Escaped defect) is free text.
 const FORMATS = [
   ['Date must be YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/],
@@ -25,6 +25,7 @@ const FORMATS = [
     'Fix rounds must be 0, 1, 2 or "N (user-authorized)" for N of 3 or more',
     /^([0-2]|([3-9]|[1-9]\d+) \(user-authorized\))$/,
   ],
+  ['Agents must be a positive integer or "—"', /^([1-9]\d*|—)$/],
   ['Retro must not be empty', /\S/],
 ];
 
@@ -46,14 +47,14 @@ if (rows.length < 2 || cells(rows[0]).join('|') !== HEADER) {
 for (const line of rows.slice(2)) {
   const row = cells(line);
   const at = `row "${row.slice(0, 2).join(' | ')}"`;
-  if (row.length !== 7) {
-    violations.push(`${at}: expected 7 cells, found ${row.length}`);
+  if (row.length !== 8) {
+    violations.push(`${at}: expected 8 cells, found ${row.length}`);
     continue;
   }
   FORMATS.forEach(
     ([message, format], i) => format.test(row[i]) || violations.push(`${at}: ${message}`),
   );
-  const [, , gates, findings, , retro] = row;
+  const [, , gates, findings, , , retro] = row;
   const bare = retro.toLowerCase().replace(/[\s.,;:!—–-]+/g, ' ');
   const friction = parseInt(gates, 10) > 0 || /[1-9]/.test(findings.split(',')[0]);
   if (friction && bare.trim() === 'nothing to change') {

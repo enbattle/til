@@ -75,7 +75,9 @@ Stage 1 and this instruction, close to verbatim:
 > currently agrees with every other one; the risk here isn't that one is
 > wrong yet, it's that nothing stops the next edit from updating only one
 > copy. Name every location the fact appears and suggest which one should
-> become canonical. Do not edit anything — audit only. Report findings
+> become canonical. Also nominate at least one thing to delete or merge (a doc
+> section, rule, check or file that nothing needs), with its reason, for the
+> user to decide. Do not edit anything — audit only. Report findings
 > ranked by how misleading they'd be to someone reading the doc cold, or
 > say explicitly you found nothing worth flagging.
 >

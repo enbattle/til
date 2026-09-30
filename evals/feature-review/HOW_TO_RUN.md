@@ -45,6 +45,18 @@ For each scenario in `scenarios.md`:
    run, a table of ID, run, finding summary and grade, and notes on anything
    surprising). Git history keeps older logs.
 
+## Triage scenarios (FR-06, FR-07)
+
+Steps 1–2 and 5–6 as above, with these changes. Read fresh Stage 4's
+finding-triage instruction (the "For each finding below, confirm or dispute
+it..." block) and its four outcomes, both verbatim. The fresh agent gets the
+scenario's **Spec**, **Diff** (as the output of `npm run review:diff`) and
+**Finding**, the instruction, the outcomes, and one line: "Propose one outcome
+for each finding; don't read anything under evals/." Grade its proposed
+outcome against the scenario's **Expected outcome**: PASS on a match backed
+by evidence from real files, FAIL as the scenario says, AMBIGUOUS if the
+evidence is right but the outcome is hedged.
+
 ## When a scenario goes stale
 
 The diffs quote real code. If a file they touch changes enough that a diff no

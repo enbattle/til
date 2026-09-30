@@ -76,12 +76,12 @@ edit that read fine on its own quietly made the routing rule worse.
 
 Which eval to run depends on what changed:
 
-| You changed                                                                                                          | Run                                                                                                                                            |
-| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE.md` or a doc its routing table points to, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill | `skill-routing-eval`                                                                                                                           |
-| The Writing Standard, `add-topic`'s or `add-case-study`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`        | `content-review-eval`                                                                                                                          |
-| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review        | `feature-review-eval`                                                                                                                          |
-| Added or widened a `check:*` script                                                                                  | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
+| You changed                                                                                                                     | Run                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md` or a doc its routing table points to, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill            | `skill-routing-eval`                                                                                                                           |
+| The Writing Standard, `add-topic`'s or `add-case-study`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                   | `content-review-eval`                                                                                                                          |
+| `/feature`'s Stage 4 reviewer or finding-triage instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review | `feature-review-eval`                                                                                                                          |
+| Added or widened a `check:*` script                                                                                             | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
 
 ## Grading philosophy
 

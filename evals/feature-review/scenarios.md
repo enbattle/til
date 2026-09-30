@@ -298,3 +298,82 @@ diff (a real polish point). It fails if it reports a defect that isn't there.
 
 **Expected finding:** none. A true nit (for example, import placement) is
 acceptable.
+
+---
+
+## Triage scenarios
+
+These test Stage 4's finding triage, not the reviewer: each gives the triager
+a spec, a diff and one review finding (procedure in `HOW_TO_RUN.md`).
+
+### FR-06 — triage: a reachable finding
+
+**Spec:**
+
+> Add `firstSentence(text)` to `src/lib/content.ts` for the topic page's meta
+> description: the text up to and including the first sentence's period.
+> Criteria: (1) `One. Two.` → `One.` (2) Text with no period is unchanged.
+
+**Diff:**
+
+```diff
+--- a/src/lib/content.ts
++++ b/src/lib/content.ts
+@@ -159,3 +159,9 @@ export function recentTopics(count: number): Topic[] {
+ export function recentTopics(count: number): Topic[] {
+   return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
+ }
++
++/** A summary's first sentence, for the page's meta description. */
++export function firstSentence(text: string): string {
++  const end = text.indexOf('. ');
++  return end === -1 ? text : text.slice(0, end + 1);
++}
+```
+
+**Finding:** "Medium: `firstSentence` ends a sentence at any `. `, so an
+abbreviation such as `vs.` cuts the summary short. Possibly theoretical if no
+summary uses one."
+
+**Expected outcome:** Fix with a test. Three real summaries contain `vs. `
+(`git-rebase-vs-merge.md`, `optimistic-vs-pessimistic-locking.md`,
+`partitioning-vs-sharding.md`); the first becomes "What each actually does to
+history, which to use on a private branch vs." FAIL if labelled theoretical,
+Known limitation or Reject.
+
+### FR-07 — triage: a theoretical finding
+
+**Spec:**
+
+> Add a test that fails when a topic's or case study's summary has a second
+> sentence (`.`, `?` or `!`, whitespace, then a capital letter). Criteria:
+> (1) Every current summary passes. (2) `One thing. Another.` fails.
+
+**Diff:**
+
+```diff
+--- a/src/lib/content.test.ts
++++ b/src/lib/content.test.ts
+@@ -1,3 +1,4 @@
+ import { describe, expect, it } from 'vitest';
+ import { SECTIONS } from '@/content/registry';
+-import { getTopic, recentTopics, sectionNeighbors, topicsBySection } from './content';
++import { getTopic, recentTopics, sectionNeighbors, TOPICS, topicsBySection } from './content';
++import { CASE_STUDIES } from './system-design';
+@@ -51,1 +52,9 @@ describe('content loader', () => {
+ });
++
++describe('summaries', () => {
++  it.each([...TOPICS, ...CASE_STUDIES].map((item) => [item.title, item.summary]))(
++    '%s has a one-sentence summary',
++    (_title, summary) => expect(summary).not.toMatch(/[.?!]\s+[A-Z]/),
++  );
++});
+```
+
+**Finding:** "Medium: `[A-Z]` is ASCII-only, so a second sentence that starts
+with an accented capital (`Émile…`) passes the check."
+
+**Expected outcome:** Known limitation (Reject only if it's disproved). The
+finding is true, but every summary is English, none has a second sentence,
+and no doc describes that shape. FAIL if escalated to Fix with a test.
