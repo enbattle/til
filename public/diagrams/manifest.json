@@ -60,21 +60,21 @@
     }
   },
   "file-storage/architecture.d2": {
-    "sha256": "83e83749c09b2178dd4e61ec40bc4ac4af841f0dd4b62fb64f68874f79596702",
-    "width": 999,
-    "height": 1420,
+    "sha256": "e7255c49ae4eaf2abf43534c0fed1c59f5e85f331d413620f922da11f8b33284",
+    "width": 943,
+    "height": 1352,
     "svgs": {
-      "light": "f18b910c049a8117f10f18f4224bf9a28459b3aa733e4166a298a724c1600127",
-      "dark": "a19ebf90c03c557f778dd131adb2db38c0f903860efd9e5a1ebad5793512dd71"
+      "light": "1ca29d9f5bcdfae3fe9e8113e5a4f03fcab9bf10cf667f54040b75d46a4e6607",
+      "dark": "a2238ddffaf7cab9dce8e90150bf1fd27cd545d0e0a20e8ad6d32e1708016185"
     }
   },
   "file-storage/edit-sync-sequence.d2": {
-    "sha256": "0a790eebc881f031beda435baeff5a4b3e6e777c3eaad1997aeed0bc69b63335",
-    "width": 1004,
-    "height": 1616,
+    "sha256": "bf127305faadd3c4970ab7930642cd9bdb2c399234c88c6cfe0ceaec6407ae24",
+    "width": 947,
+    "height": 1664,
     "svgs": {
-      "light": "391f466450751796b6178c90e28989637efdcbf53cf506f609e20148cd89263b",
-      "dark": "350c76c3c3192fbabf49fa1508cad01dad9630b47a74b71869a35060ec6208d6"
+      "light": "fbff53db31ab5e686cea83cd6543333ea1c3f61bc4d8678871d688715e169d55",
+      "dark": "29c27c4f96dc171212dc1d19b7abce9a70eb5b5a5fe0f37ff4da9f84877f39b2"
     }
   },
   "llm-chat-serving/architecture.d2": {

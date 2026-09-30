@@ -6,11 +6,14 @@
 // The supported shape is deliberately narrow, matching src/index.css: exactly
 // one `:root { ... }` (light) and one `.dark { ... }` (dark) block, each
 // starting at column 0 with no nested rules, declaring tokens as 3- or 6-digit
-// hex. Top-level `@theme` blocks (Tailwind's mapping of utilities onto the
-// tokens) are skipped. Anything else throws, naming the problem, rather than
-// being silently read or skipped: a second block for a theme, a missing one, a
-// non-hex value, or a `--color-*` declared anywhere else (under `@media`, in a
-// compound selector, nested in a rule). Comments are ignored.
+// hex. In top-level `@theme` blocks (Tailwind's mapping of utilities onto the
+// tokens), every `--color-*` must be exactly `var(--color-<name>)` naming a
+// token both theme blocks define, so no color bypasses the tokens there; other
+// `@theme` declarations (`--font-*`, ...) are ignored. Anything else throws,
+// naming the problem, rather than being silently read or skipped: a second
+// block for a theme, a missing one, a non-hex value, an `@theme` color that
+// isn't such a var, or a `--color-*` declared anywhere else (under `@media`, in
+// a compound selector, nested in a rule). Comments are ignored.
 //
 // Only `node:` imports, or none: check-contrast and check-design-tokens are
 // tested by copying them next to this file in a throwaway directory.
@@ -19,6 +22,7 @@ const BLOCK = /^(:root|\.dark)\s*\{([^{}]*)\}/gm;
 const THEME_BLOCK = /^@theme\b[^{]*\{[^{}]*\}/gm;
 const DECLARATION = /(--color-[\w-]+)\s*:\s*([^;}]*)/g;
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+const TOKEN_VAR = /^var\(\s*--color-([\w-]+)\s*\)$/;
 
 /**
  * The `--color-*` tokens of a stylesheet: `light` from its `:root` block,
@@ -51,6 +55,21 @@ export function readThemeTokens(css) {
   ]) {
     if (!tokens[theme])
       throw new Error(`src/index.css has no top-level "${selector} {" block`);
+  }
+  for (const [themeBlock] of code.matchAll(THEME_BLOCK)) {
+    for (const [, name, raw] of themeBlock.matchAll(DECLARATION)) {
+      const value = raw.trim();
+      const target = TOKEN_VAR.exec(value)?.[1];
+      if (
+        !target ||
+        !Object.hasOwn(tokens.light, target) ||
+        !Object.hasOwn(tokens.dark, target)
+      ) {
+        throw new Error(
+          `${name} in "@theme" is "${value}"; @theme colors must be var(--color-<name>) naming a token defined in both ":root {" and ".dark {"`,
+        );
+      }
+    }
   }
   const rest = code.replace(BLOCK, '').replace(THEME_BLOCK, '');
   const stray = /--color-[\w-]+(?=\s*:)/.exec(rest);

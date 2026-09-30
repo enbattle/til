@@ -20,6 +20,7 @@
 //   (only manifest.json and `<case>/<name>.light.svg`/`.dark.svg` may), an
 //   entry has no `svgs` hashes,
 //   or an SVG's bytes no longer match its recorded hash (edited by hand);
+// - a manifest entry's recorded width is above 960 px (MAX_WIDTH);
 // - the manifest has no `$tokens`, or the `--color-*` tokens the diagrams use
 //   differ from src/index.css (a palette change without a re-render), or those
 //   tokens put diagram text below WCAG AA (4.5:1) on any fill it can sit on;
@@ -63,6 +64,9 @@ const CASE_STUDIES = join(ROOT, 'src', 'system-design', 'case-studies');
 const CSS = join(ROOT, 'src', 'index.css');
 const THEMES = ['light', 'dark'];
 const RERENDER = 'run `npm run diagrams`';
+// The widest a diagram may render: the column is ~720 px and a diagram is
+// never scaled below 0.75 (add-case-study checklist item 5).
+const MAX_WIDTH = 960;
 
 /** Every file under `dir` (recursively) whose name ends with `suffix`, as a
  * forward-slash path relative to `dir`. */
@@ -147,6 +151,11 @@ for (const source of sources) {
   } else {
     if (entry.sha256 !== sourceHash(text)) {
       violations.push(`${source}: changed since it was last rendered; ${RERENDER}`);
+    }
+    if (typeof entry.width === 'number' && entry.width > MAX_WIDTH) {
+      violations.push(
+        `${source}: ${entry.width} px wide, above the ${MAX_WIDTH} px limit (it would scale below 0.75 in the ~720 px column; aim for ~950); re-lay it out and ${RERENDER}`,
+      );
     }
     if (!entry.svgs || typeof entry.svgs !== 'object') {
       violations.push(

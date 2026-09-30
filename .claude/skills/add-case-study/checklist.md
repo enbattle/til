@@ -32,8 +32,9 @@ words drew the most findings.
    headroom explicitly, never sizing at ~100% of capacity. Keep averages
    separate from peaks, and requests separate from distinct items.
 5. **Diagrams fit the page.** The column is about 720 px and a diagram is
-   never scaled below 0.75, so every rendered SVG stays at or below ~950 px
-   wide (read the width from `public/diagrams/manifest.json`). Architecture
+   never scaled below 0.75, so every rendered SVG stays at or below 960 px
+   wide, target ~950 (`check:diagrams` fails on a wider width in
+   `public/diagrams/manifest.json`). Architecture
    diagrams have 8–11 nodes; if the default layout is too wide, try
    `vars: { d2-config: { layout-engine: elk } }`, merge nodes, or wrap labels.
    Sequence diagrams have at most 5–6 participants. Every component, edge and
