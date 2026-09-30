@@ -1,0 +1,28 @@
+# One query, "paris weather", on a result-cache miss. Phase 1 goes to all 100
+# shards (one shard drawn, with the hedged copy sent to a second replica when
+# the first is slow); phase 2 asks only the shards that own a winning result
+# for titles and snippets.
+shape: sequence_diagram
+
+fe: Query frontend
+cache: Result cache
+agg: Root aggregator
+a: "Shard 37\nreplica A"
+b: "Shard 37\nreplica B"
+
+fe -> cache: "get paris weather"
+cache -> fe: "miss"
+fe -> agg: "search, 250 ms budget"
+agg -> a: "phase 1: top 10\n(sent to all 100 shards)"
+
+No reply after 30 ms: {
+  agg -> b: "same request (hedge)"
+  b -> agg: "top 10: IDs, scores"
+  agg -> a: "cancel"
+}
+
+agg -> agg: "merge 100 lists\ninto global top 10"
+agg -> b: "phase 2: snippets\nfor its 2 winners"
+b -> agg: "titles, URLs, snippets"
+agg -> fe: "10 results"
+fe -> cache: "set, TTL 5 min"

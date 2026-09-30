@@ -20,7 +20,7 @@ staleness (`CLAUDE.md`, `docs/`, `evals/`, every `SKILL.md`) against
 current repo state; this one covers the prose _quality_ of the published
 topics themselves under `src/content/**` and the System Design case
 studies under `src/system-design/case-studies/`, against
-[CLAUDE.md](../../../CLAUDE.md)'s Writing Standard. Neither one's scope
+the [Writing Standard](../../../docs/writing-standard.md). Neither one's scope
 includes the other's.
 
 ## Why an independent read, not a self-check
@@ -47,15 +47,15 @@ list into roughly-even parallel batches rather than one massive agent
 call — by section is the natural split (mirrors how this repo's own
 first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
-section is unusually large. The case studies are one more batch of their
-own (each is long and links into many topics, so keep the batch small; check
-4 below applies to them).
+section is unusually large. The case studies get batches of their
+own, split so each agent can read its share in full (each is 5,000–8,000
+words, so about three per agent); check 4 below applies to them.
 
 ## Stage 2 — Independent audit, per batch
 
 Spawn a **fresh** `general-purpose` agent per batch (never `fork` — it
 must not inherit any prior read of these files). Give each agent its
-batch's file list, [CLAUDE.md](../../../CLAUDE.md)'s Writing Standard, the path of
+batch's file list, the [Writing Standard](../../../docs/writing-standard.md), the path of
 `docs/NON_NEGOTIABLES.md` (a violation there is always a real finding),
 and this instruction, close to verbatim:
 
@@ -66,25 +66,10 @@ and this instruction, close to verbatim:
 > rather than inventing a minor nitpick.
 >
 > **1. Tone — does this read like something a knowledgeable person
-> actually wrote, or a generically AI-patterned draft?** Flag:
->
-> - Triadic or overly symmetric rhetorical constructions ("It's not just
->   X — it's Y").
-> - Stock closing/summarizing phrases ("That's the actual X," "the real
->   Y," "at the end of the day").
-> - A bolded-lead-in-plus-dash bullet format used with total mechanical
->   uniformity throughout an entire list. A few of these is fine — this
->   repo's house style uses them — flag only when EVERY item in a list
->   follows the identical rhythm with zero variation.
-> - Filler intensifiers stacked without adding information
->   ("genuinely," "actually," "real," "worth noting," "in practice,"
->   repeated).
-> - Redundant restatement: a header's point immediately re-said almost
->   verbatim in the very next sentence.
-> - Meta-commentary about the explanation itself ("here's the
->   interesting part," "the key insight is").
-> - Exhaustive, evenly-weighted lists that read as trying to cover every
->   angle rather than a selective, opinionated take.
+> actually wrote, or a generically AI-patterned draft?** Read
+> docs/writing-standard.md and flag each pattern its tone bullet lists. A
+> bolded-lead-in bullet format is house style: flag it only when EVERY item
+> in a list follows the identical rhythm with zero variation.
 >
 > Explicitly do **NOT** flag: em-dashes in general (established house
 > style), technical precision, or headers that are simply clear and
@@ -117,11 +102,14 @@ and this instruction, close to verbatim:
 > comparing at least one alternative and its cost; flag a diagram (read the
 > `.d2` source under `src/system-design/diagrams/`) that disagrees with the
 > prose; and flag any claim about how a specific named company builds its
-> system. Read the linked topic when deciding.
+> system. Check the `At a glance` section against the body: every figure in
+> it must match, each decision and follow-up must be what the body argues,
+> and each in-page link must point to the section that covers it. Read the
+> linked topic when deciding.
 >
 > **5. Systems topics only (skip for other sections and case studies) —
 > is the closing `## Where you'll meet this` section general and true?**
-> It should name kinds of systems (CLAUDE.md's reference set) and say what the
+> It should name kinds of systems (the reference set in docs/content.md) and say what the
 > topic does
 > there, without re-teaching the mechanism. Flag any claim about how a
 > specific named company builds something (it can't be verified), any

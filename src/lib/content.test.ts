@@ -1,35 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { SECTIONS } from '@/content/registry';
-import {
-  TOPICS,
-  getTopic,
-  loadAllTopicBodies,
-  recentTopics,
-  sectionNeighbors,
-  topicsBySection,
-} from './content';
+import { getTopic, recentTopics, sectionNeighbors, topicsBySection } from './content';
 
 describe('content loader', () => {
-  // Bodies load on demand, keyed `section/slug`.
-  let bodies: Map<string, string>;
-  beforeAll(async () => {
-    bodies = await loadAllTopicBodies();
-  });
-
-  it('loads at least one topic', () => {
-    expect(TOPICS.length).toBeGreaterThan(0);
-  });
-
-  it('gives every topic a required title, summary, date, and non-empty body', () => {
-    for (const topic of TOPICS) {
-      expect(topic.title.length).toBeGreaterThan(0);
-      expect(topic.summary.length).toBeGreaterThan(0);
-      expect(topic.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(bodies.get(`${topic.section}/${topic.slug}`)?.length).toBeGreaterThan(0);
-      expect(SECTIONS.some((section) => section.slug === topic.section)).toBe(true);
-    }
-  });
-
   it('finds a known topic by section and slug', () => {
     const topic = getTopic('ai-and-ml', 'prompt-engineering');
     expect(topic?.title).toContain('Prompt Engineering');

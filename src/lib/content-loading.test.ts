@@ -54,6 +54,7 @@ describe('TOPICS is metadata only (criterion 1)', () => {
       expect(topic.title).toBe(data.title);
       expect(topic.summary).toBe(data.summary);
       expect(topic.date).toBe(data.date);
+      expect(topic.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
   });
 });

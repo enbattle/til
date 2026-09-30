@@ -1,0 +1,26 @@
+# One click from redirect to counted, then an aggregator crash: it restores
+# its checkpoint, replays the same events, and rewrites the same row with the
+# same version, so the click is still counted once.
+shape: sequence_diagram
+
+user: Browser
+cs: Click server
+q: Click queue
+agg: Aggregator
+store: Counts store
+
+user -> cs: "GET /c/{token}"
+cs -> q: "click c-9f2e"
+q -> cs: "ack"
+cs -> user: "302 redirect"
+q -> agg: "offset 9,041"
+agg -> agg: "new ID: 57 to 58"
+agg -> store: "ad 42, 12:07 = 58\nversion 9,041"
+
+Crash and replay: {
+  agg -> agg: "restore at 9,000"
+  q -> agg: "9,000 to 9,041"
+  agg -> agg: "58 again"
+  agg -> store: "ad 42, 12:07 = 58\nversion 9,041"
+  store -> store: "same version"
+}

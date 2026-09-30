@@ -5,12 +5,9 @@ description: Run this repo's full spec-to-ship pipeline for a new feature or cha
 
 # Feature pipeline
 
-The full process is documented for humans in [docs/SDLC.md](../../../docs/SDLC.md) —
-read that once for the rationale, including _why_ only three stages run as
-separate agents rather than one per named step. This file is the
-operational runbook: follow it stage by stage, in order, for whatever
-feature or change the user just asked for (their request is this skill's
-argument).
+The runbook: follow it stage by stage for the change the user asked for (their
+request is this skill's argument). Why each stage is shaped this way is in
+[docs/SDLC.md](../../../docs/SDLC.md).
 
 **Non-negotiable rules, enforced at every stage below, not just described:**
 
@@ -22,73 +19,58 @@ argument).
    (the orchestrator) verify the rule held by running the gate checks
    yourself (`git status`, the test-lock check) — not by trusting the
    subagent's self-report.
-3. Never commit or push without the user's explicit go-ahead, per this
-   session's standing git rules — this pipeline ends at "ready to commit,"
-   not at "committed."
+3. Never commit or push without the user's explicit go-ahead — this pipeline
+   ends at "ready to commit," not at "committed."
 
-Only **three** stages below run as separate fresh agents (test-writer,
-implementer, reviewer; a fixer in Stage 4a and a process-edit reader in
-Stage 6 are single-purpose extras that run only when needed) — spec-writing stays with you (the orchestrator,
-collaborating with the user) and documentation stays with the implementer.
-Neither of those needs blind independence: a spec is validated by the
-user's own approval, not by another agent's guess at what the user wants,
-and docs describing a change are normally written by whoever made it. Don't
-add a fourth or fifth worker agent for those without a specific,
-articulable bias it would prevent — see docs/SDLC.md for the reasoning.
+Only the test-writer, implementer and reviewer run as separate fresh agents,
+plus single-purpose extras when a stage calls for one (a finding triager in Stage 4, a
+fixer in 4a, a process-edit reader in Stage 6). Spec stays with you and the
+user; docs stay with the implementer. Add no other worker agent without a
+specific bias it would prevent.
+
+**Splitting a role.** A role can run as several agents when its content files
+are more than one agent can read in full. One owner agent does all the role's
+code, doc and UI work on the full diff plus its share of the content; each
+extra agent gets the spec, docs/NON_NEGOTIABLES.md and only its own content
+files, and never sees another role's work. The stage's gate runs once, after
+all finish. Stage 4a's rounds and cap count for the whole stage, and a round's
+fixes go to one fixer. Don't split small work just to finish sooner.
 
 ## Stage 0 — Scope the request
 
-Read the user's request. If it's small and unambiguous (a copy tweak, a
-one-line bug fix, a config change), say so and just do it directly —
-this pipeline is for real features, not everything. Otherwise, continue.
-
-**A bug of unknown size gets triaged before any process is chosen.**
-Reproduce it and find the cause first, read-only: no fix yet. Then route by
-what you found: a cause confined to one place, fixed without changing
-behavior anything else relies on, is a direct fix with a regression test
-that fails before the fix; a cause that spans modules, changes a
-convention, or needs a behavior decision comes back here as a feature.
-Choosing either route before the cause is known is a guess.
-
-Track your progress through the stages below explicitly in your replies
-("Stage 2: writing tests") so the user can see where things stand
-without reading tool output.
+Small and unambiguous (a copy tweak, a one-line fix, a config change)? Say so
+and do it directly. **A bug of unknown size is triaged first:** reproduce it
+and find the cause, read-only. A cause confined to one place, fixed without
+changing behavior anything else relies on, is a direct fix with a regression
+test that fails before the fix; one that spans modules, changes a convention
+or needs a behavior decision comes back here. Name the current stage in your
+replies ("Stage 2: writing tests").
 
 ## Stage 1 — Spec
 
-Use `EnterPlanMode`. Explore the relevant code yourself (don't skip this —
-a spec written without reading the code invites a mismatched
-implementation later). Use `AskUserQuestion` for any genuine judgment call
-— an ambiguous requirement, a choice between reasonable approaches — the
-same way you would outside this pipeline.
+Use `EnterPlanMode`, explore the relevant code yourself, and use
+`AskUserQuestion` for any genuine judgment call. The plan must include:
 
-The plan you write must include, explicitly:
-
-- **Acceptance criteria as concrete, testable behaviors** — not "search
-  should work better," but "typing a query that matches a topic's summary
-  but not its title still returns that topic." These become the test
-  cases in Stage 2, so vague criteria here means a vague test suite later.
-- Scope: what's in, what's explicitly out.
-- Files/modules touched.
-- Whether this change has a user-facing UI surface (decides whether
-  Stage 4 includes a browser check).
+- **Acceptance criteria as concrete, testable behaviors** ("typing a query
+  that matches a topic's summary but not its title still returns that
+  topic", not "search should work better"). They become Stage 2's tests.
+- A check over content uses the shared `markdownParser()`
+  (`src/lib/diagram-refs.mjs`) or inspects the rendered output, not a regex
+  or a second parser.
+- Scope in and out; files/modules touched; whether there's a user-facing UI
+  surface (decides Stage 4's browser check).
 - A check against [docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md):
-  if the request needs to break a line there, say so in the plan and let the
-  user amend that file or change the request. Don't plan around it quietly.
+  if the request needs to break a line there, say so and let the user amend
+  that file or change the request. Don't plan around it quietly.
 
-`ExitPlanMode` for approval as usual — the user's approval here _is_ the
-independent check on the spec; nothing else validates "is this actually
-what I want" better than the person who wants it. **Once approved**, save
-the final spec as its own file at `docs/specs/<slug>.md` (kebab-case, e.g.
-`docs/specs/topic-tags.md`) — not just the ephemeral plan-mode file. This
-is the shared, durable contract Stages 2–4 are each independently given;
-none of them see your exploration or your reasoning, only this document.
+`ExitPlanMode` for approval. **Once approved**, save the spec as
+`docs/specs/<slug>.md` (kebab-case). Stages 2–4 get this file, never your
+exploration or reasoning.
 
 ## Stage 2 — Tests first (red)
 
-Spawn a **fresh** `general-purpose` agent (`subagent_type: "general-purpose"`,
-never `fork`). Give it, in full: the spec file's content, the paths of 2–3
-existing test files to match style/conventions (e.g.
+Spawn a **fresh** `general-purpose` agent (never `fork`). Give it the spec's
+full content, the paths of 2–3 test files to match (e.g.
 `src/lib/content.test.ts`, `src/components/MarkdownRenderer.test.tsx`), and
 this instruction, close to verbatim:
 
@@ -102,74 +84,49 @@ this instruction, close to verbatim:
 > new tests fail — report exactly which tests are red and why (missing
 > implementation, not a typo in the test).
 
-This has to be a separate agent, not just a separate turn in your own
-context: even across two turns of the same session, you'd still be
-holding the implementation you're about to build in mind while writing
-"tests first," which quietly shapes the tests to fit it — defeating the
-actual point of writing them first. A genuinely fresh agent is the only
-way to enforce that.
-
-**Verification gate** (you run this, don't trust the report):
+**Gate** (you run it):
 
 ```bash
 git status --porcelain -uall    # every changed path should be a test file (or content fixture), listed file by file
 npm run test:run                # the new or edited tests for the new behavior must actually fail
-npx prettier --check <changed test and fixture files> && npx oxlint <changed test files>
+npx prettier --check <changed test and fixture files> && npx oxlint <changed test files>   # no later stage may fix a locked file
 ```
 
-The last line matters because the tests are about to be locked: Stage 3's
-`verify` runs the format and lint checks, and no later stage may fix a locked
-file, so a formatting slip here would end the run.
+If an implementation file changed or the new tests pass immediately, re-run
+this stage with a corrected instruction. Cap: **2 corrected re-runs**, then
+go to the user (the criteria probably aren't testable as written). An edited
+existing test only has to fail if the edit encodes the new behavior.
 
-If a non-test implementation file changed, or the new tests pass
-immediately (meaning they're not testing anything new), stop and re-run
-this stage with a corrected instruction rather than proceeding. Cap: **2
-corrected re-runs**; a third failure goes to the user, since the spec's
-criteria are probably not testable as written. (An edited existing test only
-has to fail if the edit encodes the new behavior.)
-
-A content fixture under `src/content/` or `src/system-design/` ships as real
-content, so it is held to the Writing Standard too. Once locked, only a Stage 2
-re-run may change it; a review finding about a fixture's prose goes to the
-test-writer step of Stage 4a, not to its fixer.
-
-Once the gate passes, lock the tests, naming every content fixture the
-test-writer created or changed (from the `git status` output above) so it is
-locked too:
+A content fixture ships as real content, so it meets the Writing Standard.
+Once locked, only a Stage 2 re-run may change it (a prose finding about it
+goes to Stage 4a's test-writer, not its fixer). Lock the tests, naming every
+fixture the test-writer created or changed:
 
 ```bash
 npm run check:test-lock -- --snapshot [fixture paths...]
 ```
 
-This records a hash of every test file, everything under `src/test/`, every
-vitest snapshot and the named fixtures (tracked or not) inside `.git/`, and
-the Stage 3, 4a and 5 gates compare against it. Re-take it whenever a fresh
-test-writer changes the tests; nothing else may.
+The Stage 3, 4a and 5 gates compare against it; only a fresh test-writer's
+change re-takes it.
 
-**Re-running this stage after Stage 3 has started** (the implementer reported
-a test as wrong) is the one case where tests change later. Give the fresh
-test-writer Stage 2's instruction plus the report, and scope it to the tests
-the report names. Its gate is different, because implementation files already
-exist and a corrected test may now pass against them:
+**Re-running after Stage 3 has started** (the implementer reported a wrong
+test): give a fresh test-writer Stage 2's instruction plus the report, scoped
+to the tests it names. Gate:
 
 ```bash
 git status --porcelain -uall   # before and after the re-run: no implementation file may change
 npm run check:test-lock -- --verify   # lists exactly what the re-run changed
 ```
 
-Every path `--verify` lists must be one the report named (a test, or a
-fixture it depends on). A corrected test doesn't have to fail. Then re-take
-the snapshot and spawn a **fresh** implementer (Stage 3) with the corrected
-tests; the one that reported the problem stopped before finishing. Cap: **2 re-runs per
-feature**. A third report of a wrong test means the spec is the problem;
-stop and take it to the user.
+Every listed path must be one the report named (or a fixture it depends on);
+a corrected test needn't fail. Re-take the snapshot and spawn a **fresh**
+implementer. Cap: **2 re-runs per feature**; a third wrong-test report goes
+to the user as a spec problem.
 
 ## Stage 3 — Implementation (green) + docs
 
-Spawn another **fresh** `general-purpose` agent. Give it the spec file and
-the specific failing test file(s) from Stage 2 (their paths and content —
-it should treat them as ground truth, not something to question lightly).
-Instruction, close to verbatim:
+Spawn another **fresh** `general-purpose` agent with the spec and the failing
+test files' paths and content (ground truth). Instruction, close to verbatim:
 
 > Implement the spec above so the failing tests listed pass. Do not edit,
 > delete or add any test file (any `*.test.*` or `*.spec.*` JS or TS file, such as
@@ -185,80 +142,42 @@ Instruction, close to verbatim:
 > `.claude/skills/`, `evals/`) if it adds or changes a convention future
 > work should follow — most changes
 > won't need every file touched, update only what actually changed.
-> Run `npm run verify` (the whole chain in CLAUDE.md's "Verifying a
-> change") yourself before reporting done.
+> Run `npm run verify` (the whole chain; docs/verification.md explains each
+> check) yourself before reporting done.
 
-Docs stay with this agent rather than a separate one: whoever built the
-feature is well-positioned to describe it, and there's no bias to protect
-against here the way there is for review — docs aren't a correctness
-check.
-
-**Verification gate:**
+**Gate** (not `git diff`, which misses untracked files and staged edits):
 
 ```bash
 npm run check:test-lock -- --verify   # MUST pass — any changed, deleted or added locked file is a hard stop
 npm run verify
 ```
 
-Don't use `git diff` for this check: it never shows untracked files, which is
-what the Stage 2 tests usually are, and a `git add` hides an edit from it.
+A lock failure: stop and surface it to the user; don't judge the edit
+yourself. Only `verify` red: send its output and the spec to a fresh
+implementer, cap **2**, then the user. A reported wrong test: don't fix it
+yourself; re-run Stage 2 as above, then this gate.
 
-A changed locked file here is the one rule this whole pipeline exists to
-catch — if the check fails, stop immediately and surface it to the user
-rather than deciding yourself whether the edit was reasonable. If only
-`verify` fails (the implementer reported done, but a check is red), send the
-failure output and the spec to a fresh implementer; cap **2** such re-runs,
-then go to the user. That is a
-different case from the implementer _reporting_ that a test looks wrong: don't
-fix the test yourself either. Re-run Stage 2 as described there ("Re-running
-this stage after Stage 3 has started"), then re-run this gate.
+Also:
 
-Two more things to do here, both because the implementer's report is the
-only place they'd otherwise surface:
-
-- **Keep the spec truthful.** If the implementer's report shows it did
-  something other than the spec says (a different mechanism, a changed
-  signature, a behavior the tests forced), add an `## As built` section to
-  the spec file listing each deviation and why. Leave the original text as it
-  was; the spec is a record of what was decided, and a reader should see both
-  what was planned and what shipped.
-- **See any new guard fail.** If the change adds a check that exists to catch
-  a regression (a script under `scripts/`, a CI step, a size or bundle
-  assertion), a passing run proves nothing about it. Copy the repo outside
-  the working tree (`git worktree add` or `cp -R` into the scratchpad), plant
-  the regression the guard claims to catch there, and confirm it exits
-  non-zero. A guard that only ever passed hasn't been tested. Its planted
-  cases belong in `scripts/checks.test.mjs` so `verify` keeps running them,
-  but that file is a test file and locked, so the implementer doesn't write
-  them: if the spec planned the guard, its planted cases are acceptance
-  criteria and Stage 2 already wrote them; if the guard only appeared during
-  implementation, report it, and re-run Stage 2 for its cases (the re-run
-  path above) before this gate passes.
+- **Keep the spec truthful.** If the report shows a deviation from the spec (a
+  different mechanism, a changed signature, a behavior the tests forced), add
+  an `## As built` section listing each and why; leave the original text.
+- **See any new guard fail.** For a new regression guard (a `scripts/`
+  check, a CI step, a size or bundle assertion), plant the regression in a
+  copy outside the working tree (`git worktree add` or `cp -R` into the
+  scratchpad) and confirm it exits non-zero. Its planted cases belong in the
+  locked `scripts/checks.test.mjs`: Stage 2 wrote them if the spec planned the
+  guard; otherwise report it and re-run Stage 2 for them before this gate
+  passes.
 
 ## Stage 4 — Adversarial review (code + UI)
 
-**Do not use `/code-review` here** — invoking it via the `Skill` tool
-forks from the calling session, which means it inherits that session's
-full context, including the implementer's own framing of why the code is
-fine. A forked reviewer is not an independent one; that would quietly
-defeat the entire point of this stage. (`/code-review` is still fine for
-you or the user to run ad hoc, standalone, outside this pipeline.)
-
-Instead, spawn a **fresh** `general-purpose` agent (never `fork`). Give it
-only: the spec file's path/content, the path of
-[docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md), and the full
-diff from
-
-```bash
-npm run review:diff
-```
-
-(plain `git diff HEAD` silently leaves out every new file, so the reviewer
-would never see them; `review:diff` includes them without touching your
-index) — not your own exploration, not either prior
-subagent's report, not any framing of your own about the implementation's
-quality.
-Instruction, close to verbatim:
+**Not `/code-review`**: the `Skill` tool forks it from this session, so it
+isn't independent (fine ad hoc, outside this pipeline). Spawn a **fresh**
+`general-purpose` agent (never `fork`) with only the spec, the path of
+[docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md) and the full diff
+from `npm run review:diff` (`git diff HEAD` omits new files) — no exploration,
+subagent reports or framing of yours. Instruction, close to verbatim:
 
 > Review the diff below against the spec above, adversarially — assume
 > nothing in it is correct until you've checked it yourself. Read
@@ -278,14 +197,16 @@ Instruction, close to verbatim:
 > to a shared wrapper affects all of them. If the change adds a check or guard
 > script, try at least one other way of regressing what it guards that it
 > might miss, in a copy of the repo outside the working tree. For every
-> finding, say whether this diff introduced it or it was already there. If this
-> change adds or edits topic content (a file under `src/content/` or
-> `src/system-design/`), also
-> hold the prose itself to CLAUDE.md's Writing Standard section — terms
-> defined before use, built from first principles rather than an assumed
-> mental model, concrete examples over abstract description, and written
-> so a reader with zero prior background on the subject actually follows
-> it, not just someone who already knows the topic. Also check whether
+> finding, say whether this diff introduced it or it was already there, and
+> name a realistic trigger: for app behavior, real inputs or content; for a
+> guard or check, an edit an author following docs/content.md or
+> docs/case-studies.md could plausibly make, or a shape a doc says the check
+> covers (a doc/code mismatch is itself a finding). Label a finding without
+> one "theoretical". If the spec has a `## Review decisions` list, re-raise a
+> listed decision only with new evidence. If this change adds or edits topic
+> content (a file under `src/content/` or `src/system-design/`), also hold the
+> prose to docs/writing-standard.md: terms defined before use, followable by
+> a reader with zero background, concrete examples. Also check whether
 > this diff makes any documentation elsewhere in the repo (CLAUDE.md,
 > README.md, docs/**, other SKILL.md files) inaccurate or incomplete —
 > a convention this change establishes that isn't written down anywhere,
@@ -296,56 +217,78 @@ Instruction, close to verbatim:
 > edit any code in the working tree — review only. Report findings ranked by severity, or say
 > explicitly that you found nothing worth flagging.
 
-UI verification lives here rather than as its own stage: it exists for
-the same reason as code review (fresh eyes catching what the implementer's
-own bias missed), so splitting it into a fourth agent would add cost
-without adding any independence that isn't already provided by this stage
-being separate from Stage 3.
+No findings, or only cosmetic ones the user would wave through → Stage 5.
+Findings already there before this diff → the Stage 5 list. Other real
+findings → finding triage.
 
-- No findings, or only cosmetic/low-severity ones the user would clearly
-  wave through → go to Stage 5.
-- Real (CONFIRMED or credible PLAUSIBLE) findings the diff introduced →
-  **Stage 4a**.
-- Real findings that were already there before this diff skip 4a (fixing them
-  isn't this change's job, and re-review would keep flagging them until the
-  cap tripped): they go on the Stage 5 list.
+**Finding triage, before any fix.** Spawn a **fresh** `general-purpose` agent
+in the implementer role (not the reviewer, not you; never `fork`) with the
+spec, the findings and `npm run review:diff`. Instruction, close to verbatim:
+
+> For each finding below, confirm or dispute it with evidence from the
+> current repo: does the input or shape it describes occur in real files,
+> does it reproduce (try it in a copy outside the working tree, via
+> `git worktree add` or `cp -R` into the scratchpad), and is it reachable?
+> Reachable means:
+> for app behavior, with real inputs or content; for a guard or check, by an
+> edit an author following docs/content.md or docs/case-studies.md could
+> plausibly make, or in a shape a doc says the check covers (a doc/code
+> mismatch is itself a finding). Anything else is theoretical. Quote the file
+> and line, or the command and its output, for each. Do not edit any file in
+> the working tree.
+
+You assign each finding one outcome from the triager's evidence, weighing
+impact × likelihood, not history alone (a severe-if-unlikely class such as
+XSS, data loss or money created isn't dismissed because it hasn't happened
+yet):
+
+- **Fix with a test**: every reachable behavior bug, including a vector a
+  guard misses.
+- **Fix, no new test**: prose, docs or layout only.
+- **Known limitation**: real but theoretical, or the fix costs more than the
+  risk.
+- **Reject**: not true of the current code or content.
+
+A finding that breaks a line of docs/NON_NEGOTIABLES.md is never Known
+limitation or Reject for reachability: it is Fix (with a test when that line
+names a check or vector table, e.g. #6), and only the user can waive it, by
+amending that file. For security, reachable means reachable under the threat
+the line names, not by today's content.
+
+You may not Reject or Known-limit a finding the triager confirmed reachable
+without asking the user. A finding is contested when the triager disputes one
+the reviewer rated High, or you want to overrule the triager; a contested
+finding that costs real work goes to the user. Record each Reject and Known
+limitation in the spec under `## Review decisions`, one line each with its
+reason; the re-review gets that list, and the PR description repeats it.
 
 ### Stage 4a — Capped fix loop
 
-Up to **2 rounds**. Each round, in this order:
+Up to **2 rounds**, each in this order:
 
-1. **A test first, for every finding a test can encode** (a behavior bug, a
-   vector a guard misses). Spawn a **fresh** test-writer with Stage 2's
-   instruction, scoped to those findings: each new test must fail for the
-   finding's reason. Gate it like Stage 2's re-run after Stage 3 started (no
-   implementation file changes in `git status --porcelain -uall`, and
-   `npm run check:test-lock -- --verify` lists only test files or fixtures
-   for those findings), then re-take the snapshot. Findings only prose, docs
-   or layout can express skip this step, except prose in a locked content
-   fixture: the fixer can't edit it, so this test-writer changes it instead.
-   These runs are neither Stage 2 re-runs nor gate failures: they don't count
-   against Stage 2's "Cap: **2 re-runs per feature**" and aren't logged.
-2. Spawn a **fresh** `general-purpose` fixer (not the Stage 3 agent) with
-   the findings, the spec and any new tests: "Fix these findings. Do not
-   edit, delete or add any locked file (the same list as Stage 3's
-   instruction)." Same verification gate as Stage 3.
-3. Re-run Stage 4's review on the updated diff (`npm run review:diff` again).
+1. **Test first, only for Fix with a test** (a reachable behavior bug or a
+   vector a guard misses, as finding triage defines reachable). A **fresh** test-writer gets
+   Stage 2's instruction scoped to those findings; each test must fail for the
+   finding's reason and exercise real output (the rendered page, the real
+   file, the real CSS), not a re-implementation of it. Gate it like the Stage 2
+   re-run (no implementation file in `git status --porcelain -uall`;
+   `check:test-lock -- --verify` lists only those tests or fixtures), then
+   re-take the snapshot. Prose in a locked fixture also goes here. These runs
+   don't count against Stage 2's caps and aren't logged.
+2. A **fresh** `general-purpose` fixer (not the Stage 3 agent) gets the
+   findings, the spec and any new tests: "Fix these findings. Do not edit,
+   delete or add any locked file (the same list as Stage 3's instruction)."
+   Stage 3's gate.
+3. Re-run the review and finding triage on a fresh `npm run review:diff`.
 
-"Findings remain" uses Stage 4's triage: only real findings the diff
-introduced count; cosmetic ones and ones that were already there go to the
-Stage 5 list. If findings remain after 2 rounds, **stop** — report the
-remaining findings to the user directly rather than attempting a third round
-yourself. This mirrors the cap the user chose: bounded automation, not an
-unbounded loop. Each round past the cap needs the user's explicit go-ahead,
-one round per go-ahead: it runs the same three steps, and if findings remain
-after it, stop and report again (NON_NEGOTIABLES #12). A blanket instruction
-such as "keep going until it's clean" authorizes one round, not an open
-loop; say so when you report back. The log records the rounds as
-`N (user-authorized)`.
+Only fix outcomes the diff introduced count as remaining findings. After
+round 2, open Mediums and non-cosmetic Lows default to Known limitation; if any finding
+remains, **stop** and report to the user rather than running a third round.
+Rounds past the cap are for High findings only, one per explicit go-ahead:
+the same three steps, then stop and report again (NON_NEGOTIABLES #12). "Keep
+going until it's clean" authorizes one round; say so.
 
 ## Stage 5 — Final gate and handoff
-
-Re-run the full verification suite one last time on the final diff:
 
 ```bash
 npm run check:test-lock -- --verify   # the reviewer ran the app; confirm it changed no locked file
@@ -353,79 +296,54 @@ npm run verify
 npm run check:test-lock -- --clear    # the run's snapshot has done its job
 ```
 
-Summarize for the user: what changed, a link to the spec file, the review
-outcome, and confirmation everything above is green. List separately any
-finding the review made that this change did not cause (a bug that was
-already there): it is not a regression and not part of this diff, so it goes
-to the user as its own item to fix now, file, or drop, rather than being
-absorbed silently or left only in your summary. Then add the Stage 6 result.
-Ask explicitly before committing or pushing — this pipeline's job is to leave
-the working tree ready, not to ship it without a final human yes.
+Summarize: what changed, a link to the spec, the review outcome, each Reject
+and Known limitation with its reason, and that everything above is green.
+List separately each finding this change didn't cause, for the user to fix
+now, file or drop. Add the Stage 6 result. Ask before committing or pushing.
 
 ## Stage 6 — Retrospective
 
-Part of the same handoff message, done by you (the point is to write down
-what the run itself showed, not to re-review the code). Look back over this
-run for friction that actually happened: a gate or agent output that was wrong
-or misleading, something that had to be redone, or a doc that turned out false.
-The evidence is the
-three agents' reports (a spec error the test-writer caught, a deviation the
-implementer reported, findings the reviewer made), any gate that failed, and
-any tool that behaved unexpectedly. Don't invent friction, and don't add a
-rule to justify the stage: a run with none reports "nothing to change" and
-only logs its row (below).
+In the same handoff, by you. Look for friction that actually happened: a gate
+or agent output that was wrong or misleading, redone work, a doc that turned
+out false. Evidence: the agents' reports, failed gates, tools that misbehaved.
+Don't invent friction or add a rule to justify the stage; a run with none
+reports "nothing to change" and only logs its row.
 
-For each real issue, fix it at the strongest level that fits:
+For each real issue, first ask: could something be deleted or simplified
+instead? Otherwise fix it at the strongest level that fits: (1) a mechanical
+check (script, test, CI step), which still gets Stage 3's planted-regression
+test; (2) a correction in place to the doc or skill that covers the area (a
+new section only when nothing fits); (3) a new sentence, only if neither
+applies. A retro aims for no net added words in process files; when it adds,
+the pipeline-log row's Retro cell says what it removed. Don't skip a real issue because it's small. A bug
+this change didn't cause goes on the Stage 5 list, and a problem in a topic is
+fixed in 4a or listed there; neither is a retro edit. When the row's Agents
+count is high, name the stage that cost the most before proposing any change,
+since an agent earns its cost only where its independence prevents a bias
+(docs/SDLC.md).
 
-1. **A mechanical check** (a script, a test, a CI step). It doesn't depend on
-   anyone reading a doc, so it is the preferred fix (`check:bundle`'s
-   static-import check came from a review finding). A new check still gets
-   Stage 3's planted-regression test.
-2. **A correction to the doc or skill that already covers the area**, edited
-   in place. Add a new section only when nothing existing fits.
-3. **A new sentence of guidance**, only when neither of the above applies.
+If a [deferred practice's](../../../docs/DEFERRED_PRACTICES.md) revisit
+condition came true, propose adopting it (a large one is its own `/feature`)
+and update or remove its entry; lessons and fixes don't go there.
 
-A real issue is not skipped because it's small or awkward to fix. A bug found
-but not caused by this change belongs in the Stage 5 list, not here, and a
-problem in a topic under `src/content/` is fixed in this diff (Stage 4a) or
-listed there; neither is a retro edit.
+If the edits touch a process file (a `SKILL.md`, `CLAUDE.md`, a doc under
+`docs/` other than a spec or the pipeline log, `evals/`, `.claude/hooks/`),
+**one fresh** `general-purpose` agent (never `fork`) reads them first, given
+the diff, the friction evidence per edit (not your reasoning) and the files'
+paths, review only. Ask it, skeptically: does an edit contradict existing text
+(counts and stage numbers included); could a hurried newcomer apply it
+differently; is each edit earned by its evidence; would a check or a deletion
+make the prose unnecessary. It also dry-runs the text against two or three
+realistic runs, saying where it gave no clear answer. One pass: fix each
+finding you can't refute in a sentence, report the rest.
 
-Also check [docs/DEFERRED_PRACTICES.md](../../../docs/DEFERRED_PRACTICES.md):
-if a practice's revisit condition became true during this run, propose
-adopting it to the user (a large one, like Playwright, is its own `/feature`)
-and update or remove its entry. That file holds practices considered and
-deliberately not adopted yet, each with a revisit trigger; a lesson or a fix
-does not go there (see its "Adding an entry").
+Show the user the findings, proposed edits and review findings you didn't act
+on. Once approved, commit the retro edits separately and run the eval
+`evals/README.md`'s table names for them.
 
-If the proposed edits touch a process file (a `SKILL.md`, `CLAUDE.md`, a doc
-under `docs/` other than a spec or the pipeline log, anything under `evals/`, or `.claude/hooks/`),
-have **one fresh** `general-purpose` agent (never `fork`) read them before you
-show the user: you wrote them, so you are the worst-positioned reader of them.
-Give it the diff, the friction evidence for each edit (not your reasoning) and
-the paths of the files the edits sit in, and tell it to review only, not edit.
-Ask it to be skeptical and to answer: does any edit contradict text that
-already exists (counts and stage numbers included); could a hurried reader who
-has never seen this repo apply it differently than intended; is each edit
-earned by its evidence, or a rule added to look thorough; would a mechanical
-check make the prose unnecessary. Have it also pick two or three realistic
-runs and dry-run the new text against them, saying where the text gave no
-clear answer. One pass, no loop: fix each finding you can't refute in a
-sentence and report the rest. A run whose edits touch no process file skips
-this.
-
-Show the user what you found and the edits you propose, along with any review
-findings you didn't act on. Once they approve, commit the retro edits
-separately from the feature, then run whichever eval `evals/README.md`'s table
-names for what you changed.
-
-Finally, once the user has decided on the retro edits, append this run's row
-to [docs/pipeline-log.md](../../../docs/pipeline-log.md), even when the retro
-found nothing: a run with no friction is data too. The log's header defines
-each column; the Retro cell records what was actually applied, not what was
-proposed. The row goes in the feature's commit, and it is not a process edit,
-so it needs no independent read. After appending, run
+Then append this run's row to [docs/pipeline-log.md](../../../docs/pipeline-log.md),
+following its header (columns, the Retro cell, **Escaped defect**), in the
+feature's commit, with no independent read, and run
 `npx prettier --write docs/pipeline-log.md`, `npm run check:pipeline-log` and
-`npm run format:check`, since `verify` already ran. `check:pipeline-log` fails a row with gate failures or findings whose Retro cell is a bare
-"nothing to change": say why none of them called for a change. If this run
-fixed a bug an earlier approved run introduced, fill in that row's **Escaped
-defect** cell and treat it as friction for this retro.
+`npm run format:check`. A bug this run fixed that an earlier approved run
+introduced is friction for this retro.

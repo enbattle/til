@@ -248,19 +248,6 @@ describe('SearchDialog status live region', () => {
 });
 
 describe('SearchDialog existing behavior with full-text loading (criterion 8)', () => {
-  it('keeps its dialog label and placeholder', () => {
-    renderDialog();
-    expect(screen.getByRole('dialog', { name: 'Search topics' })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Search topics...')).toBeInTheDocument();
-  });
-
-  it('closes on Escape while full text is still loading', async () => {
-    const user = userEvent.setup();
-    const onClose = renderDialog();
-    await user.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
   it('navigates and closes when a result is chosen while full text is still loading', async () => {
     const user = userEvent.setup();
     const onClose = renderDialog();

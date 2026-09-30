@@ -1,0 +1,55 @@
+# High-level architecture of the search engine. The query path (top): a
+# frontend checks a result cache, then a root aggregator scatters the query to
+# every index shard. The ingest path (bottom): the crawler fetches pages,
+# stores them, and records each change with an outbox row; a relay publishes
+# changes to the update log that index servers tail, and a daily index build
+# writes new base segments that index servers load.
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+direction: down
+
+users: Users
+frontend: Query frontends {
+  style.multiple: true
+}
+cache: Result cache {
+  shape: stored_data
+}
+agg: Root aggregators {
+  style.multiple: true
+}
+shards: "Index servers\n100 shards × 24 replicas" {
+  style.multiple: true
+}
+log: Update log {
+  shape: queue
+}
+builder: "Index builder\n(daily base, link rank)"
+docs: "Doc table\n+ outbox" {
+  shape: cylinder
+}
+blobs: "Page store\n(object storage)" {
+  shape: cylinder
+}
+crawler: "Crawler\n(frontier, fetch, parse)" {
+  style.multiple: true
+}
+web: Websites {
+  shape: cloud
+}
+
+users -> frontend: "GET /search"
+frontend -> cache: "read first"
+frontend -> agg: "on a miss"
+agg -> shards: "scatter to\nall 100 shards"
+log -> shards: "tail changes"
+shards -> blobs: "load base\nsegments"
+docs -> log: "outbox relay"
+docs -> builder: "daily scan"
+builder -> blobs: "read pages,\nwrite base"
+crawler -> docs: "new version\n+ outbox row"
+crawler -> blobs: "raw and\nparsed pages"
+web -> crawler: "fetched\npages"

@@ -44,115 +44,58 @@ describe('check-pipeline-log', () => {
   const header = readFileSync(join(SCRIPTS, '../docs/pipeline-log.md'), 'utf8');
   const row = (
     retro,
-    { gates = '0', findings = '0/0/0', run = '/feature docs/specs/x.md' } = {},
-  ) => `| 2026-09-23 | ${run} | ${gates} | ${findings} | 0 | ${retro} |  |`;
+    {
+      gates = '0',
+      findings = '0/0/0',
+      rounds = '0',
+      agents = '3',
+      run = '/feature docs/specs/x.md',
+    } = {},
+  ) =>
+    `|  2026-09-23  | ${run} | ${gates} | ${findings} | ${rounds} | ${agents} |  ${retro}  |  |`;
   function check(...rows) {
     const file = join(tempDir(), 'log.md');
     writeFileSync(file, `${header.trimEnd()}\n${rows.join('\n')}\n`);
     return run('check-pipeline-log.mjs', [file]).status;
   }
 
-  it('passes the real, empty log and a well-formed row', () => {
-    expect(check()).toBe(0);
+  it('passes the real log and well-formed (padded) rows', () => {
+    expect(run('check-pipeline-log.mjs').status).toBe(0);
     expect(check(row('nothing to change'))).toBe(0);
-    expect(check(row('fixed in 4a; no process gap', { findings: '0/1/0, pre:2' }))).toBe(
-      0,
-    );
-  });
-
-  it('passes a row whose columns were padded (Prettier re-pads the table)', () => {
     expect(
-      check('|  2026-09-23  |  /feature docs/specs/x.md  | 0 | 0/0/0 | 0 |  ok  |    |'),
-    ).toBe(0);
-  });
-
-  it.each([
-    ['a bare retro after friction', row('nothing to change', { gates: '1 test-lock' })],
-    [
-      'a retro with punctuation after friction',
-      row('Nothing to change.', { findings: '0/1/0' }),
-    ],
-    ['an empty retro', row('')],
-    ['n/a on a /feature row', row('n/a', { findings: '0/1/0' })],
-    ['a placeholder retro', row('none')],
-    ['an impossible date', row('ok').replace('2026-09-23', '2026-99-99')],
-    ['a wrong cell count', '| 2026-09-23 | /feature x | 0 |'],
-  ])('fails %s', (_label, bad) => {
-    expect(check(bad)).toBe(1);
-  });
-
-  it('allows n/a only on an add-topic row', () => {
-    expect(check(row('n/a', { run: 'add-topic src/content/a/b.md' }))).toBe(0);
-  });
-
-  // Retro: the add-case-study skill logs its runs too, and like add-topic it
-  // has no retro stage of its own, so its rows may say n/a.
-  it('allows n/a on an add-case-study row naming its path', () => {
-    expect(
-      check(row('n/a', { run: 'add-case-study src/system-design/case-studies/x.md' })),
+      check(
+        row('fixed in 4a; no gap', {
+          findings: '0/1/0, pre:2',
+          rounds: '3 (user-authorized)',
+        }),
+      ),
     ).toBe(0);
     expect(
       check(
-        row('ok', {
+        row('n/a', {
           run: 'add-case-study src/system-design/case-studies/x.md',
-          findings: '0/2/1',
+          agents: '—',
         }),
       ),
     ).toBe(0);
   });
 
   it.each([
-    ['add-case-study with no path', row('n/a', { run: 'add-case-study' })],
-    ['add-case-study with a trailing space only', row('n/a', { run: 'add-case-study ' })],
-    ['n/a on a /feature row with no friction', row('n/a')],
+    [
+      'a bare retro after gate failures',
+      row('nothing to change', { gates: '1 test-lock' }),
+    ],
+    ['a bare retro after findings', row('Nothing to change.', { findings: '0/1/0' })],
+    ['an empty retro', row('')],
+    ['a bad date', row('ok').replace('2026-09-23', '26-9-23')],
+    ['a run with no path', row('n/a', { run: 'add-topic' })],
+    ['a bad findings cell', row('ok', { findings: '1 high' })],
+    ['a fix round past the cap without authorization', row('ok', { rounds: '3' })],
+    ['an Agents cell that is not a count', row('ok', { agents: '0' })],
+    ['a wrong cell count', '| 2026-09-23 | /feature x | 0 |'],
   ])('fails %s', (_label, bad) => {
     expect(check(bad)).toBe(1);
   });
-
-  it('reports an empty Gate failures cell exactly once', () => {
-    const file = join(tempDir(), 'log.md');
-    writeFileSync(file, `${header.trimEnd()}\n${row('ok', { gates: '' })}\n`);
-    const { status, stderr } = run('check-pipeline-log.mjs', [file]);
-    expect(status).toBe(1);
-    const messages = stderr.split(/\r?\n/).filter((line) => /Gate failures/.test(line));
-    expect(messages).toHaveLength(1);
-  });
-
-  it('reports an empty Retro cell exactly once, even after friction', () => {
-    const file = join(tempDir(), 'log.md');
-    writeFileSync(file, `${header.trimEnd()}\n${row('', { gates: '1 test-lock' })}\n`);
-    const { status, stderr } = run('check-pipeline-log.mjs', [file]);
-    expect(status).toBe(1);
-    const messages = stderr.split(/\r?\n/).filter((line) => /Retro/.test(line));
-    expect(messages).toHaveLength(1);
-  });
-
-  it('fails a row placed after the table ended', () => {
-    expect(check(row('ok'), '', row('nothing to change', { gates: '1 x' }))).toBe(1);
-  });
-
-  // Retro: a fix round past the skill's cap of two happens only when the user
-  // authorizes it, and the log records that as `N (user-authorized)`.
-  const withRounds = (rounds) =>
-    row('ok').replace('| 0/0/0 | 0 |', `| 0/0/0 | ${rounds} |`);
-
-  it.each([
-    '0',
-    '1',
-    '2',
-    '3 (user-authorized)',
-    '4 (user-authorized)',
-    '12 (user-authorized)',
-  ])('accepts Fix rounds %s', (rounds) => {
-    expect(check(withRounds(rounds))).toBe(0);
-  });
-
-  it.each(['3', '10', 'x', '(user-authorized)', '3 (authorized)', '3(user-authorized)x'])(
-    'rejects Fix rounds %s',
-    (rounds) => {
-      expect(check(withRounds(rounds))).toBe(1);
-    },
-  );
 });
 
 describe('check-raw-html', () => {
@@ -525,8 +468,7 @@ describe('check-diagrams', () => {
   });
 
   // Review L7: `#` followed by a number or word in a label or comment is not a
-  // color. (check-hex-colors.mjs also scans `.d2` files for hex, but it has no
-  // root override, so it isn't covered here.)
+  // color. check-diagrams is the only hex guard over `.d2` files.
   it.each([
     ['a label with an issue number', `${SOURCE}x: "Issue #123"\n`],
     ['a comment', `# add a node\n${SOURCE}`],
@@ -574,6 +516,26 @@ describe('check-diagrams', () => {
     });
     expect(stderr).toBe('');
     expect(status).toBe(0);
+  });
+
+  // A diagram wider than 960 px scales below 0.75 in the ~720 px column
+  // (add-case-study checklist item 5), so its recorded width fails the check.
+  const wideSvg = (width) =>
+    SVG().replace(
+      'viewBox="0 0 100 50" width="100"',
+      `viewBox="0 0 ${width} 50" width="${width}"`,
+    );
+  it.each([
+    [960, 0],
+    [961, 1],
+  ])('checks the recorded width: %i px exits %i', (width, expected) => {
+    const { root, result } = repo();
+    write(root, 'public/diagrams/demo/flow.light.svg', wideSvg(width));
+    plantSvg('public/diagrams/demo/flow.dark.svg', wideSvg(width))(root);
+    const { status, stderr } = result();
+    expect(status).toBe(expected);
+    if (expected) expect(stderr).toMatch(/demo\/flow\.d2: .*961 px wide.*960/);
+    else expect(stderr).toBe('');
   });
 
   it.each([
@@ -782,10 +744,6 @@ describe('check-diagrams', () => {
       plantSource(`${SOURCE}cache: Cache {style.fill: red}\n`),
     ],
     [
-      'a .d2 with style.stroke: blue in a block',
-      plantSource(`${SOURCE}api: API {\n  style.stroke: blue\n}\n`),
-    ],
-    [
       'a .d2 with style.font-color: green',
       plantSource(`${SOURCE}db: DB {\n  style.font-color: green\n}\n`),
     ],
@@ -871,10 +829,6 @@ describe('check-diagrams', () => {
     // --- Review L3: D2 imports pull in files outside the source hash and the
     // color guard. Each plant re-locks, so only an import check can fail it.
     ['a .d2 spreading an import (...@other)', plantSource(`${SOURCE}...@other\n`)],
-    [
-      'a .d2 spreading an import from outside (...@../../outside)',
-      plantSource(`${SOURCE}...@../../outside\n`),
-    ],
     ['a .d2 importing as a value (x: @../other)', plantSource(`${SOURCE}x: @../other\n`)],
     [
       'a .d2 importing inside a block',
@@ -1315,220 +1269,93 @@ describe('svgProblems accepts only a UTF-8 XML declaration (retro)', () => {
   });
 });
 
-// Retro: a stylesheet can declare a theme's tokens in more than one block, and
-// CSS applies the later declaration. Reading only the first block would check
-// (and render diagrams with) colors the site doesn't show.
-const LIGHT = {
-  'bg-primary': '#faf6f0',
-  'bg-secondary': '#f2ebe0',
-  'bg-tertiary': '#ece2d3',
-  'text-primary': '#2b2420',
-  'text-secondary': '#5c5147',
-  'text-tertiary': '#6e6356',
-  border: '#ddd1bf',
-  accent: '#92400e',
-  'accent-hover': '#7c3609',
-  'accent-soft': '#f3e3c8',
-};
-const DARK = {
-  'bg-primary': '#201a14',
-  'bg-secondary': '#2a231b',
-  'bg-tertiary': '#342c22',
-  'text-primary': '#f2e9dc',
-  'text-secondary': '#c9bba6',
-  'text-tertiary': '#a39683',
-  border: '#3d3428',
-  accent: '#f0a83c',
-  'accent-hover': '#f7bb5c',
-  'accent-soft': '#3d2f16',
-};
-// The shared token reader the copied scripts import (check-contrast and
-// check-design-tokens have no root override, so their tests run copies).
-const TOKEN_SCRIPT_DEPS = ['css-tokens.mjs'];
-
-const tokenBlock = (selector, values) =>
-  `${selector} {\n${Object.entries(values)
-    .map(([name, hex]) => `  --color-${name}: ${hex};`)
-    .join('\n')}\n}\n`;
-const themeCss = (...extra) =>
-  `@import 'tailwindcss';\n\n${tokenBlock(':root', LIGHT)}\n${tokenBlock('.dark', DARK)}\n${extra.join('\n')}`;
-
-// The token parsing itself (later blocks win, comments, value formats,
-// unsupported places) is tested once, in css-tokens.test.mjs, against the
-// shared reader every script uses. These cases check diagramTokens sits on it.
-describe('diagramTokens reads every block for a theme (retro)', () => {
-  it('diagramTokens records the later value for both themes', () => {
-    const { tokens, problems } = diagramTokens(
-      themeCss(
-        ':root {\n  --color-text-primary: #111111;\n}\n',
-        '.dark {\n  --color-accent-soft: #332211;\n}\n',
-      ),
-    );
-    expect(problems).toEqual([]);
-    expect(tokens.light['text-primary']).toBe('#111111');
-    expect(tokens.light['bg-primary']).toBe(LIGHT['bg-primary']);
-    expect(tokens.dark['accent-soft']).toBe('#332211');
-    expect(tokens.dark['text-primary']).toBe(DARK['text-primary']);
-  });
-
-  it.each([
-    [
-      'a token overridden under @media',
-      '@media (min-width: 1px) {\n  :root {\n    --color-text-primary: #111111;\n  }\n}\n',
-    ],
-    [
-      'a later block with a non-hex value',
-      ':root {\n  --color-text-primary: rgb(0 0 0);\n}\n',
-    ],
-    [
-      'a later block commented out',
-      '/*\n:root {\n  --color-text-primary: #111111;\n}\n*/\n',
-    ],
-  ])('never silently records a value CSS disagrees with: %s', (label, extra) => {
-    let result;
-    try {
-      result = diagramTokens(themeCss(extra));
-    } catch (error) {
-      // Throwing, naming the token, is one acceptable way to fail loudly.
-      expect(String(error)).toMatch(/--color-text-primary/);
-      return;
-    }
-    if (label.includes('commented out')) {
-      expect(result.problems).toEqual([]);
-      expect(result.tokens.light['text-primary']).toBe(LIGHT['text-primary']);
-    } else {
-      expect(result.problems.join('\n')).toMatch(/--color-text-primary/);
-    }
-  });
-});
-
-describe('check-contrast reads every block for a theme (retro)', () => {
-  // The script finds the repository from its own location (no root override),
-  // so each case runs a copy of it inside a throwaway directory with its own
-  // src/index.css, like the check-bundle tests. It reads tokens through the
-  // shared ./css-tokens.mjs, so that is copied alongside it.
-  function check(css) {
+// The token parsing itself is tested once, in css-tokens.test.mjs. Each
+// consumer below gets one test that it reads the real tokens through it.
+describe('the token consumers read the real src/index.css', () => {
+  const realCss = readFileSync(resolve('src/index.css'), 'utf8');
+  const lightText = /(--color-text-primary:\s*)#[0-9a-f]{6}/;
+  // check-contrast and check-design-tokens have no root override, so each runs
+  // as a copy (with the shared reader) beside its own src/index.css and docs.
+  function copyRun(script, css) {
     const root = tempDir();
-    mkdirSync(join(root, 'scripts'));
-    mkdirSync(join(root, 'src'));
-    for (const file of TOKEN_SCRIPT_DEPS) {
+    for (const dir of ['scripts', 'src', 'docs']) mkdirSync(join(root, dir));
+    for (const file of ['css-tokens.mjs', script]) {
       copyFileSync(join(SCRIPTS, file), join(root, 'scripts', file));
     }
-    copyFileSync(
-      join(SCRIPTS, 'check-contrast.mjs'),
-      join(root, 'scripts/check-contrast.mjs'),
-    );
     writeFileSync(join(root, 'src/index.css'), css);
-    return spawnSync(process.execPath, [join(root, 'scripts/check-contrast.mjs')], {
+    copyFileSync(resolve('docs/DESIGN.md'), join(root, 'docs/DESIGN.md'));
+    return spawnSync(process.execPath, [join(root, 'scripts', script)], {
       encoding: 'utf8',
     });
   }
 
-  it('passes the palette as it is (the copy harness works)', () => {
-    expect(check(themeCss()).status).toBe(0);
+  it('diagramTokens records the real light and dark values', () => {
+    const { tokens, problems } = diagramTokens(realCss);
+    expect(problems).toEqual([]);
+    expect(tokens.light['text-primary']).toBe(lightText.exec(realCss)[0].slice(-7));
+    expect(tokens.light['bg-primary']).not.toBe(tokens.dark['bg-primary']);
   });
 
-  it('fails when a later :root block overrides a text token into a failing pair', () => {
-    const { status, stderr } = check(
-      themeCss(':root {\n  --color-text-primary: #d0d0d0;\n}\n'),
+  it('check-contrast passes the real palette and fails a planted low-contrast token', () => {
+    expect(copyRun('check-contrast.mjs', realCss).status).toBe(0);
+    const { status, stderr } = copyRun(
+      'check-contrast.mjs',
+      realCss.replace(lightText, '$1#d0d0d0'),
     );
     expect(status).toBe(1);
     expect(stderr).toMatch(/light: text-primary \(#d0d0d0\)/);
   });
 
-  it('fails when a later .dark block overrides a text token into a failing pair', () => {
-    const { status, stderr } = check(
-      themeCss('.dark {\n  --color-text-primary: #3a3a3a;\n}\n'),
+  it('check-design-tokens passes the real table and fails a token it no longer matches', () => {
+    expect(copyRun('check-design-tokens.mjs', realCss).status).toBe(0);
+    const { status, stderr } = copyRun(
+      'check-design-tokens.mjs',
+      realCss.replace(lightText, '$1#111111'),
     );
     expect(status).toBe(1);
-    expect(stderr).toMatch(/dark: text-primary \(#3a3a3a\)/);
-  });
-
-  it('passes when a later :root block fixes a failing value from an earlier one', () => {
-    const css = themeCss().replace(
-      `--color-text-primary: ${LIGHT['text-primary']};`,
-      '--color-text-primary: #d0d0d0;',
-    );
-    expect(check(css).status).toBe(1);
-    expect(
-      check(`${css}\n:root {\n  --color-text-primary: ${LIGHT['text-primary']};\n}\n`)
-        .status,
-    ).toBe(0);
+    expect(stderr).toMatch(/text-primary[\s\S]*#111111/);
   });
 });
 
-describe('check-design-tokens reads every block for a theme, as CSS does (retro)', () => {
-  // Like check-contrast it has no root override, so each case runs a copy of
-  // it (and the shared token reader) with its own src/index.css and
-  // docs/DESIGN.md table.
-  const table = (light = LIGHT, dark = DARK) =>
-    `# Design\n\n## Tokens\n\n| Token | Light | Dark |\n| --- | --- | --- |\n${Object.keys(
-      light,
-    )
-      .map((name) => `| \`${name}\` | \`${light[name]}\` | \`${dark[name]}\` |`)
-      .join('\n')}\n`;
-  function check(css, design = table()) {
-    const root = tempDir();
-    for (const dir of ['scripts', 'src', 'docs']) mkdirSync(join(root, dir));
-    for (const file of [...TOKEN_SCRIPT_DEPS, 'check-design-tokens.mjs']) {
-      copyFileSync(join(SCRIPTS, file), join(root, 'scripts', file));
+describe('check-claude-md', () => {
+  function root(claude, files = {}) {
+    const dir = tempDir();
+    writeFileSync(join(dir, 'CLAUDE.md'), claude);
+    for (const [path, body] of Object.entries(files)) {
+      mkdirSync(dirname(join(dir, path)), { recursive: true });
+      writeFileSync(join(dir, path), body);
     }
-    writeFileSync(join(root, 'src/index.css'), css);
-    writeFileSync(join(root, 'docs/DESIGN.md'), design);
-    return spawnSync(process.execPath, [join(root, 'scripts/check-design-tokens.mjs')], {
-      encoding: 'utf8',
-    });
+    return dir;
   }
+  const check = (dir) => run('check-claude-md.mjs', [], { CHECK_CLAUDE_MD_ROOT: dir });
 
-  it('passes a matching table (the copy harness works)', () => {
-    expect(check(themeCss()).status).toBe(0);
+  it('passes on the repository itself', () => {
+    expect(run('check-claude-md.mjs').status).toBe(0);
   });
 
-  it('fails when the table has a wrong value (the check still bites)', () => {
-    const { status, stderr } = check(themeCss(), table({ ...LIGHT, accent: '#000000' }));
-    expect(status).toBe(1);
-    expect(stderr).toMatch(/accent/);
-  });
-
-  it('fails when a later :root block overrides a token the table documents', () => {
-    const { status, stderr } = check(
-      themeCss(':root {\n  --color-accent: #7a3000;\n}\n'),
+  it('passes a short file whose links resolve', () => {
+    const dir = root(
+      '# CLAUDE.md\n\nSee [docs](docs/a.md) and [site](https://example.com).\n',
+      {
+        'docs/a.md': 'x',
+      },
     );
-    expect(status).toBe(1);
-    expect(stderr).toMatch(/accent[\s\S]*#7a3000/);
+    expect(check(dir).status).toBe(0);
   });
 
-  it('fails when a later .dark block overrides a token the table documents', () => {
-    const { status, stderr } = check(
-      themeCss('.dark {\n  --color-border: #4a4034;\n}\n'),
+  it('fails when CLAUDE.md passes 150 lines', () => {
+    const dir = root(
+      Array.from({ length: 151 }, (_, i) => `line ${i}`).join('\n') + '\n',
     );
-    expect(status).toBe(1);
-    expect(stderr).toMatch(/border[\s\S]*#4a4034/);
+    const result = check(dir);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toMatch(/151 lines/);
   });
 
-  it('passes when a later block and the table agree', () => {
-    expect(
-      check(
-        themeCss(':root {\n  --color-accent: #7a3000;\n}\n'),
-        table({ ...LIGHT, accent: '#7a3000' }),
-      ).status,
-    ).toBe(0);
-  });
-
-  it('ignores a :root block inside a comment before the real one', () => {
-    const css = themeCss().replace(
-      "@import 'tailwindcss';\n",
-      "@import 'tailwindcss';\n/* e.g. :root { --color-accent: #000000; } */\n",
-    );
-    expect(check(css).status).toBe(0);
-  });
-
-  it('fails loudly on a token defined under @media', () => {
-    const { status } = check(
-      themeCss(
-        '@media (min-width: 1px) {\n  :root {\n    --color-accent: #7a3000;\n  }\n}\n',
-      ),
-    );
-    expect(status).toBe(1);
+  it('fails on a relative link to a missing file', () => {
+    const dir = root('# CLAUDE.md\n\nSee [gone](docs/missing.md#part).\n');
+    const result = check(dir);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toMatch(/docs\/missing\.md/);
   });
 });

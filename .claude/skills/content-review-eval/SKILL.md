@@ -1,6 +1,6 @@
 ---
 name: content-review-eval
-description: Run this repo's content-review eval — checks whether add-topic's and add-case-study's Stage 3 review agents actually catch a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim, a wrong estimate, a one-sided deep dive) rather than rubber-stamping a draft, including false-positive controls. Use when asked to run/check the content-review eval, after editing add-topic/SKILL.md's or add-case-study/SKILL.md's Stage 3 prompt, CLAUDE.md's Writing Standard or docs/NON_NEGOTIABLES.md, or after a real add-topic or add-case-study review misses something in actual use (add a scenario for it first).
+description: Run this repo's content-review eval — checks whether add-topic's and add-case-study's Stage 3 review agents actually catch a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim, a wrong estimate, a one-sided deep dive) rather than rubber-stamping a draft, including false-positive controls. Use when asked to run/check the content-review eval, after editing add-topic/SKILL.md's or add-case-study/SKILL.md's Stage 3 prompt, the Writing Standard (docs/writing-standard.md) or docs/NON_NEGOTIABLES.md, or after a real add-topic or add-case-study review misses something in actual use (add a scenario for it first).
 ---
 
 # Content-review eval
@@ -26,7 +26,7 @@ does it catch a real planted problem instead of rubber-stamping the draft."
 Running all scenarios (`CR-01`..`CR-05` for `add-topic`, `CS-01`..`CS-03`
 for `add-case-study`) is the default when asked to "run the content-review
 eval" with no further qualifier, or after editing something they all depend
-on (`CLAUDE.md`'s Writing Standard or `docs/NON_NEGOTIABLES.md`; the table
+on (the Writing Standard in `docs/writing-standard.md` or `docs/NON_NEGOTIABLES.md`; the table
 in `evals/README.md` is the canonical list). An edit to one skill's Stage 3
 prompt needs only that skill's scenarios.
 
@@ -40,7 +40,7 @@ scenarios.
 For each scenario, follow `evals/content-review/HOW_TO_RUN.md`'s
 procedure exactly (its "Case-study scenarios" section for `CS-*`): read the
 reviewing skill's current Stage 3 instruction (`add-topic/SKILL.md` for
-`CR-*`, `add-case-study/SKILL.md` for `CS-*`) and `CLAUDE.md`'s current Writing Standard fresh (never a
+`CR-*`, `add-case-study/SKILL.md` for `CS-*`) and the current `docs/writing-standard.md` fresh (never a
 cached copy — this eval exists specifically to test the real, current
 prompt), glob the scenario's declared section's current sibling topics,
 then spawn a **fresh** `general-purpose` agent (never `fork` — it must
@@ -54,11 +54,9 @@ calls) rather than sequentially.
 ## Stage 2 — Grade and log
 
 Compare each result to `scenarios.md`'s Expected finding (PASS / FAIL /
-AMBIGUOUS, per `HOW_TO_RUN.md`'s grading rules). Append a new
-dated/labeled section to today's file under
-`evals/content-review/results/` (create it if this is the first run
-today) — never overwrite a prior run. Use the result-log template in
-`HOW_TO_RUN.md`.
+AMBIGUOUS, per `HOW_TO_RUN.md`'s grading rules). Log it in
+`evals/content-review/results/README.md` as `HOW_TO_RUN.md` step 5 says (a
+trend-table row, and the run's full log in place of the previous one).
 
 ## Stage 3 — New violation type or reviewing skill? Add a scenario first
 

@@ -51,7 +51,7 @@ own safety nets instead of a running service.
   the reviewer instruction changes so the instruction can't learn the answers.
   Run via the `feature-review-eval` skill.
 
-- `docs-audit/` — not an eval. `results/` holds a dated log of each docs
+- `docs-audit/` — not an eval. `results/README.md` logs each docs
   audit, written by the `docs-audit` skill's Stage 4, so whether an audit
   ran after a batch of changes can be checked later.
 
@@ -76,17 +76,17 @@ edit that read fine on its own quietly made the routing rule worse.
 
 Which eval to run depends on what changed:
 
-| You changed                                                                                                   | Run                                                                                                                                            |
-| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE.md`, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill                               | `skill-routing-eval`                                                                                                                           |
-| The Writing Standard, `add-topic`'s or `add-case-study`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md` | `content-review-eval`                                                                                                                          |
-| `/feature`'s Stage 4 reviewer instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review | `feature-review-eval`                                                                                                                          |
-| Added or widened a `check:*` script                                                                           | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
+| You changed                                                                                                                     | Run                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLAUDE.md` or a doc its routing table points to, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill            | `skill-routing-eval`                                                                                                                           |
+| The Writing Standard, `add-topic`'s or `add-case-study`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                   | `content-review-eval`                                                                                                                          |
+| `/feature`'s Stage 4 reviewer or finding-triage instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review | `feature-review-eval`                                                                                                                          |
+| Added or widened a `check:*` script                                                                                             | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
 
 ## Grading philosophy
 
 Not every scenario has exactly one right answer — `evals/skill-routing/scenarios.md`
-marks some as **ambiguous by design** (e.g., a new section where `CLAUDE.md` itself allows either
+marks some as **ambiguous by design** (e.g., a new section where `docs/content.md` itself allows either
 the plain 3-step process or the full pipeline). Grade those against
 whether the session's reasoning was defensible, not against a single
 fixed string. A useful eval scenario set includes real judgment calls,

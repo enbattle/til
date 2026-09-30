@@ -43,7 +43,7 @@ For each scenario in `scenarios.md`:
 1. **Read fresh inputs, don't reuse a cached copy:**
    - `add-topic/SKILL.md`'s current Stage 3 reviewer instruction, copied
      verbatim.
-   - `CLAUDE.md`'s current "Writing standard" section, copied verbatim.
+   - `docs/writing-standard.md` as it stands now, copied verbatim.
    - The scenario's declared **Section**'s current topic titles/slugs
      (e.g. `ls src/content/systems-and-infrastructure/`), globbed at run
      time — not a hardcoded list, the corpus grows.
@@ -72,15 +72,15 @@ For each scenario in `scenarios.md`:
      technical statement called wrong.
    - **AMBIGUOUS** — the finding brushes near the planted issue without
      clearly naming it; note why, don't force a grade.
-5. **Log the run** to `results/<YYYY-MM-DD>.md` (copy the template
-   below). Keep every past run — the point is seeing drift over time as
-   the Stage 3 prompts or the Writing Standard evolve, not just
-   the latest snapshot.
+5. **Log the run** in `results/README.md`: add a row to its trend table
+   (date, trigger, counts, one-line note) and replace its "Latest run"
+   section with this run's full log (template below). The table shows drift
+   over time; git history keeps older full logs.
 
 ## Result log template
 
 ```markdown
-# Content-review eval — <YYYY-MM-DD>
+## Latest run: <YYYY-MM-DD>
 
 Run by: <human name, or "self" if an agent ran this on request>
 Trigger: <what prompted this run>
@@ -91,7 +91,7 @@ Trigger: <what prompted this run>
 | CR-02 | ...               | ...               | ...                 |
 | ...   |                   |                   |                     |
 
-## Notes
+### Notes
 
 Anything that stood out — a near-miss, a planted violation the review
 caught for the wrong reason, a new violation type worth turning into a
@@ -101,8 +101,8 @@ scenario.
 ## When to run this
 
 - After editing `add-topic/SKILL.md`'s or `add-case-study/SKILL.md`'s
-  Stage 3 prompt (run the matching `CR-*` or `CS-*` scenarios), or `CLAUDE.md`'s
-  Writing Standard section, or `docs/NON_NEGOTIABLES.md` — the three inputs
+  Stage 3 prompt (run the matching `CR-*` or `CS-*` scenarios), or
+  `docs/writing-standard.md`, or `docs/NON_NEGOTIABLES.md` — the three inputs
   this eval depends on (see the table in `evals/README.md`).
 - Whenever a real `add-topic` or `add-case-study` review misses something
   in actual use —

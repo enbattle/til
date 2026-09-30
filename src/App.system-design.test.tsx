@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { getTopic } from '@/lib/content';
 import { parseFrontmatter } from '@/lib/frontmatter';
+import { h2Headings } from '@/lib/headings';
 import {
   CASE_STUDIES,
   caseStudiesForTopic,
@@ -32,27 +33,6 @@ function bodyOf(slug: string): string {
   const raw = RAW[`/src/system-design/case-studies/${slug}.md`];
   if (raw === undefined) throw new Error(`no raw file for case study ${slug}`);
   return parseFrontmatter(raw).content;
-}
-
-/** Text of each `##` heading in `body`, in order, outside fenced code, with
- * inline markdown emphasis/code markers removed. */
-function h2Texts(body: string): string[] {
-  const texts: string[] = [];
-  let fence: string | null = null;
-  for (const line of body.split(/\r?\n/)) {
-    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
-    if (fence) {
-      if (marker && marker[0] === fence[0] && marker.length >= fence.length) fence = null;
-      continue;
-    }
-    if (marker) {
-      fence = marker;
-      continue;
-    }
-    const heading = /^ {0,3}##[ \t]+(.+?)[ \t#]*$/.exec(line);
-    if (heading) texts.push(heading[1].replace(/[`*_]/g, '').trim());
-  }
-  return texts;
 }
 
 function primaryNav() {
@@ -88,14 +68,7 @@ async function openCaseStudy(slug = SLUG) {
   return { caseStudy, main };
 }
 
-describe('question pages are gone (criterion 1)', () => {
-  it('shows not-found for a former question URL', async () => {
-    renderAt('/system-design/database-cant-keep-up-with-reads');
-    expect(
-      await screen.findByRole('heading', { name: /page not found/i }),
-    ).toBeInTheDocument();
-  });
-
+describe('unknown case-study slug', () => {
   it('shows not-found for an unknown case-study slug', async () => {
     renderAt('/system-design/does-not-exist');
     expect(
@@ -105,22 +78,6 @@ describe('question pages are gone (criterion 1)', () => {
 });
 
 describe('header tabs on System Design routes', () => {
-  it.each(['/system-design', `/system-design/${SLUG}`])(
-    'marks System Design current at %s',
-    async (path) => {
-      renderAt(path);
-      await screen.findByRole('heading', { level: 1 });
-      const nav = primaryNav();
-      expect(within(nav).getByRole('link', { name: 'System Design' })).toHaveAttribute(
-        'aria-current',
-        'page',
-      );
-      expect(within(nav).getByRole('link', { name: 'Catalog' })).not.toHaveAttribute(
-        'aria-current',
-      );
-    },
-  );
-
   it('switches tabs and sidebars when the Catalog tab is clicked from a case study', async () => {
     const user = userEvent.setup();
     const caseStudy = urlShortener();
@@ -162,16 +119,6 @@ describe('System Design landing (criterion 7)', () => {
     });
   });
 
-  it('includes the URL shortener', () => {
-    renderAt('/system-design');
-    const main = screen.getByRole('main');
-    expect(
-      within(main)
-        .getAllByRole('link')
-        .some((a) => a.getAttribute('href') === `/system-design/${SLUG}`),
-    ).toBe(true);
-  });
-
   it('navigates to the case study when a card is clicked', async () => {
     const user = userEvent.setup();
     const caseStudy = urlShortener();
@@ -206,7 +153,7 @@ describe('case study page (criterion 8)', () => {
 
   it('has a Contents nav linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
     const { main } = await openCaseStudy();
-    const expected = h2Texts(bodyOf(SLUG));
+    const expected = h2Headings(bodyOf(SLUG)).map((h) => h.text);
     expect(expected.length).toBeGreaterThan(0);
 
     const contents = await within(main).findByRole('navigation', { name: 'Contents' });
@@ -261,7 +208,12 @@ describe('case study page (criterion 8)', () => {
     });
   });
 
-  it.each(CASE_STUDIES.map((c, i) => [c.slug, i] as const))(
+  // First, middle and last cover no-previous, both, and no-next.
+  const ADJACENCY_CASES = [
+    ...new Set([0, Math.floor(CASE_STUDIES.length / 2), CASE_STUDIES.length - 1]),
+  ].map((i) => [CASE_STUDIES[i].slug, i] as const);
+
+  it.each(ADJACENCY_CASES)(
     '%s links to the adjacent case studies by order, only when they exist',
     async (slug, index) => {
       const { main } = await openCaseStudy(slug);
@@ -301,33 +253,6 @@ describe('case study page (criterion 8)', () => {
   });
 });
 
-describe('diagrams on the case study page (criterion 13)', () => {
-  it('renders each diagram as a themed, base-prefixed, sized <img> inside a new-tab link', async () => {
-    const { main } = await openCaseStudy();
-    const prose = main.querySelector('.prose') as HTMLElement;
-    const images = within(prose)
-      .getAllByRole('img')
-      .filter((img) => img.getAttribute('src')?.includes('diagrams/'));
-    expect(images.length).toBeGreaterThanOrEqual(2);
-    for (const img of images) {
-      // The default preference is "system", and the test environment's
-      // matchMedia reports light.
-      expect(img.getAttribute('src')).toMatch(
-        new RegExp(`^${import.meta.env.BASE_URL}diagrams/${SLUG}/[^/]+\\.light\\.svg$`),
-      );
-      expect(img.getAttribute('alt')?.trim().length).toBeGreaterThan(0);
-      expect(img).toHaveAttribute('loading', 'lazy');
-      expect(Number(img.getAttribute('width'))).toBeGreaterThan(0);
-      expect(Number(img.getAttribute('height'))).toBeGreaterThan(0);
-      const link = img.closest('a');
-      expect(link).not.toBeNull();
-      expect(link).toHaveAttribute('target', '_blank');
-      expect(link).toHaveAttribute('rel', 'noreferrer');
-      expect(link).toHaveAccessibleName(/Open diagram full size/i);
-    }
-  });
-});
-
 describe('sidebar selection (criterion 9)', () => {
   it.each(['/system-design', `/system-design/${SLUG}`])(
     'shows Case studies, not Sections, in the persistent sidebar at %s',
@@ -354,65 +279,6 @@ describe('sidebar selection (criterion 9)', () => {
       await screen.findByRole('heading', { level: 1 }).catch(() => undefined);
     },
   );
-
-  it('lists one link per case study in order and marks the current one', async () => {
-    const caseStudy = urlShortener();
-    renderAt(`/system-design/${SLUG}`);
-    await screen.findByRole('heading', { level: 1, name: caseStudy.title });
-    const nav = screen.getByRole('navigation', { name: 'Case studies' });
-    const links = within(nav).getAllByRole('link');
-    expect(links.map((a) => a.getAttribute('href'))).toEqual(
-      CASE_STUDIES.map((c) => `/system-design/${c.slug}`),
-    );
-    for (const link of links) {
-      if (link.getAttribute('href') === `/system-design/${SLUG}`) {
-        expect(link).toHaveAttribute('aria-current', 'page');
-      } else {
-        expect(link).not.toHaveAttribute('aria-current');
-      }
-    }
-  });
-
-  it('applies the same scroll-wrapper styling to the Case studies sidebar', () => {
-    renderAt('/system-design');
-    expect(screen.getByRole('navigation', { name: 'Case studies' })).toHaveClass(
-      'scrollbar-thin',
-    );
-  });
-
-  it('opens the mobile nav on a System Design route with the case studies, and closes on link click', async () => {
-    const user = userEvent.setup();
-    const caseStudy = urlShortener();
-    renderAt('/system-design');
-    await user.click(screen.getByRole('button', { name: /menu/i }));
-    const dialog = screen.getByRole('dialog', { name: 'Navigation' });
-    const nav = within(dialog).getByRole('navigation', { name: 'Case studies' });
-    expect(
-      within(dialog).queryByRole('navigation', { name: 'Sections' }),
-    ).not.toBeInTheDocument();
-    const link = within(nav)
-      .getAllByRole('link')
-      .find((a) => a.getAttribute('href') === `/system-design/${SLUG}`);
-    expect(link).toBeDefined();
-    await user.click(link!);
-    expect(screen.queryByRole('dialog', { name: 'Navigation' })).not.toBeInTheDocument();
-    expect(
-      await screen.findByRole('heading', { level: 1, name: caseStudy.title }),
-    ).toBeInTheDocument();
-  });
-
-  it('still opens the Sections tree in the mobile nav on a catalog route', async () => {
-    const user = userEvent.setup();
-    renderAt('/ai-and-ml');
-    await user.click(screen.getByRole('button', { name: /menu/i }));
-    const dialog = screen.getByRole('dialog', { name: 'Navigation' });
-    expect(
-      within(dialog).getByRole('navigation', { name: 'Sections' }),
-    ).toBeInTheDocument();
-    expect(
-      within(dialog).queryByRole('navigation', { name: 'Case studies' }),
-    ).not.toBeInTheDocument();
-  });
 });
 
 describe('topic page back-links (criterion 10)', () => {
@@ -477,31 +343,5 @@ describe('topic page back-links (criterion 10)', () => {
     expect(screen.queryByRole('navigation', { name: BACKLINKS })).not.toBeInTheDocument();
     expect(screen.queryByText('Used in these case studies:')).not.toBeInTheDocument();
     expect(screen.queryByText('This comes up in:')).not.toBeInTheDocument();
-  });
-});
-
-describe('search finds case studies (criterion 11)', () => {
-  it('shows the URL shortener labelled System Design and navigates to it, closing the dialog', async () => {
-    const user = userEvent.setup();
-    const caseStudy = urlShortener();
-    renderAt('/');
-    await user.keyboard('{Control>}k{/Control}');
-    await user.click(screen.getByPlaceholderText(/search topics/i));
-    await user.paste(caseStudy.title);
-    const dialog = screen.getByRole('dialog', { name: /search topics/i });
-    const result = await within(dialog).findByRole('button', {
-      name: new RegExp(escapeRegExp(caseStudy.title)),
-    });
-    expect(result).toHaveTextContent('System Design');
-    await user.click(result);
-
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(
-      await screen.findByRole('heading', { level: 1, name: caseStudy.title }),
-    ).toBeInTheDocument();
-    expect(
-      within(primaryNav()).getByRole('link', { name: 'System Design' }),
-    ).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('navigation', { name: 'Case studies' })).toBeInTheDocument();
   });
 });

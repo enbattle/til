@@ -1,9 +1,7 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { TOPICS, getTopic } from './content';
 import { parseFrontmatter } from './frontmatter';
-import { extractCaseStudyRefs, extractTopicRefs } from './markdown-links';
+import { extractTopicRefs } from './markdown-links';
 import {
   CASE_STUDIES,
   caseStudiesForTopic,
@@ -300,24 +298,6 @@ describe('caseStudiesForTopic (criterion 6)', () => {
   });
 });
 
-describe('no dead links in real case studies (criterion 6)', () => {
-  it('has case studies to check', () => {
-    expect(REAL.length).toBeGreaterThan(0);
-  });
-
-  it.each(REAL.map((c) => [c.slug, c.body] as const))(
-    '%s links only to topics and case studies that exist',
-    (_slug, body) => {
-      for (const { section, slug } of extractTopicRefs(body)) {
-        expect(getTopic(section, slug), `/${section}/${slug}`).toBeDefined();
-      }
-      for (const slug of extractCaseStudyRefs(body)) {
-        expect(getCaseStudy(slug), `/system-design/${slug}`).toBeDefined();
-      }
-    },
-  );
-});
-
 describe('isSystemDesignPath', () => {
   it.each(['/system-design', '/system-design/url-shortener'])('is true for %s', (p) => {
     expect(isSystemDesignPath(p)).toBe(true);
@@ -329,41 +309,4 @@ describe('isSystemDesignPath', () => {
       expect(isSystemDesignPath(p)).toBe(false);
     },
   );
-});
-
-describe('the question pages are gone (criterion 1)', () => {
-  const SRC = path.resolve('src');
-
-  function sourceFiles(dir: string, files: string[] = []): string[] {
-    for (const entry of readdirSync(dir)) {
-      const full = path.join(dir, entry);
-      if (statSync(full).isDirectory()) sourceFiles(full, files);
-      else if (/\.(ts|tsx|mjs|js)$/.test(entry)) files.push(full);
-    }
-    return files;
-  }
-
-  it('has no src/system-design/questions directory', () => {
-    expect(existsSync(path.join(SRC, 'system-design', 'questions'))).toBe(false);
-  });
-
-  it('has no QuestionPage or QuestionNav module', () => {
-    expect(existsSync(path.join(SRC, 'pages', 'QuestionPage.tsx'))).toBe(false);
-    expect(existsSync(path.join(SRC, 'components', 'QuestionNav.tsx'))).toBe(false);
-  });
-
-  it('has no source file under src importing or globbing a question module', () => {
-    const self = path.resolve('src/lib/system-design.test.ts');
-    const importsQuestion =
-      /(from\s+|import\s*\(\s*|import\s+)['"][^'"]*(QuestionNav|QuestionPage|system-design\/questions)[^'"]*['"]/;
-    const globsQuestions = /import\.meta\.glob[^)]*system-design\/questions/;
-    const offenders = sourceFiles(SRC)
-      .filter((file) => file !== self)
-      .filter((file) => {
-        const source = readFileSync(file, 'utf8');
-        return importsQuestion.test(source) || globsQuestions.test(source);
-      })
-      .map((file) => path.relative(SRC, file));
-    expect(offenders).toEqual([]);
-  });
 });

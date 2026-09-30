@@ -20,6 +20,60 @@ without slowing the thing users are waiting for. What follows is one plausible
 design for a service like TinyURL or Bitly, not a description of how any
 particular company built theirs.
 
+## At a glance
+
+**Requirements.**
+
+- Shorten a long URL to a code of at most 7 characters that can't be guessed
+  in sequence; the same URL shortened twice gives two links.
+- Redirect to the long URL, with optional custom aliases and expiry dates;
+  click counts per minute are a stretch goal.
+- 100 million new links a month, 100 redirects per link, kept five years.
+- A redirect adds under 20 ms at p99 and is up 99.99% of the time; creates
+  need 99.9%.
+
+**Key numbers.** From the [estimates](#back-of-the-envelope-estimates):
+
+- About 400 creates/s at peak (100 million ÷ 2.6 million seconds a month ≈
+  40/s, 10× for peak).
+- About 40,000 redirects/s at peak (100× the writes, ≈ 4,000/s on average).
+- 3 TB of links over five years (6 billion × 500 bytes), 9 TB with three
+  copies.
+- About 35 GB of cache (20% of a day's 333 million redirects × 500 bytes).
+- 62⁷ ≈ 3.5 trillion possible codes, so under 0.2% are ever in use.
+
+**Key decisions.**
+
+- Pre-allocated ID ranges, scrambled before encoding: generated codes never
+  collide or run in sequence, and creates outlast a short allocator outage
+  ([short codes](#deep-dive-generating-short-codes)).
+- A cache in front of a key-value store: about 90% of redirects come from
+  memory, leaving the store about 4,000 reads/s at peak
+  ([read path](#deep-dive-the-read-path)).
+- Click events on a queue, counted in the background: redirects never wait
+  on analytics or fail with it
+  ([analytics](#deep-dive-analytics-off-the-hot-path)).
+
+**Likely follow-ups.**
+
+- Why a 302, not a 301? Browsers cache a 301 and stop asking, which breaks
+  expiry, disabling and click counts ([API design](#api-design)).
+- Why not hash the long URL? Over 6 billion links, 7-character hashes collide
+  about 5 million times, and one URL would always get one code
+  ([short codes](#deep-dive-generating-short-codes)).
+- What if one link goes viral? On a miss, one request per code reads the store
+  and the rest wait for it; jittered TTLs keep hot entries from expiring
+  together ([read path](#deep-dive-the-read-path)).
+- What if the ID allocator is down? Servers mint from the IDs they hold, for
+  at least two minutes at peak
+  ([failure modes](#failure-modes-and-bottlenecks)).
+- Could this run on PostgreSQL? Yes: 3 TB and 400 writes/s fit one primary with
+  read copies for years; the key-value store wins on scaling out by key
+  ([data model](#data-model)).
+
+The components are drawn under
+[High-level architecture](#high-level-architecture).
+
 ## Requirements
 
 Functional requirements say what the system does:

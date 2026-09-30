@@ -34,7 +34,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/nudge-sdlc.js",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/nudge-sdlc.js\"",
             "timeout": 10
           }
         ]
@@ -44,7 +44,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/nudge-precommit.js",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/nudge-precommit.js\"",
             "timeout": 10
           }
         ]

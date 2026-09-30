@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "A running, searchable log of things learned across programming, tech, AI, and how to focus and learn well.",
+  "description": "A searchable reference of programming, systems, AI and learning topics, plus worked System Design case studies for interview prep.",
   "homepage": "https://enbattle.github.io/til",
   "repository": {
     "type": "git",
@@ -29,6 +29,7 @@
     "check:tokens": "node scripts/check-design-tokens.mjs",
     "check:contrast": "node scripts/check-contrast.mjs",
     "check:npm-refs": "node scripts/check-npm-script-refs.mjs",
+    "check:claude-md": "node scripts/check-claude-md.mjs",
     "check:pipeline-log": "node scripts/check-pipeline-log.mjs",
     "check:raw-html": "node scripts/check-raw-html.mjs",
     "check:bundle": "node scripts/check-bundle.mjs",
@@ -36,7 +37,7 @@
     "diagrams": "node scripts/render-diagrams.mjs",
     "check:test-lock": "node scripts/check-test-lock.mjs",
     "review:diff": "node scripts/review-diff.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:pipeline-log && npm run check:raw-html && npm run check:diagrams && npm run test:run && npm run build && npm run size && npm run check:bundle"
+    "verify": "npm run typecheck && npm run lint && npm run format:check && npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:claude-md && npm run check:pipeline-log && npm run check:raw-html && npm run check:diagrams && npm run test:run && npm run build && npm run size && npm run check:bundle"
   },
   "size-limit": [
     {
@@ -69,6 +70,7 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
+    "@types/mdast": "^4.0.4",
     "@types/node": "^26.6.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

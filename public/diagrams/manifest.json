@@ -23,6 +23,258 @@
       "text-tertiary": "#a39683"
     }
   },
+  "ad-click-aggregator/architecture.d2": {
+    "sha256": "c7d721a55ee397cbb9314720781292048c1f5aeabc9b067eba0235e2b9cb1782",
+    "width": 494,
+    "height": 1582,
+    "svgs": {
+      "light": "e6c54c0486ae2bf619e0f212f1bcd933a412e8bc57d42852a58369c7a1b6a8ad",
+      "dark": "f4e94daac90be7df7a7ed23081d88f8d8f11d5995705e7b19f4319d681b25b0b"
+    }
+  },
+  "ad-click-aggregator/count-once-sequence.d2": {
+    "sha256": "aba7dca4f437fd6189da789a8555268f1c991541d51e97ffcb11baab6425ce2e",
+    "width": 870,
+    "height": 1429,
+    "svgs": {
+      "light": "0d90ce14863f4e060bb5bdd4a204ab1cf4e013b72953cb3ecef4b8b72bcd4b5f",
+      "dark": "46a3ce274aab986df7087a7e2706167b0f274fd01957287a24636270a7935eda"
+    }
+  },
+  "ecommerce-checkout/architecture.d2": {
+    "sha256": "482d31cd833aa0a7b631fbeca1a4397c4d7cc3ddabb79f3a900d06dc99a57c4e",
+    "width": 785,
+    "height": 1650,
+    "svgs": {
+      "light": "fbcafa1fc7be6085312318eb76b850283cbcc10523512c5f99d8b3ffff7d4761",
+      "dark": "82c18248d2a135c6bb51567e673de436de092da5a57cbf4ff07e25ebb06b8ed0"
+    }
+  },
+  "ecommerce-checkout/checkout-saga.d2": {
+    "sha256": "4dcef924279caa930302258a060c756886b83c5ffd4631512777b55f36865d9e",
+    "width": 938,
+    "height": 2188,
+    "svgs": {
+      "light": "a362f3af48653c00245b0e7b57a7d7430e53c2dfd003071f64e7176831f507f0",
+      "dark": "16956e83d4a65b2fa695c4d8b1a7fc8634a6f0d98e16e3637a10474d41e9b271"
+    }
+  },
+  "file-storage/architecture.d2": {
+    "sha256": "e7255c49ae4eaf2abf43534c0fed1c59f5e85f331d413620f922da11f8b33284",
+    "width": 943,
+    "height": 1352,
+    "svgs": {
+      "light": "1ca29d9f5bcdfae3fe9e8113e5a4f03fcab9bf10cf667f54040b75d46a4e6607",
+      "dark": "a2238ddffaf7cab9dce8e90150bf1fd27cd545d0e0a20e8ad6d32e1708016185"
+    }
+  },
+  "file-storage/edit-sync-sequence.d2": {
+    "sha256": "bf127305faadd3c4970ab7930642cd9bdb2c399234c88c6cfe0ceaec6407ae24",
+    "width": 947,
+    "height": 1664,
+    "svgs": {
+      "light": "fbff53db31ab5e686cea83cd6543333ea1c3f61bc4d8678871d688715e169d55",
+      "dark": "29c27c4f96dc171212dc1d19b7abce9a70eb5b5a5fe0f37ff4da9f84877f39b2"
+    }
+  },
+  "llm-chat-serving/architecture.d2": {
+    "sha256": "3e30969ca10c55c8d7a542d88a5037013dab4095413882d71e5f3752935c98e7",
+    "width": 610,
+    "height": 1093,
+    "svgs": {
+      "light": "e275c21603414a315c35cb109804437feef9298086f650a2eccc2fe5b45652dd",
+      "dark": "7cc0ee7936d973c63c10bf4b324d50fbd2363cb33e52140fd1e2a3a1277e66c7"
+    }
+  },
+  "llm-chat-serving/turn-sequence.d2": {
+    "sha256": "39560580b1dc5562a794c2345633ec7bed00b9de84cd7328e2d633d681a948fc",
+    "width": 942,
+    "height": 986,
+    "svgs": {
+      "light": "b73ac80af85d4958715e0b72e14df74390672a42dbbef20d35209b03ed859907",
+      "dark": "36e49ecfbc5413c912db95b82806d5f55e4257a1c28479d1762c89378cb929fd"
+    }
+  },
+  "maps/architecture.d2": {
+    "sha256": "f29e136739c107eac45ccb5a0a1a63eb7c4ba8c5aeab58807a60706a089946ba",
+    "width": 902,
+    "height": 1011,
+    "svgs": {
+      "light": "f4f2b13b26ea846fc2a651e9add96d4ff9832adfe2944acf9946b8946db1879d",
+      "dark": "6f4f121a61caeb52fe2be5d4e94aa461d1226bba0327897ce482743de6132d67"
+    }
+  },
+  "maps/traffic-sequence.d2": {
+    "sha256": "9dd66c57c1679827131faf493cc5b8249926d52239659ee7e53e0085362fce8a",
+    "width": 849,
+    "height": 1101,
+    "svgs": {
+      "light": "bfa086f872b457a9c570543aeec45a7cea77414bf050d1ff1f54e1df7fc47a14",
+      "dark": "8fbb2a9c2f7eaf3576bb8b2f9ee64dd9389e906ff66e0808e4faf936cae4f1ab"
+    }
+  },
+  "messaging/architecture.d2": {
+    "sha256": "f9e0931c9c5f7b1f4fd3d1449af7b70c601e34e4b636c67d216a487f35c27a10",
+    "width": 892,
+    "height": 1301,
+    "svgs": {
+      "light": "312cc77f8fefc91039b9c7d1fd13753b4ab959a5c374cb11167bde393dc56ec1",
+      "dark": "c1ff565738fb43dff7b4522521e9b40a536b7b0d202d20ad7efd1b595890d68a"
+    }
+  },
+  "messaging/delivery-sequence.d2": {
+    "sha256": "0fb6de3749e08df4b812dd7b4966ac42d373738eb804ef66739275d0133b5727",
+    "width": 917,
+    "height": 2383,
+    "svgs": {
+      "light": "f5589c9445d2c51b36e9d557ceefa35a23c7213d59253ba2d018f1434b050b15",
+      "dark": "0d2a34dd509db771ba9cf90fdf7efde96cebf939f7e0ba84acf8cdebb7a076c9"
+    }
+  },
+  "notification-system/architecture.d2": {
+    "sha256": "22b524f7400ee0a2e4d43ac893edea91c8c2fee48ef122cea24b6077b2ad3f65",
+    "width": 953,
+    "height": 1957,
+    "svgs": {
+      "light": "1c02424574564b87de9928281d4177550c87f6c1a98fb18075c2cd624fa85ce7",
+      "dark": "d46739000d867abcfe98a9ea3de2d39c8994b2839e7af50632e0527d8b61d670"
+    }
+  },
+  "notification-system/login-code-sequence.d2": {
+    "sha256": "82c87ac28c1ea7c979d1484d9b1dd14831a98b710499c84d0d07b4675a98dfe3",
+    "width": 953,
+    "height": 1310,
+    "svgs": {
+      "light": "40971bbfdc7d3f70d521b9f9bc3b56c2444ea58450ff278c44c55891f1ceca8e",
+      "dark": "12a34411adf1e7352311e3063a9f46b90c53c53a40d81b09798bfb07674c0360"
+    }
+  },
+  "payment-system/architecture.d2": {
+    "sha256": "9bd3a7484d579f1f4ff92c95c0bca29fdda3d20a0fd48782a1dcd37777acf08a",
+    "width": 823,
+    "height": 1602,
+    "svgs": {
+      "light": "1c25abbf07ad29043630df81b51cefaf8bfa4ad4d4282cf37bda46f032949699",
+      "dark": "8d831a7d2fc419b379bac37ea949798369d8cfc0b0880b984e45658b5549313f"
+    }
+  },
+  "payment-system/card-payment-sequence.d2": {
+    "sha256": "f9a93b9a1c8f121118b90fe3d68f7d769cc26edd3c64ffbe02bae601769c1c8e",
+    "width": 728,
+    "height": 1637,
+    "svgs": {
+      "light": "215da8b1366f043569e7d336300ff948615ce69269fad19d94a2675722fe06f4",
+      "dark": "15185a01c0f64881aad7386954d937ee946a07515710a50956bcbf487c03c115"
+    }
+  },
+  "rate-limiter/architecture.d2": {
+    "sha256": "ad3f6bbc8b0c4e0517beef816ab43d112eab1b0f7ff1b9fdbd6c7150ed6f402d",
+    "width": 658,
+    "height": 777,
+    "svgs": {
+      "light": "5468d96cf6d2ad7472101ee7ef1fab1841f6c3827b2045127d886f0b9ea0307d",
+      "dark": "ed413ed060c03288467caea98aafeacdfe4a344fb095e9e42700fe0272248d73"
+    }
+  },
+  "rate-limiter/check-sequence.d2": {
+    "sha256": "a5a24d81a3da0ad81d610786ab085412be44d30fa2f167904ac34c25aa69d193",
+    "width": 861,
+    "height": 1299,
+    "svgs": {
+      "light": "5d746ce8f73a6cbcc08f51f45bac6fda8892d9847f5ca86c3cb7659e19b8d483",
+      "dark": "4fbf7c748469a58c97b252ae373d35d9b6e0c81536432431fbf0ec99a4fba011"
+    }
+  },
+  "recommendation-system/architecture.d2": {
+    "sha256": "20fbc8b26e8b4769ba8c1e5a6fe1312df59b3306fd6c305b6ca943455cd70117",
+    "width": 780,
+    "height": 2160,
+    "svgs": {
+      "light": "00e71c313ad9039798dfea08518cd24b4fcdaf9d643c1a3e087e9e677610ffd7",
+      "dark": "eee36fb5b84da6e3b6eb3b40578edacc4c66144f50b5ca54d6c6f457b608f0fd"
+    }
+  },
+  "recommendation-system/serve-sequence.d2": {
+    "sha256": "911f54a42bec019285713d853c2a4168106702df9e524610f21de31d28488001",
+    "width": 828,
+    "height": 1558,
+    "svgs": {
+      "light": "87a885474fdeab549d96fea5f0ac2de096ae5e4ef49f5646ef7b70b5835c5324",
+      "dark": "fd5b0074eb2aadd48fc6090f0d7a2cee871ca67104ea110238e2f2cc4f0329f2"
+    }
+  },
+  "ride-sharing/architecture.d2": {
+    "sha256": "c3a63b4556b95739f75aebb4ad7d53d8af52443c8d2e7ceaae8063f540e76889",
+    "width": 924,
+    "height": 1835,
+    "svgs": {
+      "light": "de974faad01fc884e1a289dc94c1cb7f2913bf2b45e95ab9d5878e223a68a2a5",
+      "dark": "b4c2d3be2ec07c1e63f60d0571a2053425f94631fe272a48e124e0c253b3ba95"
+    }
+  },
+  "ride-sharing/match-sequence.d2": {
+    "sha256": "59fec3dfa0a2774b4649a0e1be72e7cd2a2e90a7e002ae4628ee52bee9f3a48b",
+    "width": 843,
+    "height": 1968,
+    "svgs": {
+      "light": "f4ccc8ac642b6a071a4c4b723baa2990129146d1856120c8b54d607fff3da61f",
+      "dark": "36c0e28c3d2eda14ef205e1b4da99dedece0c024ac1a915337e39d36a029d0bc"
+    }
+  },
+  "search-engine/architecture.d2": {
+    "sha256": "77a4a29428b9fe2d7080bd3ba73f7abbafd20c7f3183d8ac41084db8f2f27563",
+    "width": 920,
+    "height": 1577,
+    "svgs": {
+      "light": "f48658063980de515188f9079f3d469a4b51c1fa399d0a079a01d890b2c2e12b",
+      "dark": "9006614177a1bf6ec557b1fa00649c5624032eee07d7da58939239c4cfcae3bc"
+    }
+  },
+  "search-engine/query-sequence.d2": {
+    "sha256": "8c71e666988d96a683001ff9b1f19ccc249464d8ca7d524d0eacd6c858e82b32",
+    "width": 893,
+    "height": 1371,
+    "svgs": {
+      "light": "201539fdeee740f72710009cc83dfd2caa582a3b19fbc6c4a49d43737f3b85c1",
+      "dark": "c2308315ec25793579abdb15ee1499adf70bb8421df2011cace32f4571d4a6d2"
+    }
+  },
+  "social-feed/architecture.d2": {
+    "sha256": "ace7c04ed32da760ac91804393edf657d45112a9a9c2e5f8cfffb76e779257f0",
+    "width": 898,
+    "height": 980,
+    "svgs": {
+      "light": "f7ad16347f1e8033b7a188129b8505b3d5cd101b159c4fb0bec1b7a8c497f0ae",
+      "dark": "0821b1a33f61163c11d0c67e00db49a6ba5a291c6820ed27c10d08d182dcf03e"
+    }
+  },
+  "social-feed/fan-out.d2": {
+    "sha256": "171cad99d4a8ff5a8f8cdc3f721517d324376a72ae1b99da6415ab81d27b151d",
+    "width": 891,
+    "height": 761,
+    "svgs": {
+      "light": "2c3b427f9983ef60879c5b72923cf1fe7e0eb1bc6a09fa738a61cb2958b892f5",
+      "dark": "f6af8249d9da7ef7cd4bb98e3a09230517129e3e8773542e67207228bbc4ef29"
+    }
+  },
+  "ticket-booking/architecture.d2": {
+    "sha256": "5c62d545b6e3154bff93c77c7f9d9167b4b979aa15f9a5223bb6dca909f7af75",
+    "width": 845,
+    "height": 1539,
+    "svgs": {
+      "light": "26cccd0136a62637475015e011b7b4f3b180fef3200ec3deaffcced2448c5dbd",
+      "dark": "607b2485b1209f7918d4a314b9ef34f4e668f876479f87907895f7414bc7233d"
+    }
+  },
+  "ticket-booking/shopper-sequence.d2": {
+    "sha256": "5ad2b34b74e80944668ca14d03e313bf0b73265040b5595fb80086a095aed920",
+    "width": 902,
+    "height": 2425,
+    "svgs": {
+      "light": "f555b442deb76a3ae9e4634aa331ea4a765d45da125bfff12a8898eb9594df7d",
+      "dark": "2bbb97a7232dd96facf82ddda446fd8655c5372d559f1028e5b319bdcc10ce5b"
+    }
+  },
   "url-shortener/architecture.d2": {
     "sha256": "7309489d33e281837b8d1ac02b657d909d2c62cfd67db0e26cf616c38bb98608",
     "width": 811,
@@ -39,6 +291,33 @@
     "svgs": {
       "light": "f0f0803c6d10da86c2c5e43cd9a00493bf37282135dfe9eb452443b52bfff2fb",
       "dark": "114c8209ea2c60fc0e963fcbff7a1d21a5f52eba70ac928dae8501149c180130"
+    }
+  },
+  "video-streaming/architecture.d2": {
+    "sha256": "c08f64113f85b4baa2ac0f217c40edd268bf832605cde8741aabc6d96799ac86",
+    "width": 757,
+    "height": 1561,
+    "svgs": {
+      "light": "3067ae0f73fdc4800105a76bafa895a5a596551ba4128dcde18049d8f0e00f2c",
+      "dark": "65b482cdb47ee4ffa10a9be9182e8b6422e0301279ff98ca728199a2a2331185"
+    }
+  },
+  "video-streaming/playback-sequence.d2": {
+    "sha256": "9eaf2b1c8506a385f410a8c5c32afc6035f56a146bdd385cc4c39d239145c50d",
+    "width": 934,
+    "height": 1551,
+    "svgs": {
+      "light": "9278ba04bbfba2fee1423eae8be82309532c0cf39166a3d1856833e2d38f247f",
+      "dark": "405b3d55995779609fe9d5f54aad6f1f5b0b8e117fe1b10b40344a5a0b9beb97"
+    }
+  },
+  "video-streaming/transcode-pipeline.d2": {
+    "sha256": "a441ac34a72026303e593e54a4ca43fe14cbb8b628f314505324c922758df670",
+    "width": 806,
+    "height": 1134,
+    "svgs": {
+      "light": "f889f6a9d7b2624e136fbe5b716943390dd7b70a86fc579d74ad8d034012016c",
+      "dark": "cbabd98f329476997de892dd314e311541e9290449b16459338c1d209431db85"
     }
   }
 }

@@ -21,7 +21,7 @@
 // the `--color-` prefix. Every hash normalizes CRLF to LF first, so a Windows
 // checkout with autocrlf and CI agree.
 import { createHash } from 'node:crypto';
-import { readThemeTokens } from './css-tokens.mjs';
+import { contrastRatio, readThemeTokens } from './css-tokens.mjs';
 
 /** The manifest's one reserved, non-source key. */
 export const TOKENS_KEY = '$tokens';
@@ -85,9 +85,8 @@ const THEME_SELECTORS = { light: ':root', dark: '.dark' };
 
 /** The tokens the diagrams are rendered with, per theme, as recorded in the
  * manifest's `$tokens`, plus problems (a missing token). Tokens are read by
- * the shared `readThemeTokens` (every top-level `:root` / `.dark` block,
- * the later value winning), which throws, naming the token, on a token it
- * can't read the way CSS applies it. */
+ * the shared `readThemeTokens`, which throws on a token it can't read the way
+ * CSS applies it. */
 export function diagramTokens(css) {
   const themes = readThemeTokens(css);
   const tokens = {};
@@ -110,20 +109,6 @@ export function themeSlots(themeTokens) {
   );
 }
 
-function luminance(hex) {
-  const [r, g, b] = [1, 3, 5].map((i) => {
-    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/** WCAG contrast ratio between two `#rrggbb` colors. */
-function contrast(a, b) {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
-
 /** Every TEXT_ON pair below WCAG AA (4.5:1) in any theme, as messages. */
 export function contrastProblems(tokens) {
   const problems = [];
@@ -132,7 +117,7 @@ export function contrastProblems(tokens) {
     for (const [text, fills] of Object.entries(TEXT_ON)) {
       for (const fill of fills) {
         if (!slots[text] || !slots[fill]) continue;
-        const ratio = contrast(slots[text], slots[fill]);
+        const ratio = contrastRatio(slots[text], slots[fill]);
         if (ratio < 4.5) {
           problems.push(
             `src/index.css "${selector}": diagram text ${text} (--color-${SLOTS[text]}) on ${fill} (--color-${SLOTS[fill]}) is ${ratio.toFixed(2)}:1, below the 4.5:1 contrast minimum. Change the tokens or the mapping in scripts/diagram-manifest.mjs.`,
@@ -146,50 +131,12 @@ export function contrastProblems(tokens) {
 
 // --- colors and imports in .d2 sources -----------------------------------------
 
-/** A `.d2` source with its comments (`# ...` and `"""` blocks) removed, so
- * prose in a comment can't trip the color guard. Quoted strings are kept. */
-function stripD2Comments(text) {
-  let out = '';
-  let quote = null;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (quote) {
-      out += ch;
-      if (ch === '\\') out += text[++i] ?? '';
-      else if (ch === quote) quote = null;
-      continue;
-    }
-    if (text.startsWith('"""', i)) {
-      const end = text.indexOf('"""', i + 3);
-      i = end === -1 ? text.length : end + 2;
-      continue;
-    }
-    if (ch === '#' && (i === 0 || /\s/.test(text[i - 1]))) {
-      const end = text.indexOf('\n', i);
-      i = end === -1 ? text.length : end - 1;
-      continue;
-    }
-    if (ch === '"' || ch === "'") quote = ch;
-    out += ch;
-  }
-  return out;
-}
-
-/** `code` (comments already stripped) with every quoted string's content
- * blanked, keeping the quotes, so text inside a label can't look like syntax. */
-function blankD2Strings(code) {
-  return code.replace(
-    /(["'])(?:\.|(?!\1)[^\\n])*\1/g,
-    (s, q) => q + ' '.repeat(s.length - 2) + q,
-  );
-}
-
 // A style key that takes a color, in any form D2 accepts: `x.style.fill: red`,
 // `{style.fill: red}`, a `style: { fill: red }` map, `(a -> b)[0].style.stroke`,
 // a class or glob. `stroke-dash`/`stroke-width` don't match (the key must end
 // at the colon). The theme keys would replace the token-derived theme.
 const COLOR_KEY =
-  /(?:^|[\s{;.,"'])(fill|stroke|font-color|fill-pattern|theme-id|dark-theme-id|theme-overrides|dark-theme-overrides)["']?\s*:/m;
+  /(?:^|[\s{;.,"'])(fill|stroke|font-color|fill-pattern|theme-id|dark-theme-id|theme-overrides|dark-theme-overrides)["']?\s*:/;
 // A hex color only matters where D2 takes it as a value: a whole quoted value
 // (`"#ff0000"`, e.g. in `vars`) or an unquoted one right after the colon
 // (`x:#f00`; with a space before it, `#` starts a comment). A `#` inside a
@@ -197,38 +144,32 @@ const COLOR_KEY =
 const HEX_VALUE = /(["'])\s*(#[0-9a-fA-F]{3,8})\s*\1|:(#[0-9a-fA-F]{3,8})\b/;
 // A D2 import: `...@file` spreads a file in, `x: @file` imports it as a value.
 // Either pulls in a source the manifest hash and this guard never see.
-const IMPORT = /\.\.\.\s*@|(?:^|[:{;])\s*@/m;
-
-/** Every hex color a `.d2` source uses as a value (see HEX_VALUE), for
- * check-hex-colors.mjs. Comments and hex inside longer labels don't count. */
-export function d2HexColors(text) {
-  const code = stripD2Comments(text.replace(/\r\n/g, '\n'));
-  return [...code.matchAll(new RegExp(HEX_VALUE.source, 'g'))].map((m) => m[2] ?? m[3]);
-}
-
-/** Why a `.d2` source names a color, or null if it doesn't. Diagram colors
- * come only from the design tokens, through the theme render-diagrams builds. */
-function d2ColorProblem(text) {
-  const code = stripD2Comments(text.replace(/\r\n/g, '\n'));
-  const key = COLOR_KEY.exec(code);
-  if (key) return `sets \`${key[1]}\``;
-  const [hex] = d2HexColors(text);
-  if (hex) return `contains the hex color ${hex}`;
-  return null;
-}
+const IMPORT = /\.\.\.\s*@|(?:^|[:{;])\s*@/;
+// A quoted string on one line, blanked before looking for a comment or an import.
+const QUOTED = /(["'])(?:\\.|(?!\1)[^\\])*\1/g;
 
 /** Why a `.d2` source can't be rendered and checked as it is, or null: it
- * names a color (d2ColorProblem), or it imports another file (`...@x`,
- * `x: @y`), which would escape both the source hash and the color guard. Used
- * by check-diagrams.mjs and render-diagrams.mjs. */
+ * names a color (a color style key or a hex value), or it imports another
+ * file, which would escape both the source hash and the color guard. It checks
+ * each line once `"""` block comments and the line's `# ...` comment (a `#` at
+ * the start or after whitespace, outside quotes) are dropped. Used by
+ * check-diagrams.mjs and render-diagrams.mjs. */
 export function d2SourceProblem(text) {
-  const color = d2ColorProblem(text);
-  if (color) {
-    return `${color}. Diagram colors come from the site tokens through the theme; remove it`;
-  }
-  const code = blankD2Strings(stripD2Comments(text.replace(/\r\n/g, '\n')));
-  if (IMPORT.test(code)) {
-    return 'imports another file (`...@file` or `x: @file`). Imports are not allowed: the imported file would escape the source hash and the color guard, so put everything in this one file';
+  for (const line of text.replace(/"""[\s\S]*?(?:"""|$)/g, '').split(/\r?\n/)) {
+    const blanked = line.replace(QUOTED, (s, q) => q + ' '.repeat(s.length - 2) + q);
+    const end = blanked.search(/(?:^|\s)#/);
+    const code = end === -1 ? line : line.slice(0, end);
+    const key = COLOR_KEY.exec(code);
+    const hex = HEX_VALUE.exec(code);
+    if (key || hex) {
+      const color = key
+        ? `sets \`${key[1]}\``
+        : `contains the hex color ${hex[2] ?? hex[3]}`;
+      return `${color}. Diagram colors come from the site tokens through the theme; remove it`;
+    }
+    if (IMPORT.test(blanked.slice(0, code.length))) {
+      return 'imports another file (`...@file` or `x: @file`). Imports are not allowed: the imported file would escape the source hash and the color guard, so put everything in this one file';
+    }
   }
   return null;
 }

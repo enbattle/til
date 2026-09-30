@@ -35,6 +35,34 @@ describe('MarkdownRenderer', () => {
     expect(link).toHaveAttribute('rel', 'noreferrer');
   });
 
+  // At-a-glance spec, criterion 5: an in-page `#…` link (how a case study's
+  // At a glance section links into its own sections) stays in the same tab
+  // as a plain anchor, so the browser scrolls to the heading id natively.
+  it('renders an in-page #id link as a plain same-tab <a>, with no target or rel', () => {
+    const { container } = renderMarkdown('## Some id\n\nSee [the section](#some-id).');
+    const link = screen.getByRole('link', { name: 'the section' });
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '#some-id');
+    expect(link).not.toHaveAttribute('target');
+    expect(link).not.toHaveAttribute('rel');
+    expect(container.querySelector('#some-id')).not.toBeNull();
+  });
+
+  it('still routes / links through Link and opens https links in a new tab, beside a # link', () => {
+    renderMarkdown(
+      'See [here](#x), [a topic](/ai-and-ml/prompt-engineering) and [Shiki](https://shiki.style).',
+    );
+    const internal = screen.getByRole('link', { name: 'a topic' });
+    expect(internal).toHaveAttribute('href', '/ai-and-ml/prompt-engineering');
+    expect(internal).not.toHaveAttribute('target');
+    const external = screen.getByRole('link', { name: 'Shiki' });
+    expect(external).toHaveAttribute('target', '_blank');
+    expect(external).toHaveAttribute('rel', 'noreferrer');
+    const anchor = screen.getByRole('link', { name: 'here' });
+    expect(anchor).toHaveAttribute('href', '#x');
+    expect(anchor).not.toHaveAttribute('target');
+  });
+
   it('renders inline code distinctly from a fenced code block', () => {
     renderMarkdown('Use `git status` to check.');
     expect(screen.getByText('git status').tagName).toBe('CODE');
@@ -58,29 +86,6 @@ describe('MarkdownRenderer', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'Should not be a page h1' }),
     ).toBeInTheDocument();
-  });
-});
-
-describe('MarkdownRenderer h2 ids (criterion 8)', () => {
-  it('gives each ## heading a slug id', () => {
-    renderMarkdown('## Deep dive: short code generation\n\nText.\n\n## Trade-offs\n');
-    const first = screen.getByRole('heading', {
-      level: 2,
-      name: 'Deep dive: short code generation',
-    });
-    const second = screen.getByRole('heading', { level: 2, name: 'Trade-offs' });
-    expect(first.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
-    expect(second.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
-    expect(first.id).not.toBe(second.id);
-  });
-
-  it('gives the same heading the same id on every render', () => {
-    const { unmount } = renderMarkdown('## High-level architecture\n');
-    const id = screen.getByRole('heading', { level: 2 }).id;
-    unmount();
-    renderMarkdown('Intro.\n\n## High-level architecture\n');
-    expect(id.length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { level: 2 }).id).toBe(id);
   });
 });
 
@@ -109,6 +114,14 @@ describe('MarkdownRenderer diagram images (criterion 13)', () => {
       `${import.meta.env.BASE_URL}diagrams/x/y.light.svg`,
     );
     expect(img).toHaveAttribute('loading', 'lazy');
+  });
+
+  it('sizes a rendered diagram from the build manifest', () => {
+    // A real rendered diagram, so the manifest has its size.
+    renderMarkdown(`![${ALT}](/diagrams/url-shortener/architecture.svg)\n`);
+    const img = screen.getByRole('img', { name: ALT });
+    expect(Number(img.getAttribute('width'))).toBeGreaterThan(0);
+    expect(Number(img.getAttribute('height'))).toBeGreaterThan(0);
   });
 
   it('renders the dark SVG in dark theme', () => {

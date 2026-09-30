@@ -66,7 +66,7 @@ rejected for a specific, verified reason: Claude Code's PreToolUse hooks
 **fail open on timeout** — if the check doesn't finish inside its
 configured timeout, the tool call proceeds anyway, block or no block.
 `til`'s existing hooks use a 10-second timeout; the full verification
-suite (`npm run verify`, the chain in `CLAUDE.md`) can exceed that, which means a naive version of this hook would
+suite (`npm run verify`, the chain in `docs/verification.md`) can exceed that, which means a naive version of this hook would
 silently stop blocking the first time a check ran slow — a false sense
 of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk
@@ -77,7 +77,8 @@ run `npm run verify` as their gate). The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
 doesn't fail open, can't be bypassed by local config. Branch protection is
-enabled, but in practice commits are pushed straight to `main` (as of
+enabled, and every change now lands through a pull request (CLAUDE.md, "How changes
+land"); before that rule, commits were pushed straight to `main` (as of
 2026-09-24, no human-authored change had arrived through a PR; Dependabot's
 auto-merged PRs are the exception), and on 2026-09-21 two commits whose CI failed
 (fdd0db5, 00f2f84) reached `main` and deployed. That was this entry's
@@ -261,7 +262,7 @@ opening their own PRs (if any) already has `CLAUDE.md` loaded by
 Claude Code automatically each session; a checklist duplicates
 information that's already the first thing read.
 **Revisit when:** Another contributor starts opening PRs against this
-repo who wouldn't otherwise see `CLAUDE.md`'s verification section.
+repo who wouldn't otherwise see `docs/verification.md`.
 
 ### Generic Claude Code session-hygiene advice (e.g., "kitchen sink session," "correcting over and over")
 
@@ -355,7 +356,7 @@ dependencies) in `verify`, so dead code fails CI instead of waiting for
 someone to look.
 **Why deferred:** It was run by hand on 2026-09-28 and found a handful of
 internal-only exports, since removed; everything else it reported was a false
-positive, now recorded in `knip.json` (see CLAUDE.md, "Verifying a change").
+positive, now recorded in `knip.json` (see docs/verification.md).
 As a gate, every false positive (a new hook entry point, a type-only file, an
 external binary) would fail CI until someone taught `knip.json` about it,
 and it isn't a dependency, so `npx` would fetch it on every CI run. Dead code
@@ -363,26 +364,3 @@ in a repo this size costs little and is visible in review.
 **Revisit when:** A review or retro finds dead code (an unused export, file
 or dependency) that shipped after this entry's date, or `npx knip` reports
 real findings on two separate on-demand runs.
-
-### Splitting CLAUDE.md so each skill loads only what it needs
-
-**What it is:** Moving content-authoring detail (System Design case-study
-rules, "Where you'll meet this", link-extractor edge cases) out of the
-always-loaded `CLAUDE.md` into a doc that `add-topic`, `add-case-study` and the reviewers read
-on demand, leaving `CLAUDE.md` as a short router.
-**Why deferred:** At about 375 lines `CLAUDE.md` is long, but no eval or run
-has yet shown an instruction ignored because of its length, and moving text
-risks breaking the routing that `skill-routing-eval` currently passes.
-The original trigger ("before adding the next large section") fired with the
-System Design case studies (2026-09-28): the System Design section grew from
-about 55 to about 90 lines and "Verifying a change" gained the diagram
-checks, taking `CLAUDE.md` from 293 lines to about 375, without the split. That was decided rather than missed: the split is not a small move. It
-changes what every session loads, what `add-topic`'s and `add-case-study`'s
-reviewers are handed (both quote `CLAUDE.md` sections by name), and the
-routing text `skill-routing-eval` grades, so it needs its own change and an
-eval run to show routing still holds, not a line in a fix pass. No run has
-yet traced a miss to `CLAUDE.md`'s length.
-**Revisit when:** An eval result or a logged run traces a miss to an
-instruction in `CLAUDE.md` being ignored or crowded out; or `CLAUDE.md`
-passes 400 lines (`wc -l CLAUDE.md`); or before adding a third kind of
-content with its own authoring rules (after topics and case studies).

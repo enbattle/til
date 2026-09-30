@@ -164,8 +164,8 @@ assuming it would work.
 
 All work above was completed and both evals were actually run (real
 spawned agents, not asserted). Full logs:
-[`evals/content-review/results/2026-09-16.md`](../../evals/content-review/results/2026-09-16.md),
-[`evals/skill-routing/results/2026-09-16.md`](../../evals/skill-routing/results/2026-09-16.md).
+[`evals/content-review/results/README.md`](../../evals/content-review/results/README.md),
+[`evals/skill-routing/results/README.md`](../../evals/skill-routing/results/README.md).
 
 **Content-review: 4/5 clean PASS, 1 AMBIGUOUS.** `CR-01` through `CR-04`
 each had their planted violation caught explicitly and correctly
