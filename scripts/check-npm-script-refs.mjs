@@ -3,36 +3,20 @@
 // script that's been renamed or removed from package.json — the same
 // "fact owned by code, restated by hand in a doc" drift class as
 // check-design-tokens.mjs, applied to every markdown file in the repo.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, extname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { listFiles, ROOT } from './lib.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const EXCLUDED_DIRS = new Set(['node_modules', 'dist', '.git']);
-const WORKTREES = join(ROOT, '.claude', 'worktrees');
 const SCRIPT_REF = /npm run ([a-zA-Z0-9:_-]+)/g;
-
-function walk(dir, files = []) {
-  for (const entry of readdirSync(dir)) {
-    if (EXCLUDED_DIRS.has(entry)) continue;
-    const path = join(dir, entry);
-    // Agent worktrees are full repo copies; their docs are checked in their own run.
-    if (path === WORKTREES) continue;
-    const stats = statSync(path);
-    if (stats.isDirectory()) {
-      walk(path, files);
-    } else if (extname(path) === '.md') {
-      files.push(path);
-    }
-  }
-  return files;
-}
 
 const { scripts } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
 const validScripts = new Set(Object.keys(scripts));
 
 const violations = [];
-for (const file of walk(ROOT)) {
+// Every markdown file git sees: node_modules and dist are .gitignored, and an
+// agent worktree (a full repo copy, checked in its own run) is a nested repo,
+// which `git ls-files -o` lists as one directory entry and never walks into.
+for (const file of listFiles({ ext: '.md' })) {
   const content = readFileSync(file, 'utf8');
   let match;
   while ((match = SCRIPT_REF.exec(content))) {

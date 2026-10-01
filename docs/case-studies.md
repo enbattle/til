@@ -76,18 +76,17 @@ order: 1
   the same tab.
 - **Links are the data.** A case study's catalog links are extracted at build
   time (the `?links` query, running `extractTopicRefs` from
-  `src/lib/markdown-links.ts`), and the page's "Go deeper" list and each
+  `src/lib/markdown.mjs`), and the page's "Go deeper" list and each
   topic page's "Used in these case studies:" list come from them, so there's
   nothing to keep in sync by hand. Link a topic where the prose uses it, as
   `[text](/<section>/<slug>)`; there is no requirement to cover every topic.
   `src/lib/system-design.test.ts` fails on a link to a topic or case study
-  that doesn't exist. The extractor only counts plain inline links written as
-  `[text](/section/slug)` (a double-quoted title after the URL is fine).
-  Anything else, such as a single-quoted or parenthesised title, a trailing
-  slash, `<...>` around the destination, nested brackets in the text, or the
-  reference style, still renders as a working link but is silently dropped
-  from those lists. A link inside inline code or a 4-space-indented block is
-  counted even though it isn't a real link, so don't put example links there.
+  that doesn't exist. The extractor parses the body with the site's own
+  markdown stack, so it counts exactly the links the page renders: inline or
+  reference-style (`[text][ref]` plus `[ref]: /section/slug`), with any title.
+  A link inside code (inline, fenced or indented) isn't a link and doesn't
+  count. The destination must be exactly `/section/slug` (a `#fragment` is
+  fine); a trailing slash drops it from those lists.
 - **Diagrams are D2, rendered at build time.** Write one diagram per file at
   `src/system-design/diagrams/<slug>/<name>.d2` (lowercase kebab-case, one
   folder deep; both diagram scripts reject anything else), run `npm run diagrams`

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Nodes } from 'mdast';
 import { TOPICS, loadAllTopicBodies } from '@/lib/content';
-import { markdownParser } from '@/lib/diagram-refs.mjs';
+import { markdownParser } from '@/lib/markdown.mjs';
 
 /**
  * Content-structure test for docs/specs/where-youll-meet-this.md: every topic

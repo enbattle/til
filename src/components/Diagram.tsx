@@ -1,7 +1,7 @@
 import sizes from 'virtual:diagram-sizes';
 import { useTheme } from '@/contexts/useTheme';
 import { useSideScroll } from '@/hooks/useSideScroll';
-import { diagramName } from '@/lib/diagram-refs.mjs';
+import { diagramName } from '@/lib/markdown.mjs';
 
 /**
  * The smallest scale a diagram is shown at before it scrolls sideways instead

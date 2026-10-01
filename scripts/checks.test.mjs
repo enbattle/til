@@ -18,6 +18,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { diagramTokens, svgProblems } from './diagram-manifest.mjs';
 
@@ -32,6 +33,34 @@ function tempDir() {
 afterEach(() => {
   while (temps.length) rmSync(temps.pop(), { recursive: true, force: true });
 });
+
+// A guard script copied into a throwaway root runs there as it would in the
+// repository, so it needs the shared helpers it imports beside it
+// (scripts/lib.mjs, docs/specs/dedupe-app-scripts-tests.md criterion 6).
+function copyScripts(root, ...names) {
+  mkdirSync(join(root, 'scripts'), { recursive: true });
+  for (const name of [...names, 'lib.mjs']) {
+    if (existsSync(join(SCRIPTS, name))) {
+      copyFileSync(join(SCRIPTS, name), join(root, 'scripts', name));
+    }
+  }
+}
+
+// The scripts list their inputs through `git ls-files` (so .gitignore is
+// respected), so a throwaway root must be a git repository.
+function gitInit(root) {
+  execFileSync('git', ['init', '-q'], { cwd: root });
+}
+
+// check-bundle, copied with what it imports: scripts/lib.mjs and
+// src/lib/frontmatter.ts (run by Node with its types stripped).
+function bundleRoot(root) {
+  gitInit(root);
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ type: 'module' }));
+  copyScripts(root, 'check-bundle.mjs');
+  mkdirSync(join(root, 'src/lib'), { recursive: true });
+  copyFileSync(resolve('src/lib/frontmatter.ts'), join(root, 'src/lib/frontmatter.ts'));
+}
 
 function run(script, args = [], env = {}) {
   return spawnSync(process.execPath, [join(SCRIPTS, script), ...args], {
@@ -101,6 +130,7 @@ describe('check-pipeline-log', () => {
 describe('check-raw-html', () => {
   function repo(files) {
     const root = tempDir();
+    gitInit(root);
     mkdirSync(join(root, 'src/components'), { recursive: true });
     writeFileSync(
       join(root, 'package.json'),
@@ -142,12 +172,8 @@ describe('check-test-lock', () => {
   // a copy of it inside a throwaway git repository.
   function repo() {
     const root = tempDir();
-    mkdirSync(join(root, 'scripts'));
     mkdirSync(join(root, 'src/lib'), { recursive: true });
-    copyFileSync(
-      join(SCRIPTS, 'check-test-lock.mjs'),
-      join(root, 'scripts/check-test-lock.mjs'),
-    );
+    copyScripts(root, 'check-test-lock.mjs');
     writeFileSync(
       join(root, 'package.json'),
       JSON.stringify({ scripts: { 'test:run': 'vitest run' } }),
@@ -219,6 +245,166 @@ describe('check-test-lock', () => {
     const path = join(root, 'vite.config.ts');
     writeFileSync(path, `// a plugin change\n${readFileSync(path, 'utf8')}`);
     expect(lock('--verify')).toBe(0);
+  });
+
+  // docs/specs/dedupe-app-scripts-tests.md, criterion 7: the lock lists files
+  // through git, so a path added to an ignore file after the snapshot would be
+  // invisible to it (a new ignored vitest.config.ts or conftest.py). Every
+  // .gitignore in the tree and .git/info/exclude are locked instead: the
+  // exclusion list is pinned, rather than ignored files hunted by name.
+  describe('ignore files (dedupe criterion 7)', () => {
+    function ignoreRepo() {
+      const made = repo();
+      writeFileSync(join(made.root, '.gitignore'), 'node_modules\ndist\n');
+      writeFileSync(join(made.root, 'src/lib/a.ts'), 'export const a = 1;\n');
+      const exclude = join(made.root, '.git/info/exclude');
+      mkdirSync(dirname(exclude), { recursive: true });
+      if (!existsSync(exclude))
+        writeFileSync(exclude, '# git ls-files --exclude-standard\n');
+      return { ...made, exclude };
+    }
+
+    it('passes when nothing changed', () => {
+      const { lock } = ignoreRepo();
+      expect(lock('--snapshot')).toBe(0);
+      expect(lock('--verify')).toBe(0);
+    });
+
+    it.each([
+      [
+        'an edited root .gitignore that hides a new vitest.config.ts',
+        ({ root }) => {
+          writeFileSync(
+            join(root, '.gitignore'),
+            'node_modules\ndist\nvitest.config.ts\n',
+          );
+          writeFileSync(
+            join(root, 'vitest.config.ts'),
+            "export default { test: { include: ['none/**'] } };\n",
+          );
+        },
+      ],
+      [
+        'an edited root .gitignore alone',
+        ({ root }) =>
+          writeFileSync(join(root, '.gitignore'), 'node_modules\ndist\nconftest.py\n'),
+      ],
+      [
+        'an added nested src/.gitignore that hides a new test',
+        ({ root }) => {
+          writeFileSync(join(root, 'src/.gitignore'), 'lib/b.test.ts\n');
+          writeFileSync(join(root, 'src/lib/b.test.ts'), 'it.skip("b", () => {});\n');
+        },
+      ],
+      [
+        'an added nested src/.gitignore alone',
+        ({ root }) => writeFileSync(join(root, 'src/.gitignore'), 'conftest.py\n'),
+      ],
+      [
+        'an edited .git/info/exclude',
+        ({ exclude }) =>
+          writeFileSync(
+            exclude,
+            `${readFileSync(exclude, 'utf8')}vitest.config.ts\nconftest.py\n`,
+          ),
+      ],
+    ])('fails on %s', (_label, plant) => {
+      const made = ignoreRepo();
+      expect(made.lock('--snapshot')).toBe(0);
+      plant(made);
+      expect(made.lock('--verify')).toBe(1);
+    });
+
+    it('fails on a .gitignore added where there was none', () => {
+      const { root, lock } = repo();
+      expect(lock('--snapshot')).toBe(0);
+      writeFileSync(join(root, '.gitignore'), 'vitest.config.ts\n');
+      expect(lock('--verify')).toBe(1);
+    });
+
+    // A .gitignore that lists itself drops out of `git ls-files -co
+    // --exclude-standard`, so it must still be locked (review finding H1, A).
+    it('fails on an added .gitignore that ignores itself and hides a new test', () => {
+      const { root, lock } = ignoreRepo();
+      expect(lock('--snapshot')).toBe(0);
+      writeFileSync(join(root, 'src/.gitignore'), '.gitignore\nlib/b.test.ts\n');
+      writeFileSync(join(root, 'src/lib/b.test.ts'), 'it.skip("b", () => {});\n');
+      expect(lock('--verify')).toBe(1);
+    });
+
+    // A repo-local core.excludesFile is a third source of ignore rules,
+    // outside .gitignore and .git/info/exclude (review finding H1, C).
+    const gitConfig = (root, ...args) =>
+      execFileSync('git', ['config', ...args], { cwd: root });
+
+    it('fails on a repo-local core.excludesFile set after the snapshot', () => {
+      const { root, lock } = ignoreRepo();
+      expect(lock('--snapshot')).toBe(0);
+      writeFileSync(join(root, '.hide'), 'vitest.config.ts\n');
+      gitConfig(root, 'core.excludesFile', '.hide');
+      writeFileSync(
+        join(root, 'vitest.config.ts'),
+        "export default { test: { include: ['none/**'] } };\n",
+      );
+      expect(lock('--verify')).toBe(1);
+    });
+
+    it("fails on a change to an already-set core.excludesFile's contents", () => {
+      const { root, lock } = ignoreRepo();
+      writeFileSync(join(root, '.hide'), 'conftest.py\n');
+      gitConfig(root, 'core.excludesFile', '.hide');
+      expect(lock('--snapshot')).toBe(0);
+      expect(lock('--verify')).toBe(0);
+      writeFileSync(join(root, '.hide'), 'conftest.py\nvitest.config.ts\n');
+      expect(lock('--verify')).toBe(1);
+    });
+
+    // With core.ignorecase=true git honours `.GITIGNORE`, so the ignore-file
+    // match must be case-insensitive too (review round 2, finding 2).
+    it('fails on a differently-cased .GITIGNORE that hides a new conftest.py', () => {
+      const { root, lock } = ignoreRepo();
+      gitConfig(root, 'core.ignorecase', 'true');
+      expect(lock('--snapshot')).toBe(0);
+      mkdirSync(join(root, 'src/dsa/code/heap'), { recursive: true });
+      writeFileSync(
+        join(root, 'src/dsa/code/heap/.GITIGNORE'),
+        '.GITIGNORE\nconftest.py\n',
+      );
+      writeFileSync(
+        join(root, 'src/dsa/code/heap/conftest.py'),
+        'collect_ignore = ["*"]\n',
+      );
+      expect(lock('--verify')).toBe(1);
+    });
+
+    // A snapshot taken by an older script lacks a config part that
+    // runnerConfig() now produces; --verify must report it, not skip it
+    // (review round 2, finding 3).
+    it('fails on a config part the snapshot lacks, naming it as added', () => {
+      const { root, lock } = ignoreRepo();
+      expect(lock('--snapshot')).toBe(0);
+      const manifest = join(root, '.git/til-test-lock.json');
+      const locked = JSON.parse(readFileSync(manifest, 'utf8'));
+      const part = 'package.json#scripts.test*';
+      expect(part in locked).toBe(true);
+      delete locked[part];
+      writeFileSync(manifest, JSON.stringify(locked, null, 2));
+      const result = spawnSync(
+        process.execPath,
+        [join(root, 'scripts/check-test-lock.mjs'), '--verify'],
+        { encoding: 'utf8' },
+      );
+      expect(result.status).toBe(1);
+      expect(result.stderr).toMatch(/added:\s+package\.json#scripts\.test\*/);
+    });
+
+    it('allows an unrelated edit to a file that is not locked', () => {
+      const { root, lock } = ignoreRepo();
+      expect(lock('--snapshot')).toBe(0);
+      writeFileSync(join(root, 'src/lib/a.ts'), 'export const a = 2;\n');
+      writeFileSync(join(root, 'README.md'), '# notes\n');
+      expect(lock('--verify')).toBe(0);
+    });
   });
 
   // docs/specs/dsa-tab.md, criterion 13: pytest files and pytest's own
@@ -549,6 +735,7 @@ describe('check-diagrams', () => {
   /** A clean fixture: one case study referencing one diagram, rendered and locked. */
   function repo() {
     const root = tempDir();
+    gitInit(root);
     write(root, 'src/index.css', CSS());
     write(root, 'src/system-design/diagrams/demo/flow.d2', SOURCE);
     write(root, 'public/diagrams/demo/flow.light.svg', SVG());
@@ -638,6 +825,7 @@ describe('check-diagrams', () => {
     // data: font URL, <g>, <mask>, <marker>, <polygon>, ...).
     const repoRoot = resolve('.');
     const root = tempDir();
+    gitInit(root);
     write(root, 'src/index.css', CSS());
     for (const [from, to] of [
       [
@@ -1189,11 +1377,7 @@ describe('check-bundle covers case-study bodies (criterion 5)', () => {
       mkdirSync(dirname(join(root, path)), { recursive: true });
       writeFileSync(join(root, path), content);
     };
-    mkdirSync(join(root, 'scripts'));
-    copyFileSync(
-      join(SCRIPTS, 'check-bundle.mjs'),
-      join(root, 'scripts/check-bundle.mjs'),
-    );
+    bundleRoot(root);
     write(
       'src/content/alpha/topic.md',
       `---\ntitle: T\nsummary: S.\ndate: 2026-09-28\n---\n\n${TOPIC_LINE}\n`,
@@ -1249,11 +1433,7 @@ describe('check-bundle covers DSA entry bodies (DSA criterion 4)', () => {
       mkdirSync(dirname(join(root, path)), { recursive: true });
       writeFileSync(join(root, path), content);
     };
-    mkdirSync(join(root, 'scripts'));
-    copyFileSync(
-      join(SCRIPTS, 'check-bundle.mjs'),
-      join(root, 'scripts/check-bundle.mjs'),
-    );
+    bundleRoot(root);
     write(
       'src/content/alpha/topic.md',
       `---\ntitle: T\nsummary: S.\ndate: 2026-09-28\n---\n\n${TOPIC_LINE}\n`,
@@ -1488,10 +1668,8 @@ describe('the token consumers read the real src/index.css', () => {
   // as a copy (with the shared reader) beside its own src/index.css and docs.
   function copyRun(script, css) {
     const root = tempDir();
-    for (const dir of ['scripts', 'src', 'docs']) mkdirSync(join(root, dir));
-    for (const file of ['css-tokens.mjs', script]) {
-      copyFileSync(join(SCRIPTS, file), join(root, 'scripts', file));
-    }
+    for (const dir of ['src', 'docs']) mkdirSync(join(root, dir));
+    copyScripts(root, 'css-tokens.mjs', script);
     writeFileSync(join(root, 'src/index.css'), css);
     copyFileSync(resolve('docs/DESIGN.md'), join(root, 'docs/DESIGN.md'));
     return spawnSync(process.execPath, [join(root, 'scripts', script)], {
@@ -1567,5 +1745,112 @@ describe('check-claude-md', () => {
     const result = check(dir);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toMatch(/docs\/missing\.md/);
+  });
+});
+
+// docs/specs/dedupe-app-scripts-tests.md, criterion 6: the walking scripts list
+// their files through scripts/lib.mjs's `listFiles` (`git ls-files -co
+// --exclude-standard`), which respects .gitignore instead of a hand-kept
+// skip list.
+describe('scripts/lib.mjs (dedupe criterion 6)', () => {
+  // Run under plain Node, as the scripts are: under Vitest a module's
+  // import.meta.url isn't a file URL.
+  it('exports ROOT (the repository root), listFiles and escapeRegExp', () => {
+    const probe = [
+      `const lib = await import(${JSON.stringify(pathToFileURL(join(SCRIPTS, 'lib.mjs')).href)});`,
+      "const text = 'index-a.b+c(1).js';",
+      'console.log(JSON.stringify({',
+      '  root: lib.ROOT,',
+      '  listFiles: typeof lib.listFiles,',
+      '  literal: new RegExp(`^${lib.escapeRegExp(text)}$`).test(text),',
+      "  dotIsLiteral: !new RegExp(lib.escapeRegExp('a.b')).test('axb'),",
+      '}));',
+    ].join('\n');
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', probe], {
+      encoding: 'utf8',
+    });
+    expect(result.status, result.stderr).toBe(0);
+    const out = JSON.parse(result.stdout);
+    expect(resolve(out.root)).toBe(resolve('.'));
+    expect(out).toMatchObject({
+      listFiles: 'function',
+      literal: true,
+      dotIsLiteral: true,
+    });
+  });
+});
+
+describe('check-hex-colors skips .gitignored files (dedupe criterion 6)', () => {
+  function colors({ ignore }) {
+    const root = tempDir();
+    gitInit(root);
+    copyScripts(root, 'check-hex-colors.mjs');
+    const write = (path, content) => {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), content);
+    };
+    write('src/index.css', ':root {\n  --color-accent: #92400e;\n}\n');
+    write('src/components/Ok.tsx', 'export const ok = "text-accent";\n');
+    write('src/generated/palette.ts', "export const red = '#ff0000';\n");
+    if (ignore) write('.gitignore', 'src/generated/\n');
+    return spawnSync(process.execPath, [join(root, 'scripts/check-hex-colors.mjs')], {
+      encoding: 'utf8',
+    });
+  }
+
+  it('reports the hex colour when the file is not ignored (the planted file is scanned)', () => {
+    const result = colors({ ignore: false });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/palette\.ts/);
+  });
+
+  it('does not report a hex colour in a .gitignored .ts file', () => {
+    const result = colors({ ignore: true });
+    expect(result.stderr).not.toMatch(/palette\.ts/);
+    expect(result.status, result.stderr).toBe(0);
+  });
+});
+
+describe('check-bundle reads frontmatter with parseFrontmatter (dedupe criterion 6)', () => {
+  // A summary long enough to qualify as a fragment: if the frontmatter were
+  // not stripped, it would be picked instead of the body line and found in no
+  // body chunk, so the check would fail.
+  const SUMMARY =
+    'A summary line that is long enough to be picked as the fragment by mistake.';
+  const BODY_LINE =
+    'Topic body sentence that is long enough to be checked by the guard here.';
+
+  function check(raw, assets) {
+    const root = tempDir();
+    bundleRoot(root);
+    const write = (path, content) => {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), content);
+    };
+    write('src/content/alpha/topic.md', raw);
+    for (const [name, text] of Object.entries(assets)) write(`dist/assets/${name}`, text);
+    return spawnSync(process.execPath, [join(root, 'scripts/check-bundle.mjs')], {
+      encoding: 'utf8',
+    });
+  }
+
+  const lf = `---\ntitle: T\nsummary: ${SUMMARY}\ndate: 2026-09-30\n---\n\n${BODY_LINE}\n`;
+  const bomCrlf = `﻿${lf.replace(/\n/g, '\r\n')}`;
+
+  it.each([
+    ['LF frontmatter', lf],
+    ['a BOM and CRLF frontmatter', bomCrlf],
+  ])('takes the fragment from the body for %s', (_label, raw) => {
+    const passes = check(raw, {
+      'index-abc.js': `const meta = ${JSON.stringify(SUMMARY)}; import("./topic-1.js");`,
+      'topic-1.js': `export default ${JSON.stringify(BODY_LINE)};`,
+    });
+    expect(passes.status, passes.stderr).toBe(0);
+
+    const inlined = check(raw, {
+      'index-abc.js': `const body = ${JSON.stringify(BODY_LINE)};`,
+    });
+    expect(inlined.status).toBe(1);
+    expect(inlined.stderr).toMatch(/topic\.md: body text is inlined in the main chunk/);
   });
 });

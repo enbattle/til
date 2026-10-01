@@ -7,12 +7,11 @@
 // sends an agent nowhere). CHECK_CLAUDE_MD_ROOT points it at another directory
 // (used by the planted-violation tests).
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { ROOT as REPO_ROOT } from './lib.mjs';
 
 const MAX_LINES = 150;
-const ROOT =
-  process.env.CHECK_CLAUDE_MD_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = process.env.CHECK_CLAUDE_MD_ROOT ?? REPO_ROOT;
 const file = join(ROOT, 'CLAUDE.md');
 const text = readFileSync(file, 'utf8');
 const problems = [];

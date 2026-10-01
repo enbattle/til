@@ -1,10 +1,9 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TOPICS, loadAllTopicBodies } from '@/lib/content';
 import { CASE_STUDIES, getCaseStudy } from '@/lib/system-design';
-import { SearchDialog } from './SearchDialog';
+import { escapeRegExp, renderDialog } from '@/test/render';
 
 // The dialog's search module is swapped for one whose index is built fresh for
 // each test (via the real `createSearchIndex`) over a body loader the test
@@ -68,21 +67,6 @@ beforeEach(async () => {
   ensureSpy = vi.fn(() => state.index.ensureFullTextSearch());
   state.ensure = ensureSpy as unknown as () => Promise<void>;
 });
-
-function LocationDisplay() {
-  return <div data-testid="location-display">{useLocation().pathname}</div>;
-}
-
-function renderDialog() {
-  const onClose = vi.fn();
-  render(
-    <MemoryRouter>
-      <SearchDialog onClose={onClose} />
-      <LocationDisplay />
-    </MemoryRouter>,
-  );
-  return onClose;
-}
 
 /** The one polite live region the dialog keeps mounted for load status. */
 function statusRegion(): HTMLElement {
@@ -280,7 +264,7 @@ describe('SearchDialog full-text search over case studies (criterion 11)', () =>
   function caseStudyResult() {
     const { title } = getCaseStudy('url-shortener')!;
     return screen.queryByRole('button', {
-      name: new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      name: new RegExp(escapeRegExp(title)),
     });
   }
 

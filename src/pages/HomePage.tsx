@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
-import { SECTIONS } from '@/content/registry';
-import { recentTopics, topicsBySection } from '@/lib/content';
+import { SECTIONS, getSection } from '@/content/registry';
+import { TOPICS, recentTopics, topicsBySection } from '@/lib/content';
 import { TopicCard } from '@/components/TopicCard';
 
 export function HomePage() {
-  const groups = topicsBySection();
   const recent = recentTopics(5);
-  const totalTopics = groups.reduce((sum, group) => sum + group.topics.length, 0);
+  const totalTopics = topicsBySection().reduce(
+    (sum, group) => sum + group.topics.length,
+    0,
+  );
 
   return (
     <div className="space-y-12">
@@ -25,9 +27,7 @@ export function HomePage() {
         <h2 className="font-serif text-xl font-semibold text-text-primary">Sections</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {SECTIONS.map((section) => {
-            const count =
-              groups.find((group) => group.section.slug === section.slug)?.topics
-                .length ?? 0;
+            const count = TOPICS.filter((topic) => topic.section === section.slug).length;
             return (
               <Link
                 key={section.slug}
@@ -59,10 +59,7 @@ export function HomePage() {
               <TopicCard
                 key={`${topic.section}/${topic.slug}`}
                 topic={topic}
-                sectionLabel={
-                  groups.find((group) => group.section.slug === topic.section)?.section
-                    .label
-                }
+                sectionLabel={getSection(topic.section)?.label}
               />
             ))}
           </div>

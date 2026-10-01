@@ -22,6 +22,12 @@ file that doesn't exist. `CLAUDE.md` is loaded into every session and
 subagent on every turn, so it stays a router and detail lives in the docs it
 links; raise the limit only deliberately, like a size budget.
 
+The scripts that walk the tree (`check:colors`, `check:npm-refs`,
+`check:raw-html`, `check:diagrams`, `check:bundle`, `npm run diagrams`) list
+files with `listFiles` in `scripts/lib.mjs` (`git ls-files -co
+--exclude-standard`), so an ignored file is never read and there's no
+per-script skip list; `ROOT` and `escapeRegExp` live there too.
+
 `src/lib/text-encoding.test.ts` (part of `test:run`) fails on any tracked text
 file holding double-encoded UTF-8. That happens when a UTF-8 file is read as
 Windows-1252 and written back, as Windows PowerShell 5.1's
@@ -55,8 +61,15 @@ file (vitest or pytest, including `conftest.py` and pytest's config files,
 `.pytest.ini` and `.pytest.toml` among them) or test-runner config (including
 `scripts/test-python.mjs`, the pytest runner, so an implementer can't edit it,
 and any root `pytest.py`, `_pytest.py`, `pytest/` or `_pytest/` path, a second
-layer behind the runner's own `-c` and `PYTHONSAFEPATH` pinning)
-changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
+layer behind the runner's own `-c` and `PYTHONSAFEPATH` pinning), or ignore
+rule (every `.gitignore`, matched in any letter case, including one that
+ignores itself,
+`.git/info/exclude`, and a `core.excludesFile`'s configured value plus the
+file it names when that file is inside the repository: the lock lists files
+through git, so a path added to one would otherwise drop out of it unseen; a
+global excludes file outside the repository is not covered) changed
+after Stage 2 (a config part the snapshot lacks counts as `added`)
+(`-- --snapshot`, then `-- --verify`, then
 `-- --clear`); `review:diff` prints the reviewer's diff, including new
 untracked files.
 
@@ -65,7 +78,7 @@ exports and dependencies), not part of `verify` or CI and not a dependency
 (npx fetches it); run it after removing or moving code, and expect no output.
 `knip.json` holds its verified false positives: `.claude/hooks/*.js` are entry
 points (Claude Code runs them from `.claude/settings.json`, which knip doesn't
-read), `src/lib/diagram-refs.d.mts` is used by tsc rather than imported, and
+read), `src/lib/markdown.d.mts` is used by tsc rather than imported, and
 `d2` is an external binary, not an npm package. Why it isn't a CI gate is in
 [DEFERRED_PRACTICES.md](DEFERRED_PRACTICES.md).
 
@@ -87,8 +100,9 @@ but `manifest.json` and `<case>/<name>.light.svg`/`.dark.svg` sits under
 `public/diagrams/`, that every SVG passes an allowlist built from what d2 v0.9
 emits, and that every diagram a case study references exists. References are
 found by parsing the case study with the site's own markdown stack
-(`diagramReferences` in `src/lib/diagram-refs.mjs`, which also holds the
-`isDiagramSrc` rule `MarkdownRenderer` uses), so inline and reference-style
+(`diagramReferences` in `src/lib/markdown.mjs`, which also holds the
+`isDiagramSrc` rule `MarkdownRenderer` uses and the topic-link and DSA
+prerequisite extractors), so inline and reference-style
 images count and an example inside code doesn't. The SVG allowlist: only listed
 elements (no `<script>`, `<foreignObject>`, `<a>`, `<image>`, animation
 elements, ...) and listed attributes, no event handlers, no comments, DOCTYPE
@@ -139,4 +153,6 @@ touches it; a case study's topic links reach it as a small build-time list (the
 topic's, case study's or DSA entry's body text is in the main chunk, or in no
 chunk at all. The markdown chunk's entry points at `MarkdownRenderer-*.js`
 because `TopicPage`, `CaseStudyPage` and `DsaEntryPage` share it; the DSA code
-tabs (`CodeTabs`) are in it too.
+tabs (`CodeTabs`) and the pages' shared header and prev/next nav are in it too.
+Rollup would name that shared chunk after whichever of its modules runs last,
+so `vite.config.ts` (`chunkFileNames`) names it after `MarkdownRenderer`.

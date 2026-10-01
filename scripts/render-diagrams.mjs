@@ -24,17 +24,8 @@
 // sources and tokens. Output is deterministic for a given d2 version and input,
 // so re-rendering unchanged sources produces no diff.
 import { spawnSync } from 'node:child_process';
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   contrastProblems,
   d2SourceProblem,
@@ -44,8 +35,8 @@ import {
   themeSlots,
   TOKENS_KEY,
 } from './diagram-manifest.mjs';
+import { listFiles, ROOT } from './lib.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SOURCES = join(ROOT, 'src', 'system-design', 'diagrams');
 const RENDERED = join(ROOT, 'public', 'diagrams');
 const MANIFEST = join(RENDERED, 'manifest.json');
@@ -101,19 +92,9 @@ function preamble(theme) {
 
 // --- sources -------------------------------------------------------------------
 
-function list(dir, suffix, files = []) {
-  if (!existsSync(dir)) return files;
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) list(path, suffix, files);
-    else if (entry.endsWith(suffix)) files.push(path);
-  }
-  return files;
-}
-
 const manifest = { [TOKENS_KEY]: tokens };
 const expected = new Set();
-const sources = list(SOURCES, '.d2').sort();
+const sources = listFiles({ under: 'src/system-design/diagrams', ext: '.d2' });
 if (sources.length === 0)
   console.warn('No .d2 sources under src/system-design/diagrams/.');
 
@@ -158,7 +139,7 @@ for (const file of sources) {
 }
 
 // Remove SVGs whose source is gone, so check:diagrams doesn't flag orphans.
-for (const svg of list(RENDERED, '.svg')) {
+for (const svg of listFiles({ under: 'public/diagrams', ext: '.svg' })) {
   if (!expected.has(svg)) {
     rmSync(svg);
     console.log(`removed orphan ${relative(ROOT, svg).split('\\').join('/')}`);

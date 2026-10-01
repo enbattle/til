@@ -1,24 +1,15 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { CASE_STUDIES } from '@/lib/system-design';
+import { renderAt } from '@/test/render';
 import { CaseStudyNav } from './CaseStudyNav';
-
-function LocationDisplay() {
-  return <div data-testid="location-display">{useLocation().pathname}</div>;
-}
 
 function renderNav(
   initialPath = '/system-design',
   extra: { onNavigate?: () => void; className?: string } = {},
 ) {
-  return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <CaseStudyNav {...extra} />
-      <LocationDisplay />
-    </MemoryRouter>,
-  );
+  return renderAt(initialPath, <CaseStudyNav {...extra} />);
 }
 
 function nav() {

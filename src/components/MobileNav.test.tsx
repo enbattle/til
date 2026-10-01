@@ -1,25 +1,18 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { topicsBySection } from '@/lib/content';
+import { escapeRegExp, renderAt } from '@/test/render';
 import { MobileNav } from './MobileNav';
 
 function renderMobileNav(initialPath = '/') {
   const onClose = vi.fn();
-  render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <MobileNav onClose={onClose} />
-    </MemoryRouter>,
-  );
+  renderAt(initialPath, <MobileNav onClose={onClose} />);
   return onClose;
 }
 
 // Accessible name for the disclosure button isn't specified beyond
-// "includes the section's label" — match on the label only.
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+// "includes the section's label" — match on the label only (escapeRegExp).
 
 describe('MobileNav', () => {
   it('renders as a labeled modal dialog', () => {

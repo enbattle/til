@@ -1,28 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { ensureFullTextSearch, searchContent, type SearchResult } from '@/lib/search';
-import { SearchDialog } from './SearchDialog';
+import { renderDialog } from '@/test/render';
 
 // Retro: Enter in the search box opens the first result, the way a search
 // box is expected to work, instead of making the reader Tab down to it. The
 // dialog has no arrow-key highlighting, so "first" is the top of the list.
-
-function LocationDisplay() {
-  return <div data-testid="location-display">{useLocation().pathname}</div>;
-}
-
-function renderDialog() {
-  const onClose = vi.fn();
-  render(
-    <MemoryRouter initialEntries={['/']}>
-      <SearchDialog onClose={onClose} />
-      <LocationDisplay />
-    </MemoryRouter>,
-  );
-  return onClose;
-}
 
 function pathOf(result: SearchResult) {
   return result.kind === 'topic'

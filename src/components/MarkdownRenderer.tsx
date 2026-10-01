@@ -2,7 +2,7 @@ import { isValidElement, type ReactNode } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from 'react-router-dom';
-import { isDiagramSrc } from '@/lib/diagram-refs.mjs';
+import { isDiagramSrc } from '@/lib/markdown.mjs';
 import { hastText, rehypeHeadingIds, type HastNode } from '@/lib/headings';
 import { useSideScroll } from '@/hooks/useSideScroll';
 import { CodeBlock } from './CodeBlock';

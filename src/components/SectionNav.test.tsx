@@ -1,17 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { topicsBySection } from '@/lib/content';
+import { escapeRegExp, renderAt } from '@/test/render';
 import { SectionNav } from './SectionNav';
-
-// Renders the current pathname as text so a link click's actual navigation
-// effect can be asserted without needing a full <Routes> tree — SectionNav
-// itself only reads the location (via useLocation), it doesn't own routing.
-function LocationDisplay() {
-  const location = useLocation();
-  return <div data-testid="location-display">{location.pathname}</div>;
-}
 
 // A plain button that drives a real route change via useNavigate, so tests
 // can exercise "navigate to a different page after mount" (e.g. following a
@@ -25,22 +18,17 @@ function NavigateButton({ to }: { to: string }) {
   );
 }
 
+// The location probe (`LocationDisplay`, from renderAt) lets a link click's
+// actual navigation be asserted without a full <Routes> tree: SectionNav only
+// reads the location, it doesn't own routing.
 function renderNav(initialPath = '/', onNavigate?: () => void) {
-  return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <SectionNav onNavigate={onNavigate} />
-      <LocationDisplay />
-    </MemoryRouter>,
-  );
+  return renderAt(initialPath, <SectionNav onNavigate={onNavigate} />);
 }
 
 // Accessible names for the disclosure button aren't specified beyond
 // "includes the section's label" (plus, per the spec's own example, an
 // Expand/Collapse verb) — match on the label only, so the test doesn't
 // hardcode wording the implementation is free to choose.
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 function sectionToggle(label: string) {
   return screen.getByRole('button', { name: new RegExp(escapeRegExp(label), 'i') });

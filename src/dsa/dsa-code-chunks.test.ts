@@ -2,7 +2,7 @@ import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { markdownParser } from '@/lib/diagram-refs.mjs';
+import { markdownParser } from '@/lib/markdown.mjs';
 import { parseFrontmatter } from '@/lib/frontmatter';
 
 /**

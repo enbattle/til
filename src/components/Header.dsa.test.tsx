@@ -1,20 +1,13 @@
-import { render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { renderAt } from '@/test/render';
 import { Header } from './Header';
 
 // docs/specs/dsa-tab.md, criterion 5: a third header tab, DSA, current on
 // /dsa and /dsa/* only.
 
 function renderHeader(path: string) {
-  render(
-    <MemoryRouter initialEntries={[path]}>
-      <ThemeProvider>
-        <Header onOpenSearch={vi.fn()} onOpenNav={vi.fn()} />
-      </ThemeProvider>
-    </MemoryRouter>,
-  );
+  renderAt(path, <Header onOpenSearch={vi.fn()} onOpenNav={vi.fn()} />);
   return screen.getByRole('navigation', { name: 'Primary' });
 }
 

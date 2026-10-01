@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { SECTIONS } from '@/content/registry';
 import type { DsaEntry, DsaKind } from '@/types';
-import { dsaPrerequisites } from './dsa-prereqs.mjs';
+import { RAW_DSA_ENTRIES as RAW, rawDsaEntry as rawFor, without } from '@/test/content';
 import { parseFrontmatter } from './frontmatter';
+import { dsaPrerequisites } from './markdown.mjs';
 import {
   DSA_ENTRIES,
   dsaKindLabel,
@@ -19,19 +20,8 @@ import {
 // parts are checked on inline fixtures; `DSA_ENTRIES` and the body loader on
 // the real entries under src/dsa/entries/.
 
-// The test's own view of the real entry files, independent of the app's
-// loaders (which load only frontmatter and prerequisites eagerly).
-const RAW = import.meta.glob('/src/dsa/entries/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-function rawFor(slug: string): string {
-  const raw = RAW[`/src/dsa/entries/${slug}.md`];
-  if (raw === undefined) throw new Error(`no raw file for DSA entry ${slug}`);
-  return raw;
-}
+// The test's own view of the real entry files (RAW, rawFor) comes from
+// src/test/content.ts, independent of the app's loaders.
 
 const REFERENCE_ENTRIES: [string, DsaKind][] = [
   ['hash-map', 'data-structure'],
@@ -49,12 +39,6 @@ const VALID_FIELDS: Record<string, string> = {
   date: '2026-09-30',
   kind: 'algorithm',
 };
-
-function without(field: string): Record<string, string> {
-  const data = { ...VALID_FIELDS };
-  delete data[field];
-  return data;
-}
 
 describe('parseDsaEntry (criterion 1)', () => {
   it('returns slug, title, summary, date and kind, and no body', () => {
@@ -79,8 +63,12 @@ describe('parseDsaEntry (criterion 1)', () => {
   it.each(['title', 'summary', 'date', 'kind'] as const)(
     'throws naming the file and the field when %s is missing',
     (field) => {
-      expect(() => parseDsaEntry(VALID_PATH, without(field))).toThrow(/my-entry\.md/);
-      expect(() => parseDsaEntry(VALID_PATH, without(field))).toThrow(new RegExp(field));
+      expect(() => parseDsaEntry(VALID_PATH, without(VALID_FIELDS, field))).toThrow(
+        /my-entry\.md/,
+      );
+      expect(() => parseDsaEntry(VALID_PATH, without(VALID_FIELDS, field))).toThrow(
+        new RegExp(field),
+      );
     },
   );
 

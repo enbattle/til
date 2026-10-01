@@ -1,17 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { topicsBySection } from '@/lib/content';
-import App from './App';
-
-function renderAt(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
-  );
-}
+import { renderAt } from '@/test/render';
 
 describe('App routing', () => {
   it('renders the home page at /', () => {

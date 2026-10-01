@@ -1,27 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getDsaEntry } from '@/lib/dsa';
-import { SearchDialog } from './SearchDialog';
+import { renderDialog } from '@/test/render';
 
 // docs/specs/dsa-tab.md, criterion 14: a DSA result is labelled "DSA" and goes
 // to /dsa/<slug>.
-
-function LocationDisplay() {
-  return <div data-testid="location-display">{useLocation().pathname}</div>;
-}
-
-function renderDialog() {
-  const onClose = vi.fn();
-  render(
-    <MemoryRouter>
-      <SearchDialog onClose={onClose} />
-      <LocationDisplay />
-    </MemoryRouter>,
-  );
-  return onClose;
-}
 
 /** The one result button showing `summary` (a title can prefix others'). */
 async function findResult(summary: string): Promise<HTMLElement> {

@@ -1,19 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getCaseStudy } from '@/lib/system-design';
-import { SearchDialog } from './SearchDialog';
-
-function renderDialog() {
-  const onClose = vi.fn();
-  render(
-    <MemoryRouter>
-      <SearchDialog onClose={onClose} />
-    </MemoryRouter>,
-  );
-  return onClose;
-}
+import { escapeRegExp, renderDialog } from '@/test/render';
 
 describe('SearchDialog', () => {
   it('shows matching results as the query is typed', async () => {
@@ -38,7 +27,7 @@ describe('SearchDialog', () => {
     await user.click(screen.getByPlaceholderText(/search topics/i));
     await user.paste(caseStudy.title);
     const result = await screen.findByRole('button', {
-      name: new RegExp(caseStudy.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      name: new RegExp(escapeRegExp(caseStudy.title)),
     });
     expect(within(result).getByText(caseStudy.title)).toBeInTheDocument();
     expect(result).toHaveTextContent('System Design');
