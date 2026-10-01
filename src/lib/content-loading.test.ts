@@ -2,24 +2,13 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import {
   TOPICS,
   createBodyStore,
+  createCollection,
   loadAllTopicBodies,
   loadTopicBody,
   parseTopicMeta,
 } from './content';
 import { parseFrontmatter } from './frontmatter';
-
-// The test's own view of the raw files, independent of the app's loaders.
-const RAW = import.meta.glob('/src/content/**/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-function rawFor(section: string, slug: string): string {
-  const raw = RAW[`/src/content/${section}/${slug}.md`];
-  if (raw === undefined) throw new Error(`no raw file for ${section}/${slug}`);
-  return raw;
-}
+import { RAW_TOPICS as RAW, rawTopic as rawFor } from '@/test/content';
 
 const VALID = {
   title: 'A title',
@@ -212,6 +201,139 @@ describe('createBodyStore.loadAll (criterion 4)', () => {
 
     expect(Object.fromEntries(all)).toEqual({ 'a/good': 'good', 'a/flaky': 'recovered' });
     expect(flaky).toHaveBeenCalledTimes(2);
+  });
+});
+
+// docs/specs/dedupe-app-scripts-tests.md, criterion 4: one loader shape for
+// topics, case studies and DSA entries. `createCollection({ meta, bodies, parse,
+// key })` takes the eager `?meta` glob (path -> frontmatter), the lazy `?raw`
+// glob (path -> loader of the raw file), `parse(path, data)` and `key(path)`
+// (the item's key, or undefined for a path that isn't one). It returns
+// `{ items, get, loadBody, loadAllBodies }`. Every meta path goes through
+// `parse`, so a malformed file still throws at load as it does today; a body
+// path that `key` rejects is skipped.
+describe('createCollection (dedupe criterion 4)', () => {
+  interface Fake {
+    slug: string;
+    title: string;
+  }
+
+  const RAW_ONE = '---\ntitle: One\n---\n\nBody one.\n';
+  const RAW_TWO = '\uFEFF---\r\ntitle: Two\r\n---\r\n\r\nBody two.\r\n';
+  const PATH = /^\/fake\/([a-z]+)\.md$/;
+  const key = (path: string) => PATH.exec(path)?.[1];
+  const parse = (path: string, data: Record<string, string>): Fake => {
+    const slug = key(path);
+    if (!slug) throw new Error(`bad path: ${path}`);
+    return { slug, title: data.title };
+  };
+
+  function fakes(extraBodies: Record<string, () => Promise<string>> = {}) {
+    const one = vi.fn(async () => RAW_ONE);
+    const two = vi.fn(async () => RAW_TWO);
+    const collection = createCollection({
+      meta: { '/fake/one.md': { title: 'One' }, '/fake/two.md': { title: 'Two' } },
+      bodies: { '/fake/one.md': one, '/fake/two.md': two, ...extraBodies },
+      parse,
+      key,
+    });
+    return { collection, one, two };
+  }
+
+  it('parses one item per meta file', () => {
+    const { collection } = fakes();
+    expect([...collection.items].sort((a, b) => a.slug.localeCompare(b.slug))).toEqual([
+      { slug: 'one', title: 'One' },
+      { slug: 'two', title: 'Two' },
+    ]);
+  });
+
+  it('passes parse the path and its frontmatter', () => {
+    const spy = vi.fn(parse);
+    createCollection({
+      meta: { '/fake/one.md': { title: 'One' } },
+      bodies: {},
+      parse: spy,
+      key,
+    });
+    expect(spy).toHaveBeenCalledWith('/fake/one.md', { title: 'One' });
+  });
+
+  it('throws when parse throws for a meta file (a malformed file fails loudly)', () => {
+    expect(() =>
+      createCollection({
+        meta: { '/fake/one.md': { title: 'One' }, '/elsewhere/x.md': { title: 'X' } },
+        bodies: {},
+        parse,
+        key,
+      }),
+    ).toThrow('/elsewhere/x.md');
+  });
+
+  it('get finds an item by key, as the same object items holds', () => {
+    const { collection } = fakes();
+    const found = collection.get('two');
+    expect(found).toEqual({ slug: 'two', title: 'Two' });
+    expect(collection.items).toContain(found);
+  });
+
+  it('get returns undefined for an unknown key', () => {
+    const { collection } = fakes();
+    expect(collection.get('nope')).toBeUndefined();
+    expect(collection.get('/fake/one.md')).toBeUndefined();
+  });
+
+  it('loadBody resolves the body with its frontmatter stripped', async () => {
+    const { collection } = fakes();
+    await expect(collection.loadBody('one')).resolves.toBe(
+      parseFrontmatter(RAW_ONE).content,
+    );
+    const two = await collection.loadBody('two');
+    expect(two).toBe(parseFrontmatter(RAW_TWO).content);
+    expect(two).toContain('Body two.');
+    expect(two).not.toContain('title:');
+  });
+
+  it('loadBody returns the same promise twice and loads the file once', async () => {
+    const { collection, one } = fakes();
+    const first = collection.loadBody('one');
+    expect(collection.loadBody('one')).toBe(first);
+    await first;
+    expect(collection.loadBody('one')).toBe(first);
+    expect(one).toHaveBeenCalledTimes(1);
+  });
+
+  it('loadBody rejects an unknown key, naming it, without loading anything', async () => {
+    const { collection, one, two } = fakes();
+    await expect(collection.loadBody('nope')).rejects.toThrow('nope');
+    expect(one).not.toHaveBeenCalled();
+    expect(two).not.toHaveBeenCalled();
+  });
+
+  it('loadBody rejects a key that has a body file but no item', async () => {
+    const three = vi.fn(async () => '---\ntitle: Three\n---\nBody three.\n');
+    const { collection } = fakes({ '/fake/three.md': three });
+    await expect(collection.loadBody('three')).rejects.toThrow('three');
+    expect(three).not.toHaveBeenCalled();
+  });
+
+  it('loadAllBodies returns every body, keyed by key, frontmatter stripped', async () => {
+    const { collection } = fakes();
+    const all = await collection.loadAllBodies();
+    expect(all).toBeInstanceOf(Map);
+    expect(Object.fromEntries(all)).toEqual({
+      one: parseFrontmatter(RAW_ONE).content,
+      two: parseFrontmatter(RAW_TWO).content,
+    });
+  });
+
+  it('skips a body path that key() rejects', async () => {
+    const stray = vi.fn(async () => 'stray');
+    const { collection } = fakes({ '/fake/Not_A_Slug.md': stray, '/other/x.md': stray });
+    const all = await collection.loadAllBodies();
+    expect([...all.keys()].sort()).toEqual(['one', 'two']);
+    expect(stray).not.toHaveBeenCalled();
+    await expect(collection.loadBody('Not_A_Slug')).rejects.toThrow('Not_A_Slug');
   });
 });
 

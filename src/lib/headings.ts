@@ -1,5 +1,5 @@
 import remarkRehype from 'remark-rehype';
-import { markdownParser } from './diagram-refs.mjs';
+import { markdownParser } from './markdown.mjs';
 
 /**
  * The in-page anchor slug for a heading's text: lowercase, with every run of

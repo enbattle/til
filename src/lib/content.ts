@@ -50,11 +50,6 @@ export function parseTopicMeta(filePath: string, data: Record<string, string>): 
   };
 }
 
-/** Every topic across every section, sorted by title. Metadata only. */
-export const TOPICS: Topic[] = Object.entries(metaFiles)
-  .map(([filePath, data]) => parseTopicMeta(filePath, data))
-  .sort((a, b) => a.title.localeCompare(b.title));
-
 /**
  * Loads bodies on demand from `loaders` (keyed `section/slug` for topics, the
  * slug for case studies in `system-design.ts`), remembering each
@@ -99,60 +94,101 @@ export function createBodyStore(loaders: Record<string, () => Promise<string>>) 
   return { load, loadAll };
 }
 
-const bodyStore = createBodyStore(
-  Object.fromEntries(
-    Object.entries(bodyFiles).flatMap(([filePath, loadRaw]) => {
-      const match = PATH_PATTERN.exec(filePath);
-      if (!match) return [];
-      return [
-        [
-          `${match[1]}/${match[2]}`,
-          async () => parseFrontmatter(await loadRaw()).content,
-        ],
-      ];
-    }),
-  ),
+/**
+ * One kind of content (topics, case studies, DSA entries) from its two globs:
+ * `meta`, the eager `?meta` glob (path -> frontmatter), every path of which
+ * goes through `parse`, so a malformed file throws at load; and `bodies`, the
+ * lazy `?raw` glob. `key(path)` gives an item's key, or undefined for a path
+ * that isn't one (its body is skipped). `items` is in glob order; callers sort.
+ * `loadBody` strips the frontmatter and rejects a key with no item without
+ * loading anything.
+ */
+export function createCollection<T>({
+  meta,
+  bodies,
+  parse,
+  key,
+}: {
+  meta: Record<string, Record<string, string>>;
+  bodies: Record<string, () => Promise<string>>;
+  parse: (path: string, data: Record<string, string>) => T;
+  key: (path: string) => string | undefined;
+}) {
+  const byKey = new Map<string, T>();
+  const items = Object.entries(meta).map(([path, data]) => {
+    const item = parse(path, data);
+    const itemKey = key(path);
+    if (itemKey !== undefined) byKey.set(itemKey, item);
+    return item;
+  });
+
+  const store = createBodyStore(
+    Object.fromEntries(
+      Object.entries(bodies).flatMap(([path, loadRaw]) => {
+        const bodyKey = key(path);
+        if (bodyKey === undefined) return [];
+        return [[bodyKey, async () => parseFrontmatter(await loadRaw()).content]];
+      }),
+    ),
+  );
+
+  return {
+    items,
+    get: (itemKey: string): T | undefined => byKey.get(itemKey),
+    /** The same promise comes back for the same key. */
+    loadBody(itemKey: string): Promise<string> {
+      if (!byKey.has(itemKey)) {
+        return Promise.reject(new Error(`Unknown item "${itemKey}"`));
+      }
+      return store.load(itemKey);
+    },
+    /** Every body, keyed by key. Fetches all the body chunks the first time. */
+    loadAllBodies: () => store.loadAll(),
+  };
+}
+
+const topics = createCollection({
+  meta: metaFiles,
+  bodies: bodyFiles,
+  parse: parseTopicMeta,
+  key: (filePath) => {
+    const match = PATH_PATTERN.exec(filePath);
+    return match ? `${match[1]}/${match[2]}` : undefined;
+  },
+});
+
+/** Every topic across every section, sorted by title. Metadata only. */
+export const TOPICS: Topic[] = [...topics.items].sort((a, b) =>
+  a.title.localeCompare(b.title),
 );
 
 /** A topic's markdown body, frontmatter stripped. Rejects for an unknown
  * topic. The same promise comes back for the same topic, so it's safe to
  * hand straight to React's `use`. */
 export function loadTopicBody(section: string, slug: string): Promise<string> {
-  if (!getTopic(section, slug)) {
-    return Promise.reject(new Error(`Unknown topic "${section}/${slug}"`));
-  }
-  return bodyStore.load(`${section}/${slug}`);
+  return topics.loadBody(`${section}/${slug}`);
 }
 
 /** Every topic body, keyed `section/slug`. Fetches all the body chunks the
  * first time; used by full-text search. */
 export function loadAllTopicBodies(): Promise<Map<string, string>> {
-  return bodyStore.loadAll();
+  return topics.loadAllBodies();
 }
 
-/** Topics grouped by section, in `SECTIONS` order. Empty sections are omitted. */
+// Built once: the topic set is fixed at build time.
+const TOPICS_BY_SECTION = SECTIONS.map((section) => ({
+  section,
+  topics: TOPICS.filter((topic) => topic.section === section.slug),
+})).filter((group) => group.topics.length > 0);
+
+/** Topics grouped by section, in `SECTIONS` order, each by title. Empty
+ * sections are omitted. The same array every call. */
 export function topicsBySection(): { section: Section; topics: Topic[] }[] {
-  return SECTIONS.map((section) => ({
-    section,
-    topics: TOPICS.filter((topic) => topic.section === section.slug),
-  })).filter((group) => group.topics.length > 0);
+  return TOPICS_BY_SECTION;
 }
 
 export function getTopic(section: string, slug: string): Topic | undefined {
-  return TOPICS.find((topic) => topic.section === section && topic.slug === slug);
-}
-
-/** The topics immediately before/after `topic` within its own section, alphabetically by title. */
-export function sectionNeighbors(topic: Topic): {
-  prev: Topic | null;
-  next: Topic | null;
-} {
-  const siblings = TOPICS.filter((t) => t.section === topic.section);
-  const index = siblings.findIndex((t) => t.slug === topic.slug);
-  return {
-    prev: index > 0 ? siblings[index - 1] : null,
-    next: index >= 0 && index < siblings.length - 1 ? siblings[index + 1] : null,
-  };
+  return topics.get(`${section}/${slug}`);
 }
 
 /** The `count` most recently written topics, newest first. */

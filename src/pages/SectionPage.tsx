@@ -1,6 +1,6 @@
 import { Navigate, useParams } from 'react-router-dom';
 import { getSection } from '@/content/registry';
-import { topicsBySection } from '@/lib/content';
+import { TOPICS } from '@/lib/content';
 import { TopicCard } from '@/components/TopicCard';
 
 export function SectionPage() {
@@ -9,8 +9,7 @@ export function SectionPage() {
 
   if (!section) return <Navigate to="/not-found" replace />;
 
-  const topics =
-    topicsBySection().find((group) => group.section.slug === section.slug)?.topics ?? [];
+  const topics = TOPICS.filter((topic) => topic.section === section.slug);
 
   return (
     <div className="space-y-6">

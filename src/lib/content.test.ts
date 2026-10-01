@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SECTIONS } from '@/content/registry';
-import { getTopic, recentTopics, sectionNeighbors, topicsBySection } from './content';
+import { TOPICS, getTopic, recentTopics, topicsBySection } from './content';
+import { neighbours } from './neighbours';
 
 describe('content loader', () => {
   it('finds a known topic by section and slug', () => {
@@ -27,18 +28,36 @@ describe('content loader', () => {
     }
   });
 
+  // docs/specs/dedupe-app-scripts-tests.md, criterion 5: the topic page's
+  // prev/next is `neighbours` over its section's topics (sectionNeighbors is
+  // gone), so a section's group must hold its topics in title order.
   it('walks prev/next neighbors within a section without leaking across sections', () => {
     const [firstSection] = topicsBySection();
     const [first, second] = firstSection.topics;
+    const walk = (topic: (typeof firstSection.topics)[number]) =>
+      neighbours(firstSection.topics, topic);
 
-    expect(sectionNeighbors(first).prev).toBeNull();
+    expect(walk(first).prev).toBeNull();
     if (second) {
-      expect(sectionNeighbors(first).next?.slug).toBe(second.slug);
-      expect(sectionNeighbors(second).prev?.slug).toBe(first.slug);
+      expect(walk(first).next?.slug).toBe(second.slug);
+      expect(walk(second).prev?.slug).toBe(first.slug);
     }
 
     const last = firstSection.topics[firstSection.topics.length - 1];
-    expect(sectionNeighbors(last).next).toBeNull();
+    expect(walk(last).next).toBeNull();
+  });
+
+  it("holds each section's topics in title order, exactly the section's TOPICS", () => {
+    for (const { section, topics } of topicsBySection()) {
+      expect(topics).toEqual(TOPICS.filter((t) => t.section === section.slug));
+      const titles = topics.map((t) => t.title);
+      expect(titles).toEqual([...titles].sort((a, b) => a.localeCompare(b)));
+    }
+  });
+
+  // Criterion 4 (A11): built once at module load, not on every call.
+  it('returns the same grouping on every call', () => {
+    expect(topicsBySection()).toBe(topicsBySection());
   });
 
   it('returns the most recent topics, newest first, capped at the requested count', () => {

@@ -16,16 +16,12 @@
 // opening any topic download every body), or if any other chunk pulls a body
 // chunk in with a static import (so it would load whenever that chunk does,
 // e.g. on every topic view). Only a dynamic `import()` may reach a body chunk.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, extname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, relative } from 'node:path';
+import { parseFrontmatter } from '../src/lib/frontmatter.ts';
+import { escapeRegExp, listFiles, ROOT } from './lib.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const BODY_DIRS = [
-  join(ROOT, 'src', 'content'),
-  join(ROOT, 'src', 'system-design', 'case-studies'),
-  join(ROOT, 'src', 'dsa', 'entries'),
-];
+const BODY_DIRS = ['src/content', 'src/system-design/case-studies', 'src/dsa/entries'];
 const ASSETS = join(ROOT, 'dist', 'assets');
 const MIN_LINE = 40;
 const MIN_FRAGMENT = 30;
@@ -34,26 +30,6 @@ const MIN_FRAGMENT = 30;
 // a run of characters that no string encoding rewrites sidesteps all of that.
 const SAFE_RUN = /[A-Za-z0-9 ,.;:()-]+/g;
 
-function walk(dir, ext, files = []) {
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) {
-      walk(path, ext, files);
-    } else if (extname(path) === ext) {
-      files.push(path);
-    }
-  }
-  return files;
-}
-
-/** The body of a markdown file: everything after a leading `---` frontmatter block. */
-function bodyOf(raw) {
-  const lines = raw.replace(/^﻿/, '').split('\n');
-  if (lines[0]?.trim() !== '---') return lines;
-  const closing = lines.findIndex((line, i) => i > 0 && line.trim() === '---');
-  return closing === -1 ? lines : lines.slice(closing + 1);
-}
-
 /**
  * The first prose line of at least MIN_LINE characters (skipping code fences,
  * their contents, and lines that are only a heading, list or quote marker),
@@ -61,7 +37,7 @@ function bodyOf(raw) {
  */
 function fragmentFor(raw) {
   let inFence = false;
-  for (const line of bodyOf(raw)) {
+  for (const line of parseFrontmatter(raw).content.split('\n')) {
     const text = line.trim();
     if (text.startsWith('```') || text.startsWith('~~~')) {
       inFence = !inFence;
@@ -99,9 +75,7 @@ if (mainChunks.length === 0) {
 const violations = [];
 const checks = [];
 const chunkTopics = new Map();
-const bodyFiles = BODY_DIRS.filter((dir) => existsSync(dir)).flatMap((dir) =>
-  walk(dir, '.md'),
-);
+const bodyFiles = BODY_DIRS.flatMap((under) => listFiles({ under, ext: '.md' }));
 for (const file of bodyFiles) {
   const name = relative(ROOT, file);
   const fragment = fragmentFor(readFileSync(file, 'utf8'));
@@ -143,7 +117,6 @@ for (const [chunkName, names] of chunkTopics) {
 // importing chunk, so a chunk loaded on every topic view (the markdown
 // renderer) or the main chunk could drag bodies in without inlining them.
 // `import("./x.js")` has a parenthesis before the quote, so it doesn't match.
-const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 for (const [bodyChunk, names] of chunkTopics) {
   const staticImport = new RegExp(
     `(?:from|import)\\s*["'\`]\\./${escapeRegExp(bodyChunk)}["'\`]`,

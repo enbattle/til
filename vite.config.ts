@@ -6,8 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseFrontmatter, type ParsedMarkdown } from './src/lib/frontmatter.ts';
-import { extractTopicRefs } from './src/lib/markdown-links.ts';
-import { dsaPrerequisites } from './src/lib/dsa-prereqs.mjs';
+import { dsaPrerequisites, extractTopicRefs } from './src/lib/markdown.mjs';
 
 /**
  * Build-time views of a markdown file, so the app can list and cross-link
@@ -24,7 +23,7 @@ import { dsaPrerequisites } from './src/lib/dsa-prereqs.mjs';
  *   deeper" and for the topic pages' back-links.
  * - `import prereqs from './entry.md?dsaPrereqs'` resolves to the slugs a DSA
  *   entry links under its `## Prerequisites` heading (`dsaPrerequisites` in
- *   `src/lib/dsa-prereqs.mjs`), which order the DSA list and fill its
+ *   `src/lib/markdown.mjs`), which order the DSA list and fill its
  *   "Before this" links.
  *
  * Each view is one entry below, keyed by its query name; adding a view is
@@ -98,6 +97,22 @@ function diagramSizes(): Plugin {
 export default defineConfig({
   plugins: [markdownMeta(), diagramSizes(), react(), tailwindcss()],
   base: '/til/',
+  build: {
+    rollupOptions: {
+      output: {
+        // Rollup names a shared chunk after its last module in execution
+        // order, which shifts with the content pages' imports. The chunk the
+        // three content pages share is named after MarkdownRenderer instead,
+        // the name its size budget in package.json looks for.
+        chunkFileNames: (chunk) =>
+          chunk.moduleIds.some((id) =>
+            id.endsWith('/src/components/MarkdownRenderer.tsx'),
+          )
+            ? 'assets/MarkdownRenderer-[hash].js'
+            : 'assets/[name]-[hash].js',
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),

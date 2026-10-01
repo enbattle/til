@@ -1,7 +1,6 @@
 import type { CaseStudy, Topic } from '@/types';
-import { createBodyStore, getTopic } from './content';
-import { parseFrontmatter } from './frontmatter';
-import type { TopicRef } from './markdown-links';
+import { createCollection, getTopic } from './content';
+import type { TopicRef } from './markdown.mjs';
 
 // Frontmatter and topic links only, eagerly: enough for the landing page, the
 // sidebar, search titles, "Go deeper" and the topic pages' back-links, without
@@ -67,38 +66,32 @@ function slugOf(filePath: string): string | undefined {
   return PATH_PATTERN.exec(filePath)?.[1];
 }
 
+const caseStudies = createCollection({
+  meta: metaFiles,
+  bodies: bodyFiles,
+  parse: parseCaseStudy,
+  key: slugOf,
+});
+
 /** Every case study, sorted by `order` ascending. Metadata only. */
-export const CASE_STUDIES: CaseStudy[] = Object.entries(metaFiles)
-  .map(([filePath, data]) => parseCaseStudy(filePath, data))
-  .sort((a, b) => a.order - b.order);
+export const CASE_STUDIES: CaseStudy[] = [...caseStudies.items].sort(
+  (a, b) => a.order - b.order,
+);
 
 export function getCaseStudy(slug: string): CaseStudy | undefined {
-  return CASE_STUDIES.find((caseStudy) => caseStudy.slug === slug);
+  return caseStudies.get(slug);
 }
-
-const bodyStore = createBodyStore(
-  Object.fromEntries(
-    Object.entries(bodyFiles).flatMap(([filePath, loadRaw]) => {
-      const slug = slugOf(filePath);
-      if (!slug) return [];
-      return [[slug, async () => parseFrontmatter(await loadRaw()).content]];
-    }),
-  ),
-);
 
 /** A case study's markdown body, frontmatter stripped. Rejects for an unknown
  * slug. The same promise comes back for the same case study. */
 export function loadCaseStudyBody(slug: string): Promise<string> {
-  if (!getCaseStudy(slug)) {
-    return Promise.reject(new Error(`Unknown case study "${slug}"`));
-  }
-  return bodyStore.load(slug);
+  return caseStudies.loadBody(slug);
 }
 
 /** Every case-study body, keyed by slug. Fetches all the body chunks the first
  * time; used by full-text search. */
 export function loadAllCaseStudyBodies(): Promise<Map<string, string>> {
-  return bodyStore.loadAll();
+  return caseStudies.loadAllBodies();
 }
 
 // slug -> the topic links in that case study's body, from the build-time

@@ -55,7 +55,7 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   that matches a topic's summary but not its title still returns that
   topic", not "search should work better"). They become Stage 2's tests.
 - A check over content uses the shared `markdownParser()`
-  (`src/lib/diagram-refs.mjs`) or inspects the rendered output, not a regex
+  (`src/lib/markdown.mjs`) or inspects the rendered output, not a regex
   or a second parser.
 - Scope in and out; files/modules touched; whether there's a user-facing UI
   surface (decides Stage 4's browser check).

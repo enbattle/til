@@ -1,8 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { DSA_ENTRIES } from '@/lib/dsa';
+import { renderAt } from '@/test/render';
 import { DsaNav } from './DsaNav';
 import { MobileNav } from './MobileNav';
 
@@ -11,20 +11,11 @@ import { MobileNav } from './MobileNav';
 
 const NAV_NAME = 'DSA entries';
 
-function LocationDisplay() {
-  return <div data-testid="location-display">{useLocation().pathname}</div>;
-}
-
 function renderNav(
   initialPath = '/dsa',
   extra: { onNavigate?: () => void; className?: string } = {},
 ) {
-  return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <DsaNav {...extra} />
-      <LocationDisplay />
-    </MemoryRouter>,
-  );
+  return renderAt(initialPath, <DsaNav {...extra} />);
 }
 
 function nav() {
@@ -92,11 +83,7 @@ describe('DsaNav (criterion 8)', () => {
 describe('MobileNav on DSA routes (criterion 8)', () => {
   function renderMobileNav(path: string) {
     const onClose = vi.fn();
-    render(
-      <MemoryRouter initialEntries={[path]}>
-        <MobileNav onClose={onClose} />
-      </MemoryRouter>,
-    );
+    renderAt(path, <MobileNav onClose={onClose} />);
     return onClose;
   }
 

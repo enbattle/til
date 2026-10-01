@@ -1,10 +1,11 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { TOPICS, getTopic, sectionNeighbors } from '@/lib/content';
+import { getSection } from '@/content/registry';
+import { TOPICS, getTopic } from '@/lib/content';
 import { caseStudiesForTopic } from '@/lib/system-design';
 import App from '@/App';
 import { TopicPage } from './TopicPage';
@@ -26,6 +27,19 @@ vi.mock('@/lib/content', async () => {
         : actual.loadTopicBody(section, slug),
   };
 });
+
+/** The topics before and after `topic` in its own section, in title order:
+ * the test's own view, computed from TOPICS rather than the page's helper. */
+function siblingsAround(topic: { section: string; slug: string }) {
+  const siblings = TOPICS.filter((t) => t.section === topic.section).sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+  const index = siblings.findIndex((t) => t.slug === topic.slug);
+  return {
+    prev: index > 0 ? siblings[index - 1] : null,
+    next: index >= 0 && index < siblings.length - 1 ? siblings[index + 1] : null,
+  };
+}
 
 const SECTION = 'ai-and-ml';
 const SLUG = 'prompt-engineering';
@@ -165,10 +179,10 @@ describe('TopicPage layout while the body loads', () => {
   // so a missing implementation fails these tests rather than the whole file.
   function fixture() {
     const topic = TOPICS.find((t) => {
-      const { prev, next } = sectionNeighbors(t);
+      const { prev, next } = siblingsAround(t);
       return caseStudiesForTopic(t.section, t.slug).length > 0 && prev && next;
     })!;
-    const { prev, next } = sectionNeighbors(topic);
+    const { prev, next } = siblingsAround(topic);
     return {
       topic,
       prev,
@@ -244,7 +258,7 @@ describe('TopicPage layout while the body loads', () => {
 
 describe('TopicPage moving between topics', () => {
   const A = getTopic(SECTION, SLUG)!;
-  const B = sectionNeighbors(A).next ?? sectionNeighbors(A).prev!;
+  const B = siblingsAround(A).next ?? siblingsAround(A).prev!;
   const A_TEXT = 'Distinctive body text of topic A.';
   const B_TEXT = 'Distinctive body text of topic B.';
 
@@ -343,4 +357,103 @@ describe('TopicPage load that rejects with a falsy value', () => {
       ).not.toBeInTheDocument();
     },
   );
+});
+
+// docs/specs/dedupe-app-scripts-tests.md, criterion 5: the topic page is built
+// from the shared PageHeader and PrevNextNav. It renders as before, except that
+// the prev/next nav now has an accessible name, "More in <section label>".
+describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)', () => {
+  const BACKLINKS = 'Case studies this topic is used in';
+
+  function labelOf(topic: { section: string }): string {
+    return getSection(topic.section)!.label;
+  }
+
+  async function renderLoaded(topic: { section: string; slug: string }) {
+    // One promise, handed back on every call, as the real loader does.
+    const body = Promise.resolve('Shared parts sentinel paragraph.\n');
+    state.override = () => body;
+    renderTopic(`/${topic.section}/${topic.slug}`);
+    await screen.findByText('Shared parts sentinel paragraph.');
+  }
+
+  /** The navigations other than the case-study back-links. */
+  function pagerNavs(): HTMLElement[] {
+    return screen
+      .queryAllByRole('navigation')
+      .filter((nav) => nav.getAttribute('aria-label') !== BACKLINKS);
+  }
+
+  it('names the prev/next nav "More in <section label>", holding both neighbours', async () => {
+    const topic = TOPICS.find((t) => {
+      const { prev, next } = siblingsAround(t);
+      return prev && next;
+    })!;
+    const { prev, next } = siblingsAround(topic);
+    await renderLoaded(topic);
+
+    const pager = screen.getByRole('navigation', { name: `More in ${labelOf(topic)}` });
+    expect(pagerNavs()).toEqual([pager]);
+    expect(
+      within(pager)
+        .getAllByRole('link')
+        .map((a) => [a.textContent, a.getAttribute('href')]),
+    ).toEqual([
+      [`← ${prev!.title}`, `/${topic.section}/${prev!.slug}`],
+      [`${next!.title} →`, `/${topic.section}/${next!.slug}`],
+    ]);
+  });
+
+  it('keeps the back link, the one h1 and the date in the shared header', async () => {
+    const topic = getTopic(SECTION, SLUG)!;
+    await renderLoaded(topic);
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(
+      screen.getByRole('heading', { level: 1, name: topic.title }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: `← ${labelOf(topic)}` })).toHaveAttribute(
+      'href',
+      `/${SECTION}`,
+    );
+    expect(screen.getByText(topic.date)).toBeInTheDocument();
+  });
+
+  it('shows only "next" on the first topic of a section and only "prev" on the last, in title order', async () => {
+    const siblings = TOPICS.filter((t) => t.section === SECTION).sort((a, b) =>
+      a.title.localeCompare(b.title),
+    );
+    expect(siblings.length).toBeGreaterThan(2);
+    const [first, second] = siblings;
+    const [beforeLast, last] = siblings.slice(-2);
+
+    await renderLoaded(first);
+    let pager = screen.getByRole('navigation', { name: `More in ${labelOf(first)}` });
+    expect(
+      within(pager)
+        .getAllByRole('link')
+        .map((a) => [a.textContent, a.getAttribute('href')]),
+    ).toEqual([[`${second.title} →`, `/${SECTION}/${second.slug}`]]);
+    cleanup();
+
+    await renderLoaded(last);
+    pager = screen.getByRole('navigation', { name: `More in ${labelOf(last)}` });
+    expect(
+      within(pager)
+        .getAllByRole('link')
+        .map((a) => [a.textContent, a.getAttribute('href')]),
+    ).toEqual([[`← ${beforeLast.title}`, `/${SECTION}/${beforeLast.slug}`]]);
+  });
+
+  it('renders no prev/next nav for the only topic in its section', async () => {
+    const counts = new Map<string, number>();
+    for (const t of TOPICS) counts.set(t.section, (counts.get(t.section) ?? 0) + 1);
+    const only = TOPICS.find((t) => counts.get(t.section) === 1);
+    expect(only, 'a section with exactly one topic').toBeDefined();
+    await renderLoaded(only!);
+
+    expect(pagerNavs()).toHaveLength(0);
+    expect(
+      screen.queryByRole('navigation', { name: `More in ${labelOf(only!)}` }),
+    ).not.toBeInTheDocument();
+  });
 });

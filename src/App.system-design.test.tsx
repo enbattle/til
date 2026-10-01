@@ -1,9 +1,7 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { getTopic } from '@/lib/content';
-import { parseFrontmatter } from '@/lib/frontmatter';
 import { h2Headings } from '@/lib/headings';
 import {
   CASE_STUDIES,
@@ -11,43 +9,13 @@ import {
   getCaseStudy,
   topicsForCaseStudy,
 } from '@/lib/system-design';
-import App from './App';
-
-function renderAt(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
-  );
-}
+import { caseStudyBody, chromeLinks } from '@/test/content';
+import { escapeRegExp, renderAt } from '@/test/render';
 
 // --- System Design: design case studies alongside the catalog ---
 
-const RAW = import.meta.glob('/src/system-design/case-studies/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-function bodyOf(slug: string): string {
-  const raw = RAW[`/src/system-design/case-studies/${slug}.md`];
-  if (raw === undefined) throw new Error(`no raw file for case study ${slug}`);
-  return parseFrontmatter(raw).content;
-}
-
 function primaryNav() {
   return screen.getByRole('navigation', { name: 'Primary' });
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/** Links inside <main> that sit outside the rendered markdown body. */
-function chromeLinks(main: HTMLElement): HTMLAnchorElement[] {
-  return within(main)
-    .getAllByRole('link')
-    .filter((a) => !a.closest('.prose')) as HTMLAnchorElement[];
 }
 
 const SLUG = 'url-shortener';
@@ -153,7 +121,7 @@ describe('case study page (criterion 8)', () => {
 
   it('has a Contents nav linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
     const { main } = await openCaseStudy();
-    const expected = h2Headings(bodyOf(SLUG)).map((h) => h.text);
+    const expected = h2Headings(caseStudyBody(SLUG)).map((h) => h.text);
     expect(expected.length).toBeGreaterThan(0);
 
     const contents = await within(main).findByRole('navigation', { name: 'Contents' });

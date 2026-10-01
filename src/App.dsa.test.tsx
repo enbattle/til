@@ -1,49 +1,17 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DSA_ENTRIES, dsaKindLabel, getDsaEntry, getDsaPrerequisites } from '@/lib/dsa';
-import { parseFrontmatter } from '@/lib/frontmatter';
 import { h2Headings } from '@/lib/headings';
-import App from './App';
+import { chromeLinks, dsaEntryBody } from '@/test/content';
+import { escapeRegExp, renderAt } from '@/test/render';
 
 // docs/specs/dsa-tab.md, criteria 6-8 on the whole app: the /dsa landing page,
 // the /dsa/:slug entry page and the sidebar choice.
 
-function renderAt(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
-  );
-}
-
 afterEach(() => {
   localStorage.clear();
 });
-
-const RAW = import.meta.glob('/src/dsa/entries/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-function bodyOf(slug: string): string {
-  const raw = RAW[`/src/dsa/entries/${slug}.md`];
-  if (raw === undefined) throw new Error(`no raw file for DSA entry ${slug}`);
-  return parseFrontmatter(raw).content;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-/** Links inside <main> outside the rendered markdown body. */
-function chromeLinks(main: HTMLElement): HTMLAnchorElement[] {
-  return within(main)
-    .getAllByRole('link')
-    .filter((a) => !a.closest('.prose')) as HTMLAnchorElement[];
-}
 
 async function openEntry(slug: string) {
   const entry = getDsaEntry(slug);
@@ -124,7 +92,7 @@ describe('DSA entry page (criterion 7)', () => {
 
   it('has a Contents nav linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
     const { main } = await openEntry('binary-search');
-    const expected = h2Headings(bodyOf('binary-search')).map((h) => h.text);
+    const expected = h2Headings(dsaEntryBody('binary-search')).map((h) => h.text);
     expect(expected.length).toBeGreaterThan(0);
 
     const contents = await within(main).findByRole('navigation', { name: 'Contents' });

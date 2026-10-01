@@ -139,7 +139,7 @@ file, after Stage 2.
 
 An entry's prerequisites are the `/dsa/<slug>` links inside its
 `## Prerequisites` section, in order (`dsaPrerequisites` in
-`src/lib/dsa-prereqs.mjs`, run at build time). The page shows them as
+`src/lib/markdown.mjs`, run at build time). The page shows them as
 **Before this** under the title. Link an entry there only when the prose
 really needs it; with none, say so in prose (the structure test fails an empty
 section). A `/dsa/` link anywhere else in the body is a "see also" and doesn't

@@ -259,7 +259,7 @@ diff (a real polish point). It fails if it reports a defect that isn't there.
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -159,3 +159,10 @@ export function recentTopics(count: number): Topic[] {
+@@ -195,3 +195,10 @@ export function recentTopics(count: number): Topic[] {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -272,14 +272,19 @@ diff (a real polish point). It fails if it reports a defect that isn't there.
 +}
 --- a/src/lib/content.test.ts
 +++ b/src/lib/content.test.ts
-@@ -6,5 +6,6 @@ import {
-   loadAllTopicBodies,
-   recentTopics,
+@@ -1,4 +1,10 @@
+ import { describe, expect, it } from 'vitest';
+ import { SECTIONS } from '@/content/registry';
+-import { TOPICS, getTopic, recentTopics, topicsBySection } from './content';
++import {
++  TOPICS,
++  getTopic,
 +  readingMinutes,
-   sectionNeighbors,
-   topicsBySection,
- } from './content';
-@@ -76,3 +77,14 @@ describe('content loader', () => {
++  recentTopics,
++  topicsBySection,
++} from './content';
+ import { neighbours } from './neighbours';
+@@ -68,3 +74,14 @@ describe('content loader', () => {
      }
    });
  });
@@ -319,7 +324,7 @@ a spec, a diff and one review finding (procedure in `HOW_TO_RUN.md`).
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -159,3 +159,9 @@ export function recentTopics(count: number): Topic[] {
+@@ -195,3 +195,9 @@ export function recentTopics(count: number): Topic[] {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -354,13 +359,13 @@ Known limitation or Reject.
 ```diff
 --- a/src/lib/content.test.ts
 +++ b/src/lib/content.test.ts
-@@ -1,3 +1,4 @@
+@@ -1,4 +1,5 @@
  import { describe, expect, it } from 'vitest';
  import { SECTIONS } from '@/content/registry';
--import { getTopic, recentTopics, sectionNeighbors, topicsBySection } from './content';
-+import { getTopic, recentTopics, sectionNeighbors, TOPICS, topicsBySection } from './content';
+ import { TOPICS, getTopic, recentTopics, topicsBySection } from './content';
+ import { neighbours } from './neighbours';
 +import { CASE_STUDIES } from './system-design';
-@@ -51,1 +52,9 @@ describe('content loader', () => {
+@@ -70,1 +71,9 @@ describe('content loader', () => {
  });
 +
 +describe('summaries', () => {

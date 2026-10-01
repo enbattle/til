@@ -4,39 +4,28 @@
 // bypasses the light/dark theme tokens in src/index.css, so this fails CI
 // instead of relying on review to catch it — the same "convert a
 // documented convention into a hard check" reasoning as `npm run size`.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, extname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join, sep } from 'node:path';
+import { listFiles, ROOT } from './lib.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'src');
 
 // Token definitions legitimately live here; everything else under src/ is
 // app code that should reference a token, not a literal.
 const EXCLUDED_FILES = new Set([join(SRC, 'index.css')]);
 // Published prose, not app code — a topic's body text isn't held to this.
-const EXCLUDED_DIRS = new Set([join(SRC, 'content')]);
+const EXCLUDED_DIR = join(SRC, 'content') + sep;
 // `.d2` diagram sources aren't scanned here: check:diagrams already rejects a
 // hex color (or any color style key) in them, where `#` also starts comments.
-const SCANNED_EXTENSIONS = new Set(['.ts', '.tsx', '.css']);
+const SCANNED_EXTENSIONS = ['.ts', '.tsx', '.css'];
 const HEX_COLOR = /#[0-9a-fA-F]{3,8}\b/g;
 
-function walk(dir, files = []) {
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    if (EXCLUDED_DIRS.has(path)) continue;
-    const stats = statSync(path);
-    if (stats.isDirectory()) {
-      walk(path, files);
-    } else if (SCANNED_EXTENSIONS.has(extname(path)) && !EXCLUDED_FILES.has(path)) {
-      files.push(path);
-    }
-  }
-  return files;
-}
+const files = listFiles({ under: 'src', ext: SCANNED_EXTENSIONS }).filter(
+  (file) => !EXCLUDED_FILES.has(file) && !file.startsWith(EXCLUDED_DIR),
+);
 
 const violations = [];
-for (const file of walk(SRC)) {
+for (const file of files) {
   const content = readFileSync(file, 'utf8');
   const lines = content.split('\n');
   lines.forEach((line, i) => {

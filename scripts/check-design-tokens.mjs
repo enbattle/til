@@ -6,10 +6,9 @@
 // the table that's no longer in the CSS, or a value that doesn't match.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { readThemeTokens } from './css-tokens.mjs';
+import { ROOT } from './lib.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const CSS_PATH = join(ROOT, 'src', 'index.css');
 const DESIGN_PATH = join(ROOT, 'docs', 'DESIGN.md');
 

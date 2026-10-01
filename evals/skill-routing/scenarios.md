@@ -88,10 +88,12 @@ the rule was added to Stage 0 in response.)
 
 ### SR-06 — editing existing content, not adding new (trap)
 
-> In the September 2026 state-of-LLMs topic, the preference-optimization
-> bullet mentions RLHF without saying where it comes from. Add a few words
-> noting the technique predates chat models (it was introduced for deep
-> reinforcement learning in 2017).
+> In the caching topic, the eviction-policy paragraph ends "Redis lets you
+> choose among these" without saying how. Add a few words noting it's the
+> `maxmemory-policy` setting (for example `allkeys-lru` or `allkeys-lfu`).
+
+(The prompt used to name a September 2026 state-of-LLMs topic, which was
+removed in PR #26. Keep it pointing at prose that exists.)
 
 **Expected:** Direct, no skill
 **Why:** `add-topic` is explicitly scoped to _new_ topic files, not

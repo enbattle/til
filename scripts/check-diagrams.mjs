@@ -41,9 +41,8 @@
 // The manifest format is documented in scripts/diagram-manifest.mjs, which
 // this shares with render-diagrams.mjs. Set CHECK_DIAGRAMS_ROOT to check
 // another directory (the planted-violation tests in checks.test.mjs do).
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   contrastProblems,
   d2SourceProblem,
@@ -53,10 +52,10 @@ import {
   svgProblems,
   TOKENS_KEY,
 } from './diagram-manifest.mjs';
-import { diagramName, diagramReferences } from '../src/lib/diagram-refs.mjs';
+import { diagramName, diagramReferences } from '../src/lib/markdown.mjs';
+import { listFiles, ROOT as REPO_ROOT } from './lib.mjs';
 
-const ROOT =
-  process.env.CHECK_DIAGRAMS_ROOT ?? fileURLToPath(new URL('..', import.meta.url));
+const ROOT = process.env.CHECK_DIAGRAMS_ROOT ?? REPO_ROOT;
 const SOURCES = join(ROOT, 'src', 'system-design', 'diagrams');
 const RENDERED = join(ROOT, 'public', 'diagrams');
 const MANIFEST = join(RENDERED, 'manifest.json');
@@ -70,15 +69,10 @@ const MAX_WIDTH = 960;
 
 /** Every file under `dir` (recursively) whose name ends with `suffix`, as a
  * forward-slash path relative to `dir`. */
-function list(dir, suffix, base = dir, files = []) {
-  if (!existsSync(dir)) return files;
-  for (const entry of readdirSync(dir)) {
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) list(path, suffix, base, files);
-    else if (entry.endsWith(suffix))
-      files.push(relative(base, path).split('\\').join('/'));
-  }
-  return files;
+function list(dir, suffix) {
+  return listFiles({ root: ROOT, under: relative(ROOT, dir), ext: suffix }).map((path) =>
+    relative(dir, path).split('\\').join('/'),
+  );
 }
 
 const violations = [];
@@ -212,7 +206,7 @@ for (const file of list(RENDERED, '')) {
 
 // --- references from the case studies --------------------------------------------
 
-// Parsed with the site's own markdown stack (src/lib/diagram-refs.mjs, shared
+// Parsed with the site's own markdown stack (src/lib/markdown.mjs, shared
 // with MarkdownRenderer), so a reference counts exactly when it would render as
 // a diagram: an image, or a reference-style image with a matching definition,
 // whose URL is a /diagrams/ path. An example inside code doesn't count.

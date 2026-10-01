@@ -1,17 +1,10 @@
-import { render, screen, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { renderAt } from '@/test/render';
 import { Header } from './Header';
 
 function renderHeader(onOpenSearch = vi.fn(), onOpenNav = vi.fn(), path = '/') {
-  render(
-    <MemoryRouter initialEntries={[path]}>
-      <ThemeProvider>
-        <Header onOpenSearch={onOpenSearch} onOpenNav={onOpenNav} />
-      </ThemeProvider>
-    </MemoryRouter>,
-  );
+  renderAt(path, <Header onOpenSearch={onOpenSearch} onOpenNav={onOpenNav} />);
   return { onOpenSearch, onOpenNav };
 }
 

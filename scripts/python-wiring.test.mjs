@@ -4,6 +4,7 @@
 import { spawnSync } from 'node:child_process';
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -111,6 +112,10 @@ describe('scripts/test-python.mjs', () => {
         join(ROOT, 'scripts/test-python.mjs'),
         join(root, 'scripts/test-python.mjs'),
       );
+      // The runner's shared helpers (scripts/lib.mjs), when it imports them.
+      if (existsSync(join(ROOT, 'scripts/lib.mjs'))) {
+        copyFileSync(join(ROOT, 'scripts/lib.mjs'), join(root, 'scripts/lib.mjs'));
+      }
       copyFileSync(join(ROOT, 'pytest.ini'), join(root, 'pytest.ini'));
       writeFileSync(join(code, 'x.py'), `def f():\n    return ${fixed ? 1 : 2}\n`);
       writeFileSync(

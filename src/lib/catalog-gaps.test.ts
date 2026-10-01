@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { TOPICS, getTopic, loadAllTopicBodies } from './content';
-import { extractCaseStudyRefs, extractTopicRefs } from './markdown-links';
+import { extractCaseStudyRefs, extractTopicRefs } from './markdown.mjs';
 import { CASE_STUDIES, getCaseStudy, loadAllCaseStudyBodies } from './system-design';
 
 /**

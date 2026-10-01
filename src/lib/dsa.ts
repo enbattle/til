@@ -1,6 +1,5 @@
 import type { DsaEntry, DsaKind } from '@/types';
-import { createBodyStore } from './content';
-import { parseFrontmatter } from './frontmatter';
+import { createCollection } from './content';
 
 // Frontmatter and prerequisite links only, eagerly: enough for the landing
 // page, the sidebar, search titles and "Before this", without shipping any
@@ -161,17 +160,21 @@ const PREREQS: Record<string, string[]> = Object.fromEntries(
   }),
 );
 
+const entries = createCollection({
+  meta: metaFiles,
+  bodies: bodyFiles,
+  parse: parseDsaEntry,
+  key: slugOf,
+});
+
 /** Every DSA entry, prerequisites first (see `orderDsaEntries`). Metadata
  * only. Throws at load time on a bad file or a broken prerequisite, so the
  * tests that import it fail (and with them `verify`, where `test:run` runs
  * before `build`); `vite build` alone doesn't run this code. */
-export const DSA_ENTRIES: DsaEntry[] = orderDsaEntries(
-  Object.entries(metaFiles).map(([filePath, data]) => parseDsaEntry(filePath, data)),
-  PREREQS,
-);
+export const DSA_ENTRIES: DsaEntry[] = orderDsaEntries(entries.items, PREREQS);
 
 export function getDsaEntry(slug: string): DsaEntry | undefined {
-  return DSA_ENTRIES.find((entry) => entry.slug === slug);
+  return entries.get(slug);
 }
 
 /** The entries `slug` lists under `## Prerequisites`, in the order it links
@@ -182,29 +185,16 @@ export function getDsaPrerequisites(slug: string): DsaEntry[] {
     .filter((entry): entry is DsaEntry => entry !== undefined);
 }
 
-const bodyStore = createBodyStore(
-  Object.fromEntries(
-    Object.entries(bodyFiles).flatMap(([filePath, loadRaw]) => {
-      const slug = slugOf(filePath);
-      if (!slug) return [];
-      return [[slug, async () => parseFrontmatter(await loadRaw()).content]];
-    }),
-  ),
-);
-
 /** An entry's markdown body, frontmatter stripped. Rejects for an unknown
  * slug. The same promise comes back for the same entry. */
 export function loadDsaEntryBody(slug: string): Promise<string> {
-  if (!getDsaEntry(slug)) {
-    return Promise.reject(new Error(`Unknown DSA entry "${slug}"`));
-  }
-  return bodyStore.load(slug);
+  return entries.loadBody(slug);
 }
 
 /** Every entry body, keyed by slug. Fetches all the body chunks the first
  * time; used by full-text search. */
 export function loadAllDsaBodies(): Promise<Map<string, string>> {
-  return bodyStore.loadAll();
+  return entries.loadAllBodies();
 }
 
 /** Whether `pathname` is the DSA landing page or one of its entry pages.

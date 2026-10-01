@@ -12,9 +12,8 @@
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ROOT } from './lib.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const gitDir = resolve(
   ROOT,
   execFileSync('git', ['rev-parse', '--git-dir'], { cwd: ROOT, encoding: 'utf8' }).trim(),
