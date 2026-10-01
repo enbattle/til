@@ -16,32 +16,24 @@ toward the specific bugs listed here.
 
 ---
 
-### FR-01 — correctness: inline comments break single-quoted values
+### FR-01 — correctness: a quoted value with a trailing comment
 
-**Planted defect:** the diff skips comment stripping only for a
-double-quoted value, so a single-quoted value containing ` #` is cut:
-`summary: 'Use # for comments'` becomes `'Use` (the closing quote goes with
-the comment, so `unquote` no longer strips the opening one). The spec's rule
-is that a `#` inside _a quoted value_ is kept, and criterion 3's example
-passes only because it uses double quotes. The realistic trigger is this
-repo's own convention: every quoted value under `src/content/` today (six
-titles) uses single quotes, and none uses double quotes, so the next author
-who quotes a value containing ` #` hits it. No current content does, which
-is what makes it a test of the "theoretical" label: a reviewer that names
-the bug but calls it theoretical or low grades FAIL.
+**Planted defect:** comment stripping is skipped for any quoted value, but a
+quoted value followed by a comment no longer looks quoted, so it is stripped
+from the first ` #`, which is inside the quotes:
+`summary: 'Use # for comments' # draft` parses as `'Use` (and the opening
+quote stays, since `unquote` no longer sees a closing one). Criteria 1 and 3
+together say the result should be `Use # for comments`; each criterion's own
+example passes, so only a reviewer that combines them finds it. The trigger
+is realistic: the spec adds comments to frontmatter, and this repo quotes
+values (eight titles under `src/content/` are single-quoted), so an author
+annotating a quoted value hits it.
 
 History: the first FR-01 cut at any `#` (`split('#')`), which broke three of
-the spec's four examples and was always the top finding. It was rotated on
-2026-09-29, when Stage 4 gained the realistic-trigger and "theoretical"
-wording, to a bug whose trigger the spec doesn't spell out.
-
-Known flaw, to fix at the next rotation: this diff has two more real
-defects than the one planted, both found in its first run (2026-09-29). A
-quoted value that contains ` #` and has a trailing comment
-(`"Use # for comments" # draft`) is cut at the inner `#`, and a
-double-quoted value containing its own `"` no longer matches the guard.
-Findings naming either are true of the diff, so they don't count against a
-reviewer, but the scenario no longer has exactly one defect.
+the spec's four examples and was always the top finding. The second (rotated
+2026-09-29) exempted only double-quoted values, and its guard had two more
+real defects than the planted one. This third version (rotated 2026-10-01)
+checks both quote types correctly, so the planted defect is the only one.
 
 **Spec:**
 
@@ -58,7 +50,7 @@ reviewer, but the scenario no longer has exactly one defect.
 ```diff
 --- a/src/lib/frontmatter.ts
 +++ b/src/lib/frontmatter.ts
-@@ -16,4 +16,6 @@ const DELIMITER = '---';
+@@ -16,5 +16,7 @@ export interface ParsedMarkdown {
   * (e.g. a summary like "Note: do X") still parses correctly. A value can
   * optionally be wrapped in matching single or double quotes (handy when it
 - * ends with punctuation that could be misread), which are stripped.
@@ -66,14 +58,17 @@ reviewer, but the scenario no longer has exactly one defect.
 + * trailing inline comment (whitespace, then `#`, then anything) is dropped
 + * unless the value is quoted.
   */
-@@ -37,3 +39,4 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
+ export function parseFrontmatter(raw: string): ParsedMarkdown {
+@@ -36,5 +38,7 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
+     if (separator === -1) continue;
      const key = lines[i].slice(0, separator).trim();
 -    const value = unquote(lines[i].slice(separator + 1).trim());
 +    const rawValue = lines[i].slice(separator + 1).trim();
-+    const value = unquote(/^"[^"]*"$/.test(rawValue) ? rawValue : stripComment(rawValue));
++    const isQuoted = /^(['"]).*\1$/.test(rawValue);
++    const value = unquote(isQuoted ? rawValue : stripComment(rawValue));
      if (key) data[key] = value;
-@@ -58,3 +61,8 @@ function unquote(value: string): string {
-       (value.startsWith("'") && value.endsWith("'")));
+   }
+@@ -59,2 +63,7 @@ function unquote(value: string): string {
    return isQuoted ? value.slice(1, -1) : value;
  }
 +
@@ -83,12 +78,14 @@ reviewer, but the scenario no longer has exactly one defect.
 +}
 ```
 
-**Expected finding:** a single-quoted value keeps no `#`: the quoted-value
-exemption tests only for double quotes, so `'Use # for comments'` is cut to
-`'Use`, breaking the spec's rule for quoted values (and the new docstring's
-"unless the value is quoted"), with this repo's single-quote convention as
-the trigger. Medium severity or higher, and not labelled theoretical. Naming
-only a missing single-quote test, without the wrong output, is AMBIGUOUS.
+**Expected finding:** a quoted value followed by a comment is cut at the `#`
+inside its quotes (`'Use # for comments' # draft` → `'Use`), because
+`isQuoted` tests the whole raw value, comment included, and
+`stripComment` then removes from the first ` #`. The same cause has a mirror
+symptom, which also counts: a comment that ends in a quote
+(`"Caching" # was "Cache"`) makes the whole raw value look quoted, so the
+comment is kept as part of it. Medium severity or higher. A reviewer that names it but labels it theoretical grades AMBIGUOUS,
+since no doc yet says authors comment quoted values.
 
 ---
 
@@ -118,10 +115,10 @@ way if a check ever starts catching unnamed buttons.
 ```diff
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
-@@ -84,6 +84,13 @@ export function TopicPage() {
-                 )}
-               </nav>
-             )}
+@@ -68,6 +68,13 @@ export function TopicPage() {
+               prev={prev && { to: `/${section.slug}/${prev.slug}`, title: prev.title }}
+               next={next && { to: `/${section.slug}/${next.slug}`, title: next.title }}
+             />
 +            <button
 +              type="button"
 +              onClick={() => window.scrollTo({ top: 0 })}
@@ -142,10 +139,15 @@ way if a check ever starts catching unnamed buttons.
 
 ### FR-03 — React stale closure: the first Escape always closes
 
-**Planted defect:** the keydown handler reads `query`, but the effect's
-dependency list is still `[onClose]`, so the handler keeps the `query` from
-the first render (`''`) and the first Escape always closes the dialog,
-failing criterion 1.
+**Planted defect:** the keydown handler reads the query from `queryRef`, a
+ref set to the first render's query (`''`) and never updated, so the first
+Escape always closes the dialog, failing criterion 1. Lint can't see it:
+`exhaustive-deps` doesn't track a ref's `.current`.
+
+History: the first FR-03 left `query` out of the effect's dependency list.
+Once `npm run lint` ran with `--deny-warnings` (2026-10-01), `exhaustive-deps`
+caught that mechanically, so it was rotated to this ref, which lint can't
+check.
 
 **Spec:**
 
@@ -160,12 +162,22 @@ failing criterion 1.
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -74,7 +74,12 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -49,6 +49,8 @@ interface SearchDialogProps {
+  * time means the query naturally starts empty, with no reset-on-open effect. */
+ export function SearchDialog({ onClose }: SearchDialogProps) {
+   const [query, setQuery] = useState('');
++  // Read by the keydown handler, which is registered once.
++  const queryRef = useRef(query);
+   const inputRef = useRef<HTMLInputElement>(null);
+   const panelRef = useRef<HTMLDivElement>(null);
+   const navigate = useNavigate();
+@@ -84,7 +86,12 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+
    useEffect(() => {
      function onKeyDown(event: KeyboardEvent) {
 -      if (event.key === 'Escape') onClose();
 +      if (event.key !== 'Escape') return;
-+      if (query) {
++      if (queryRef.current) {
 +        setQuery('');
 +        return;
 +      }
@@ -173,15 +185,11 @@ failing criterion 1.
      }
      window.addEventListener('keydown', onKeyDown);
      return () => window.removeEventListener('keydown', onKeyDown);
-   }, [onClose]);
 ```
 
-Watch: oxlint's `exhaustive-deps` rule already warns about the missing
-`query` but exits 0. If that rule is ever made an error, `verify` catches this
-mechanically and the scenario must be rotated.
-
-**Expected finding:** the stale closure: `query` is missing from the
-dependency list, so the handler always sees `''`.
+**Expected finding:** the stale ref: `queryRef.current` is never updated
+after the first render, so the handler always sees `''` and the first Escape
+closes the dialog.
 
 ---
 
@@ -216,12 +224,17 @@ whether a reviewer follows the call chain.
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -52,2 +52,4 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -61,6 +61,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+   // arrive the same query has to start matching them, and the state change
+   // above is what triggers this re-render. The index is small, so it's cheap.
    const results = searchContent(query);
 +  const SHOWN = 8;
 +  const hidden = Math.max(0, results.length - SHOWN);
 
-@@ -155,3 +157,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+   // Called before the autofocus effect below (hook order = call order), so
+   // it captures whatever had focus before the dialog opened, not the input
+@@ -165,6 +167,11 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+             );
            })}
          </ul>
 +        {hidden > 0 && (
@@ -230,6 +243,8 @@ whether a reviewer follows the call chain.
 +          </p>
 +        )}
          <div className="border-t border-border px-4 py-2 text-xs text-text-tertiary">
+           <kbd className="rounded border border-border bg-bg-secondary px-1">Enter</kbd>{' '}
+           opens the first result ·{' '}
 ```
 
 **Expected finding:** criterion 2 can never be met, because `searchContent`
@@ -359,12 +374,14 @@ Known limitation or Reject.
 ```diff
 --- a/src/lib/content.test.ts
 +++ b/src/lib/content.test.ts
-@@ -1,4 +1,5 @@
- import { describe, expect, it } from 'vitest';
+@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
  import { SECTIONS } from '@/content/registry';
  import { TOPICS, getTopic, recentTopics, topicsBySection } from './content';
  import { neighbours } from './neighbours';
 +import { CASE_STUDIES } from './system-design';
+
+ describe('content loader', () => {
+   it('finds a known topic by section and slug', () => {
 @@ -68,3 +69,10 @@ describe('content loader', () => {
      }
    });

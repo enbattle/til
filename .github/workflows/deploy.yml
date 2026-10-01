@@ -35,8 +35,8 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
       # The full chain CI runs (it includes the build), on the exact commit being deployed.
-      # Commits can reach main without a PR, so CI passing is not otherwise a precondition
-      # of deploying; a red commit must never go live.
+      # Every change lands through a PR whose CI must pass, but a direct push to main
+      # (an admin bypass) skips that, so a red commit is caught here before it goes live.
       - run: npm run verify
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

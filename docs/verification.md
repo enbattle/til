@@ -7,15 +7,9 @@ a check, or when a size budget moves.
 `npm run verify` is exactly what CI runs (`ci.yml` calls it), and
 is the final gate of every skill that changes the repo (the eval and audit
 skills run only the checks they name). The deploy workflow runs it too, so a
-commit that fails any check never goes live. The individual commands, if you need one:
-
-```bash
-npm run typecheck && npm run lint && npm run format:check
-npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:claude-md && npm run check:pipeline-log && npm run check:raw-html && npm run check:diagrams
-npm run test:run && npm run test:py
-npm run build
-npm run size && npm run check:bundle
-```
+commit that fails any check never goes live. The chain itself, in order, is
+the `verify` script in `package.json`; each step runs on its own as
+`npm run <name>`.
 
 `npm run lint` runs oxlint with `--deny-warnings`, so a warning fails it like an
 error: a warning that prints on every run stops being read. Fix it, or silence
@@ -44,17 +38,11 @@ untracked, unignored files) by extension and skips `public/`. A topic that
 needs to show mojibake as an example would need an exemption there.
 
 `npm run test:py` (`scripts/test-python.mjs`) runs pytest over the DSA
-entries' Python code in `src/dsa/code` (docs/dsa.md). It needs Python 3.11+
-with the pytest pinned in `requirements-dev.txt`
-(`python -m pip install -r requirements-dev.txt`, or `py -m pip ...` on
-Windows); CI and the deploy install both with `actions/setup-python` before
-`verify`. It picks the first of `python3`, `python` and `py -3` whose
-`--version` reports Python 3.11 or later, which skips the Windows Store stub,
-and fails with those install instructions when there's no Python or no pytest.
-It pins pytest to the root `pytest.ini` (`-c`, so no other config file is
-read), sets `PYTHONSAFEPATH=1` so no root module can shadow one pytest
-imports, and drops `PYTEST_ADDOPTS` and `PYTEST_PLUGINS` (docs/dsa.md).
-It runs with bytecode and pytest's cache off, so it leaves no `__pycache__` or
+entries' Python code in `src/dsa/code`, and fails with install instructions
+when there's no Python 3.11+ or no pytest. [docs/dsa.md](dsa.md) has how it
+finds Python, what to install and how it pins pytest's config and import
+path; CI and the deploy install both with `actions/setup-python` before
+`verify`. It runs with bytecode and pytest's cache off, so it leaves no `__pycache__` or
 `.pytest_cache` behind. `test:run` needs the same Python and pytest, since
 `scripts/python-wiring.test.mjs` runs the real runner on scratch copies of the
 tree (one with a planted failing test). The TypeScript half of each entry's
@@ -69,8 +57,11 @@ including new untracked files. `check:test-lock` proves none of these changed
 after Stage 2 (a config part the snapshot lacks counts as `added`):
 
 - every test file, vitest or pytest, including `conftest.py` and pytest's
-  config files (`.pytest.ini` and `.pytest.toml` among them);
-- the test runners' config: the `test` block of `vite.config.ts`, the `test*`
+  config files (`.pytest.ini` and `.pytest.toml` among them), everything under
+  `src/test/` (the shared setup and render helpers) and every vitest snapshot
+  (`__snapshots__/*.snap`);
+- the test runners' config: any `vitest.config.*` or `vitest.workspace.*`
+  file, the `test` block of `vite.config.ts`, the `test*`
   scripts, `scripts/test-python.mjs`, and any root `pytest.py`, `_pytest.py`,
   `pytest/` or `_pytest/` path (a second layer behind the runner's own `-c`
   and `PYTHONSAFEPATH` pinning);

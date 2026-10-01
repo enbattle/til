@@ -10,7 +10,8 @@ import { dsaPrerequisites, extractTopicRefs } from './src/lib/markdown.mjs';
 /**
  * Build-time views of a markdown file, so the app can list and cross-link
  * content without bundling any body. Bodies come in separately through a lazy
- * `?raw` glob (see `src/lib/content.ts` and `src/lib/system-design.ts`).
+ * `?raw` glob (see `src/lib/content.ts`, `src/lib/system-design.ts` and
+ * `src/lib/dsa.ts`).
  *
  * - `import meta from './topic.md?meta'` resolves to the file's frontmatter as
  *   a JSON object (sidebar, cards, sort order, search titles). It uses the same
