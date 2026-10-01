@@ -10,7 +10,8 @@ fails if this file passes 150 lines or a link in it is broken.
 
 `til` is a static reference site: markdown topics grouped into top-level
 sections, plus a second tab (System Design) of worked design case studies
-that draw on the catalog, rendered by a Vite + React +
+that draw on the catalog and a third (DSA) of data structures, patterns and
+algorithms with tested Python and TypeScript code, rendered by a Vite + React +
 TypeScript app and deployed to GitHub Pages. There's no backend and no in-app editor — content is added
 as files in the repository and shipped with the next build.
 
@@ -21,6 +22,7 @@ as files in the repository and shipped with the next build.
 | Building a feature or any nontrivial app change        | [`/feature`](.claude/skills/feature/SKILL.md), [docs/SDLC.md](docs/SDLC.md)                              |
 | Adding a topic, or changing topics or sections         | [`add-topic`](.claude/skills/add-topic/SKILL.md), [docs/content.md](docs/content.md)                     |
 | Adding a System Design case study or its diagrams      | [`add-case-study`](.claude/skills/add-case-study/SKILL.md), [docs/case-studies.md](docs/case-studies.md) |
+| Adding a DSA entry or its tested code                  | [`add-dsa-entry`](.claude/skills/add-dsa-entry/SKILL.md), [docs/dsa.md](docs/dsa.md)                     |
 | Writing or reviewing any published prose               | [docs/writing-standard.md](docs/writing-standard.md)                                                     |
 | Running, adding or debugging a check, or a size budget | [docs/verification.md](docs/verification.md)                                                             |
 | Changing UI                                            | [docs/DESIGN.md](docs/DESIGN.md)                                                                         |
@@ -57,7 +59,10 @@ CI or in the browser). The case studies are a bounded exception to the earlier
 "no domain split, no reading paths" stance: they add one ordered list of
 worked designs that link into the catalog, but not tracks, curricula or a
 domain hierarchy over it, and catalog URLs, section pages and the topics' own
-prose are unchanged. Add one of the deferred items only if a real need shows up, not
+prose are unchanged. The DSA tab ([docs/dsa.md](docs/dsa.md)) is a second
+bounded exception of the same kind: one list ordered by prerequisites, with
+code in files beside each entry that pytest and vitest run, but no code runner
+in the browser and no diagrams. Add one of the deferred items only if a real need shows up, not
 speculatively.
 
 The equivalent list for _process/tooling_ practices (CI gates, hooks,
@@ -81,7 +86,7 @@ pushing and opening the pull request wait for the user's go-ahead.
 ## Verifying a change
 
 `npm run verify` is exactly what CI and the deploy workflow run, and the gate
-`/feature`, `add-topic` and `add-case-study` finish on. What each check
+`/feature`, `add-topic`, `add-case-study` and `add-dsa-entry` finish on. What each check
 proves, the commands that aren't in `verify`, and the size budgets are in
 [docs/verification.md](docs/verification.md).
 

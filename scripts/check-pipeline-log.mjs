@@ -16,8 +16,8 @@ const HEADER =
 const FORMATS = [
   ['Date must be YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/],
   [
-    'Run must be "/feature <spec>", "add-topic <topic>" or "add-case-study <path>"',
-    /^(\/feature|add-topic|add-case-study) \S/,
+    'Run must be "/feature <spec>", "add-topic <topic>", "add-case-study <path>" or "add-dsa-entry <path>"',
+    /^(\/feature|add-topic|add-case-study|add-dsa-entry) \S/,
   ],
   ['Gate failures must start with a count', /^\d+\b/],
   ['Findings must look like "H/M/L" or "H/M/L, pre:N"', /^\d+\/\d+\/\d+(, pre:\d+)?$/],

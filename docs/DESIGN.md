@@ -20,7 +20,8 @@ notebook than a product. The UI follows that:
   — with a warm amber/ochre accent standing in for a highlighter pen
   rather than a generic interface blue.
 - **Layout**: a persistent left-side section/topic nav (`SectionNav`, or
-  `CaseStudyNav` on System Design routes — see "Case study navigation" below)
+  `CaseStudyNav` on System Design routes and `DsaNav` on DSA routes — see
+  "Case study navigation" and "DSA navigation" below)
   alongside a centered content column (`max-w-3xl`), inside a wider
   `max-w-5xl` shell. Above the `lg` breakpoint the nav is a sticky panel
   that scrolls with the page and then holds in place once it reaches its
@@ -55,12 +56,13 @@ notebook than a product. The UI follows that:
   so titles get `leading-snug` and vertical padding on each link instead
   so wrapped and single-line items read as one consistent list.
 - **Header tabs**: the header carries a `<nav aria-label="Primary">` with
-  two links, **Catalog** (`/`) and **System Design** (`/system-design`).
+  three links, **Catalog** (`/`), **System Design** (`/system-design`) and
+  **DSA** (`/dsa`).
   The active one has `aria-current="page"` plus a non-color signal — bold
   weight and an accent-colored bottom border, the same treatment the
   sidebar navs use for the current page — so it isn't marked by color
   alone. System Design is active on `/system-design` and everything under
-  it; Catalog is active on every other route, including topic pages a
+  it, DSA on `/dsa` and everything under it; Catalog is active on every other route, including topic pages a
   case study links to (following a link into the catalog switches tabs). The
   tabs are visible at every width. Above the `sm` breakpoint they sit in
   the logo row right after the logo; below it they wrap onto their own row
@@ -96,10 +98,30 @@ notebook than a product. The UI follows that:
   on any scroll it didn't cause itself (a scrollbar drag, find-in-page,
   assistive technology), so it never fights the reader). The way back from a catalog topic is the
   "Used in these case studies:" list a topic page shows for the case studies
-  that link to it. On desktop both navs stay mounted and the inactive one sits
+  that link to it. On desktop all three navs stay mounted and the inactive ones sit
   in a `hidden`, `display: contents` wrapper (out of the accessibility tree
   at every width), so a section group the user opened survives a round trip
-  between the two tabs.
+  between the tabs.
+- **DSA navigation**: on `/dsa` and `/dsa/*` the sidebar and `MobileNav` show
+  `DsaNav`, built like `CaseStudyNav`: a flat ordered list of the entries
+  (prerequisites first; docs/dsa.md), the same bold plus accent-border current
+  signal and `aria-current="page"`. The landing page's cards and each entry
+  page show the entry's kind ("Data structure", "Pattern", "Algorithm") as
+  text, never as a color alone. An entry page lists its prerequisites under
+  the title as **Before this** (a `<nav aria-label="Before this">`, absent when
+  there are none), then the same Contents box as a case study.
+- **Code tabs**: on a DSA entry page each Python/TypeScript code pair is one
+  block (`CodeTabs`) with a two-tab `role="tablist"` ("Python",
+  "TypeScript") over a single code block. It follows the WAI-ARIA tabs
+  pattern with manual activation: the selected tab is the one tab stop
+  (roving tabindex), Left/Right (and Home/End) move focus between the tabs,
+  and Enter or Space selects, so moving focus never re-renders every code
+  block on the page. The selected tab has the header tabs' treatment: bold
+  weight and an accent bottom border. The choice is shared by every pair on
+  the site (`CodeLanguageProvider`, stored under `til-code-language` like the
+  theme, Python by default). Other pages never pass `codeTabs` to
+  `MarkdownRenderer`, so their code blocks are unchanged. A long line scrolls
+  inside the code block, as in any code block, never the page.
 - **Diagrams**: case-study diagrams are D2 sources rendered at build time to
   one SVG per theme, colored from the tokens below (the render script maps
   them onto D2's theme slots: paper surfaces and `accent-soft` for fills,
@@ -200,7 +222,8 @@ than a new one added ad hoc.
   screen reader never announces an unnamed "button".
 - **Keyboard reachability**: search opens via `Ctrl`/`Cmd`+K, closes via
   `Escape`, `Enter` in the box opens the first result, and every result is a
-  real `<button>` — reachable and activatable without a mouse. A diagram or
+  real `<button>` — reachable and activatable without a mouse. Code tabs move
+  with the arrow keys and select with Enter or Space. A diagram or
   table that scrolls sideways is a focusable region, scrolled with the arrow
   keys.
 

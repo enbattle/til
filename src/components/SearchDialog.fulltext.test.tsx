@@ -55,6 +55,7 @@ beforeEach(async () => {
   state.index = actual.createSearchIndex({
     topics: TOPICS,
     caseStudies: CASE_STUDIES,
+    dsaEntries: [],
     loadTopicBodies: () => pending,
     // Case-study bodies load on the same full-text path; this fixture body holds
     // a word no title, summary or topic body contains.
@@ -62,6 +63,7 @@ beforeEach(async () => {
       new Map([
         ['url-shortener', `Some prose. ${CASE_STUDY_BODY_WORD} appears only here.\n`],
       ]),
+    loadDsaBodies: async () => new Map(),
   });
   ensureSpy = vi.fn(() => state.index.ensureFullTextSearch());
   state.ensure = ensureSpy as unknown as () => Promise<void>;

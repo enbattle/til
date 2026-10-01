@@ -28,6 +28,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The DSA entries' Python tests (npm run test:py, inside verify) need Python
+      # and the pytest version pinned in requirements-dev.txt.
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
       # The full chain CI runs (it includes the build), on the exact commit being deployed.
       # Commits can reach main without a PR, so CI passing is not otherwise a precondition
       # of deploying; a red commit must never go live.

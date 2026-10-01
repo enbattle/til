@@ -48,7 +48,7 @@ only the scenario's prompt, verbatim, plus this instruction:
 > request: "<scenario prompt>". Do NOT implement anything yet, and do
 > NOT read anything under the evals/ directory (irrelevant and would
 > bias you). Your only job: decide which skill, if any, you'd invoke —
-> /feature, add-topic, add-case-study, docs-audit, content-audit,
+> /feature, add-topic, add-case-study, add-dsa-entry, docs-audit, content-audit,
 > skill-routing-eval, content-review-eval, feature-review-eval,
 > or neither (direct). Explore the codebase as
 > needed to inform that judgment. Report your routing decision and a

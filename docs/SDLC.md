@@ -121,8 +121,9 @@ defend its findings, and not the orchestrator, who wants the run finished.
 The orchestrator assigns outcomes from that evidence but may not reject or
 defer a finding the triager confirmed reachable without asking the user; a
 finding is contested when the triager disputes one the reviewer rated High,
-or the orchestrator wants to overrule the triager. In `add-topic` and
-`add-case-study` the orchestrator may confirm prose findings itself, but a
+or the orchestrator wants to overrule the triager. In `add-topic`,
+`add-case-study` and `add-dsa-entry` the orchestrator may confirm prose
+findings itself, but a
 rejection must quote the text or source that disproves the finding. The outcome weighs impact against likelihood rather than history alone, so a
 severe class that hasn't happened yet still gets fixed, and every rejected or
 deferred finding is written down with its reason so the next review doesn't

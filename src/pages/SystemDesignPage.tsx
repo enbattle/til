@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { NumberedCardList } from '@/components/NumberedCardList';
 import { CASE_STUDIES } from '@/lib/system-design';
 
 export function SystemDesignPage() {
@@ -16,28 +16,14 @@ export function SystemDesignPage() {
         </p>
       </div>
 
-      <ol className="space-y-3">
-        {CASE_STUDIES.map((caseStudy) => (
-          <li key={caseStudy.slug}>
-            <Link
-              to={`/system-design/${caseStudy.slug}`}
-              className="flex gap-4 rounded-lg border border-border bg-bg-secondary px-4 py-3 no-underline transition-colors hover:border-accent"
-            >
-              <span className="font-serif text-lg font-semibold tabular-nums text-accent">
-                {caseStudy.order}
-              </span>
-              <span className="min-w-0">
-                <span className="block font-serif text-base font-semibold text-text-primary">
-                  {caseStudy.title}
-                </span>
-                <span className="mt-1 block text-sm text-text-secondary">
-                  {caseStudy.summary}
-                </span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+      <NumberedCardList
+        cards={CASE_STUDIES.map((caseStudy) => ({
+          to: `/system-design/${caseStudy.slug}`,
+          number: caseStudy.order,
+          title: caseStudy.title,
+          summary: caseStudy.summary,
+        }))}
+      />
     </div>
   );
 }

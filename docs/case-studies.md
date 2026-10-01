@@ -4,9 +4,9 @@ How case studies and their diagrams are stored, structured, linked and
 checked. Read this before adding or changing a case study or its diagrams;
 [CLAUDE.md](../CLAUDE.md) routes here, and the `add-case-study` skill follows it.
 
-The header has two tabs: **Catalog** (the topics in [content.md](content.md)) and **System
-Design**, a numbered list of worked design case studies ("Design a URL
-Shortener (like TinyURL)"). Each one takes a product through the standard
+The header has three tabs: **Catalog** (the topics in [content.md](content.md)),
+**System Design**, a numbered list of worked design case studies ("Design a
+URL Shortener (like TinyURL)"), and **DSA** ([dsa.md](dsa.md)). Each case study takes a product through the standard
 approach and links into the catalog wherever it uses a topic; it never holds a
 copy of a topic.
 

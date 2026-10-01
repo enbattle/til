@@ -49,7 +49,9 @@ function keys(results: SearchResult[]): string[] {
   return results.map((r) =>
     r.kind === 'topic'
       ? `topic:${r.topic.section}/${r.topic.slug}`
-      : `caseStudy:${r.caseStudy.slug}`,
+      : r.kind === 'dsa'
+        ? `dsa:${r.entry.slug}`
+        : `caseStudy:${r.caseStudy.slug}`,
   );
 }
 
@@ -61,8 +63,10 @@ function makeIndex(
   return createSearchIndex({
     topics: [TOPIC_A, TOPIC_B],
     caseStudies: [CASE_STUDY],
+    dsaEntries: [],
     loadTopicBodies,
     loadCaseStudyBodies,
+    loadDsaBodies: async () => new Map(),
   });
 }
 

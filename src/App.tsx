@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { CodeLanguageProvider } from '@/contexts/CodeLanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
@@ -7,41 +8,49 @@ import { SearchDialog } from '@/components/SearchDialog';
 import { SectionNav } from '@/components/SectionNav';
 import { MobileNav } from '@/components/MobileNav';
 import { CaseStudyNav } from '@/components/CaseStudyNav';
-import { isSystemDesignPath } from '@/lib/system-design';
+import { DsaNav } from '@/components/DsaNav';
+import { tabForPath } from '@/lib/tabs';
 import { HomePage } from '@/pages/HomePage';
 import { SectionPage } from '@/pages/SectionPage';
 import { SystemDesignPage } from '@/pages/SystemDesignPage';
+import { DsaPage } from '@/pages/DsaPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 // The pages that render markdown bodies — pulling in react-markdown,
 // remark-gfm, and shiki's highlighting engine. Lazy-loaded so that cost is
-// only ever paid when a topic or case study page is actually visited, not on
-// the home, section, or System Design landing pages (confirmed via the
-// production build: this alone took the main chunk from ~630 kB to well
-// under half that).
+// only ever paid when a topic, case study or DSA entry page is actually
+// visited, not on the home, section, System Design or DSA landing pages
+// (confirmed via the production build: this alone took the main chunk from
+// ~630 kB to well under half that).
 const TopicPage = lazy(() =>
   import('@/pages/TopicPage').then((m) => ({ default: m.TopicPage })),
 );
 const CaseStudyPage = lazy(() =>
   import('@/pages/CaseStudyPage').then((m) => ({ default: m.CaseStudyPage })),
 );
+const DsaEntryPage = lazy(() =>
+  import('@/pages/DsaEntryPage').then((m) => ({ default: m.DsaEntryPage })),
+);
 
 /** The persistent sidebar: the case-study list on System Design routes, the
- * section tree everywhere else. (`MobileNav` makes the same choice.) Both
- * stay mounted so a section group the user opened survives a round trip between
- * the Catalog and System Design tabs; the inactive one is `hidden` (out of the
- * accessibility tree at every width) inside a `display: contents` wrapper, so
- * the active nav's own sticky/`lg:block` classes still apply as before. */
+ * DSA list on DSA routes, the section tree everywhere else. (`MobileNav`
+ * makes the same choice.) All three stay mounted so a section group the user
+ * opened survives a round trip between the tabs; the inactive ones are
+ * `hidden` (out of the accessibility tree at every width) inside a
+ * `display: contents` wrapper, so the active nav's own sticky/`lg:block`
+ * classes still apply as before. */
 function SideNav({ className }: { className: string }) {
-  const { pathname } = useLocation();
-  const onSystemDesign = isSystemDesignPath(pathname);
+  const tab = tabForPath(useLocation().pathname);
   return (
     <>
-      <div hidden={onSystemDesign} className="contents">
+      <div hidden={tab !== 'catalog'} className="contents">
         <SectionNav className={className} />
       </div>
-      <div hidden={!onSystemDesign} className="contents">
+      <div hidden={tab !== 'system-design'} className="contents">
         <CaseStudyNav className={className} />
+      </div>
+      <div hidden={tab !== 'dsa'} className="contents">
+        <DsaNav className={className} />
       </div>
     </>
   );
@@ -109,6 +118,15 @@ function AppShell() {
                   </Suspense>
                 }
               />
+              <Route path="/dsa" element={<DsaPage />} />
+              <Route
+                path="/dsa/:slug"
+                element={
+                  <Suspense fallback={null}>
+                    <DsaEntryPage />
+                  </Suspense>
+                }
+              />
               <Route path="/:section" element={<SectionPage />} />
               <Route
                 path="/:section/:slug"
@@ -132,7 +150,9 @@ function AppShell() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppShell />
+      <CodeLanguageProvider>
+        <AppShell />
+      </CodeLanguageProvider>
     </ThemeProvider>
   );
 }

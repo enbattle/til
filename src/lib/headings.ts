@@ -32,8 +32,9 @@ export function createHeadingIds(): (text: string) => string {
   };
 }
 
-/** The parts of a hast (HTML syntax tree) node the heading passes read. */
-interface HastNode {
+/** The parts of a hast (HTML syntax tree) node the heading passes and
+ * `MarkdownRenderer`'s overrides read. */
+export interface HastNode {
   type: string;
   tagName?: string;
   value?: string;
@@ -41,7 +42,8 @@ interface HastNode {
   children?: HastNode[];
 }
 
-function hastText(node: HastNode): string {
+/** A hast node's text content, all descendants' text joined. */
+export function hastText(node: HastNode): string {
   if (node.type === 'text') return node.value ?? '';
   return (node.children ?? []).map(hastText).join('');
 }

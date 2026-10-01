@@ -9,25 +9,36 @@ import {
 } from '@/lib/search';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
-/** What a result row shows, and where it goes. A case study stands in the
- * position a topic gives its section label; its own "section" is the System
- * Design tab. */
+/** What a result row shows, and where it goes. A case study or DSA entry
+ * stands in the position a topic gives its section label; its own "section"
+ * is its header tab (System Design, DSA). */
 function describeResult(result: SearchResult) {
-  return result.kind === 'topic'
-    ? {
+  switch (result.kind) {
+    case 'topic':
+      return {
         key: `${result.topic.section}/${result.topic.slug}`,
         path: `/${result.topic.section}/${result.topic.slug}`,
         title: result.topic.title,
         label: getSection(result.topic.section)?.label ?? result.topic.section,
         summary: result.topic.summary,
-      }
-    : {
+      };
+    case 'caseStudy':
+      return {
         key: `system-design/${result.caseStudy.slug}`,
         path: `/system-design/${result.caseStudy.slug}`,
         title: result.caseStudy.title,
         label: 'System Design',
         summary: result.caseStudy.summary,
       };
+    case 'dsa':
+      return {
+        key: `dsa/${result.entry.slug}`,
+        path: `/dsa/${result.entry.slug}`,
+        title: result.entry.title,
+        label: 'DSA',
+        summary: result.entry.summary,
+      };
+  }
 }
 
 interface SearchDialogProps {
@@ -41,8 +52,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  // Topic and case-study bodies load on demand (they aren't in the main bundle), so title and
-  // summary matches work at once and body matches join in when they arrive.
+  // Topic, case-study and DSA bodies load on demand (they aren't in the main bundle), so
+  // title and summary matches work at once and body matches join in when they arrive.
   const [fullText, setFullText] = useState<'loading' | 'ready' | 'failed'>(() =>
     isFullTextSearchReady() ? 'ready' : 'loading',
   );

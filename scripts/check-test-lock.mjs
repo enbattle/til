@@ -8,7 +8,18 @@
 // given (the content fixtures a test-writer created or changed), and the test
 // runner's own configuration: the `test` block of vite.config.ts, the `test*`
 // scripts in package.json, and any vitest.config.* file. Weakening the runner
-// (excluding a file, skipping setup) weakens every test at once.
+// (excluding a file, skipping setup) weakens every test at once. The Python
+// tests (docs/dsa.md) are locked the same way: every `test_*.py` and
+// `*_test.py`, every `conftest.py`, and scripts/test-python.mjs, the runner
+// `test:py` calls. That runner is the main protection against the tree
+// changing what pytest does: `-c <root>/pytest.ini` makes pytest read no other
+// config file, and PYTHONSAFEPATH=1 keeps the working directory off sys.path,
+// so no root module can shadow one pytest imports. As a second layer, any file
+// pytest could read its configuration from (`pytest.toml`, `.pytest.toml`,
+// `pytest.ini`, `.pytest.ini`, `pyproject.toml`, `tox.ini`, `setup.cfg`) and
+// any root `pytest.py`, `_pytest.py`, `pytest/` or `_pytest/` path is locked
+// too, so one added later counts as a change even if the runner's pinning is
+// loosened.
 // `--verify` recomputes them and fails on any difference. `--clear` deletes
 // the snapshot at the end of a run.
 //
@@ -32,6 +43,23 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
 const SNAPSHOT_FILE = /(^|\/)__snapshots__\/.+\.snap$/;
 const RUNNER_CONFIG_FILE = /^vitest\.(config|workspace)\.[cm]?[jt]s$/;
+// The DSA entries' pytest files (docs/dsa.md), and every file pytest can read
+// its configuration from, anywhere in the tree: one added later (a
+// `conftest.py` that skips collection, a `pyproject.toml` with `addopts`)
+// weakens the Python tests just as a vitest config would.
+const PYTHON_TEST_FILE = /(^|\/)(test_[^/]*|[^/]*_test|conftest)\.py$/;
+const PYTEST_CONFIG_FILE =
+  /(^|\/)(\.?pytest\.toml|\.?pytest\.ini|pyproject\.toml|tox\.ini|setup\.cfg)$/;
+// The script `npm run test:py` runs: an early exit in it skips every Python
+// test at once.
+const PYTHON_RUNNER = 'scripts/test-python.mjs';
+// That runner calls `python -m pytest` from the repository root. Without the
+// PYTHONSAFEPATH it sets, Python would put the working directory first on
+// sys.path, so a root `pytest.py`, `_pytest.py`, or anything under a root
+// `pytest/` or `_pytest/` directory would shadow the real pytest; locking
+// them is the second layer. Only those root paths: `pytest_helpers.py` or a
+// nested `pytest.py` elsewhere is an ordinary module.
+const PYTEST_SHADOW = /^_?pytest(\.py$|\/)/;
 // Shared test setup can weaken every test at once, so it is locked too.
 const TEST_SUPPORT_DIR = 'src/test/';
 
@@ -44,6 +72,10 @@ function isTestFile(path) {
     TEST_FILE.test(path) ||
     SNAPSHOT_FILE.test(path) ||
     RUNNER_CONFIG_FILE.test(path) ||
+    PYTHON_TEST_FILE.test(path) ||
+    PYTEST_CONFIG_FILE.test(path) ||
+    path === PYTHON_RUNNER ||
+    PYTEST_SHADOW.test(path) ||
     path.startsWith(TEST_SUPPORT_DIR)
   );
 }

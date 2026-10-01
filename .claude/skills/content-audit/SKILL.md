@@ -1,6 +1,6 @@
 ---
 name: content-audit
-description: Sweep published topic(s) under src/content/**/*.md, and System Design case studies under src/system-design/case-studies/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic and case study (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic or case study. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics or case studies "sound AI-written," or a quality check of one specific already-published topic or case study (not a brand-new topic being drafted — that's add-topic's job — not a brand-new case study — that's add-case-study's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
+description: Sweep published topic(s) under src/content/**/*.md, System Design case studies under src/system-design/case-studies/*.md, and DSA entries under src/dsa/entries/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic, case study and DSA entry (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic, case study or DSA entry. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics, case studies or DSA entries "sound AI-written," or a quality check or revision of one specific already-published topic, case study or DSA entry (not a brand-new topic being drafted — that's add-topic's job — not a brand-new case study — that's add-case-study's job — not a brand-new DSA entry — that's add-dsa-entry's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
 ---
 
 # Content audit
@@ -18,8 +18,9 @@ where this repo does and doesn't spend a separate agent, and
 this one is structurally parallel to — that one covers meta-documentation
 staleness (`CLAUDE.md`, `docs/`, `evals/`, every `SKILL.md`) against
 current repo state; this one covers the prose _quality_ of the published
-topics themselves under `src/content/**` and the System Design case
-studies under `src/system-design/case-studies/`, against
+topics themselves under `src/content/**`, the System Design case
+studies under `src/system-design/case-studies/` and the DSA entries under
+`src/dsa/entries/`, against
 the [Writing Standard](../../../docs/writing-standard.md). Neither one's scope
 includes the other's.
 
@@ -34,8 +35,8 @@ that never held the draft in mind reads the tic on sight instead of
 
 ## Stage 0 — Scope the run
 
-Default: every file under `src/content/**/*.md` and
-`src/system-design/case-studies/*.md` (glob at run time — don't trust a cached
+Default: every file under `src/content/**/*.md`,
+`src/system-design/case-studies/*.md` and `src/dsa/entries/*.md` (glob at run time — don't trust a cached
 file list, the corpus grows). If invoked with
 specific file or section names as arguments, scope to those instead and
 say so before starting.
@@ -49,7 +50,9 @@ first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
 section is unusually large. The case studies get batches of their
 own, split so each agent can read its share in full (each is 5,000–8,000
-words, so about three per agent); check 4 below applies to them.
+words, so about three per agent); check 4 below applies to them. The DSA
+entries get a batch of their own too, since each comes with its code files and
+tests under `src/dsa/code/<slug>/`; check 6 below applies to them.
 
 ## Stage 2 — Independent audit, per batch
 
@@ -116,6 +119,14 @@ and this instruction, close to verbatim:
 > sentence that isn't true of the generic system described, and any
 > section that just restates the topic's own definition.
 >
+> **6. DSA entries only (skip for topics and case studies) — do the code
+> claims hold?** An entry under `src/dsa/entries/` shows code from
+> `src/dsa/code/<slug>/` (Python and TypeScript, each with its tests). Check
+> every claim the prose makes about that code (what it returns, its edge
+> cases, its complexity) against the code files and their tests, not only
+> the chunk quoted in the markdown, and recompute every worked example.
+> Flag a walkthrough that narrates what a line does without saying why.
+>
 > Your batch: <Stage 1's file list for this batch>
 
 Run all batches in parallel (one message, multiple `Agent` calls), not
@@ -133,7 +144,9 @@ mirroring how the first full sweep (2026-09-15) applied its fixes in
 batches rather than one at a time. For a finding you disagree with, or a
 correctness claim that needs a judgment call the audit agent couldn't
 make on its own, resolve it yourself or ask the user rather than
-applying it blindly.
+applying it blindly. A fix to a DSA entry's code changes the code file, the
+chunk quoted in the entry and a test that would have caught it together, as
+`add-dsa-entry` Stage 3 does.
 
 ## Stage 4 — Final gate
 
