@@ -1,6 +1,6 @@
 ---
 name: docs-audit
-description: Audit every documentation file in this repo (CLAUDE.md, README.md, docs/**, evals/**, every file under .claude/skills/) against the current code, config, and process for staleness — a fact that's no longer true, a convention nothing describes, a reference to something removed. Use when asked to check for stale docs, after a batch of changes has landed, or when nudged by the nudge-precommit hook before a commit/push.
+description: Audit every documentation file in this repo (CLAUDE.md, README.md, docs/**, evals/**, every file under .claude/skills/) against the current code, config, and process for staleness — a fact that's no longer true, a convention nothing describes, a reference to something removed. Use when asked to check for stale docs, after a batch of changes has landed, or when nudged by the nudge-precommit hook before a commit/push. Every 10 pipeline runs it also reads docs/pipeline-log.md as a set for recurring friction.
 ---
 
 # Docs audit
@@ -30,15 +30,16 @@ of staleness this skill exists to catch:
 
 - `CLAUDE.md`, `README.md`
 - everything under `docs/`
-- everything under `evals/` (`README.md`, every scenario/how-to-run file,
-  and the `results/` logs)
+- everything under `evals/` (`README.md`, every scenario file, and the
+  `results/` logs)
 - every file under `.claude/skills/` (each `SKILL.md` and any file beside
   it, such as `add-case-study/checklist.md`), and the reminder text in
   `.claude/hooks/*.js` (it names skills and docs, so it can go stale the same way)
-- (explicitly **not** in scope: `src/content/**` and
-  `src/system-design/case-studies/**` — the published topic and case-study
-  files themselves. Their prose quality against the Writing Standard is
-  `content-audit`'s job, not this skill's.)
+- (explicitly **not** in scope: `src/content/**`,
+  `src/system-design/case-studies/**` and `src/dsa/entries/**` — the
+  published topics, case studies and DSA entries themselves. Their prose
+  quality against the Writing Standard is `content-audit`'s job, not this
+  skill's.)
 - explanatory comments in `.github/workflows/*.yml` and
   `.github/dependabot.yml` — these describe _why_ a CI/CD choice was
   made, which goes stale exactly like prose documentation does
@@ -88,6 +89,32 @@ Stage 1 and this instruction, close to verbatim:
 >
 > Files to audit: <Stage 1's list>
 
+## Stage 2b — Aggregate retro friction, when due
+
+Each `/feature` retro sees only its own run, so a lesson that recurs across
+runs gets fixed once per run instead of once. This stage reads the runs as a
+set. It is due when `docs/pipeline-log.md` has 10 or more data rows (not the
+header or separator) beyond the count on the "Last friction aggregation" line
+of `evals/docs-audit/results/README.md`; treat a missing line as 0. Skip it
+otherwise.
+
+Spawn one more **fresh** `general-purpose` agent, in parallel with Stage 2,
+given only `docs/pipeline-log.md`, the skill-routing, content-review and
+feature-review `results/README.md` files, and the declined proposals that line
+lists, with this instruction, close to verbatim:
+
+> Read these logs as a set. Group recurring friction: the same kind of gate
+> failure, finding, fix-round cause, escaped defect or retro edit in two or
+> more rows. For each group, name its rows and propose the smallest
+> structural change that would have prevented it, preferring in order:
+> delete or merge a stage, rule, doc or check; a mechanical check; a
+> correction in place. Propose a new sentence only when none of those fits,
+> and say what it replaces. Also name any retro edit that later rows show
+> didn't hold. Don't repeat a proposal listed as declined unless a newer
+> row adds evidence for it. Do not edit anything. Report at most five groups, the most
+> costly first (agent runs and fix rounds spent), or say there is no
+> recurring friction.
+
 ## Stage 3 — Apply fixes
 
 Confirmed findings are low-risk text edits (not behavioral code), so
@@ -96,8 +123,10 @@ independent audit in Stage 2 already was the check. For a finding you
 disagree with or that needs a judgment call the audit agent couldn't
 make (e.g. which of two conflicting descriptions is actually correct),
 resolve it yourself or ask the user rather than applying it blindly. Apply
-stale-fact fixes; list duplication and restructuring suggestions for the user
-rather than applying them wholesale.
+stale-fact fixes; list duplication and restructuring suggestions, and Stage
+2b's proposals, for the user rather than applying them wholesale. An approved
+proposal that edits a process file gets `/feature` Stage 6's process-edit
+reader and the eval `evals/README.md`'s table names for it.
 
 ## Stage 4 — Final gate
 
@@ -119,7 +148,9 @@ documentation.)
 Log the run in `evals/docs-audit/results/README.md`: a trend-table row, and
 this run's log (trigger, files audited, findings, what was fixed, what was
 left open) in place of the previous one, so whether an audit happened after a
-batch of changes is checkable later.
+batch of changes is checkable later. If Stage 2b ran, update the file's
+"Last friction aggregation" line: the date, the pipeline-log data-row count it
+covered, and the proposals the user declined.
 
 Summarize for the user: what was audited, what was found, what was
 fixed, and anything left open for their judgment. Ask before committing
