@@ -1,77 +1,85 @@
 ---
 name: content-review-eval
-description: Run this repo's content-review eval — checks whether add-topic's and add-case-study's Stage 3 review agents actually catch a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim, a wrong estimate, a one-sided deep dive) rather than rubber-stamping a draft, including false-positive controls. Use when asked to run/check the content-review eval, after editing add-topic/SKILL.md's or add-case-study/SKILL.md's Stage 3 prompt, the Writing Standard (docs/writing-standard.md) or docs/NON_NEGOTIABLES.md, or after a real add-topic or add-case-study review misses something in actual use (add a scenario for it first).
+description: Run this repo's content-review eval — checks whether the Stage 3 review of add-topic, add-case-study and add-dsa-entry actually catches a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim, a wrong estimate, a one-sided deep dive, a code bug the tests miss, a walkthrough that only narrates) rather than rubber-stamping a draft, including false-positive controls. Use when asked to run/check the content-review eval, after editing the shared Stage 3 prompt (docs/content-review.md) or a content skill's checklist, the Writing Standard (docs/writing-standard.md) or docs/NON_NEGOTIABLES.md, or after a real content review misses something in actual use (add a scenario for it first).
 ---
 
 # Content-review eval
 
-Wraps the procedure in
-[`evals/content-review/HOW_TO_RUN.md`](../../../evals/content-review/HOW_TO_RUN.md)
-as an invokable skill for the same reason `skill-routing-eval` is a skill
-and not just a markdown file someone has to remember exists: a procedure
-sitting in passive documentation only gets run if someone already knows
-to go find it, while a skill is surfaced to every session through the
-normal skill listing. Read `evals/README.md` for the general eval
-philosophy and
-[`evals/content-review/scenarios.md`](../../../evals/content-review/scenarios.md)
-before running this the first time.
-
-This eval is the sibling to `skill-routing-eval`, testing a different
-failure surface: not "does a fresh session pick the right skill," but
-"once `add-topic`'s or `add-case-study`'s Stage 3 review actually runs,
-does it catch a real planted problem instead of rubber-stamping the draft."
+Once a content skill's Stage 3 review actually runs, does it catch a real
+planted problem instead of rubber-stamping the draft, and leave a clean draft
+alone? (`skill-routing-eval` checks the step before: whether the right skill
+is chosen.) The scenarios are in
+[`evals/content-review/scenarios.md`](../../../evals/content-review/scenarios.md);
+read `evals/README.md` for the general eval philosophy.
 
 ## Stage 0 — Scope the run
 
-Running all scenarios (`CR-01`..`CR-05` for `add-topic`, `CS-01`..`CS-03`
-for `add-case-study`) is the default when asked to "run the content-review
-eval" with no further qualifier, or after editing something they all depend
-on (the Writing Standard in `docs/writing-standard.md` or `docs/NON_NEGOTIABLES.md`; the table
-in `evals/README.md` is the canonical list). An edit to one skill's Stage 3
-prompt needs only that skill's scenarios.
-
-Run only the scenarios plausibly affected when the trigger is narrower —
-e.g. a Writing Standard edit that only touches the tone criteria only
-needs `CR-02` re-checked, not the correctness or false-positive
-scenarios.
+All scenarios (`CR-*` for `add-topic`, `CS-*` for `add-case-study`, `DS-*`
+for `add-dsa-entry`) by default, and after an edit to something they all
+depend on: the Writing Standard, `docs/NON_NEGOTIABLES.md`, or the shared
+Stage 3 instruction in `docs/content-review.md`. An edit to one skill's
+checklist needs only that skill's scenarios; a Writing Standard edit that only
+touches tone needs only `CR-02`. Say which you're running and why.
 
 ## Stage 1 — Run each in-scope scenario
 
-For each scenario, follow `evals/content-review/HOW_TO_RUN.md`'s
-procedure exactly (its "Case-study scenarios" section for `CS-*`): read the
-reviewing skill's current Stage 3 instruction (`add-topic/SKILL.md` for
-`CR-*`, `add-case-study/SKILL.md` for `CS-*`) and the current `docs/writing-standard.md` fresh (never a
-cached copy — this eval exists specifically to test the real, current
-prompt), glob the scenario's declared section's current sibling topics,
-then spawn a **fresh** `general-purpose` agent (never `fork` — it must
-not inherit this session's knowledge of what problem was planted) given
-the fabricated draft and that real Stage 3 instruction, framed as a real
-`add-topic` (or `add-case-study`) review rather than an eval.
+The reviewer instruction is never stored in the eval: a snapshot would test a
+review that no longer exists the moment the real prompt changes. So for each
+scenario, read fresh, never from a cached copy:
 
-Run independent scenarios in parallel (one message, multiple `Agent`
-calls) rather than sequentially.
+- the Stage 3 instruction from `docs/content-review.md`, verbatim, with
+  `<kind>` and `<checklist>` filled in from the reviewing skill's `SKILL.md`
+  (`add-topic` for `CR-*`, `add-case-study` for `CS-*`, `add-dsa-entry` for
+  `DS-*`), replacing a checklist item that doesn't apply to the draft with
+  "none", as a real run would (`CR-*` drafts link nothing, and only a
+  `systems-and-infrastructure` draft gets add-topic's item 2);
+- `docs/writing-standard.md`;
+- the existing items for the near-duplicate check: the scenario's
+  **Section**'s topics (`ls src/content/<section>/`) for `CR-*`, the case
+  studies for `CS-*`, the entries for `DS-*`.
+
+Build the draft as `scenarios.md` says (a `CS-*` or `DS-*` scenario is its
+base plus the scenario's replacements). Then spawn a **fresh**
+`general-purpose` agent (never `fork`: it must not know a problem was
+planted) and give it, in this order: the draft's files, verbatim, exactly as
+the skill's Stage 3 would; the Writing Standard; the path of
+`docs/NON_NEGOTIABLES.md`; the existing items; and the instruction, with its
+framing intact, so it believes it's doing a real review. Run independent
+scenarios in parallel (one message, several `Agent` calls). Record each
+review's finding text, not a paraphrase.
 
 ## Stage 2 — Grade and log
 
-Compare each result to `scenarios.md`'s Expected finding (PASS / FAIL /
-AMBIGUOUS, per `HOW_TO_RUN.md`'s grading rules). Log it in
-`evals/content-review/results/README.md` as `HOW_TO_RUN.md` step 5 says (a
-trend-table row, and the run's full log in place of the previous one).
+Grade each against the scenario's **Expected finding**:
 
-## Stage 3 — New violation type or reviewing skill? Add a scenario first
+- **PASS**: a finding substantively names the planted violation. For a
+  control (`CR-05`, `CS-03`, `DS-03`): nothing flagged, or only findings true
+  of the text (a real polish gap, a scope or placement observation).
+- **FAIL**: nothing flagged when a violation was planted, or only something
+  unrelated; for a control, a reported defect that isn't true of the draft (a
+  fabricated claim, a misreading, a correct statement called wrong).
+- **AMBIGUOUS**: a finding brushes near the planted issue without clearly
+  naming it. Say why; don't force a grade.
 
-If this run was triggered by a real `add-topic` or `add-case-study`
-review missing something in actual use, or by a new content-reviewing skill being added to the
-repo, add a scenario for it to `scenarios.md` first (a fabricated draft
-with that exact planted problem, in the existing format), then include
-it in Stage 1 — the same way each `content-review` scenario is built around one
-planted violation category.
+Log the run in `evals/content-review/results/README.md`: add a row to its
+trend table (date, trigger, counts, one-line note) and replace its "Latest
+run" section with this run's log: date, run by, trigger, a table of ID,
+planted violation, whether the review caught it and the grade, then notes on
+anything that stood out. Git history keeps older logs.
+
+## Stage 3 — A real miss or a new skill? Add a scenario first
+
+If this run was triggered by a real content review missing something, or by a
+new content-reviewing skill, first add a scenario to `scenarios.md` in the
+existing format (**Section** or base, **Planted violation**, the fabricated
+draft, **Expected finding**, **Fails if**), one planted problem each, and
+include it. A scenario sourced from a real miss is worth more than several
+speculative ones.
 
 ## Stage 4 — Report
 
-Summarize for the user: which scenarios ran, the grades, anything
-surprising (a planted violation caught for the wrong reason, a near-miss,
-a finding that suggests `add-topic`'s or `add-case-study`'s Stage 3
-prompt itself needs tightening — report that as a finding, don't silently patch it
-mid-eval). Format-check the results file (`npm run format:check`) before
-considering this done. Ask before committing, same as always.
+Summarize for the user: which scenarios ran, the grades, and anything
+surprising (a violation caught for the wrong reason, a near-miss, a sign the
+Stage 3 prompt itself needs tightening; report that as a finding, don't patch
+it mid-eval). Run `npm run format:check` on the results file. Ask before
+committing.

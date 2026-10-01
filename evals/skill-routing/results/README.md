@@ -1,7 +1,7 @@
 # Skill-routing eval results
 
 One row per run, newest last. Add a row for your run and replace the
-"Latest run" section below with its full log (template in `../HOW_TO_RUN.md`); git history keeps
+"Latest run" section below with its full log (what the `skill-routing-eval` skill's Stage 2 lists); git history keeps
 older logs, including the dated files this folder held until 2026-09-29.
 
 | Date       | Trigger                                                              | Pass | Fail | Ambiguous | Note                                                         |
@@ -26,28 +26,39 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-09-29 | At a glance and role splitting                                       | 5    | 0    | 0         | No regression.                                               |
 | 2026-09-29 | Finding triage and slimming (branch chore/review-triage)             | 4    | 0    | 0         | Scoped run; latest run, below.                               |
 | 2026-09-29 | add-case-study batch mode (branch chore/harness-practices)           | 1    | 0    | 0         | SR-15 only; prompt refreshed; latest run, below.             |
-| 2026-09-30 | DSA tab (PR #31): add-dsa-entry, content-audit, add-topic, CLAUDE.md | 7    | 0    | 0         | Scoped run; SR-06 prompt refreshed; latest run, below.       |
+| 2026-09-30 | DSA tab (PR #31): add-dsa-entry, content-audit, add-topic, CLAUDE.md | 7    | 0    | 0         | Scoped run; SR-06 prompt refreshed.                          |
+| 2026-10-01 | Harness pass (branch chore/harness-pass), all scenarios              | 17   | 0    | 0         | Full run; latest run, below.                                 |
 
-## Latest run: 2026-09-30, DSA tab descriptions
+## Latest run: 2026-10-01, harness pass
 
 Run by: self
-Trigger: PR #31 added `add-dsa-entry` (SR-18), widened `content-audit` to DSA entries, pointed `add-topic` and `add-dsa-entry` at each other, and added a DSA row to CLAUDE.md's routing table.
-Scope: SR-02, SR-06, SR-11, SR-15, SR-16, SR-17 and SR-18, the scenarios whose Expected answer depends on a content skill's description or the routing table. The rest route to `/feature`, a direct fix or an eval, and nothing they depend on changed. A full run is due after the harness pass that edits the skills again.
+Trigger: branch chore/harness-pass. The three content skills now share their review stages through `docs/content-review.md`, the eval skills absorbed their `HOW_TO_RUN.md` files, `/feature` gained the retro edits, and the hand-kept reviewer lists became general wording.
+Scope: every live scenario (SR-13 is retired), since nearly every skill file changed.
 
-**Scenario fixed during the run:** SR-06 named a September 2026 state-of-LLMs topic that PR #26 removed. Its first run routed direct, but only after the agent found the topic missing and said it would ask the user, so it didn't test the trap. The prompt now asks for a few words in the caching topic's eviction paragraph, and SR-06 was re-run on it; the grade below is that run.
-
-| ID    | Routing decision           | Reasoning (1 line)                                                                                             | Grade |
-| ----- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | ----- |
-| SR-02 | `add-topic`                | A new topic in an existing section; noted `vector-search.md` as an overlap to link, not repeat.                | PASS  |
-| SR-06 | Direct                     | A few words added to one existing paragraph; `add-topic` is for new topics, `content-audit` for prose quality. | PASS  |
-| SR-11 | `content-audit`            | A sweep of every published topic, case study and DSA entry on the three criteria asked about.                  | PASS  |
-| SR-15 | `add-case-study`           | A new design write-up with a diagram; checked that no collaborative-editor case study exists.                  | PASS  |
-| SR-16 | `content-audit` (one file) | A quality check of one published case study; `add-case-study` only writes new ones.                            | PASS  |
-| SR-17 | `/feature`                 | Page layout and a render-script guard are app and tooling code, which `add-case-study` excludes.               | PASS  |
-| SR-18 | `add-dsa-entry`            | A new entry; checked `src/dsa/entries/` has no heap; not a catalog topic or app code.                          | PASS  |
+| ID    | Routing decision            | Reasoning (1 line)                                                                                       | Grade |
+| ----- | --------------------------- | -------------------------------------------------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`                  | New search-dialog UI behaviour needs a spec, tests and UI review.                                        | PASS  |
+| SR-02 | `add-topic`                 | A new topic in an existing section; noted `vector-search.md` to link rather than repeat.                 | PASS  |
+| SR-03 | Direct                      | A one-word README typo is CLAUDE.md's own example of a direct fix.                                       | PASS  |
+| SR-04 | Direct (the 3-step process) | `docs/content.md`'s three steps; `add-topic`'s description excludes new sections. An accepted answer.    | PASS  |
+| SR-05 | `/feature` Stage 0 triage   | A bug of unknown size: reproduce it and find the cause first, then route by what was found.              | PASS  |
+| SR-06 | Direct                      | A few words in one existing paragraph; `add-topic` is for new topics, `content-audit` for prose quality. | PASS  |
+| SR-07 | `/feature`                  | A reading-time calculation plus UI on cards and the topic page is app code.                              | PASS  |
+| SR-08 | Direct                      | CLAUDE.md: a version bump by hand is a direct change; run `verify` and let CI decide.                    | PASS  |
+| SR-09 | `docs-audit`                | Doc staleness after a batch of changes is `docs-audit`'s stated job.                                     | PASS  |
+| SR-10 | `skill-routing-eval`        | Asked for by name.                                                                                       | PASS  |
+| SR-11 | `content-audit`             | A sweep of published content on the three criteria asked about.                                          | PASS  |
+| SR-12 | `content-review-eval`       | Checks that a reworded review still catches a planted violation; routing is ruled out.                   | PASS  |
+| SR-14 | `feature-review-eval`       | Checks that Stage 4's reviewer still catches planted defects in a diff.                                  | PASS  |
+| SR-15 | `add-case-study`            | A new design write-up with a diagram; no collaborative-editor case study exists.                         | PASS  |
+| SR-16 | `content-audit` (one file)  | Revising one published case study; `add-case-study` only writes new ones.                                | PASS  |
+| SR-17 | `/feature`                  | Page layout and a render-script guard are app and tooling code, which `add-case-study` excludes.         | PASS  |
+| SR-18 | `add-dsa-entry`             | A new entry; checked `src/dsa/entries/` has no heap.                                                     | PASS  |
 
 ### Notes
 
-SR-16 and SR-18 lean on the descriptions PR #31 changed (content-audit now covers
-revising an existing entry; add-dsa-entry names "add the heap entry to DSA"), and
-both agents cited them. No agent confused a DSA entry with a catalog topic.
+SR-12 cited `content-review-eval`'s new trigger (an edit to a content skill's
+review instructions). SR-04 routed direct and added that the first topic should
+still get a Writing Standard review, which is defensible. Routing depends on the
+skill descriptions, whose scope wording didn't change, and no agent was confused
+by the shared review doc.

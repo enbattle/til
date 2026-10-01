@@ -5,19 +5,18 @@ exactly as if it were about to be added via the `add-topic` skill — with
 **exactly one** deliberately planted problem. These drafts are fixtures
 for this eval only: never write them into `src/content/`. Give a
 scenario's draft, verbatim, to a fresh reviewer agent along with
-`add-topic`'s real Stage 3 instruction (copied fresh from
-`.claude/skills/add-topic/SKILL.md` at run time — see `HOW_TO_RUN.md`) and
-record whether the review actually catches the planted problem. See
-`HOW_TO_RUN.md` for the full procedure and grading, and `../README.md`
-for this repo's general eval philosophy.
+`add-topic`'s real Stage 3 instruction (built fresh at run time) and record
+whether the review actually catches the planted problem. The
+`content-review-eval` skill has the full procedure and grading, and
+`../README.md` this repo's general eval philosophy.
 
 Each scenario names the **section** the draft claims to belong to, so a
 real run can glob that section's current sibling topics for the
 near-duplicate check the same way a real `add-topic` review would.
 
-`CR-*` scenarios test `add-topic`'s review. The `CS-*` scenarios at the end
-test `add-case-study`'s review the same way, with a System Design case-study
-draft and that skill's Stage 3 instruction instead.
+`CR-*` scenarios test `add-topic`'s review. The `CS-*` and `DS-*` scenarios
+after them test `add-case-study`'s and `add-dsa-entry`'s reviews the same
+way, with a case-study draft or a DSA entry and its code instead.
 
 ---
 
@@ -785,3 +784,328 @@ diagram, are acceptable and go in the run's notes.
 arithmetic "error" in a correct line, a deep dive called one-sided when it
 compares two options, a diagram/prose mismatch that isn't there, or a correct
 technical statement called wrong.
+
+---
+
+## DSA scenarios (`add-dsa-entry`)
+
+These test `add-dsa-entry`'s Stage 3 review. Like the case-study scenarios, they
+share one fabricated base: a short Prefix Sums entry (a pattern) and its four
+code files, written to the template in `docs/dsa.md`. Build a scenario's
+files by taking the base and applying that scenario's replacements verbatim,
+then give the reviewer the entry and all four code files, exactly as
+`add-dsa-entry` Stage 3 would. These are fixtures for this eval only: never
+write them into `src/dsa/`. The base code and tests were run as written (4
+pytest and 3 vitest tests pass, and Prettier accepts the `.ts` files).
+
+There's no **Section**: give the reviewer the titles and slugs of the real
+entries in `src/dsa/entries/` for its near-duplicate check, as the skill does.
+
+### Base entry (the DS-03 control, verbatim)
+
+`src/dsa/entries/prefix-sums.md`:
+
+````markdown
+---
+title: Prefix Sums
+summary: Precompute running totals once, and the sum of any stretch of an array becomes one subtraction.
+date: 2026-10-01
+kind: pattern
+---
+
+## Prerequisites
+
+None. This assumes you know what an array is and that its positions are
+numbered from 0.
+
+## The idea
+
+Suppose you have an array of numbers and need the sum of many different
+stretches of it: positions 1 through 3, then 0 through 4, then 2 through 2.
+Adding each stretch up from scratch costs one step per element in it, so a
+thousand questions about a long array repeat a lot of the same additions.
+
+A **prefix sum** is the total of an array's first few elements. Build a second
+array, `prefix`, where `prefix[i]` is the sum of the first `i` elements, so
+`prefix[0]` is 0 (nothing added yet). For `nums = [3, 1, 4, 1, 5]`:
+
+| i         | 0   | 1   | 2   | 3   | 4   | 5   |
+| --------- | --- | --- | --- | --- | --- | --- |
+| prefix[i] | 0   | 3   | 4   | 8   | 9   | 14  |
+
+The sum of positions 1 through 3 is everything up to and including position 3,
+minus everything before position 1: `prefix[4] - prefix[1] = 9 - 3 = 6`, which
+is 1 + 4 + 1.
+
+## When to use it
+
+Use it when the array doesn't change and you need many range sums from it. If
+the array changes between questions, every running total after the changed
+position goes stale, and a different structure, one built to handle updates,
+fits better. The same trick works for anything you can undo by subtraction,
+such as counts. It doesn't work for the largest value in a range, because a
+maximum can't be subtracted away.
+
+## Walkthrough
+
+```python
+def build_prefix(nums: list[int]) -> list[int]:
+    prefix = [0] * (len(nums) + 1)
+```
+
+```typescript
+export function buildPrefix(nums: number[]): number[] {
+  const prefix = new Array<number>(nums.length + 1).fill(0);
+```
+
+The array is one longer than the input. The extra slot at the front,
+`prefix[0] = 0`, stands for "the sum of no elements". Without it, a range that
+starts at position 0 would need its own special case, since there would be
+nothing before it to subtract.
+
+```python
+    for i, value in enumerate(nums):
+        prefix[i + 1] = prefix[i] + value
+    return prefix
+```
+
+```typescript
+  for (let i = 0; i < nums.length; i++) {
+    prefix[i + 1] = prefix[i] + nums[i];
+  }
+  return prefix;
+}
+```
+
+Each total is the previous total plus one element, so one pass builds the whole
+array instead of re-adding from the start for every slot. The write goes to
+`i + 1` because element `i` is the `(i + 1)`th element, so it belongs in the
+total of the first `i + 1` elements. Writing `prefix[i] = prefix[i] + value`
+instead would read the slot it's about to fill, which is still 0, so each slot
+would hold a single element rather than a running total.
+
+```python
+def range_sum(prefix: list[int], left: int, right: int) -> int:
+    return prefix[right + 1] - prefix[left]
+```
+
+```typescript
+export function rangeSum(prefix: number[], left: number, right: number): number {
+  return prefix[right + 1] - prefix[left];
+}
+```
+
+Both `left` and `right` are inside the range. `prefix[right + 1]` is the sum of
+everything up to and including position `right`, and `prefix[left]` is the sum
+of everything before position `left`, so their difference is exactly the
+range. Using `prefix[right]` would leave out the element at `right`: for the
+example, `prefix[3] - prefix[1]` is 5, missing the 1 at position 3.
+
+## Complexity
+
+Big-O notation describes how a cost grows with the size of the input, n.
+Building `prefix` takes O(n) time, one addition per element, and O(n) extra
+space for the n + 1 totals. Each range sum is then O(1): two array reads and a
+subtraction, however long the range. Answering q questions costs O(n + q) in
+total, against O(n × q) in the worst case when every range is added up from
+scratch.
+
+## Pitfalls
+
+- **Off by one at the right end.** The range includes `right`, so the formula
+  reads `prefix[right + 1]`. Mixing that up with a range that stops just before
+  `right` is the most common bug; pick one convention and keep it.
+- **Overflow with fixed-width integers.** Python's integers grow as needed, and
+  the TypeScript version's numbers are 64-bit floating point, exact for every
+  integer up to 2⁵³. In a language with 32-bit integers, the totals of a long
+  array of large values can overflow even when every element fits.
+````
+
+`src/dsa/code/prefix-sums/prefix_sums.py`:
+
+```python
+def build_prefix(nums: list[int]) -> list[int]:
+    prefix = [0] * (len(nums) + 1)
+    for i, value in enumerate(nums):
+        prefix[i + 1] = prefix[i] + value
+    return prefix
+
+
+def range_sum(prefix: list[int], left: int, right: int) -> int:
+    return prefix[right + 1] - prefix[left]
+```
+
+`src/dsa/code/prefix-sums/test_prefix_sums.py`:
+
+```python
+import random
+
+from prefix_sums import build_prefix, range_sum
+
+
+def test_empty_input_has_one_zero():
+    assert build_prefix([]) == [0]
+
+
+def test_worked_example():
+    prefix = build_prefix([3, 1, 4, 1, 5])
+    assert prefix == [0, 3, 4, 8, 9, 14]
+    assert range_sum(prefix, 1, 3) == 6
+
+
+def test_single_elements_and_the_whole_array():
+    nums = [3, 1, 4, 1, 5]
+    prefix = build_prefix(nums)
+    for i, value in enumerate(nums):
+        assert range_sum(prefix, i, i) == value
+    assert range_sum(prefix, 0, len(nums) - 1) == sum(nums)
+
+
+def test_matches_brute_force_on_random_ranges():
+    rng = random.Random(7)
+    for _ in range(500):
+        nums = [rng.randint(-50, 50) for _ in range(rng.randint(1, 30))]
+        prefix = build_prefix(nums)
+        left = rng.randrange(len(nums))
+        right = rng.randrange(left, len(nums))
+        assert range_sum(prefix, left, right) == sum(nums[left : right + 1])
+```
+
+`src/dsa/code/prefix-sums/prefix-sums.ts`:
+
+```typescript
+export function buildPrefix(nums: number[]): number[] {
+  const prefix = new Array<number>(nums.length + 1).fill(0);
+  for (let i = 0; i < nums.length; i++) {
+    prefix[i + 1] = prefix[i] + nums[i];
+  }
+  return prefix;
+}
+
+export function rangeSum(prefix: number[], left: number, right: number): number {
+  return prefix[right + 1] - prefix[left];
+}
+```
+
+`src/dsa/code/prefix-sums/prefix-sums.test.ts`:
+
+```typescript
+import { describe, expect, it } from 'vitest';
+import { buildPrefix, rangeSum } from './prefix-sums';
+
+describe('prefix sums', () => {
+  it('gives an empty input one zero', () => {
+    expect(buildPrefix([])).toEqual([0]);
+  });
+
+  it('matches the worked example', () => {
+    const prefix = buildPrefix([3, 1, 4, 1, 5]);
+    expect(prefix).toEqual([0, 3, 4, 8, 9, 14]);
+    expect(rangeSum(prefix, 1, 3)).toBe(6);
+  });
+
+  it('matches a brute-force sum on random ranges', () => {
+    let seed = 7;
+    const next = (n: number) => {
+      seed = (seed * 48271) % 2147483647;
+      return seed % n;
+    };
+    for (let round = 0; round < 500; round++) {
+      const nums = Array.from({ length: 1 + next(30) }, () => next(101) - 50);
+      const prefix = buildPrefix(nums);
+      const left = next(nums.length);
+      const right = left + next(nums.length - left);
+      const expected = nums.slice(left, right + 1).reduce((a, b) => a + b, 0);
+      expect(rangeSum(prefix, left, right)).toBe(expected);
+    }
+  });
+});
+```
+
+---
+
+### DS-01 — a TypeScript bug the tests don't reach (trap for "the code is correct" and "the tests reach the edge cases")
+
+**Reviewed with:** `add-dsa-entry`'s Stage 3 instruction.
+**Planted violation (the only one):** the TypeScript loop stops one element
+early, so `prefix[n]` stays 0 and every range that ends at the last element is
+wrong (`rangeSum(buildPrefix([3, 1, 4, 1, 5]), 0, 4)` returns 0, not 14). The
+weakened TypeScript test still passes, since `rangeSum(prefix, 1, 3)` is 6 with
+or without the bug. The Python code and tests are unchanged and correct.
+**Replacements in the base:** in both `prefix-sums.ts` and the entry's second
+typescript fence, replace `for (let i = 0; i < nums.length; i++) {` with:
+
+```typescript
+  for (let i = 0; i < nums.length - 1; i++) {
+```
+
+and replace `prefix-sums.test.ts` with:
+
+```typescript
+import { describe, expect, it } from 'vitest';
+import { buildPrefix, rangeSum } from './prefix-sums';
+
+describe('prefix sums', () => {
+  it('gives an empty input one zero', () => {
+    expect(buildPrefix([])).toEqual([0]);
+  });
+
+  it('sums the middle of the worked example', () => {
+    expect(rangeSum(buildPrefix([3, 1, 4, 1, 5]), 1, 3)).toBe(6);
+  });
+});
+```
+
+**Expected finding:** flags the TypeScript loop bound: the last element is
+never added, so `prefix` ends in 0 and any range ending at the last position is
+wrong, unlike the Python version; and notes that the TypeScript tests never
+check a range that reaches the end (or the whole `prefix` array, or random
+ranges), which is why they pass.
+**Fails if:** the review doesn't flag the loop bound, or flags only the thin
+tests without finding the bug they miss.
+
+---
+
+### DS-02 — a walkthrough paragraph that narrates (trap for "explains why, not what")
+
+**Reviewed with:** `add-dsa-entry`'s Stage 3 instruction.
+**Planted violation (the only one):** the paragraph after the third pair says
+what `range_sum` does, line by line, but never why it reads `prefix[right + 1]`
+rather than `prefix[right]`, or what the subtraction removes. The Pitfalls
+section still names the off-by-one, so the entry as a whole isn't wrong; this
+paragraph just doesn't do a walkthrough paragraph's job.
+**Replacement in the base:** replace the paragraph that starts "Both `left`
+and `right` are inside the range." with:
+
+```markdown
+This function takes the prefix array and the two positions. It looks up the
+value at `right + 1` and the value at `left`, subtracts the second from the
+first, and returns the result, which is the sum of the range.
+```
+
+**Expected finding:** flags this paragraph as narration that restates the
+code without explaining why it's written that way (why `right + 1`, what
+`prefix[left]` subtracts, what goes wrong with `prefix[right]`), against the
+checklist's "explains why its lines are written that way, not only what they
+do."
+**Fails if:** the review doesn't flag the paragraph, or flags only the other
+walkthrough paragraphs.
+
+---
+
+### DS-03 — clean entry (false-positive control)
+
+**Reviewed with:** `add-dsa-entry`'s Stage 3 instruction.
+**Planted violation:** none. The base, verbatim. The code is correct in both
+languages and every line of each file appears once in the walkthrough, in
+order. The worked example holds (prefix `[0, 3, 4, 8, 9, 14]`;
+`prefix[4] - prefix[1] = 6`; `prefix[3] - prefix[1] = 5`, missing the 1 at
+position 3), the tests cover empty input, single elements, the whole array and
+500 random ranges against a brute-force sum, the complexity claims hold, and
+2⁵³ is the limit of exact integers in a 64-bit float.
+**Expected finding:** no finding that is false of the entry. Real gaps, such
+as its brevity next to the reference entries or no TypeScript test for single
+elements, are acceptable and go in the run's notes.
+**Fails if:** the review reports a defect that isn't true of the entry: a
+"bug" in correct code, a wrong figure that's right, a narrating paragraph that
+does explain why, or a correct technical statement called wrong.

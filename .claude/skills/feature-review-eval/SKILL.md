@@ -5,31 +5,70 @@ description: Run this repo's feature-review eval — checks whether /feature's S
 
 # Feature-review eval
 
-Wraps [`evals/feature-review/HOW_TO_RUN.md`](../../../evals/feature-review/HOW_TO_RUN.md)
-as a skill, for the same reason the other eval runners are skills: a
-procedure in passive documentation only runs if someone remembers it exists.
-It is the `/feature` counterpart of `content-review-eval`: that one checks
-`add-topic`'s review, this one checks Stage 4's.
+Once `/feature`'s Stage 4 review runs, does it catch a real planted defect
+instead of rubber-stamping the diff, without inventing defects in a clean
+one? It is the `/feature` counterpart of `content-review-eval`. The scenarios
+are in [`evals/feature-review/scenarios.md`](../../../evals/feature-review/scenarios.md).
 
 ## Stage 0 — Scope the run
 
 All scenarios (`FR-01`..`FR-07`; FR-06 and FR-07 test finding triage) by
-default, and always after an edit to Stage 4's reviewer or triage instruction or to `docs/NON_NEGOTIABLES.md`. Before
-running after such an edit, rotate one scenario's planted defect as
-`scenarios.md` asks, and say which.
+default, and always after an edit to Stage 4's reviewer or triage
+instruction or to `docs/NON_NEGOTIABLES.md`. Before running after such an
+edit, rotate one scenario's planted defect as `scenarios.md` asks, and say
+which.
+
+The diffs quote real code. If a file they touch has changed (the function
+moved, a quoted line is gone or reads differently), update the diff's context
+and hunk headers to the current code, keeping the same planted defect, before
+running: a drifted control is worse than none.
 
 ## Stage 1 — Run each scenario, twice
 
-Follow `HOW_TO_RUN.md` exactly: copy Stage 4's current reviewer instruction
-fresh, and give each run a **fresh** `general-purpose` agent (never `fork`)
-that doesn't know a defect was planted. Run independent scenarios in
-parallel (one message, several `Agent` calls).
+The reviewer instruction is never stored in the eval: copy Stage 4's current
+"Review the diff below against the spec above, adversarially..." block from
+`.claude/skills/feature/SKILL.md` verbatim each run.
+
+For each scenario, spawn a **fresh** `general-purpose` agent (never `fork`:
+it must not know a defect was planted, and must not read `evals/`). Give it,
+in this order: the scenario's **Spec** as "the spec", its **Diff** as "the
+diff", the path of `docs/NON_NEGOTIABLES.md`, and the reviewer instruction
+with its framing intact, plus one line: "The diff is not applied to the
+working tree; read the current files for context, don't read anything under
+evals/, and don't start the dev server." (The UI step can't run on an
+unapplied diff; no planted defect needs it.) Record the finding text, not a
+paraphrase.
+
+**Triage scenarios (FR-06, FR-07):** copy Stage 4's finding-triage
+instruction (the "For each finding below, confirm or dispute it..." block)
+and its four outcomes, verbatim. The agent gets the scenario's **Spec**,
+**Diff** (as the output of `npm run review:diff`) and **Finding**, the
+instruction, the outcomes, and one line: "Propose one outcome for each
+finding; don't read anything under evals/."
+
+Run each scenario **twice**, independent scenarios in parallel (one message,
+several `Agent` calls). Reviews are nondeterministic; two runs that disagree
+usually mean the scenario or the grading is ambiguous, and that gets fixed
+rather than averaged.
 
 ## Stage 2 — Grade and log
 
-Grade each run against `scenarios.md`'s Expected finding using
-`HOW_TO_RUN.md`'s rules, and log it in `evals/feature-review/results/README.md` as `HOW_TO_RUN.md`
-step 6 says.
+- **PASS**: a finding substantively names the planted defect at medium
+  severity or higher (`FR-02`: high, since it breaks a non-negotiable). For
+  `FR-04`: nothing flagged, or only findings true of the diff (one labelled
+  theoretical passes if it's true and not presented as blocking). A planted
+  defect labelled theoretical is a FAIL. For a triage scenario: the proposed
+  outcome matches **Expected outcome**, backed by evidence from real files.
+- **FAIL**: the planted defect is missed, or only mentioned as low or
+  cosmetic; for `FR-04`, a reported defect that isn't there; for a triage
+  scenario, as the scenario says.
+- **AMBIGUOUS**: a finding circles the defect without naming it, or a triage
+  outcome is hedged though the evidence is right. Say why.
+
+Log the run in `evals/feature-review/results/README.md`: add a row to its
+trend table and replace its "Latest run" section with this run's log
+(trigger, scenarios run, a table of ID, run, finding summary and grade, and
+notes on anything surprising). Git history keeps older logs.
 
 ## Stage 3 — Escaped defect? Add a scenario first
 
@@ -41,5 +80,5 @@ plants the same kind of defect before running, and include it.
 
 Summarize for the user: the grades, disagreements between the two runs of a
 scenario, and anything surprising (a finding that names the defect for the
-wrong reason, a severity that undersells it). Run
-`npm run format:check` on the results file. Ask before committing.
+wrong reason, a severity that undersells it). Run `npm run format:check` on
+the results file. Ask before committing.

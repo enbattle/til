@@ -26,7 +26,9 @@ Only the test-writer, implementer and reviewer run as separate fresh agents,
 plus single-purpose extras when a stage calls for one (a finding triager in Stage 4, a
 fixer in 4a, a process-edit reader in Stage 6). Spec stays with you and the
 user; docs stay with the implementer. Add no other worker agent without a
-specific bias it would prevent.
+specific bias it would prevent. Tell every agent to run tests and checks in
+the foreground: one that backgrounds a run and waits on it can stall without
+ever reporting.
 
 **Splitting a role.** A role can run as several agents when its content files
 are more than one agent can read in full. One owner agent does all the role's
@@ -57,6 +59,17 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
 - A check over content uses the shared `markdownParser()`
   (`src/lib/markdown.mjs`) or inspects the rendered output, not a regex
   or a second parser.
+- A guard (a check script, the test lock, a structural test): where the
+  inputs that can change its outcome can be listed in full, the spec pins all
+  of them (an allowlist), not a list of known-bad names, which is only as
+  complete as the cases someone thought of. Where they can't (HTML sinks), the
+  spec says so and lists the vectors the guard must reject.
+- A change to a script that is already locked (`docs/verification.md` lists
+  them, e.g. `scripts/lib.mjs`) is assigned to the Stage 2 test-writer, which
+  writes its planted cases first. A change that widens the lock shows its new
+  parts as `added` at Stage 3's gate; the spec can pre-approve exactly those,
+  and the orchestrator then confirms with the previous script that nothing
+  already locked changed, and re-takes the snapshot.
 - Scope in and out; files/modules touched; whether there's a user-facing UI
   surface (decides Stage 4's browser check).
 - A check against [docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md):
@@ -77,9 +90,11 @@ this instruction, close to verbatim:
 > Write tests covering every acceptance criterion in the spec above. Only
 > create or edit test files (any `*.test.*` or `*.spec.*` JS or TS file, such as
 > `*.test.ts`, `*.test.tsx` or `*.test.mjs`: what `check:test-lock` locks; a
-> guard script's planted-violation cases go in `scripts/checks.test.mjs`), and
-> test fixture content under `src/content/` or `src/system-design/` only if
-> the spec requires new seed content to test against. Do not write or modify
+> guard script's planted-violation cases go in `scripts/checks.test.mjs`), a
+> new `test*` script in `package.json` and its `npm run` step in `verify` if
+> the tests need one, any locked script the spec assigns to you, and test fixture
+> content under `src/content/` or `src/system-design/` only if the spec
+> requires new seed content to test against. Do not write or modify
 > any implementation file. Run the suite yourself when done and confirm the
 > new tests fail — report exactly which tests are red and why (missing
 > implementation, not a typo in the test).
@@ -87,8 +102,9 @@ this instruction, close to verbatim:
 **Gate** (you run it):
 
 ```bash
-git status --porcelain -uall    # every changed path should be a test file (or content fixture), listed file by file
+git status --porcelain -uall    # every changed path is a test file, a fixture, package.json's test* scripts and verify steps, or a script the spec assigned
 npm run test:run                # the new or edited tests for the new behavior must actually fail
+npm run typecheck               # every error is a name the spec introduces but nothing implements yet; any other error fails the gate
 npx prettier --check <changed test and fixture files> && npx oxlint <changed test files>   # no later stage may fix a locked file
 ```
 
@@ -129,15 +145,13 @@ Spawn another **fresh** `general-purpose` agent with the spec and the failing
 test files' paths and content (ground truth). Instruction, close to verbatim:
 
 > Implement the spec above so the failing tests listed pass. Do not edit,
-> delete or add any test file (any `*.test.*` or `*.spec.*` JS or TS file, such as
-> `*.test.ts`, `*.test.tsx` or `*.test.mjs`, including
-> `scripts/checks.test.mjs`), anything under
-> `src/test/`, a vitest snapshot, the `test` block of `vite.config.ts`, the
-> `test*` scripts in `package.json`, a `vitest.config.*` file, or these fixture files: <the fixture paths
-> locked in Stage 2, or "none">. They are locked, and a check will fail if
-> any of them changes. If a test looks wrong
-> or the spec is ambiguous in a way that blocks you, stop and report the
-> discrepancy instead of changing the test to fit your implementation.
+> delete or add any file `npm run check:test-lock` locks (docs/verification.md
+> lists them: every test file, the test runners' and the lock's own scripts
+> and config, every ignore rule) or these fixture files: <the fixture paths
+> locked in Stage 2, or "none">. A check will fail if any of them changes. If
+> a test looks wrong or is too slow to run, or the spec is ambiguous in a way
+> that blocks you, stop and report it instead of changing the test or adding
+> app code to work around it.
 > Update any doc this change makes stale (`CLAUDE.md`, `README.md`, `docs/`,
 > `.claude/skills/`, `evals/`) if it adds or changes a convention future
 > work should follow — most changes
@@ -273,8 +287,13 @@ Up to **2 rounds**, each in this order:
    file, the real CSS), not a re-implementation of it. Gate it like the Stage 2
    re-run (no implementation file in `git status --porcelain -uall`;
    `check:test-lock -- --verify` lists only those tests or fixtures), then
-   re-take the snapshot. Prose in a locked fixture also goes here. These runs
-   don't count against Stage 2's caps and aren't logged.
+   re-take the snapshot. Any other change to a locked file goes here too,
+   since a fixer may not touch one: prose in a fixture, or a locked script
+   (the lock's own, a runner). For a script, the brief names it as allowed;
+   the test-writer adds the planted case to `scripts/checks.test.mjs`, shows
+   it failing, then edits the script, and the gate accepts the script in
+   `--verify`. These runs don't count against Stage 2's caps and aren't
+   logged.
 2. A **fresh** `general-purpose` fixer (not the Stage 3 agent) gets the
    findings, the spec and any new tests: "Fix these findings. Do not edit,
    delete or add any locked file (the same list as Stage 3's instruction)."

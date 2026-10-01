@@ -121,10 +121,9 @@ defend its findings, and not the orchestrator, who wants the run finished.
 The orchestrator assigns outcomes from that evidence but may not reject or
 defer a finding the triager confirmed reachable without asking the user; a
 finding is contested when the triager disputes one the reviewer rated High,
-or the orchestrator wants to overrule the triager. In `add-topic`,
-`add-case-study` and `add-dsa-entry` the orchestrator may confirm prose
-findings itself, but a
-rejection must quote the text or source that disproves the finding. The outcome weighs impact against likelihood rather than history alone, so a
+or the orchestrator wants to overrule the triager. In the content skills'
+shared review ([content-review.md](content-review.md)) the orchestrator may
+confirm prose findings itself, but a rejection must quote the text or source that disproves the finding. The outcome weighs impact against likelihood rather than history alone, so a
 severe class that hasn't happened yet still gets fixed, and every rejected or
 deferred finding is written down with its reason so the next review doesn't
 raise it again. A regression test is added only where the problem could
@@ -160,8 +159,8 @@ until checked. `evals/` holds scenario-based checks for it: given a task
 description, does a fresh session route it to the skill this document and
 `CLAUDE.md` intend, or a direct edit (`skill-routing`) — and, once the
 right skill runs, does its review step actually catch what it's supposed
-to catch instead of rubber-stamping the work (`content-review`, for
-`add-topic`'s and `add-case-study`'s Stage 3; `feature-review`, for
+to catch instead of rubber-stamping the work (`content-review`, for the
+content skills' Stage 3; `feature-review`, for
 `/feature`'s Stage 4)? Run via the `skill-routing-eval`,
 `content-review-eval` and `feature-review-eval` skills — see
 `evals/README.md`. All are run

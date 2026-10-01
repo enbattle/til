@@ -1,7 +1,7 @@
 # Feature-review eval results
 
 One row per run, newest last. Add a row for your run and replace the
-"Latest run" section below with its full log (what `../HOW_TO_RUN.md` step 6 lists); git history keeps
+"Latest run" section below with its full log (what the `feature-review-eval` skill's Stage 2 lists); git history keeps
 older logs, including the dated files this folder held until 2026-09-29.
 
 | Date       | Trigger                                                                         | Pass | Fail | Ambiguous | Note                                                         |

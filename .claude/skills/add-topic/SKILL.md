@@ -6,14 +6,12 @@ description: Add a new topic markdown file to an existing section in this til re
 # Add a topic
 
 A new topic file is the most common change in this repo, and the least
-code-shaped: there's no behavior to spec or TDD against, just prose held to
-the [Writing Standard](../../../docs/writing-standard.md) and the frontmatter
-contract in [docs/content.md](../../../docs/content.md). Running it through the full `/feature` pipeline (spec, TDD,
-fresh implementer) would be ceremony with nothing behind it — but skipping
-review entirely means the repo's most frequent change gets _less_ scrutiny
-than a one-line code fix, which is the gap this skill exists to close. See
-[docs/SDLC.md](../../../docs/SDLC.md) for the general reasoning behind
-where this repo does and doesn't spend a separate agent.
+code-shaped: prose held to the
+[Writing Standard](../../../docs/writing-standard.md) and the frontmatter
+contract in [docs/content.md](../../../docs/content.md), drafted directly and
+then reviewed by a fresh agent. The review stages, and why content gets this
+lighter process, are in
+[docs/content-review.md](../../../docs/content-review.md).
 
 ## Stage 0 — Scope check
 
@@ -76,56 +74,18 @@ those still pass, not
 writing new tests. A topic file
 never needs its own test.
 
-## Stage 3 — Independent review
+## Stages 3–4 — Review and final gate
 
-Spawn a **fresh** `general-purpose` agent (never `fork` — it must not
-inherit your own read of the draft). Give it: the new file's full content,
-`docs/writing-standard.md`, the path of
-`docs/NON_NEGOTIABLES.md` (a violation there is always a real finding), and
-the titles/slugs of the other
-topics already in the same section (so it can check for a near-duplicate).
-If Stage 1 also added a link from a System Design case study, give it that
-paragraph too and have it check that the link sits where the case study
-uses the concept.
-If the topic is in `systems-and-infrastructure`, also have it check the
-closing `## Where you'll meet this` section: general kinds of systems only,
-every sentence true of the generic system, and no re-teaching of the topic.
-Instruction, close to verbatim:
+Follow [docs/content-review.md](../../../docs/content-review.md) with:
 
-> Review this new til topic adversarially against the Writing Standard
-> below — assume nothing about it is fine until you've checked it
-> yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line
-> there is always a real finding. Read docs/writing-standard.md and check
-> the topic against every bullet in it, tone, figurative language and
-> verified technical claims included. Also check it isn't
-> a near-duplicate of an existing topic in this section (listed below). For each finding, quote the text, or name a realistic trigger (for app
-> behavior, real inputs or content; for a guard or check, an edit an author
-> following docs/content.md or docs/case-studies.md could plausibly make, or a
-> shape a doc says the check covers); label anything else "theoretical".
-> Re-raise a decision listed below as already made only with new evidence. Do
-> not edit the file — review only. Report findings ranked by severity, or
-> say explicitly you found nothing worth flagging.
-
-- No findings, or only cosmetic ones → done, go to Stage 4.
-- Real findings → finding triage, then fix. Confirm each against the file yourself
-  (a finding about code or a check goes to a fresh agent), and give it one of
-  `/feature` Stage 4's outcomes; record each Reject and Known limitation with
-  a one-line reason in the handoff, and give the re-review that list. A Reject
-  must quote the text or source that disproves the finding. Fix the rest
-  yourself (no separate fix agent for a content edit), then re-run this
-  stage on the updated file. Cap at 2 rounds, matching `/feature`'s
-  fix-loop cap — if findings persist after that, stop and surface them to
-  the user rather than continuing to iterate alone.
-
-## Stage 4 — Final gate
-
-Re-run the Stage 2 verification suite on the final version, confirm it's
-green, and summarize the topic and the review outcome for the user. Append a
-row for this run to [docs/pipeline-log.md](../../../docs/pipeline-log.md)
-(its header defines the columns; Retro is `n/a`, since this skill has no
-retrospective stage; Gate failures counts failed `verify` runs; Agents counts
-the review and triage agents you started). Then run
-`npx prettier --write docs/pipeline-log.md` and `npm run check:pipeline-log`.
-The row goes in the topic's commit. Ask
-before committing or pushing, same as always — this skill leaves the
-working tree ready, it doesn't ship it.
+- **`<kind>`**: til topic.
+- **Existing items**: the other topics in the same section.
+- **Files**: the topic in full; the `git diff` of each case study or topic
+  Stage 1 linked to it; for a `systems-and-infrastructure` topic, the "Where
+  you'll meet this" rules in docs/content.md.
+- **`<checklist>`**: (1) each link added from a case study or another topic
+  sits where that text uses the concept, and its diff is link-only; (2) the
+  closing "Where you'll meet this" section names general kinds of systems
+  only, every sentence is true of the generic system, and it doesn't re-teach
+  the topic.
+- **Commit**: the topic and its link edits, with the log row.

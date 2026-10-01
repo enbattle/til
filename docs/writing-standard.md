@@ -1,8 +1,8 @@
 # Writing standard
 
-The bar every published topic, case study and DSA entry meets. Reviewers in
-`add-topic`, `add-case-study`, `add-dsa-entry`, `content-audit` and `/feature` are given
-this file; [docs/NON_NEGOTIABLES.md](NON_NEGOTIABLES.md) #4 makes it binding.
+The bar every published topic, case study and DSA entry meets. Every
+reviewer of published prose is given this file;
+[docs/NON_NEGOTIABLES.md](NON_NEGOTIABLES.md) #4 makes it binding.
 
 Every topic is written so a reader with **zero prior background** on the
 subject can walk away with real understanding — possibly needing a second

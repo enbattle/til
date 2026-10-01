@@ -64,28 +64,16 @@ python -m pip install -r requirements-dev.txt   # on Windows: py -m pip install 
 npm run dev             # Start the dev server
 npm run build            # Type-check + production build → dist/
 npm run preview          # Preview the production build locally
-npm run lint             # oxlint
-npm run typecheck        # tsc -b
-npm run format            # Prettier write
-npm run format:check      # Prettier check
 npm run test              # Vitest, watch mode
-npm run test:run          # Vitest, run once (CI mode); needs Python 3.11+ and pytest too
-npm run test:py           # pytest over the DSA entries' Python code (src/dsa/code)
-npm run size              # Check built JS chunks against size-limit budgets
-npm run check:colors      # Fail if a component or stylesheet references a raw hex color instead of a design token
-npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src/index.css
-npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
-npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
-npm run check:claude-md   # Fail if CLAUDE.md passes 150 lines or links to a missing file
-npm run check:bundle      # After a build: fail if topic, case-study or DSA bodies are in the main chunk instead of lazy chunks
-npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink (dangerouslySetInnerHTML outside CodeBlock, innerHTML, outerHTML, insertAdjacentHTML, document.write) appears
-npm run check:diagrams    # Fail if a committed diagram SVG is stale, missing, orphaned or unsafe, its tokens drift from src/index.css or fail contrast, a diagram is wider than 960 px, a .d2 names a color, imports a file or breaks the <case>/<name>.d2 naming rule, a stray file sits in public/diagrams/, or a case study references a missing diagram (no d2 needed)
-npm run diagrams          # Render the .d2 sources to light/dark SVGs and rewrite public/diagrams/manifest.json (needs d2 v0.9.x; not in verify or CI)
-npm run check:pipeline-log # Fail if a docs/pipeline-log.md row is malformed or closes friction with a bare "nothing to change"
-npm run check:test-lock   # /feature only: -- --snapshot locks test files (vitest and pytest), test-runner config, ignore rules, nested repos and the lock script itself, -- --verify fails if any changed, -- --clear
-npm run review:diff       # /feature only: the reviewer's diff, including new untracked files
-npm run verify            # The whole chain: typecheck, lint, format, every check:* except test-lock, tests (vitest, then pytest), build, size, bundle check
+npm run test:run          # Vitest, run once; needs Python 3.11+ and pytest too
+npm run test:py           # pytest over the DSA entries' Python code
+npm run format            # Prettier write
+npm run diagrams          # Render the .d2 sources to SVGs (needs d2 v0.9.x)
+npm run verify            # Everything CI runs: types, lint, format, every check, tests, build, sizes
 ```
+
+What each `check:*` script proves, and the commands outside `verify`, are in
+[docs/verification.md](docs/verification.md).
 
 ## Adding content
 
@@ -127,5 +115,4 @@ Features and nontrivial app changes go through a spec → TDD →
 implementation (+ docs) → adversarial review (code + UI) pipeline — see
 [docs/SDLC.md](docs/SDLC.md). Adding a topic, a System Design case study or a
 DSA entry gets a lighter, separate process instead (draft → an independent
-review, at most two rounds) — see the `add-topic`, `add-case-study` and
-`add-dsa-entry` skills referenced in [CLAUDE.md](CLAUDE.md).
+review, at most two rounds) — see [docs/content-review.md](docs/content-review.md).

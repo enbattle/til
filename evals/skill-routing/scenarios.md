@@ -3,8 +3,8 @@
 Each scenario is a task description phrased exactly as a user might type
 it. Give it, verbatim, to a fresh session with no other context. Record
 what it actually does — which skill it invokes, if any, before starting
-work — and compare against **Expected**. See `HOW_TO_RUN.md` for the
-procedure and `../README.md` for grading philosophy (some of these are
+work — and compare against **Expected**. The `skill-routing-eval` skill has
+the procedure, and `../README.md` the grading philosophy (some of these are
 ambiguous by design).
 
 ---
