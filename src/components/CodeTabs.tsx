@@ -1,6 +1,5 @@
 import { useId, useRef, type KeyboardEvent } from 'react';
-import type { CodeLanguage } from '@/contexts/CodeLanguageContext';
-import { useCodeLanguage } from '@/contexts/useCodeLanguage';
+import { useCodeLanguage, type CodeLanguage } from '@/contexts/useCodeLanguage';
 import { CodeBlock } from './CodeBlock';
 
 /** The tabs, in order. */

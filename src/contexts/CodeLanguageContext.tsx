@@ -1,17 +1,8 @@
-import { createContext, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { readStoredChoice, writeStoredChoice } from '@/lib/stored-choice';
-
-/** The languages a DSA code pair is written in. */
-export type CodeLanguage = 'python' | 'typescript';
+import { CodeLanguageContext, type CodeLanguage } from './useCodeLanguage';
 
 const STORAGE_KEY = 'til-code-language';
-
-export interface CodeLanguageContextValue {
-  language: CodeLanguage;
-  setLanguage: (language: CodeLanguage) => void;
-}
-
-export const CodeLanguageContext = createContext<CodeLanguageContextValue | null>(null);
 
 /**
  * The language every Python/TypeScript code pair shows (`CodeTabs`), shared

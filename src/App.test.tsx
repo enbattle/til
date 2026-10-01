@@ -1,6 +1,8 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+import App from '@/App';
 import { topicsBySection } from '@/lib/content';
 import { renderAt } from '@/test/render';
 
@@ -54,6 +56,35 @@ describe('App routing', () => {
     await user.keyboard('{Control>}k{/Control}');
     expect(screen.getByRole('dialog', { name: /search topics/i })).toBeInTheDocument();
     await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  // A route change from outside the overlay (browser back/forward) closes it,
+  // and coming forward again doesn't bring it back.
+  it('closes search on back navigation and keeps it closed going forward', async () => {
+    const user = userEvent.setup();
+    // Stand-ins for the browser's back and forward buttons.
+    function History() {
+      const navigate = useNavigate();
+      return (
+        <>
+          <button onClick={() => navigate(-1)}>history back</button>
+          <button onClick={() => navigate(1)}>history forward</button>
+        </>
+      );
+    }
+    render(
+      <MemoryRouter initialEntries={['/', '/ai-and-ml']} initialIndex={1}>
+        <App />
+        <History />
+      </MemoryRouter>,
+    );
+    await user.keyboard('{Control>}k{/Control}');
+    expect(screen.getByRole('dialog', { name: /search topics/i })).toBeInTheDocument();
+    // fireEvent, since the open modal covers the page for pointer events.
+    fireEvent.click(screen.getByText('history back'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('history forward'));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 

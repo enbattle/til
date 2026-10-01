@@ -1,4 +1,3 @@
-/// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
@@ -94,8 +93,31 @@ function diagramSizes(): Plugin {
   };
 }
 
+/**
+ * Fills `%SITE_DESCRIPTION%` in index.html's description, Open Graph and
+ * Twitter tags from package.json's `description`, the one copy of the site's
+ * one-line description (the home page imports it too; README.md's opening
+ * line restates it in prose).
+ */
+function siteDescription(): Plugin {
+  const { description } = JSON.parse(
+    readFileSync(path.resolve(import.meta.dirname, 'package.json'), 'utf8'),
+  ) as { description: string };
+  const escaped = description
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;');
+  return {
+    name: 'site-description',
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html) => html.replaceAll('%SITE_DESCRIPTION%', escaped),
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [markdownMeta(), diagramSizes(), react(), tailwindcss()],
+  plugins: [markdownMeta(), diagramSizes(), siteDescription(), react(), tailwindcss()],
   base: '/til/',
   build: {
     rollupOptions: {
