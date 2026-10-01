@@ -15,46 +15,39 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-09-28 | Controls fixed                                       | 4    | 0    | 0         | Re-run.                                              |
 | 2026-09-29 | add-case-study check (6), At a glance                | 3    | 0    | 0         | Check (6) worked in every run.                       |
 | 2026-09-29 | Stage 3 triage wording, add-topic tone via Standard  | 8    | 0    | 0         | No planted issue called theoretical.                 |
-| 2026-10-01 | Shared content-review template; DS-* scenarios added | 11   | 0    | 0         | Full run; latest run, below.                         |
+| 2026-10-01 | Shared content-review template; DS-* scenarios added | 11   | 0    | 0         | Full run.                                            |
+| 2026-10-01 | Pastebin and Prefix Sums fixture fixes               | 6    | 0    | 0         | CS-* and DS-*; latest run, below.                    |
 
-## Latest run: 2026-10-01, harness pass
+## Latest run: 2026-10-01, fixture fixes
 
 Run by: self
-Trigger: branch chore/harness-pass. The three content skills' Stage 3 prompts
-became one shared template in `docs/content-review.md`, filled in with each
-skill's `<kind>` and `<checklist>`; `add-topic`'s instruction now enumerates
-the Writing Standard's checks as the other two did. The DSA scenarios
-(`DS-01`..`DS-03`) are new. Every scenario ran, each with its prompt built
-fresh from the template; `add-topic`'s two checklist items were "none" (no
-draft links anything, and none is in `systems-and-infrastructure`).
+Trigger: branch chore/aggregate-friction fixed the real gaps earlier reviews
+found in the shared fixtures. Pastebin base: IPv6 limits keyed per /56,
+the botnet case priced (about 100 finds an hour from 10,000 addresses; an
+eighth character would make a guess 1 in about 600,000) with the reason seven
+characters stays, "p99" tied to the body, the contents deep dive's conclusion
+argued from database size, a split run-on sentence, "botnet" defined, and
+bold leads on every Trade-offs bullet. Prefix Sums base: rounding past 2⁵³ and
+`itertools.accumulate` named. Only the scenarios built on those bases ran
+(`CS-*`, `DS-*`); prompts were built fresh from `docs/content-review.md`.
 
-| ID    | Planted violation                                      | Review caught it?                                                                                                                                   | Grade |
-| ----- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| CR-01 | Undefined jargon ("hash function")                     | Yes, High: "hash function" is "the core building block" and never explained; "bit array" and "false positive" only partly                           | PASS  |
-| CR-02 | AI-patterned tone                                      | Yes, first finding: the stacked intensifiers, "not just a toggle — it's a deployment strategy in disguise" and "That's the real power"              | PASS  |
-| CR-03 | Over-explained figurative language                     | Yes, first High: the "doesn't need to be a literal rubber duck" paragraph "defends against a literal reading nobody would make"                     | PASS  |
-| CR-04 | Temperature 0 is fully deterministic                   | Yes, blocking: non-associative floating point, batch-dependent kernels, MoE routing and providers' own wording; also the contradiction with summary | PASS  |
-| CR-05 | None (control, Semantic Versioning)                    | No false defect, no blocking finding; every npm and semver claim verified. Minor, true: "range" and "resolves" used before being named              | PASS  |
-| CS-01 | Read rate 10× too high (1,160/s average, 11,600 peak)  | Yes, must-fix: 10,000,000 ÷ 86,400 = 115.7, cross-checked against the failure modes' 1,160 at peak                                                  | PASS  |
-| CS-02 | First deep dive picks object storage without comparing | Yes, High: "compares no options", naming the data model's, summary's and At a glance's promised comparison and both options' costs                  | PASS  |
-| CS-03 | None (false-positive control)                          | No false defect; all arithmetic and the request-versus-storage cost claim verified. True findings: IPv6 per-address limits, p99, bullet format      | PASS  |
-| DS-01 | TypeScript loop drops the last element; tests miss it  | Yes, blocking: ran it (`[0, 3, 4, 8, 9, 0]`, whole-array sum 0), plus High that both TypeScript tests pass with the bug                             | PASS  |
-| DS-02 | The `range_sum` walkthrough paragraph only narrates    | Yes, first finding: "restates the code line by line and never says why the indices are `right + 1` and `left`"                                      | PASS  |
-| DS-03 | None (false-positive control, Prefix Sums)             | No false defect, no blocking finding; traced chunks against files and ran the Python. Lows, all true: precision past 2⁵³, `accumulate`, test names  | PASS  |
+| ID    | Planted violation                                      | Review caught it?                                                                                    | Grade |
+| ----- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ----- |
+| CS-01 | Read rate 10× too high                                 | Yes, first High: 10,000,000 ÷ 86,400 ≈ 116, contradicting the failure modes' 1,160 at peak           | PASS  |
+| CS-02 | First deep dive picks object storage without comparing | Yes, first High: "compares no options", naming the three places that promise the comparison          | PASS  |
+| CS-03 | None (control)                                         | No false defect; final run on the corrected text had no medium or high finding, three true lows      | PASS  |
+| DS-01 | TypeScript loop drops the last element; tests miss it  | Yes, blocking: ran it (`[0, 3, 4, 8, 9, 0]`), plus High that both TypeScript tests pass with the bug | PASS  |
+| DS-02 | The `range_sum` walkthrough paragraph only narrates    | Yes, the one real finding: "repeats the code in words and never says why"                            | PASS  |
+| DS-03 | None (control)                                         | "Nothing that needs fixing"; ran `accumulate` and checked 2⁵³ + 1 in Node; optional notes only       | PASS  |
 
 ### Notes
 
-- **The shared template works for all three kinds.** No reviewer was confused
-  by a "none" checklist item, and the DSA reviewers used the DSA checklist
-  item by item (DS-01 cited items 1, 3 and 7; DS-02 item 4).
-- **Real gaps in the case-study base, raised by more than one reviewer:**
-  per-address limits that IPv6 /64 prefixes bypass (CS-02, CS-03), "p99" never
-  tied to the body's "99th percentile" (CS-01, CS-02, CS-03), and the
-  Trade-offs bullets' mixed format. CS-01 also argued that "storage is the
-  dominant number" undercuts the sentence before it, which says request
-  charges exceed storage. All are true notes the controls allow; fixing the
-  base would make the controls quieter, not the eval stronger, so it waits for
-  a reason to touch the fixture.
-- **The DS-03 control's lows suggest small fixture improvements** (say that
-  JavaScript rounds silently past 2⁵³, name `itertools.accumulate`), none
-  needed for grading.
+- **A fixture fix can add its own error.** The first IPv6 edit said a home is
+  usually given one /64, which is false (a /64 is one local network; homes
+  usually get a /56 or /60), and the CS-02 reviewer caught it. The fixed text
+  was re-run on CS-03 before logging. Check a fixture edit's own claims as
+  hard as the draft's.
+- **The controls are quieter.** CS-03 went from five true findings, one of
+  them Medium, to three lows: `410` could be near-exact by decrypting IDs
+  against the counter, the object key is never named, and some homes get a
+  /48. DS-03's reviewer found nothing that needs fixing. These stay as notes.

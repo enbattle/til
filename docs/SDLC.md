@@ -107,8 +107,9 @@ retrospective.
    agent that never saw the author's reasoning, and then go to the user as
    proposals in their own commit. Every run also appends a row to
    [pipeline-log.md](pipeline-log.md), so friction that is too small to act
-   on in one run can still show up as a pattern across runs. The exact steps
-   are in the skill.
+   on in one run can still show up as a pattern across runs; `docs-audit`
+   Stage 2b periodically reads the log as a set and proposes structural
+   fixes, deletions first. The exact steps are in the skill.
 
 ## Why finding triage comes before any fix
 

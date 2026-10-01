@@ -152,20 +152,6 @@ in practice.
 **Revisit when:** A scenario file is edited without a corresponding run
 in practice — evidence the existing discipline alone isn't holding.
 
-### Aggregating friction across retrospectives
-
-**What it is:** A periodic pass that reads every row of
-[pipeline-log.md](pipeline-log.md) (and the eval result logs) together,
-groups recurring friction, and proposes structural changes (merge or delete a
-stage, a new check, a new doc) instead of the point fixes a single retro
-makes.
-**Why deferred:** It needs data. The log started on 2026-09-23 with no
-backfill, and a pass over a handful of rows finds nothing a single retro
-wouldn't. Until then, `/feature` Stage 6 is the only retro, and it only sees
-its own run.
-**Revisit when:** The log reaches about 20 rows, or the same kind of friction
-appears in the Retro column of two or more rows.
-
 ### An independent read of the retrospective's judgment
 
 **What it is:** A fresh agent that checks the retro's conclusions (was

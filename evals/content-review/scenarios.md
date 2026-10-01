@@ -390,7 +390,7 @@ description of how any company built theirs.
 
 **Requirements.**
 
-- Create a paste of up to 512 KB and get back a link that can't be guessed.
+- Create a paste of up to 512 KB and get back a link that's hard to guess.
 - Read a paste by opening its link; there are no accounts.
 - Expiry of 1 to 365 days (default 365), with expired text deleted within a
   day.
@@ -400,7 +400,7 @@ description of how any company built theirs.
 **Key numbers.**
 
 - About 120 creates/s at peak (1,000,000 ÷ 86,400 ≈ 12, 10× for peak).
-- At most about 3.65 TB of text (1,000,000 × 10 KB = 10 GB a day, × 365).
+- About 3.65 TB of text (1,000,000 × 10 KB = 10 GB a day, × 365).
 - 4 GB of cache for the most-read 20% of a day's 2 million pastes.
 - About 73 GB of metadata (200 bytes × 365 million pastes).
 - 62⁷ ≈ 3.5 trillion IDs, so about 1 guess in 9,600 finds a paste.
@@ -423,8 +423,8 @@ description of how any company built theirs.
 - What if the cache node is lost? Reads slow down but still beat 500 ms, at
   around 200 ms for a slow miss ([failure modes](#failure-modes-and-bottlenecks)).
 - How is guessing held back? An address with 100 `404`s in an hour is blocked
-  for the rest of it, about one paste found every four days
-  ([failure modes](#failure-modes-and-bottlenecks)).
+  for the rest of it, about one paste found every four days; only a longer ID
+  slows a botnet ([failure modes](#failure-modes-and-bottlenecks)).
 
 The components are drawn under
 [High-level architecture](#high-level-architecture).
@@ -434,7 +434,7 @@ The components are drawn under
 - **Create a paste** from up to 512 KB of text, and get back a link such as
   `https://paste.example/aZ3kQ9x`.
 - **Read a paste** by opening its link. There are no accounts, so the link is
-  the only thing keeping a paste from strangers, and it must not be guessable.
+  the only thing keeping a paste from strangers, and it must be hard to guess.
 - **Expiry:** the creator picks how many days a paste lasts, from 1 to 365;
   the default, and the maximum, is 365. After that it can't be read, and its
   text is deleted within a day.
@@ -442,8 +442,8 @@ The components are drawn under
 Out of scope: accounts, editing a paste, syntax highlighting and search.
 
 Non-functional: 1 million new pastes a day, 10 reads for every paste
-created, and reads answered in under 500 ms at the 99th percentile (the time
-99% of reads beat), measured at our servers. A paste is a page someone opens
+created, and reads answered in under 500 ms at the 99th percentile (p99: the
+time 99% of reads beat), measured at our servers. A paste is a page someone opens
 by hand, not an API called in a loop, so half a second is acceptable.
 
 ## Back-of-the-envelope estimates
@@ -564,11 +564,11 @@ queries, which makes its backups, copies and restores slow and its disks
 expensive, since database storage costs far more per gigabyte than object
 storage.
 
-**In an object store.** Cheap per gigabyte, though each upload is billed as a
-request too (at list prices, a million creates a day costs more in requests
-than 3.65 TB costs to store), and built to grow without limit,
-and the database stays small (200 bytes × 365 million pastes, a year's worth,
-≈ 73 GB). The cost is a second system on every create, an extra network
+**In an object store.** Storage is cheap per gigabyte and grows without
+limit, though each upload is billed as a request too: at list prices, a
+million creates a day costs more in requests than 3.65 TB costs to store. The
+database stays small, at 200 bytes × 365 million pastes (a year's worth) ≈
+73 GB. The cost is a second system on every create, an extra network
 request on every cache miss, and two writes that can half-succeed: contents
 stored but the row insert failed, which leaves an orphaned object that no row
 points at. Finding those by comparing the store's keys with the table would
@@ -579,9 +579,10 @@ setting that deletes every object older than a given age, removes anything
 older than 366 days. No paste lives longer than 365 days, so the rule never
 touches a live one, and an orphan costs at most a year of storage.
 
-The object store wins here because storage is the dominant number. The cache
-hides the extra request for popular pastes, and the latency check above
-already counts it for the rest.
+The object store wins here because of what the text would do to the database:
+3.65 TB that nothing queries, in every backup, copy and restore. The two
+object-store bills are small either way. The cache hides the extra request for
+popular pastes, and the latency check above already counts it for the rest.
 
 ## Deep dive: expiring pastes
 
@@ -636,32 +637,41 @@ down. The latency check assumed a slow miss takes around 200 ms and about one
 read in five misses, so watch both numbers: the object store's fetch latency,
 and the hit rate, since a lower hit rate puts more reads on the slow path.
 
-**Abuse.** Anyone can create pastes, so creation is limited per IP address
-with [rate limiting](/systems-and-infrastructure/rate-limiting), counted in
-the cache that every app server shares: 10 creates a minute per address. An
-address at the limit makes one create every 6 seconds, 1/720 of the
-120-a-second peak, so no single sender can flood the service. The cost falls
+**Abuse.** Anyone can create pastes, so creation is limited per address with
+[rate limiting](/systems-and-infrastructure/rate-limiting), counted in the
+cache that every app server shares: 10 creates a minute per address. For
+IPv6, an address means a /56 prefix (the first 56 bits), the block an
+internet provider commonly gives one home, so a household can't rotate
+through its own addresses to dodge the limit. An address at the limit makes one
+create every 6 seconds, 1/720 of the 120-a-second peak, so no single sender
+can flood the service. The cost falls
 on people who share one address, such as an office or school behind one
 router that translates many devices to a single public address (NAT): they
 share the limit too and see `429` sooner. Reads get a limit aimed at
 guessing: an address that gets 100 `404`s in an hour is blocked for the rest
 of that hour, which holds it to about 100 × 0.01% ≈ 0.01 pastes found an
-hour, one every four days.
+hour, one every four days. A botnet (many machines an attacker controls)
+guessing from 10,000 addresses gets that
+rate from each, about 100 pastes an hour, and no per-address limit stops it;
+only a longer ID does. An eighth character would make a guess about 1 in
+600,000 (62⁸ ÷ 365,000,000), at the cost of a longer link. This design keeps
+seven, since a paste link is meant to be easy to share, and a creator who
+needs privacy shouldn't rely on an unlisted link.
 
 ## Trade-offs
 
 - **Object storage for contents.** It keeps 3.65 TB of text out of the
   database and is cheap per gigabyte; the price is a second system on every
   create and a lifecycle rule to catch orphans.
-- Expiry is enforced twice, by the check on read and by the daily sweep.
+- **Expiry enforced twice**, by the check on read and by the daily sweep.
   That's one more job to run and alert on, and it's what gives both exact
   expiry and storage that stops growing at a year of pastes.
-- IDs come from a keyed encryption step rather than a scramble anyone could
-  undo, which puts a secret key on the app servers; an undoable scramble would
+- **Keyed encryption for IDs** rather than a scramble anyone could undo,
+  which puts a secret key on the app servers; an undoable scramble would
   let anyone list the IDs actually issued. Seven characters rather than six
   make every link one character longer, and in return a guess finds a paste
   about once in 9,600 tries instead of once in 156.
-- A deleted paste's ID answers `404`, not `410`. An exact answer would
+- **`404` after deletion.** A deleted paste's ID answers `404`, not `410`. An exact answer would
   mean keeping a record of every expired ID, and here nothing of an expired
   paste is kept.
 ```
@@ -764,7 +774,9 @@ which at 365,000,000 a year is about 9,648 years; 365,000,000 ÷ 62⁷ ≈ 0.010
 100 guesses × 0.0104% ≈ 0.0104 pastes an hour, one every 96 hours). IDs come
 from the URL shortener's counter-plus-keyed-encryption scheme, with the
 counter in the metadata database and the key on the app servers, and the
-guess odds are stated and rate-limited. Retention is one rule (every paste
+guess odds are stated and rate-limited (per IPv4 address or IPv6 /56; a
+botnet's 100 finds an hour from 10,000 addresses and 62⁸ ÷ 365,000,000 ≈
+598,000 are stated, and the design says why it keeps seven characters). Retention is one rule (every paste
 expires within 365 days) that the check on read and the daily sweep enforce,
 with a 366-day lifecycle rule as the backstop for orphans; the sweep deletes
 the object before the row, so a failure leaves an expired row the next run
@@ -882,7 +894,9 @@ array instead of re-adding from the start for every slot. The write goes to
 `i + 1` because element `i` is the `(i + 1)`th element, so it belongs in the
 total of the first `i + 1` elements. Writing `prefix[i] = prefix[i] + value`
 instead would read the slot it's about to fill, which is still 0, so each slot
-would hold a single element rather than a running total.
+would hold a single element rather than a running total. (In Python,
+`list(itertools.accumulate(nums, initial=0))` builds the same list in one
+call; the loop is spelled out here to show the step it repeats.)
 
 ```python
 def range_sum(prefix: list[int], left: int, right: int) -> int:
@@ -917,8 +931,9 @@ scratch.
   `right` is the most common bug; pick one convention and keep it.
 - **Overflow with fixed-width integers.** Python's integers grow as needed, and
   the TypeScript version's numbers are 64-bit floating point, exact for every
-  integer up to 2⁵³. In a language with 32-bit integers, the totals of a long
-  array of large values can overflow even when every element fits.
+  integer up to 2⁵³ in size; past that, totals silently round instead of
+  overflowing. In a language with 32-bit integers, the totals of a long array
+  of large values can overflow even when every element fits.
 ````
 
 `src/dsa/code/prefix-sums/prefix_sums.py`:
@@ -1101,8 +1116,9 @@ languages and every line of each file appears once in the walkthrough, in
 order. The worked example holds (prefix `[0, 3, 4, 8, 9, 14]`;
 `prefix[4] - prefix[1] = 6`; `prefix[3] - prefix[1] = 5`, missing the 1 at
 position 3), the tests cover empty input, single elements, the whole array and
-500 random ranges against a brute-force sum, the complexity claims hold, and
-2⁵³ is the limit of exact integers in a 64-bit float.
+500 random ranges against a brute-force sum, the complexity claims hold, 2⁵³
+is the limit of exact integers in a 64-bit float (larger ones round), and
+`itertools.accumulate` takes `initial=` from Python 3.8.
 **Expected finding:** no finding that is false of the entry. Real gaps, such
 as its brevity next to the reference entries or no TypeScript test for single
 elements, are acceptable and go in the run's notes.

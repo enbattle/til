@@ -4,7 +4,8 @@ One row per `/feature`, `add-topic`, `add-case-study` or `add-dsa-entry` run,
 appended by the run itself (`/feature` Stage 6, `add-topic` Stage 4,
 `add-case-study` Stage 4, `add-dsa-entry` Stage 4).
 Each retrospective only sees its own run; this table is what lets a pattern
-across runs show up, and what makes a retro checkable: a run with failed gates
+across runs show up (`docs-audit` Stage 2b periodically reads it as a set), and what
+makes a retro checkable: a run with failed gates
 or real findings whose retro says "nothing to change" stands out here.
 
 It is a record, not a rule: rows are never rewritten, except to fill in the
