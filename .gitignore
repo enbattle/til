@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 # Python (the DSA entries' tests, run by npm run test:py)
 __pycache__/
 .pytest_cache/
+
+# Claude Code agent worktrees (whole checkouts; vitest and pytest skip them too)
+.claude/worktrees/

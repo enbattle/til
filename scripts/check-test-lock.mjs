@@ -8,7 +8,17 @@
 // given (the content fixtures a test-writer created or changed), and the test
 // runner's own configuration: the `test` block of vite.config.ts, the `test*`
 // scripts in package.json, and any vitest.config.* file. Weakening the runner
-// (excluding a file, skipping setup) weakens every test at once. The Python
+// (excluding a file, skipping setup) weakens every test at once. The gate's
+// own command is locked as well: package.json's `check:test-lock` script
+// string; each whole `&&`-separated `verify` step that starts with
+// `npm run test`, in order, arguments included (dropping, reordering or adding
+// `--exclude` to one weakens the tests without touching a `test*` script); and
+// the ordered list of every other shell control operator in `verify` (`||`,
+// `;`, `&`, `|`, newline), since one `|| true` anywhere swallows every
+// failure; and the ordered list of every other `&&` step that isn't exactly
+// `npm run <name>` with no arguments, since an `exit 0` or `exec` step ends the
+// shell before the tests run. A plain `&& npm run check:x` step stays free to
+// add, remove or change. The Python
 // tests (docs/dsa.md) are locked the same way: every `test_*.py` and
 // `*_test.py`, every `conftest.py`, and scripts/test-python.mjs, the runner
 // `test:py` calls. That runner is the main protection against the tree
@@ -26,10 +36,34 @@
 // hunted by name: every `.gitignore` in the tree (including one that ignores
 // itself, found among git's ignored paths), `.git/info/exclude`, and a
 // `core.excludesFile`: its configured value (from any config scope, so
-// setting or changing it counts) and, when the file it names resolves inside
-// the repository, that file's contents. A file outside the repository, such
-// as a global `~/.gitignore` or git's default `$XDG_CONFIG_HOME/git/ignore`,
-// is not hashed, so an edit to one is not caught.
+// setting or changing it counts) and the contents of the file it names,
+// wherever it lives. Only while core.excludesFile is unset (git reads its
+// default global ignore file only then), every location that default could
+// resolve to is hashed together: `$XDG_CONFIG_HOME/git/ignore`, and
+// `<home>/.config/git/ignore` for each candidate home (HOME, USERPROFILE,
+// HOMEDRIVE+HOMEPATH and os.homedir(); Git for Windows can fall back to any of
+// them). Only the candidates that exist are hashed, keyed by real path, so
+// the same files under a different environment hash alike; the part is null
+// when none exists.
+// Those are machine files, so editing your own global gitignore during a run
+// trips the lock too. A missing file records null.
+// Known, fail-safe limitation: Claude Code's runtime itself appends entries to
+// `~/.config/git/ignore` (and to `.git/info/exclude`), so a permission grant
+// in the middle of a run can trip `--verify` with nothing weakened. That
+// fails closed: surface it to the user like any other change.
+// A nested git repository (or agent worktree) is one entry in git's listing,
+// and git never walks into it, yet pytest would still collect a `conftest.py`
+// inside it. An untracked one is listed as `dir/`; one staged in this
+// repository as a submodule gitlink is listed as `dir` with no trailing
+// slash. Either way, any listed directory holding a `.git` is locked as a
+// whole under the key `dir/`: a new one is `added: <dir>/`, and one present
+// at both times is compared by a hash of its own `git ls-files -co` listing
+// and every listed file's contents. One git can't list (a worktree whose
+// gitdir was pruned) fails closed: `--verify` reports `unreadable: <dir>/` and
+// `--snapshot` refuses to run. Agent worktrees live under `.claude/worktrees/`,
+// which `.gitignore` ignores, so they are not nested repos here.
+// The lock locks itself: this script and scripts/lib.mjs, which it imports,
+// so a later stage can't weaken the lock and then pass it.
 // `.gitignore` is matched in any letter case (git honours `.GITIGNORE` with
 // core.ignorecase=true).
 // `--verify` recomputes them and fails on any difference, including a config
@@ -40,15 +74,23 @@
 // untracked files (the new test files a test-writer usually creates are
 // untracked until the user commits) and an agent's `git add` would hide an edit
 // from it. Files are listed through git (tracked plus untracked, minus
-// ignored), so ignored output, nested worktrees and symlink loops are never
-// walked. The snapshot lives inside the git directory, so it is never in the
-// working tree or the diff.
+// ignored), so ignored output and symlink loops are never walked, and a nested
+// repository is read only through its own git listing. The snapshot lives
+// inside the git directory, so it is never in the working tree or the diff.
 //
 // Not part of `npm run verify` or CI: it compares against a snapshot that only
 // exists during a pipeline run.
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { homedir } from 'node:os';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { ROOT } from './lib.mjs';
 
@@ -77,9 +119,18 @@ const TEST_SUPPORT_DIR = 'src/test/';
 // Case-insensitive: with core.ignorecase=true (Windows, macOS) git honours a
 // `.GITIGNORE` as an ignore file.
 const IGNORE_FILE = /(^|\/)\.gitignore$/i;
+// The lock script and the helpers it imports: editing either could weaken the
+// lock itself.
+const LOCK_SCRIPTS = new Set(['scripts/check-test-lock.mjs', 'scripts/lib.mjs']);
 
-function git(args) {
-  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
+function git(args, cwd = ROOT) {
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+    // git's own error stays out of the output; callers report it.
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 }
 
 function isTestFile(path) {
@@ -90,6 +141,7 @@ function isTestFile(path) {
     PYTHON_TEST_FILE.test(path) ||
     PYTEST_CONFIG_FILE.test(path) ||
     path === PYTHON_RUNNER ||
+    LOCK_SCRIPTS.has(path) ||
     PYTEST_SHADOW.test(path) ||
     path.startsWith(TEST_SUPPORT_DIR) ||
     IGNORE_FILE.test(path)
@@ -101,21 +153,76 @@ function repoFiles() {
   return git(['ls-files', '-co', '--exclude-standard', '-z']).split('\0').filter(Boolean);
 }
 
-// Every file to lock: the test files git lists, plus any `.gitignore` that
-// ignores itself (listed among the ignored paths; `--directory` keeps an
-// ignored directory such as node_modules to one entry).
+// An entry in a git listing that is a directory holding a `.git` (a
+// directory, or the file a worktree checkout has): a nested repository. An
+// untracked one is listed as `dir/`, a staged submodule gitlink as `dir`.
+function isRepoDir(full) {
+  return (
+    existsSync(full) && statSync(full).isDirectory() && existsSync(join(full, '.git'))
+  );
+}
+
+function isNestedRepo(path) {
+  return isRepoDir(join(ROOT, path));
+}
+
+// The key a nested repository is locked under: always `dir/`.
+const repoKey = (path) => (path.endsWith('/') ? path : `${path}/`);
+
+// Every file to lock: the test files and nested repositories git lists, plus
+// any `.gitignore` that ignores itself (listed among the ignored paths;
+// `--directory` keeps an ignored directory such as node_modules to one entry).
 function lockedFiles() {
   const ignored = git(['ls-files', '-oi', '--exclude-standard', '--directory', '-z'])
     .split('\0')
     .filter((path) => IGNORE_FILE.test(path));
-  return [...new Set([...repoFiles().filter(isTestFile), ...ignored])];
+  const listed = repoFiles().flatMap((path) =>
+    isNestedRepo(path) ? [repoKey(path)] : isTestFile(path) ? [path] : [],
+  );
+  return [...new Set([...listed, ...ignored])];
 }
 
 const sha = (content) => createHash('sha256').update(content).digest('hex');
 
+// The hash recorded for a nested repository git can't list (a worktree whose
+// gitdir was pruned): never a match, so it fails closed.
+const UNREADABLE = 'unreadable';
+
+// A locked path's hash: a nested repository's (a `dir/` key) or a file's.
 function hash(path) {
-  const full = join(ROOT, path);
-  return existsSync(full) ? sha(readFileSync(full)) : null;
+  if (path.endsWith('/')) {
+    if (!isNestedRepo(path)) return null;
+    try {
+      return nestedRepoHash(join(ROOT, path));
+    } catch {
+      return UNREADABLE;
+    }
+  }
+  return fileHash(join(ROOT, path));
+}
+
+// sha256 of a file's contents, or null when it is missing or not a file.
+function fileHash(full) {
+  return existsSync(full) && !statSync(full).isDirectory()
+    ? sha(readFileSync(full))
+    : null;
+}
+
+// One hash over a nested repository's own listing (tracked and untracked,
+// ignored files included, so its own ignore rules can't hide anything) and
+// each listed file's contents. A repository nested inside it is hashed the
+// same way.
+function nestedRepoHash(dir) {
+  const entries = git(['ls-files', '-co', '-z'], dir)
+    .split('\0')
+    .filter(Boolean)
+    .sort()
+    .map((path) => {
+      const full = join(dir, path);
+      const nested = isRepoDir(full);
+      return `${path}\0${nested ? nestedRepoHash(full) : fileHash(full)}`;
+    });
+  return sha(entries.join('\0'));
 }
 
 // The text from `start`'s match through its matching closing brace, counted by
@@ -139,21 +246,84 @@ function runnerConfig() {
   const testBlock = braceBlock(vite, /\n\s*test:\s*\{/) ?? vite;
   const { scripts = {} } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
   const testScripts = Object.entries(scripts).filter(([name]) => name.startsWith('test'));
+  const verify = String(scripts.verify ?? '');
+  // Each whole `&&`-separated step of `verify` that runs `npm run test*`, in
+  // order, arguments included; other `&&` steps stay free.
+  const verifyTestSteps = verify
+    .split('&&')
+    .map((step) => step.trim())
+    .filter((step) => step.startsWith('npm run test'));
+  // Every other `&&` step that isn't exactly `npm run <name>` with no
+  // arguments, in order: an allowlist, so an `exit 0`, `exec`, `cd` or an
+  // argument on a step is a change, while a plain `npm run check:x` step
+  // stays free. The test steps are left out; the part above locks them.
+  const verifyOtherSteps = verify
+    .split('&&')
+    .map((step) => step.trim())
+    .filter(
+      (step) => !step.startsWith('npm run test') && !/^npm run [\w:.-]+$/.test(step),
+    );
+  // Every shell control operator in `verify` other than `&&`, in order: one
+  // `|| true` or `;` anywhere would let a failing step pass the gate.
+  const verifyOperators = verify.replaceAll('&&', ' ').match(/\|\||\r?\n|[;&|]/g) ?? [];
   const exclude = resolve(ROOT, git(['rev-parse', '--git-path', 'info/exclude']).trim());
   const excludesFile = configuredExcludesFile();
   return {
     'vite.config.ts#test': sha(testBlock),
     'package.json#scripts.test*': sha(JSON.stringify(testScripts)),
+    'package.json#scripts.check:test-lock': sha(
+      JSON.stringify(scripts['check:test-lock'] ?? null),
+    ),
+    'package.json#scripts.verify test steps': sha(JSON.stringify(verifyTestSteps)),
+    'package.json#scripts.verify non-npm steps': sha(JSON.stringify(verifyOtherSteps)),
+    'package.json#scripts.verify operators': sha(JSON.stringify(verifyOperators)),
     // Outside the working tree, so hashed here; null when there is none.
     '.git/info/exclude': existsSync(exclude) ? sha(readFileSync(exclude)) : null,
     // The configured value itself (null when unset), so setting it after the
     // snapshot, or pointing it elsewhere, counts as a change.
     'git config core.excludesFile': excludesFile,
-    // The file it names, resolved against the repository root; null when
-    // unset, missing, or outside the repository (not covered).
+    // The file it names, resolved against the repository root, wherever it
+    // lives; null when unset or missing.
     'core.excludesFile#contents':
-      excludesFile === null ? null : repoFileHash(excludesFile),
+      excludesFile === null ? null : fileHash(resolve(ROOT, excludesFile)),
+    // Git's default global ignore file, which git reads only while
+    // core.excludesFile is unset: every candidate location's contents, hashed
+    // together; null when core.excludesFile is set or every candidate is
+    // missing.
+    'default global ignore#contents':
+      excludesFile === null ? defaultGlobalIgnoreHash() : null,
   };
+}
+
+// Every location git's default global ignore file could resolve to:
+// `$XDG_CONFIG_HOME/git/ignore`, and `<home>/.config/git/ignore` for each
+// home git might use (HOME, USERPROFILE, HOMEDRIVE+HOMEPATH, os.homedir()),
+// de-duplicated.
+function defaultGlobalIgnores() {
+  const { XDG_CONFIG_HOME, HOME, USERPROFILE, HOMEDRIVE, HOMEPATH } = process.env;
+  const homes = [
+    HOME,
+    USERPROFILE,
+    HOMEDRIVE && HOMEPATH ? HOMEDRIVE + HOMEPATH : undefined,
+    homedir(),
+  ].filter(Boolean);
+  const paths = [
+    ...(XDG_CONFIG_HOME ? [join(XDG_CONFIG_HOME, 'git', 'ignore')] : []),
+    ...homes.map((home) => join(home, '.config', 'git', 'ignore')),
+  ].map((path) => resolve(path));
+  return [...new Set(paths)].sort();
+}
+
+// One hash over each existing candidate's real path and contents; null when
+// none exists. Missing candidates are left out, so the same files read under a
+// different environment (HOME set in one shell, unset in another) hash alike.
+function defaultGlobalIgnoreHash() {
+  const entries = new Map();
+  for (const path of defaultGlobalIgnores()) {
+    const contents = fileHash(path);
+    if (contents !== null) entries.set(realpathSync.native(path), contents);
+  }
+  return entries.size > 0 ? sha(JSON.stringify([...entries].sort())) : null;
 }
 
 // The effective `core.excludesFile` (`~` expanded), or null when it is unset:
@@ -164,16 +334,6 @@ function configuredExcludesFile() {
   } catch {
     return null;
   }
-}
-
-// sha256 of a configured path when it is a file inside the repository.
-function repoFileHash(path) {
-  const full = resolve(ROOT, path);
-  const rel = relative(ROOT, full);
-  if (rel.startsWith('..') || isAbsolute(rel)) return null;
-  return existsSync(full) && !statSync(full).isDirectory()
-    ? sha(readFileSync(full))
-    : null;
 }
 
 // A fixture path from the command line, as a repo-relative `/` path. Refuses
@@ -202,6 +362,15 @@ if (mode === '--snapshot') {
   for (const arg of extraPaths) files.add(fixturePath(arg));
   const hashes = {};
   for (const path of [...files].sort()) hashes[path] = hash(path);
+  const unreadable = Object.keys(hashes).filter((path) => hashes[path] === UNREADABLE);
+  if (unreadable.length > 0) {
+    console.error(
+      `git can't list these nested repositories, so they can't be locked:\n\n` +
+        unreadable.map((path) => `  ${path}`).join('\n') +
+        '\n\nRepair or remove them, then take the snapshot again.',
+    );
+    process.exit(1);
+  }
   Object.assign(hashes, runnerConfig());
   writeFileSync(manifest, JSON.stringify(hashes, null, 2));
   console.log(
@@ -223,8 +392,9 @@ if (mode === '--verify') {
   const changed = [];
   for (const [path, lockedHash] of Object.entries(locked)) {
     const now = path in config ? config[path] : hash(path);
-    if (now === lockedHash) continue;
-    if (lockedHash === null) changed.push(`added:    ${path}`);
+    if (now === UNREADABLE) changed.push(`unreadable: ${path}`);
+    else if (now === lockedHash) continue;
+    else if (lockedHash === null) changed.push(`added:    ${path}`);
     else if (now === null) changed.push(`deleted:  ${path}`);
     else changed.push(`modified: ${path}`);
   }

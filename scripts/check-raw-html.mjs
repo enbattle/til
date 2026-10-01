@@ -28,8 +28,9 @@ for (const field of ['dependencies', 'devDependencies']) {
 const appFiles = listFiles({
   root: ROOT,
   under: 'src',
-  ext: ['.js', '.jsx', '.ts', '.tsx'],
-}).filter((path) => !/\.(test|spec)\.[jt]sx?$/.test(path));
+  // `.mjs` too: src/lib/markdown.mjs ships to the browser.
+  ext: ['.js', '.jsx', '.mjs', '.ts', '.tsx'],
+}).filter((path) => !/\.(test|spec)\.[cm]?[jt]sx?$/.test(path));
 for (const path of appFiles) {
   const rel = relative(ROOT, path).split('\\').join('/');
   const source = readFileSync(path, 'utf8');

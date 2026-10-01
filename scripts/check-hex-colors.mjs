@@ -17,7 +17,8 @@ const EXCLUDED_FILES = new Set([join(SRC, 'index.css')]);
 const EXCLUDED_DIR = join(SRC, 'content') + sep;
 // `.d2` diagram sources aren't scanned here: check:diagrams already rejects a
 // hex color (or any color style key) in them, where `#` also starts comments.
-const SCANNED_EXTENSIONS = ['.ts', '.tsx', '.css'];
+// `.mjs` covers src/lib/markdown.mjs, which ships to the browser.
+const SCANNED_EXTENSIONS = ['.ts', '.tsx', '.mjs', '.css'];
 const HEX_COLOR = /#[0-9a-fA-F]{3,8}\b/g;
 
 const files = listFiles({ under: 'src', ext: SCANNED_EXTENSIONS }).filter(

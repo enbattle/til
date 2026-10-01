@@ -189,8 +189,10 @@ const components: Components = {
       // can read its className/text; never rendered to the DOM directly.
       return <code className={className}>{children}</code>;
     }
+    // Inline code may break anywhere, so a long span can't widen the page
+    // at narrow widths; fenced blocks scroll sideways instead.
     return (
-      <code className="rounded bg-bg-secondary px-1.5 py-0.5 font-mono text-[0.875em]">
+      <code className="rounded bg-bg-secondary px-1.5 py-0.5 font-mono text-[0.875em] [overflow-wrap:anywhere]">
         {children}
       </code>
     );

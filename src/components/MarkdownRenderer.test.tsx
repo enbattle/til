@@ -89,6 +89,33 @@ describe('MarkdownRenderer', () => {
   });
 });
 
+// docs/specs/tooling-gaps.md, criterion 5: inline code can't otherwise wrap,
+// so a long span (hash-map.md's `self._bucket(pair[0]).append(pair)`) widened
+// the page at 360px. Inline code may break anywhere; fenced code blocks keep
+// scrolling sideways instead.
+describe('MarkdownRenderer long inline code wraps (tooling-gaps criterion 5)', () => {
+  // `[overflow-wrap:anywhere]`, or Tailwind's own `wrap-anywhere` utility.
+  const WRAP_ANYWHERE = /(^|\s)(\[overflow-wrap:anywhere\]|wrap-anywhere)(\s|$)/;
+
+  it('gives inline code the overflow-wrap:anywhere class', () => {
+    renderMarkdown('Call `self._bucket(pair[0]).append(pair)` to add the pair.');
+    const code = screen.getByText('self._bucket(pair[0]).append(pair)');
+    expect(code.tagName).toBe('CODE');
+    expect(code.className).toMatch(WRAP_ANYWHERE);
+  });
+
+  it('leaves fenced code blocks without it', () => {
+    const { container } = renderMarkdown(
+      ['```python', 'self._bucket(pair[0]).append(pair)', '```'].join('\n'),
+    );
+    expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
+    const wrapped = [...container.querySelectorAll('*')].filter((element) =>
+      WRAP_ANYWHERE.test(element.getAttribute('class') ?? ''),
+    );
+    expect(wrapped).toEqual([]);
+  });
+});
+
 describe('MarkdownRenderer diagram images (criterion 13)', () => {
   const ALT = 'Clients call the API, which reads the cache before the database';
 
