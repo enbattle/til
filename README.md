@@ -82,7 +82,7 @@ npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink
 npm run check:diagrams    # Fail if a committed diagram SVG is stale, missing, orphaned or unsafe, its tokens drift from src/index.css or fail contrast, a diagram is wider than 960 px, a .d2 names a color, imports a file or breaks the <case>/<name>.d2 naming rule, a stray file sits in public/diagrams/, or a case study references a missing diagram (no d2 needed)
 npm run diagrams          # Render the .d2 sources to light/dark SVGs and rewrite public/diagrams/manifest.json (needs d2 v0.9.x; not in verify or CI)
 npm run check:pipeline-log # Fail if a docs/pipeline-log.md row is malformed or closes friction with a bare "nothing to change"
-npm run check:test-lock   # /feature only: -- --snapshot locks test files (vitest and pytest), test-runner config and ignore files, -- --verify fails if any changed, -- --clear
+npm run check:test-lock   # /feature only: -- --snapshot locks test files (vitest and pytest), test-runner config, ignore rules, nested repos and the lock script itself, -- --verify fails if any changed, -- --clear
 npm run review:diff       # /feature only: the reviewer's diff, including new untracked files
 npm run verify            # The whole chain: typecheck, lint, format, every check:* except test-lock, tests (vitest, then pytest), build, size, bundle check
 ```

@@ -27,6 +27,9 @@ The scripts that walk the tree (`check:colors`, `check:npm-refs`,
 files with `listFiles` in `scripts/lib.mjs` (`git ls-files -co
 --exclude-standard`), so an ignored file is never read and there's no
 per-script skip list; `ROOT` and `escapeRegExp` live there too.
+`check:raw-html` scans `.js`, `.jsx`, `.mjs`, `.ts` and `.tsx` under `src/`
+(minus tests), and `check:colors` scans `.ts`, `.tsx`, `.mjs` and `.css`;
+`.mjs` counts because `src/lib/markdown.mjs` ships to the browser.
 
 `src/lib/text-encoding.test.ts` (part of `test:run`) fails on any tracked text
 file holding double-encoded UTF-8. That happens when a UTF-8 file is read as
@@ -56,22 +59,47 @@ checks that the code an entry shows is exactly its tested code files and that
 each code folder holds only its four files.
 
 `npm run check:test-lock` and `npm run review:diff` are not part of `verify`
-or CI: `/feature` uses them inside a run. `check:test-lock` proves no test
-file (vitest or pytest, including `conftest.py` and pytest's config files,
-`.pytest.ini` and `.pytest.toml` among them) or test-runner config (including
-`scripts/test-python.mjs`, the pytest runner, so an implementer can't edit it,
-and any root `pytest.py`, `_pytest.py`, `pytest/` or `_pytest/` path, a second
-layer behind the runner's own `-c` and `PYTHONSAFEPATH` pinning), or ignore
-rule (every `.gitignore`, matched in any letter case, including one that
-ignores itself,
-`.git/info/exclude`, and a `core.excludesFile`'s configured value plus the
-file it names when that file is inside the repository: the lock lists files
-through git, so a path added to one would otherwise drop out of it unseen; a
-global excludes file outside the repository is not covered) changed
-after Stage 2 (a config part the snapshot lacks counts as `added`)
-(`-- --snapshot`, then `-- --verify`, then
-`-- --clear`); `review:diff` prints the reviewer's diff, including new
-untracked files.
+or CI: `/feature` uses them inside a run (`-- --snapshot`, then
+`-- --verify`, then `-- --clear`). `review:diff` prints the reviewer's diff,
+including new untracked files. `check:test-lock` proves none of these changed
+after Stage 2 (a config part the snapshot lacks counts as `added`):
+
+- every test file, vitest or pytest, including `conftest.py` and pytest's
+  config files (`.pytest.ini` and `.pytest.toml` among them);
+- the test runners' config: the `test` block of `vite.config.ts`, the `test*`
+  scripts, `scripts/test-python.mjs`, and any root `pytest.py`, `_pytest.py`,
+  `pytest/` or `_pytest/` path (a second layer behind the runner's own `-c`
+  and `PYTHONSAFEPATH` pinning);
+- the gate itself: the `check:test-lock` script string, each whole
+  `&&`-separated `verify` step that starts with `npm run test` (in order,
+  arguments included), the order of every other shell operator in `verify`
+  (`||`, `;`, `&`, `|`, newline), every other `&&` step that isn't a bare
+  `npm run <name>` with no arguments (an `exit 0` or `exec` step; adding or
+  removing a plain check step stays free), and `scripts/check-test-lock.mjs` with the `scripts/lib.mjs` it imports;
+- every ignore rule, because the lock lists files through git and a path added
+  to one would otherwise drop out unseen: every `.gitignore` in any letter
+  case (including one that ignores itself), `.git/info/exclude`, a
+  `core.excludesFile`'s configured value and the contents of the file it
+  names wherever it lives, and, while that is unset, every location git's
+  default global ignore file could resolve to (`$XDG_CONFIG_HOME/git/ignore`,
+  and `.config/git/ignore` under `HOME`, `USERPROFILE`,
+  `HOMEDRIVE`+`HOMEPATH` and the OS home; only those that exist are hashed,
+  so a different environment over the same files still matches);
+- every nested git repository git lists, untracked (`dir/`) or staged as a
+  submodule gitlink (`dir`), since pytest would collect a `conftest.py` inside
+  one: a new one is `added: <dir>/`, an existing one is compared by its own
+  `git ls-files -co` listing and file contents, and one git can't list (a
+  pruned worktree) is `unreadable: <dir>/`. Agent worktrees under
+  `.claude/worktrees/` are ignored by `.gitignore`, so they aren't nested repos
+  here (vitest excludes them too, and pytest collects only `src/dsa/code`).
+
+The global ignore files are machine files, so editing your own global
+gitignore mid-run trips the lock. Known, fail-safe limitation: Claude Code's
+runtime appends entries to `~/.config/git/ignore` and `.git/info/exclude`
+itself (a permission grant can add one), which also trips `--verify` with
+nothing weakened. The lock keeps failing closed rather than ignoring those
+entries, because ignoring them would let anyone hide a file by writing one;
+surface the failure to the user like any other.
 
 `npx knip --no-progress` is an on-demand dead-code check (unused files,
 exports and dependencies), not part of `verify` or CI and not a dependency

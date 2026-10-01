@@ -131,9 +131,15 @@ its four files, with no subfolders, and every entry has its folder. Third,
 (`pytest.toml`, `.pytest.toml`, `pytest.ini`, `.pytest.ini`,
 `pyproject.toml`, `tox.ini`, `setup.cfg`), the runner
 `scripts/test-python.mjs`, and any root `pytest.py`, `_pytest.py`, `pytest/`
-or `_pytest/` path like the vitest ones (the allowlist test among them), so a
+or `_pytest/` path like the vitest ones (the allowlist test among them), every
+ignore rule, any nested git repository, and the lock script itself, so a
 `/feature` implementer can't edit the runner or the allowlist, or add such a
-file, after Stage 2.
+file, after Stage 2 ([verification.md](verification.md) has the full list).
+The lock lists files through git, so a file inside an ignored path under
+`src/dsa/code` (a `coverage/conftest.py`, say) is invisible to it; the
+allowlist test is what rejects that one. Outside `src/dsa/code`, pytest loads
+`conftest.py` only from the fixed folders above the code tree, none of them
+ignored, and ignoring one would mean editing a locked ignore rule.
 
 ## Prerequisites and order
 
