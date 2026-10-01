@@ -4,12 +4,26 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { CodeBlock } from './CodeBlock';
 
-function renderBlock(code: string, language?: string) {
-  return render(
+// Highlighting resolves at once unless a test sets `stall`, which leaves every
+// later highlight pending, as a slow one would be under load.
+const highlighter = vi.hoisted(() => ({ stall: false }));
+vi.mock('@/lib/highlighter', () => ({
+  highlightCode: (code: string) =>
+    highlighter.stall
+      ? new Promise<string>(() => {})
+      : Promise.resolve(`<pre><code>highlighted ${code}</code></pre>`),
+}));
+
+function block(code: string, language?: string) {
+  return (
     <ThemeProvider>
       <CodeBlock code={code} language={language} />
-    </ThemeProvider>,
+    </ThemeProvider>
   );
+}
+
+function renderBlock(code: string, language?: string) {
+  return render(block(code, language));
 }
 
 function mockClipboard(writeText: (text: string) => Promise<void>) {
@@ -20,6 +34,7 @@ function mockClipboard(writeText: (text: string) => Promise<void>) {
 }
 
 afterEach(() => {
+  highlighter.stall = false;
   vi.restoreAllMocks();
 });
 
@@ -45,5 +60,17 @@ describe('CodeBlock', () => {
 
     // Failure is silent — the label never changes — rather than crashing.
     expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
+  });
+
+  // Regression test: switching a CodeTabs pair changes `code`, and the old
+  // highlighted HTML stayed on screen until the new highlight resolved.
+  it('never shows the previous code while the new code is still highlighting', async () => {
+    const { container, rerender } = renderBlock('first_py = 1', 'python');
+    expect(await screen.findByText('highlighted first_py = 1')).toBeInTheDocument();
+
+    highlighter.stall = true;
+    rerender(block('const firstTs = 1;', 'typescript'));
+    expect(container.textContent).toContain('const firstTs = 1;');
+    expect(container.textContent).not.toContain('first_py = 1');
   });
 });
