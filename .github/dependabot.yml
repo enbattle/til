@@ -22,6 +22,15 @@ updates:
           - '@size-limit/*'
     open-pull-requests-limit: 10
 
+  # pytest, pinned in requirements-dev.txt for the DSA entries' Python tests.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+
   # Actions are pinned to full commit SHAs (a tag can be moved to new code; a
   # SHA can't). Dependabot updates the SHA and its `# vX.Y.Z` comment together.
   - package-ecosystem: github-actions

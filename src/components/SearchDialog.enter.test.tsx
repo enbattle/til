@@ -27,7 +27,9 @@ function renderDialog() {
 function pathOf(result: SearchResult) {
   return result.kind === 'topic'
     ? `/${result.topic.section}/${result.topic.slug}`
-    : `/system-design/${result.caseStudy.slug}`;
+    : result.kind === 'dsa'
+      ? `/dsa/${result.entry.slug}`
+      : `/system-design/${result.caseStudy.slug}`;
 }
 
 // Load the bodies first, so the result order can't change between reading

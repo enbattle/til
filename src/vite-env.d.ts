@@ -14,6 +14,13 @@ declare module '*.md?links' {
   export default links;
 }
 
+// The DSA entry slugs linked under a DSA entry's `## Prerequisites` heading,
+// in order, also produced by the `markdownMeta` plugin.
+declare module '*.md?dsaPrereqs' {
+  const prereqs: string[];
+  export default prereqs;
+}
+
 // Each rendered diagram's intrinsic size, keyed `<case>/<name>`, produced by
 // the `diagramSizes` plugin from `public/diagrams/manifest.json`.
 declare module 'virtual:diagram-sizes' {

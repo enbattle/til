@@ -5,14 +5,14 @@ one command that matters; read this when a check fails, when you add or change
 a check, or when a size budget moves.
 
 `npm run verify` is exactly what CI runs (`ci.yml` calls it), and
-is the gate `/feature`, `add-topic` and `add-case-study` run (the eval and audit skills run
+is the gate `/feature`, `add-topic`, `add-case-study` and `add-dsa-entry` run (the eval and audit skills run
 only the checks they name). The deploy workflow runs it too, so a
 commit that fails any check never goes live. The individual commands, if you need one:
 
 ```bash
 npm run typecheck && npm run lint && npm run format:check
 npm run check:colors && npm run check:tokens && npm run check:contrast && npm run check:npm-refs && npm run check:claude-md && npm run check:pipeline-log && npm run check:raw-html && npm run check:diagrams
-npm run test:run
+npm run test:run && npm run test:py
 npm run build
 npm run size && npm run check:bundle
 ```
@@ -30,9 +30,33 @@ saved in the ANSI code page decodes to. It scans `git ls-files` output (plus
 untracked, unignored files) by extension and skips `public/`. A topic that
 needs to show mojibake as an example would need an exemption there.
 
+`npm run test:py` (`scripts/test-python.mjs`) runs pytest over the DSA
+entries' Python code in `src/dsa/code` (docs/dsa.md). It needs Python 3.11+
+with the pytest pinned in `requirements-dev.txt`
+(`python -m pip install -r requirements-dev.txt`, or `py -m pip ...` on
+Windows); CI and the deploy install both with `actions/setup-python` before
+`verify`. It picks the first of `python3`, `python` and `py -3` whose
+`--version` reports Python 3.11 or later, which skips the Windows Store stub,
+and fails with those install instructions when there's no Python or no pytest.
+It pins pytest to the root `pytest.ini` (`-c`, so no other config file is
+read), sets `PYTHONSAFEPATH=1` so no root module can shadow one pytest
+imports, and drops `PYTEST_ADDOPTS` and `PYTEST_PLUGINS` (docs/dsa.md).
+It runs with bytecode and pytest's cache off, so it leaves no `__pycache__` or
+`.pytest_cache` behind. `test:run` needs the same Python and pytest, since
+`scripts/python-wiring.test.mjs` runs the real runner on scratch copies of the
+tree (one with a planted failing test). The TypeScript half of each entry's
+code is tested by vitest, in `test:run`, and `src/dsa/dsa-code-chunks.test.ts`
+checks that the code an entry shows is exactly its tested code files and that
+each code folder holds only its four files.
+
 `npm run check:test-lock` and `npm run review:diff` are not part of `verify`
 or CI: `/feature` uses them inside a run. `check:test-lock` proves no test
-file or test-runner config changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
+file (vitest or pytest, including `conftest.py` and pytest's config files,
+`.pytest.ini` and `.pytest.toml` among them) or test-runner config (including
+`scripts/test-python.mjs`, the pytest runner, so an implementer can't edit it,
+and any root `pytest.py`, `_pytest.py`, `pytest/` or `_pytest/` path, a second
+layer behind the runner's own `-c` and `PYTHONSAFEPATH` pinning)
+changed after Stage 2 (`-- --snapshot`, then `-- --verify`, then
 `-- --clear`); `review:diff` prints the reviewer's diff, including new
 untracked files.
 
@@ -89,8 +113,10 @@ and a topic; open the System Design tab and a case study, follow a Contents
 link and open a diagram full size, and check that a topic the case study links
 (e.g. `/systems-and-infrastructure/caching`) shows its "Used in these case
 studies:" back-link; toggle the theme and check the diagrams switch with it;
-open search (`Ctrl`/`Cmd`+K) and confirm a topic and a case study are each
-findable by title and by a body phrase.
+open the DSA tab and an entry, switch a code block to TypeScript and reload
+(every block should stay on TypeScript); open search (`Ctrl`/`Cmd`+K) and
+confirm a topic, a case study and a DSA entry are each findable by title and
+by a body phrase.
 
 `npm run size` checks the built JS chunks against the budgets in
 `package.json`'s `size-limit` field — a change that pulls in a heavy new
@@ -106,10 +132,11 @@ to 183 KB (179 KB brotlied). Loading bodies on demand is done: the main chunk
 is now well under its 104 KB limit (`npm run size` prints the current
 figure) (it was 100 KB until the eager
 System Design question pages were replaced by lazily loaded case studies), and
-each topic and case-study body is its own chunk. Adding content no longer
+each topic, case-study and DSA entry body is its own chunk. Adding content no longer
 touches it; a case study's topic links reach it as a small build-time list (the
 `?links` query), not as text. What still grows it is app code.
 `npm run check:bundle` guards the split itself: after a build it fails if a
-topic's or case study's body text is in the main chunk, or in no chunk at all.
-The markdown chunk's entry points at `MarkdownRenderer-*.js` because
-`TopicPage` and `CaseStudyPage` share it.
+topic's, case study's or DSA entry's body text is in the main chunk, or in no
+chunk at all. The markdown chunk's entry points at `MarkdownRenderer-*.js`
+because `TopicPage`, `CaseStudyPage` and `DsaEntryPage` share it; the DSA code
+tabs (`CodeTabs`) are in it too.

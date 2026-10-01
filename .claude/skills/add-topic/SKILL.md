@@ -1,6 +1,6 @@
 ---
 name: add-topic
-description: Add a new topic markdown file to an existing section in this til repo, with an independent review against the Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow the "Adding a new section" steps in docs/content.md, or use /feature if it should get full review) and not for anything touching app code.
+description: Add a new topic markdown file to an existing section in this til repo, with an independent review against the Writing Standard before it's considered done. Use when the user asks to add a topic, write up a til entry, or add an entry about some subject to an existing section — not for adding a brand-new section (that's a registry.ts change; follow the "Adding a new section" steps in docs/content.md, or use /feature if it should get full review), not for a DSA entry under src/dsa/ (that's add-dsa-entry), and not for anything touching app code.
 ---
 
 # Add a topic

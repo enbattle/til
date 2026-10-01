@@ -3,9 +3,10 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from 'react-router-dom';
 import { isDiagramSrc } from '@/lib/diagram-refs.mjs';
-import { rehypeHeadingIds } from '@/lib/headings';
+import { hastText, rehypeHeadingIds, type HastNode } from '@/lib/headings';
 import { useSideScroll } from '@/hooks/useSideScroll';
 import { CodeBlock } from './CodeBlock';
+import { CodeTabs } from './CodeTabs';
 import { Diagram } from './Diagram';
 
 /**
@@ -17,13 +18,49 @@ import { Diagram } from './Diagram';
  */
 const HEADING_SCROLL_MARGIN = 'scroll-mt-[calc(var(--header-height,8rem)_+_0.75rem)]';
 
-/** The parts of a hast (HTML syntax tree) node the paragraph override reads. */
-interface HastNode {
-  type: string;
-  tagName?: string;
-  value?: string;
-  properties?: Record<string, unknown>;
-  children?: HastNode[];
+/** The fence language of a `<pre>` holding one `<code class="language-x">`
+ * (a fenced code block), or undefined for anything else. */
+function fenceLanguage(node: HastNode | undefined): string | undefined {
+  if (node?.type !== 'element' || node.tagName !== 'pre') return undefined;
+  const [code, ...rest] = node.children ?? [];
+  if (rest.length > 0 || code?.type !== 'element' || code.tagName !== 'code') {
+    return undefined;
+  }
+  const classes = code.properties?.className;
+  const language = Array.isArray(classes)
+    ? classes.find((c): c is string => typeof c === 'string' && c.startsWith('language-'))
+    : undefined;
+  return language?.slice('language-'.length);
+}
+
+/**
+ * A rehype plugin, used only with `codeTabs`: every `python` fenced block
+ * followed directly by a `typescript` one (only whitespace between them, so
+ * no paragraph or other block) becomes a single `<pre data-code-tabs>`
+ * holding both `<code>` elements, which the `pre` override renders as one
+ * `CodeTabs`. A lone fence, or a pair in the other order, is left alone.
+ */
+function rehypeCodePairs() {
+  return (tree: HastNode) => {
+    const visit = (node: HastNode) => {
+      const children = node.children;
+      if (!children) return;
+      for (let i = 0; i < children.length; i++) {
+        if (fenceLanguage(children[i]) !== 'python') continue;
+        let j = i + 1;
+        while (children[j]?.type === 'text' && !children[j].value?.trim()) j++;
+        if (fenceLanguage(children[j]) !== 'typescript') continue;
+        children.splice(i, j - i + 1, {
+          type: 'element',
+          tagName: 'pre',
+          properties: { dataCodeTabs: true },
+          children: [children[i].children![0], children[j].children![0]],
+        });
+      }
+      children.forEach(visit);
+    };
+    visit(tree);
+  };
 }
 
 /** Whether a paragraph holds nothing but one `/diagrams/` image (whitespace
@@ -130,7 +167,14 @@ const components: Components = {
       </TableBox>
     );
   },
-  pre({ children }) {
+  pre({ node, children }) {
+    const element = node as HastNode | undefined;
+    if (element?.properties?.dataCodeTabs) {
+      const [python, typescript] = (element.children ?? []).map((code) =>
+        hastText(code).replace(/\n$/, ''),
+      );
+      return <CodeTabs code={{ python, typescript }} />;
+    }
     const codeElement = Array.isArray(children) ? children[0] : children;
     const className = isValidElement<{ className?: string }>(codeElement)
       ? (codeElement.props.className ?? '')
@@ -155,14 +199,21 @@ const components: Components = {
 
 interface MarkdownRendererProps {
   content: string;
+  /** Render each python fence directly followed by a typescript fence as one
+   * `CodeTabs` block (DSA entries only; needs a `CodeLanguageProvider`).
+   * Off by default, which leaves the output exactly as without it. */
+  codeTabs?: boolean;
 }
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+const REHYPE_PLUGINS = [rehypeHeadingIds];
+const REHYPE_PLUGINS_WITH_CODE_TABS = [rehypeHeadingIds, rehypeCodePairs];
+
+export function MarkdownRenderer({ content, codeTabs = false }: MarkdownRendererProps) {
   return (
     <div className="prose prose-neutral dark:prose-invert max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHeadingIds]}
+        rehypePlugins={codeTabs ? REHYPE_PLUGINS_WITH_CODE_TABS : REHYPE_PLUGINS}
         components={components}
       >
         {content}

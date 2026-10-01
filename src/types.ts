@@ -34,3 +34,23 @@ export interface CaseStudy {
   /** Position in the case-study list; a positive integer, unique across case studies. */
   order: number;
 }
+
+/** What a DSA entry teaches; it picks the entry's heading template
+ * (docs/dsa.md). */
+export type DsaKind = 'data-structure' | 'pattern' | 'algorithm';
+
+/**
+ * One DSA entry: a single markdown file under `src/dsa/entries/`, with its
+ * tested code beside it under `src/dsa/code/<slug>/`. Metadata only, like
+ * `Topic`: the body loads on demand (`loadDsaEntryBody` in `src/lib/dsa.ts`).
+ */
+export interface DsaEntry {
+  /** Filename without extension, kebab-case, e.g. `binary-search`. */
+  slug: string;
+  title: string;
+  /** One plain-text sentence shown on the landing page and in search results. */
+  summary: string;
+  /** ISO date (`YYYY-MM-DD`) the entry was written. */
+  date: string;
+  kind: DsaKind;
+}

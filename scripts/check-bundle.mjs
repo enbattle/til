@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 // Guardrail for the lazy-loaded markdown bodies (docs/specs/lazy-content-loading.md,
-// docs/specs/system-design-case-studies.md). Topic and case-study bodies are
-// meant to ship as their own small chunks, fetched when the page is opened or
-// search is first used. Nothing in `npm run size` notices if a
-// change quietly inlines them back into the main chunk (it only notices once
-// the total has grown past the limit), so this checks it directly: run it
-// after `npm run build`.
+// docs/specs/system-design-case-studies.md, docs/specs/dsa-tab.md). Topic,
+// case-study and DSA entry bodies are meant to ship as their own small chunks,
+// fetched when the page is opened or search is first used. Nothing in
+// `npm run size` notices if a change quietly inlines them back into the main
+// chunk (it only notices once the total has grown past the limit), so this
+// checks it directly: run it after `npm run build`.
 //
-// For every topic file (src/content/) and case-study file
-// (src/system-design/case-studies/) it takes one sentence-length fragment from the body and
-// fails if that fragment is in the main chunk (`dist/assets/index-*.js`), if it
-// is in no other chunk at all (a body that went missing), or if the chunk that
-// holds it also holds another topic's fragment (bodies grouped into one lazy
-// chunk, which would make opening any topic download every body), or if any
-// other chunk pulls a body chunk in with a static import (so it would load
-// whenever that chunk does, e.g. on every topic view). Only a dynamic
-// `import()` may reach a body chunk.
+// For every topic file (src/content/), case-study file
+// (src/system-design/case-studies/) and DSA entry (src/dsa/entries/) it takes
+// one sentence-length fragment from the body and fails if that fragment is in
+// the main chunk (`dist/assets/index-*.js`), if it is in no other chunk at all
+// (a body that went missing), or if the chunk that holds it also holds another
+// topic's fragment (bodies grouped into one lazy chunk, which would make
+// opening any topic download every body), or if any other chunk pulls a body
+// chunk in with a static import (so it would load whenever that chunk does,
+// e.g. on every topic view). Only a dynamic `import()` may reach a body chunk.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +24,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const BODY_DIRS = [
   join(ROOT, 'src', 'content'),
   join(ROOT, 'src', 'system-design', 'case-studies'),
+  join(ROOT, 'src', 'dsa', 'entries'),
 ];
 const ASSETS = join(ROOT, 'dist', 'assets');
 const MIN_LINE = 40;
@@ -168,5 +169,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `All ${checked} topic and case-study bodies are outside the main chunk, each in its own lazy chunk, reached only by dynamic import.`,
+  `All ${checked} topic, case-study and DSA entry bodies are outside the main chunk, each in its own lazy chunk, reached only by dynamic import.`,
 );

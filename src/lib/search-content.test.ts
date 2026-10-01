@@ -78,11 +78,14 @@ describe('searchContent', () => {
     expect(searchContent('database', 2).length).toBeLessThanOrEqual(2);
   });
 
-  it('carries the full topic or case study on each result', () => {
+  it('carries the full topic, case study or DSA entry on each result', () => {
     for (const result of searchContent('database', 50)) {
       if (result.kind === 'topic') {
         expect(typeof result.topic.slug).toBe('string');
         expect(typeof result.topic.section).toBe('string');
+      } else if (result.kind === 'dsa') {
+        expect(typeof result.entry.slug).toBe('string');
+        expect(typeof result.entry.kind).toBe('string');
       } else {
         expect(result.kind).toBe('caseStudy');
         expect(typeof result.caseStudy.slug).toBe('string');

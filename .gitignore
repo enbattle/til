@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python (the DSA entries' tests, run by npm run test:py)
+__pycache__/
+.pytest_cache/

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { isSystemDesignPath } from '@/lib/system-design';
+import { tabForPath } from '@/lib/tabs';
 import { ThemeToggle } from './ThemeToggle';
 
 // Same non-color "current" signal as the sidebar navs (docs/DESIGN.md): bold
@@ -37,8 +37,14 @@ function useHeaderHeightVariable() {
   return ref;
 }
 
+const TABS = [
+  { id: 'catalog', to: '/', label: 'Catalog' },
+  { id: 'system-design', to: '/system-design', label: 'System Design' },
+  { id: 'dsa', to: '/dsa', label: 'DSA' },
+] as const;
+
 export function Header({ onOpenSearch, onOpenNav }: HeaderProps) {
-  const systemDesignActive = isSystemDesignPath(useLocation().pathname);
+  const active = tabForPath(useLocation().pathname);
   const ref = useHeaderHeightVariable();
 
   return (
@@ -81,20 +87,16 @@ export function Header({ onOpenSearch, onOpenNav }: HeaderProps) {
           aria-label="Primary"
           className="order-last flex w-full gap-5 sm:order-none sm:mr-auto sm:w-auto"
         >
-          <Link
-            to="/"
-            aria-current={systemDesignActive ? undefined : 'page'}
-            className={`${TAB_BASE} ${systemDesignActive ? TAB_DEFAULT : TAB_CURRENT}`}
-          >
-            Catalog
-          </Link>
-          <Link
-            to="/system-design"
-            aria-current={systemDesignActive ? 'page' : undefined}
-            className={`${TAB_BASE} ${systemDesignActive ? TAB_CURRENT : TAB_DEFAULT}`}
-          >
-            System Design
-          </Link>
+          {TABS.map(({ id, to, label }) => (
+            <Link
+              key={id}
+              to={to}
+              aria-current={active === id ? 'page' : undefined}
+              className={`${TAB_BASE} ${active === id ? TAB_CURRENT : TAB_DEFAULT}`}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <button

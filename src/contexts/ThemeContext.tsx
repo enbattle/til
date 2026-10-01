@@ -1,4 +1,5 @@
 import { createContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { readStoredChoice, writeStoredChoice } from '@/lib/stored-choice';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
@@ -17,19 +18,10 @@ function getSystemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function readStoredPreference(): ThemePreference {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
-  } catch {
-    // localStorage can throw in private-browsing / restricted contexts — fall back silently.
-  }
-  return 'system';
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] =
-    useState<ThemePreference>(readStoredPreference);
+  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
+    readStoredChoice(STORAGE_KEY, ['light', 'dark', 'system'], 'system'),
+  );
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(getSystemTheme);
 
   useEffect(() => {
@@ -47,11 +39,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   function setPreference(next: ThemePreference) {
     setPreferenceState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // Best-effort persistence only.
-    }
+    writeStoredChoice(STORAGE_KEY, next);
   }
 
   const value = useMemo(

@@ -1,7 +1,8 @@
 # til
 
 A searchable reference of programming, systems, AI and learning topics, plus
-worked System Design case studies for interview prep. Topics are grouped into
+worked System Design case studies and data structures & algorithms entries for
+interview prep. Topics are grouped into
 sections, and the whole thing is deployed as a static site.
 
 **[enbattle.github.io/til](https://enbattle.github.io/til)**
@@ -22,8 +23,14 @@ sections, and the whole thing is deployed as a static site.
   the catalog topics it uses, and each of those topics links back. Diagrams
   are written in [D2](https://d2lang.com) and rendered at build time to
   static SVGs in the site's own colors, one per theme.
-- **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's and case
-  study's title, summary, and body ([Fuse.js](https://www.fusejs.io)).
+- **DSA** — a third tab of data structures, patterns and algorithms at
+  interview depth, listed so that each entry comes after the ones it builds
+  on. Every code example is shown in Python and TypeScript (one switch sets
+  the language for the whole site and is remembered), and the code is the
+  same code the entry's own tests run, with vitest and pytest.
+- **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's, case
+  study's and DSA entry's title, summary, and body
+  ([Fuse.js](https://www.fusejs.io)).
 - **Markdown content** — fenced code blocks are syntax-highlighted (via
   [Shiki](https://shiki.style)) with a copy button; long-form writing reads
   through the [Tailwind Typography](https://github.com/tailwindlabs/tailwindcss-typography)
@@ -42,7 +49,14 @@ npm run dev
 ```
 
 Then open the printed `localhost` URL. Node 22.22.2+ (or 24.15+) is required (see
-`engines` in `package.json`).
+`engines` in `package.json`). `npm run verify` also runs the DSA entries'
+Python tests, which need Python 3.11+ (CI uses 3.12) with pytest installed.
+`npm run test:run` needs Python and pytest too, since
+`scripts/python-wiring.test.mjs` runs the real pytest runner:
+
+```bash
+python -m pip install -r requirements-dev.txt   # on Windows: py -m pip install -r requirements-dev.txt
+```
 
 ## Commands
 
@@ -55,21 +69,22 @@ npm run typecheck        # tsc -b
 npm run format            # Prettier write
 npm run format:check      # Prettier check
 npm run test              # Vitest, watch mode
-npm run test:run          # Vitest, run once (CI mode)
+npm run test:run          # Vitest, run once (CI mode); needs Python 3.11+ and pytest too
+npm run test:py           # pytest over the DSA entries' Python code (src/dsa/code)
 npm run size              # Check built JS chunks against size-limit budgets
 npm run check:colors      # Fail if a component or stylesheet references a raw hex color instead of a design token
 npm run check:tokens      # Fail if docs/DESIGN.md's token table drifts from src/index.css
 npm run check:contrast    # Fail if a text token drops below WCAG AA (4.5:1) on a surface token
 npm run check:npm-refs    # Fail if a doc references an npm script that no longer exists
 npm run check:claude-md   # Fail if CLAUDE.md passes 150 lines or links to a missing file
-npm run check:bundle      # After a build: fail if topic or case-study bodies are in the main chunk instead of lazy chunks
+npm run check:bundle      # After a build: fail if topic, case-study or DSA bodies are in the main chunk instead of lazy chunks
 npm run check:raw-html   # Fail if markdown can render raw HTML, or an HTML sink (dangerouslySetInnerHTML outside CodeBlock, innerHTML, outerHTML, insertAdjacentHTML, document.write) appears
 npm run check:diagrams    # Fail if a committed diagram SVG is stale, missing, orphaned or unsafe, its tokens drift from src/index.css or fail contrast, a diagram is wider than 960 px, a .d2 names a color, imports a file or breaks the <case>/<name>.d2 naming rule, a stray file sits in public/diagrams/, or a case study references a missing diagram (no d2 needed)
 npm run diagrams          # Render the .d2 sources to light/dark SVGs and rewrite public/diagrams/manifest.json (needs d2 v0.9.x; not in verify or CI)
 npm run check:pipeline-log # Fail if a docs/pipeline-log.md row is malformed or closes friction with a bare "nothing to change"
-npm run check:test-lock   # /feature only: -- --snapshot locks test files and test-runner config, -- --verify fails if any changed, -- --clear
+npm run check:test-lock   # /feature only: -- --snapshot locks test files (vitest and pytest) and test-runner config, -- --verify fails if any changed, -- --clear
 npm run review:diff       # /feature only: the reviewer's diff, including new untracked files
-npm run verify            # The whole chain: typecheck, lint, format, every check:* except test-lock, tests, build, size, bundle check
+npm run verify            # The whole chain: typecheck, lint, format, every check:* except test-lock, tests (vitest, then pytest), build, size, bundle check
 ```
 
 ## Adding content
@@ -77,7 +92,8 @@ npm run verify            # The whole chain: typecheck, lint, format, every chec
 There's no in-app editor — topics are markdown files added to the
 repository and shipped with the next build. Topics and sections are covered in [docs/content.md](docs/content.md),
 System Design case studies and their diagrams in
-[docs/case-studies.md](docs/case-studies.md), and the bar all prose meets in
+[docs/case-studies.md](docs/case-studies.md), DSA entries and their code in
+[docs/dsa.md](docs/dsa.md), and the bar all prose meets in
 [docs/writing-standard.md](docs/writing-standard.md);
 [CLAUDE.md](CLAUDE.md) routes to them.
 
@@ -97,7 +113,8 @@ These live in GitHub, not in the code, so they are listed here:
   Deploy). Dependency bumps don't change the site's content, so that delay
   is accepted rather than giving the workflow a personal token.
 - GitHub Actions are pinned to full commit SHAs; Dependabot updates them
-  weekly as one grouped pull request.
+  weekly as one grouped pull request. It also watches `requirements-dev.txt`
+  (the pinned pytest) through its `pip` ecosystem.
 
 ## Design
 
@@ -108,7 +125,7 @@ accessibility checklist behind the UI.
 
 Features and nontrivial app changes go through a spec → TDD →
 implementation (+ docs) → adversarial review (code + UI) pipeline — see
-[docs/SDLC.md](docs/SDLC.md). Adding a topic or a System Design case study gets
-a lighter, separate process instead (draft → an independent review, at most
-two rounds) — see the `add-topic` and `add-case-study` skills referenced in
-[CLAUDE.md](CLAUDE.md).
+[docs/SDLC.md](docs/SDLC.md). Adding a topic, a System Design case study or a
+DSA entry gets a lighter, separate process instead (draft → an independent
+review, at most two rounds) — see the `add-topic`, `add-case-study` and
+`add-dsa-entry` skills referenced in [CLAUDE.md](CLAUDE.md).

@@ -5,11 +5,12 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { parseFrontmatter } from './src/lib/frontmatter.ts';
+import { parseFrontmatter, type ParsedMarkdown } from './src/lib/frontmatter.ts';
 import { extractTopicRefs } from './src/lib/markdown-links.ts';
+import { dsaPrerequisites } from './src/lib/dsa-prereqs.mjs';
 
 /**
- * Two build-time views of a markdown file, so the app can list and cross-link
+ * Build-time views of a markdown file, so the app can list and cross-link
  * content without bundling any body. Bodies come in separately through a lazy
  * `?raw` glob (see `src/lib/content.ts` and `src/lib/system-design.ts`).
  *
@@ -21,9 +22,20 @@ import { extractTopicRefs } from './src/lib/markdown-links.ts';
  *   in the file's body (`[{ section, slug }]`, first appearance first), from
  *   the same `extractTopicRefs` the tests use. Case studies use it for "Go
  *   deeper" and for the topic pages' back-links.
+ * - `import prereqs from './entry.md?dsaPrereqs'` resolves to the slugs a DSA
+ *   entry links under its `## Prerequisites` heading (`dsaPrerequisites` in
+ *   `src/lib/dsa-prereqs.mjs`), which order the DSA list and fill its
+ *   "Before this" links.
  *
- * Vitest reuses these plugins, so tests see the same modules.
+ * Each view is one entry below, keyed by its query name; adding a view is
+ * adding an entry. Vitest reuses these plugins, so tests see the same modules.
  */
+const MARKDOWN_VIEWS: Record<string, (file: ParsedMarkdown) => unknown> = {
+  meta: ({ data }) => data,
+  links: ({ content }) => extractTopicRefs(content),
+  dsaPrereqs: ({ content }) => dsaPrerequisites(content),
+};
+
 function markdownMeta(): Plugin {
   return {
     name: 'markdown-meta',
@@ -32,10 +44,10 @@ function markdownMeta(): Plugin {
       const [file, query = ''] = id.split('?');
       if (!file.endsWith('.md')) return null;
       const params = new URLSearchParams(query);
-      if (!params.has('meta') && !params.has('links')) return null;
+      const view = Object.keys(MARKDOWN_VIEWS).find((name) => params.has(name));
+      if (!view) return null;
       this.addWatchFile(file);
-      const { data, content } = parseFrontmatter(readFileSync(file, 'utf8'));
-      const value = params.has('meta') ? data : extractTopicRefs(content);
+      const value = MARKDOWN_VIEWS[view](parseFrontmatter(readFileSync(file, 'utf8')));
       return `export default ${JSON.stringify(value)};`;
     },
   };

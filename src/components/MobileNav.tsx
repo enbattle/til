@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
-import { isSystemDesignPath } from '@/lib/system-design';
+import { tabForPath } from '@/lib/tabs';
 import { CaseStudyNav } from './CaseStudyNav';
+import { DsaNav } from './DsaNav';
 import { SectionNav } from './SectionNav';
 
 const FOCUSABLE_SELECTOR =
@@ -15,13 +16,14 @@ interface MobileNavProps {
 /**
  * Narrow-viewport nav overlay: fixed backdrop + a panel sliding in from the
  * left edge, containing the same nav tree the persistent desktop sidebar
- * uses (`CaseStudyNav` on System Design routes, `SectionNav` everywhere else).
+ * uses (`CaseStudyNav` on System Design routes, `DsaNav` on DSA routes,
+ * `SectionNav` everywhere else).
  * Mirrors `SearchDialog`'s overlay/focus-trap/close-on-navigate pattern,
  * opening from the left edge instead of a centered panel.
  */
 export function MobileNav({ onClose }: MobileNavProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const { pathname } = useLocation();
+  const tab = tabForPath(useLocation().pathname);
 
   // Called before any other effect that might move focus, so it captures
   // whatever had focus before the overlay opened (the Menu button) and
@@ -58,8 +60,10 @@ export function MobileNav({ onClose }: MobileNavProps) {
         className="scrollbar-thin h-full w-72 max-w-[80vw] overflow-y-auto overflow-x-hidden border-r border-border bg-bg-primary p-6 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        {isSystemDesignPath(pathname) ? (
+        {tab === 'system-design' ? (
           <CaseStudyNav onNavigate={onClose} />
+        ) : tab === 'dsa' ? (
+          <DsaNav onNavigate={onClose} />
         ) : (
           <SectionNav onNavigate={onClose} />
         )}

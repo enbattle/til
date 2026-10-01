@@ -173,7 +173,8 @@ fresh-subagent-per-scenario procedure the skill exists to standardize.
 **Expected:** `content-audit`
 **Why:** Exactly this skill's stated purpose — an independent, fresh-eyes
 read of every topic under `src/content/**` (and, by default, every System
-Design case study under `src/system-design/case-studies/`) against the
+Design case study under `src/system-design/case-studies/` and every DSA entry
+under `src/dsa/entries/`) against the
 Writing Standard's AI-patterned-prose, over-explained-figurative-language,
 and unverified-technical-claim criteria. It's a full-corpus sweep of
 published content, which is a different axis from its neighbors:
@@ -296,3 +297,21 @@ diagram folders.
 **Fails if:** routed to `add-case-study` (the words "case study" and
 "diagram" match its trigger, but it writes content, not code), or done as a
 direct edit (a layout change plus a new guard is not a one-line fix).
+
+---
+
+### SR-18 — new DSA entry
+
+> Add the heap entry to DSA.
+
+**Expected:** `add-dsa-entry`
+**Why:** Exactly that skill's scope: a new file under `src/dsa/entries/` plus
+its Python and TypeScript code and tests under `src/dsa/code/heap/`, drafted
+to the data-structure template, checked by `npm run verify` (including
+`npm run test:py`), then reviewed by a fresh agent against the Writing
+Standard and the DSA checklist (code correct and idiomatic in both languages,
+tests that reach the edge cases, a walkthrough that explains why).
+**Fails if:** routed to `add-topic` (a DSA entry isn't a catalog topic, and
+that skill's review never looks at code or tests), routed to `/feature` (no
+app code changes, so a spec and locked tests would be ceremony), or written
+directly with no independent review of the code and its tests.

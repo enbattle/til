@@ -5,9 +5,11 @@ import { highlightCode } from '@/lib/highlighter';
 interface CodeBlockProps {
   code: string;
   language?: string;
+  /** The block's vertical margin; `CodeTabs` sets its own, under its tabs. */
+  className?: string;
 }
 
-export function CodeBlock({ code, language }: CodeBlockProps) {
+export function CodeBlock({ code, language, className = 'my-5' }: CodeBlockProps) {
   const { resolved } = useTheme();
   const [html, setHtml] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -35,7 +37,9 @@ export function CodeBlock({ code, language }: CodeBlockProps) {
   }
 
   return (
-    <div className="group not-prose relative my-5 overflow-hidden rounded-lg border border-border">
+    <div
+      className={`group not-prose relative ${className} overflow-hidden rounded-lg border border-border`}
+    >
       <button
         type="button"
         onClick={handleCopy}
