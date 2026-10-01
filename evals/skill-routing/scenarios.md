@@ -286,12 +286,12 @@ and its diagrams; it has no path for revising a published one) or `/feature`
 ### SR-17 — changing the case-study page or diagram tooling (trap)
 
 > On a case study page, make the Contents list stick to the side of the
-> screen on wide monitors, and have the diagram render script fail when a
-> diagram is wider than the content column.
+> screen on wide monitors, and have the diagram check fail when a diagram has
+> more than 12 boxes in it.
 
 **Expected:** `/feature`
 **Why:** Both halves are app and tooling code (the case-study page component
-and `scripts/render-diagrams.mjs`), with behavior that needs acceptance
+and `scripts/check-diagrams.mjs`, which checks width but not node count), with behavior that needs acceptance
 criteria and tests. `add-case-study`'s description sends changes to the
 case-study page, loader or diagram tooling to `/feature`, and its Stage 0
 stops if a request needs anything under `src/` outside the case-study and

@@ -39,7 +39,7 @@ rejected for a specific, verified reason: Claude Code's PreToolUse hooks
 **fail open on timeout** — if the check doesn't finish inside its
 configured timeout, the tool call proceeds anyway, block or no block.
 `til`'s existing hooks use a 10-second timeout; the full verification
-suite (`npm run verify`, the chain in `docs/verification.md`) can exceed that, which means a naive version of this hook would
+suite (`npm run verify`; docs/verification.md describes each check) can exceed that, which means a naive version of this hook would
 silently stop blocking the first time a check ran slow — a false sense
 of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk

@@ -36,10 +36,10 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
   in `vite.config.ts`), so `TOPICS` is metadata only and `Topic` has no `body`.
   A body is fetched as its own small chunk by `loadTopicBody(section, slug)`
   (topic page) or `loadAllTopicBodies()` (full-text search, which starts
-  loading when the search dialog opens). Case studies work the same way. Don't
-  reintroduce an eager `?raw` glob over `src/content` or the case studies:
-  `npm run check:bundle` fails if any topic or case-study body ends up in the
-  main chunk.
+  loading when the search dialog opens). Case studies and DSA entries work the
+  same way. Don't reintroduce an eager `?raw` glob over any of them:
+  `npm run check:bundle` fails if any topic, case-study or DSA entry body ends
+  up in the main chunk.
 - The frontmatter parser (`src/lib/frontmatter.ts`) is intentionally not a
   real YAML parser — it only understands flat `key: value` lines, with
   optional matching quotes around the value. Don't add nested structures

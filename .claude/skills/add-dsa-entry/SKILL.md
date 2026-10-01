@@ -34,16 +34,15 @@ don't edit another entry except to link to the new one from prose where it
 belongs (a link from an older entry's `## Prerequisites` would make the older
 entry depend on the newer one, so it goes elsewhere in the body).
 
-`npm run test:py` needs Python 3.11+ with pytest (`python -m pip install -r
-requirements-dev.txt`). If it isn't installed, say so and give that command;
-don't finish an entry whose Python tests never ran.
+`npm run test:py` needs Python 3.11+ with pytest. If it isn't installed, say
+so and give the install command from docs/dsa.md; don't finish an entry whose
+Python tests never ran.
 
 ## Stage 1 — Draft the code, its tests, then the entry
 
 Write it yourself, directly, as `add-topic` does. Read the reference entry for
-the kind first, `hash-map.md` (data structure), `two-pointers.md` (pattern) or
-`binary-search.md` (algorithm), with its code files: they set the depth, the
-tone and how a walkthrough explains a chunk.
+the kind first (docs/dsa.md's "Templates" names one per kind), with its code
+files: they set the depth, the tone and how a walkthrough explains a chunk.
 
 1. **Code.** `src/dsa/code/<slug>/<slug_underscored>.py` (stdlib only, type
    hints, Python 3.11+) and `<slug>.ts` (no imports, exported API). Each is

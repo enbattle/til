@@ -29,13 +29,7 @@ notebook than a product. The UI follows that:
   on a long page instead of scrolling out of view; below it, the panel
   is replaced by a text "Menu" button in the header that opens the same
   nav tree in a dismissible left-edge overlay (`MobileNav`) — exactly one
-  of the two is present at a time. This was added ahead of any real
-  growth in section/topic counts — the opposite of the content trend
-  that originally motivated skipping it — because direct jump access
-  from anywhere on the site was judged worth the added chrome even while
-  the site was still small, and building the persistent/overlay pattern
-  correctly then meant it didn't need retrofitting once the site actually
-  did grow (it has since — see "Collapsible sections" below).
+  of the two is present at a time.
 - **Collapsible sections**: once the site grew past a handful of topics,
   `SectionNav` (shared by the desktop sidebar and `MobileNav`) switched
   from always-fully-expanded to collapsible — only the section containing
@@ -169,7 +163,7 @@ regardless of the system setting. Components reference the tokens
 file. `npm run check:colors` (`scripts/check-hex-colors.mjs`, wired into
 CI) enforces this mechanically rather than relying on review to catch a
 raw hex literal creeping into a component — it fails if one shows up
-in any `.ts`, `.tsx` or `.css` file under `src/` outside `src/index.css` itself (where the tokens
+in any `.ts`, `.tsx`, `.mjs` or `.css` file under `src/` outside `src/index.css` itself (where the tokens
 are defined) or `src/content/` (published prose, not app code). A `.d2`
 diagram source is checked by `check:diagrams` instead.
 

@@ -113,8 +113,7 @@ folders, which the folder allowlist below rejects until you delete it.
 Three things keep a stray file or setting from making `test:py` pass on
 broken code. First, the runner pins pytest's config and import path.
 `-c <root>/pytest.ini` makes pytest read only that file, never another config
-file it would otherwise discover (`.pytest.ini`, `pytest.toml`,
-`pyproject.toml`, `tox.ini`, `setup.cfg`). `python -m` normally puts the
+file it would otherwise discover. `python -m` normally puts the
 working directory first on `sys.path`, so a root module named like one pytest
 imports (`pytest.py`, `pluggy.py`, `iniconfig.py`) would replace the real
 one; the runner sets `PYTHONSAFEPATH=1` (the reason for 3.11+), which leaves
@@ -127,15 +126,10 @@ like the code under test) could still change what a test imports.
 `src/dsa/dsa-code-chunks.test.ts` (in `test:run`) treats the code tree as an
 allowlist: each `src/dsa/code/<slug>/` belongs to an entry and holds exactly
 its four files, with no subfolders, and every entry has its folder. Third,
-`check:test-lock` locks the pytest files, pytest's config files
-(`pytest.toml`, `.pytest.toml`, `pytest.ini`, `.pytest.ini`,
-`pyproject.toml`, `tox.ini`, `setup.cfg`), the runner
-`scripts/test-python.mjs`, and any root `pytest.py`, `_pytest.py`, `pytest/`
-or `_pytest/` path like the vitest ones (the allowlist test among them), every
-ignore rule, any nested git repository, and the lock script itself, so a
-`/feature` implementer can't edit the runner or the allowlist, or add such a
-file, after Stage 2 ([verification.md](verification.md) has the full list).
-The lock lists files through git, so a file inside an ignored path under
+`check:test-lock` locks the pytest files, every file pytest could read its
+config from, the runner and the allowlist test, so a `/feature` implementer
+can't change them after Stage 2 ([verification.md](verification.md) lists
+everything it locks). The lock lists files through git, so a file inside an ignored path under
 `src/dsa/code` (a `coverage/conftest.py`, say) is invisible to it; the
 allowlist test is what rejects that one. Outside `src/dsa/code`, pytest loads
 `conftest.py` only from the fixed folders above the code tree, none of them

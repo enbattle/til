@@ -48,8 +48,8 @@ npm install
 npm run dev
 ```
 
-Then open the printed `localhost` URL. Node 22.22.2+ (or 24.15+) is required (see
-`engines` in `package.json`). `npm run verify` also runs the DSA entries'
+Then open the printed `localhost` URL. The supported Node versions are
+`engines` in `package.json`. `npm run verify` also runs the DSA entries'
 Python tests, which need Python 3.11+ (CI uses 3.12) with pytest installed.
 `npm run test:run` needs Python and pytest too, since
 `scripts/python-wiring.test.mjs` runs the real pytest runner:
