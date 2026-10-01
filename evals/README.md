@@ -30,17 +30,15 @@ own safety nets instead of a running service.
   change over time — a session can build something _well_ while still
   having picked the wrong process for it. Run via the `skill-routing-eval`
   skill rather than by hand.
-- `content-review/` — once `add-topic`'s or `add-case-study`'s Stage 3
-  review actually runs, does it catch a deliberately planted content-quality
-  violation (undefined jargon, AI-patterned tone, over-explained figurative
-  language, an unverified technical claim, and for a case study a wrong
-  estimate or a deep dive that doesn't compare options), or rubber-stamp the
-  draft? A
-  different failure surface than `skill-routing`: that category checks
-  whether the right skill gets chosen, this one checks whether the
-  chosen skill's review step actually works, including a false-positive
-  control (a clean draft that should draw no findings). Run via the
-  `content-review-eval` skill.
+- `content-review/` — once a content skill's Stage 3 review
+  ([docs/content-review.md](../docs/content-review.md)) actually runs, does
+  it catch a deliberately planted content-quality violation (the current set
+  is in its `scenarios.md`: topics, case studies and DSA entries), or
+  rubber-stamp the draft? A different failure surface than `skill-routing`:
+  that category checks whether the right skill gets chosen, this one checks
+  whether the chosen skill's review step actually works, including
+  false-positive controls (clean drafts that should draw no findings). Run
+  via the `content-review-eval` skill.
 
 - `feature-review/` — once `/feature`'s Stage 4 review runs, does it catch a
   planted defect in a diff (the current set is in its `scenarios.md`)
@@ -62,10 +60,9 @@ means starting a fresh session (or, as a practical stand-in, a fresh
 subagent with no prior context) with no memory of this repo's history and
 observing what it actually does, which costs real time and tokens per
 scenario. That's a deliberate, judged expense for a personal site, not
-something to run on every commit. Use the `skill-routing-eval` skill to
-run it — see `skill-routing/HOW_TO_RUN.md` for the underlying procedure
-the skill wraps. The other categories work the same way, each through its
-own skill (`content-review-eval`, `feature-review-eval`).
+something to run on every commit. Each category runs through its own skill
+(`skill-routing-eval`, `content-review-eval`, `feature-review-eval`), which
+holds its whole procedure; each folder here holds the scenarios and results.
 
 **Re-run whenever it matters**, not on a fixed schedule: after any change
 the table below names; `.claude/hooks/nudge-sdlc.js` reminds a session
@@ -79,7 +76,7 @@ Which eval to run depends on what changed:
 | You changed                                                                                                                     | Run                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CLAUDE.md` or a doc its routing table points to, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill            | `skill-routing-eval`                                                                                                                           |
-| The Writing Standard, `add-topic`'s or `add-case-study`'s Stage 3 review prompt, or `docs/NON_NEGOTIABLES.md`                   | `content-review-eval`                                                                                                                          |
+| The Writing Standard, `docs/content-review.md`, a content skill's Stage 3 checklist, or `docs/NON_NEGOTIABLES.md`               | `content-review-eval`                                                                                                                          |
 | `/feature`'s Stage 4 reviewer or finding-triage instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review | `feature-review-eval`                                                                                                                          |
 | Added or widened a `check:*` script                                                                                             | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
 

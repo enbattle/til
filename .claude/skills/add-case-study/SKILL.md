@@ -13,8 +13,8 @@ arithmetic has to hold, deep dives that have to compare options rather than
 announce one, and diagrams that have to agree with the prose. The review below
 checks each of those explicitly. See [docs/case-studies.md](../../../docs/case-studies.md) for the file
 layout and rules, and
-[docs/SDLC.md](../../../docs/SDLC.md) for why content gets this lighter
-process.
+[docs/content-review.md](../../../docs/content-review.md) for the review
+stages every content skill shares and why content gets this lighter process.
 
 ## Stage 0 — Scope check
 
@@ -97,88 +97,32 @@ SVGs safe, no color named and no file imported in a `.d2`, every referenced diag
 `check:bundle` (the body stays out of the main chunk) catch the structural
 problems. A case study never needs its own test.
 
-## Stage 3 — Independent review
+## Stages 3–4 — Review and final gate
 
-Spawn a **fresh** `general-purpose` agent (never `fork`: it must not inherit
-your own read of the draft). Give it: the case study's full content; the full
-content of each of its `.d2` sources (and the paths of the rendered SVGs, if
-it can view images); `docs/writing-standard.md`; the path of
-`docs/NON_NEGOTIABLES.md`; the titles and slugs of the existing case studies
-(for a near-duplicate check); and this instruction, close to verbatim:
+Follow [docs/content-review.md](../../../docs/content-review.md) with:
 
-> Review this new System Design case study adversarially against the
-> Writing Standard below and the case-study checklist after it; assume
-> nothing about it is fine until you've checked it yourself. Read
-> docs/NON_NEGOTIABLES.md first; a violation of any line there is always a
-> real finding. Writing Standard: are terms defined before they're used,
-> would a reader with zero prior background follow it, does it use concrete
-> worked examples rather than staying abstract, is the frontmatter `summary`
-> one scannable sentence, does the prose read as something a knowledgeable
-> person wrote rather than generically AI-patterned, is any figurative
-> phrase over-explained, and is every substantive technical claim actually
-> true rather than confidently stated. Case-study checklist: (1) recompute
-> every estimate yourself, line by line, and flag any arithmetic error or
-> any figure that doesn't follow from the stated requirements or a stated
-> assumption; (2) check that each deep dive compares at least two options
-> and says what each costs, and flag one that just picks an answer; (3)
-> check that every diagram matches the prose (same components, same
-> connections, same names) and flag any disagreement; (4) check that every
-> catalog link sits where the concept is actually used, and that the case
-> study doesn't re-teach a linked topic's mechanism; (5) flag any claim
-> about how a specific named company builds its system; (6) check the
-> `At a glance` section against the body: every figure in it must match the
-> body exactly, each decision and follow-up must be what the body argues
-> (not a new claim), each in-page link must point to the section that
-> actually covers it, and it must stay about 250–400 words. Also check it isn't
-> a near-duplicate of an existing case study (listed below). For each finding, quote the text, or name a realistic trigger (for app
-> behavior, real inputs or content; for a guard or check, an edit an author
-> following docs/content.md or docs/case-studies.md could plausibly make, or a
-> shape a doc says the check covers); label anything else "theoretical".
-> Re-raise a decision listed below as already made only with new evidence. Do not edit any file; review only. Report findings ranked by severity, quoting the
-> text and saying what's wrong and what's true, or say explicitly that you
-> found nothing worth flagging.
-
-- No findings, or only cosmetic ones → done, go to Stage 4.
-- Real findings → finding triage, then fix. Confirm each against the files yourself
-  (a finding about code or a check goes to a fresh agent), and give it one of
-  `/feature` Stage 4's outcomes; record each Reject and Known limitation with
-  a one-line reason in the handoff, and give the re-review that list. A Reject
-  must quote the text or source that disproves the finding. Fix the rest
-  yourself (re-render with `npm run diagrams` if a diagram changed), then
-  re-run this stage with a new fresh agent on the updated files. **Cap at 2 rounds**, matching `add-topic` and `/feature`'s
-  fix loops. If findings persist after the second round, stop and surface
-  them to the user rather than continuing to iterate alone.
-
-## Stage 4 — Final gate
-
-Re-run `npm run verify` on the final version and confirm it's green. Confirm
-`git status --porcelain -- src/content` prints nothing (a case study never
-edits or adds a catalog topic; unlike a diff, this also shows untracked files
-and ignores changes already committed on the branch). Summarize the case study and the review outcome for the
-user. Append a row for this run to
-[docs/pipeline-log.md](../../../docs/pipeline-log.md) (its header defines the
-columns; Retro is `n/a`, since this skill has no retrospective stage; Gate
-failures counts failed `verify` runs; Agents counts every agent you started,
-a batch drafter included), then run
-`npx prettier --write docs/pipeline-log.md` and `npm run check:pipeline-log`.
-The row goes in the case study's commit, together with the `.md`, the `.d2`
-sources, the rendered SVGs and `public/diagrams/manifest.json`. Ask before
-committing or pushing: this skill leaves the working tree ready, it doesn't
-ship it.
-
-## Batch mode — several case studies at once
-
-1. One drafter agent per study, in parallel, each in its own worktree
-   (`isolation: "worktree"`), runs Stages 0–2 only, within
-   [checklist.md](checklist.md)'s length.
-2. Each study gets one fresh Stage 3 reviewer, whose instruction adds: "Report
-   only High and Medium correctness findings."
-3. Its findings go through Stage 3's finding triage. You apply the fixes once,
-   with no re-review of that round (Fix rounds `1`); a High found then goes to
-   the user.
-4. Integrate: copy each study's `.md` and `.d2` files from its worktree, run
-   `npm run diagrams` once, then `npm run verify`, and add one pipeline-log row
-   per study ([docs/case-studies.md](../../../docs/case-studies.md) has the
-   file rules).
-5. After the user's go-ahead, open one pull request for the batch, then remove
-   the worktrees and their `worktree-agent-*` branches.
+- **`<kind>`**: System Design case study.
+- **Existing items**: the case studies in `src/system-design/case-studies/`.
+- **Files**: the case study and each of its `.d2` sources, in full (plus the
+  paths of the rendered SVGs, if the reviewer can view images).
+- **`<checklist>`**: (1) recompute every estimate yourself, line by line,
+  and flag any arithmetic error or any figure that doesn't follow from the
+  stated requirements or a stated assumption; (2) check that each deep dive
+  compares at least two options and says what each costs, and flag one that
+  just picks an answer; (3) check that every diagram matches the prose (same
+  components, same connections, same names) and flag any disagreement; (4)
+  check that every catalog link sits where the concept is actually used, and
+  that the case study doesn't re-teach a linked topic's mechanism; (5) flag
+  any claim about how a specific named company builds its system; (6) check
+  the `At a glance` section against the body: every figure in it must match
+  the body exactly, each decision and follow-up must be what the body argues
+  (not a new claim), each in-page link must point to the section that
+  actually covers it, and it must stay about 250–400 words.
+- **Fix step**: re-render with `npm run diagrams` if a diagram changed.
+- **Scope check**: `git status --porcelain -- src/content` prints nothing (a
+  case study never edits or adds a catalog topic).
+- **Commit**: the `.md`, the `.d2` sources, the rendered SVGs and
+  `public/diagrams/manifest.json`, with the log row.
+- **Batch mode**: each drafter stays within [checklist.md](checklist.md)'s
+  length. The integration step is `npm run diagrams`, run once for the batch
+  ([docs/case-studies.md](../../../docs/case-studies.md) has the file rules).

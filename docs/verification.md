@@ -5,8 +5,8 @@ one command that matters; read this when a check fails, when you add or change
 a check, or when a size budget moves.
 
 `npm run verify` is exactly what CI runs (`ci.yml` calls it), and
-is the gate `/feature`, `add-topic`, `add-case-study` and `add-dsa-entry` run (the eval and audit skills run
-only the checks they name). The deploy workflow runs it too, so a
+is the final gate of every skill that changes the repo (the eval and audit
+skills run only the checks they name). The deploy workflow runs it too, so a
 commit that fails any check never goes live. The individual commands, if you need one:
 
 ```bash

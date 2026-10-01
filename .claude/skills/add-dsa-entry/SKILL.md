@@ -14,8 +14,9 @@ tests that have to reach the edge cases, a walkthrough that has to explain
 _why_ each line is written that way, complexity claims that have to hold, and
 prerequisites that have to be real. The review below checks each of those.
 See [docs/dsa.md](../../../docs/dsa.md) for the file layout, templates and
-rules, and [docs/SDLC.md](../../../docs/SDLC.md) for why content gets this
-lighter process.
+rules, and [docs/content-review.md](../../../docs/content-review.md) for the
+review stages every content skill shares and why content gets this lighter
+process.
 
 The entry's own tests are written in the same pass as its code (Stage 1).
 `/feature`'s locked-tests rule and `check:test-lock` don't apply here: nothing
@@ -61,7 +62,7 @@ tone and how a walkthrough explains a chunk.
    - **Prerequisites** links only the entries the prose really needs
      (`[Hash map](/dsa/hash-map)`), each with a phrase saying what it's needed
      for; with none, say so and name the basics assumed. Link only entries
-     that exist (`ls src/dsa/entries/`).
+     that exist (`ls src/dsa/entries/`) or, in batch mode, a batch-mate.
    - **Code chunks** are copied from the finished code files, in file order,
      as pairs: a ` ```python ` fence directly followed by a ` ```typescript `
      fence. Every non-blank line of each file appears once, in order.
@@ -96,90 +97,37 @@ and form no cycle), the entry's own vitest and pytest files, and
 `check:bundle` (the body stays out of the main chunk) catch the structural
 problems. An entry never needs a new test outside its own code folder.
 
-## Stage 3 — Independent review
+## Stages 3–4 — Review and final gate
 
-Spawn a **fresh** `general-purpose` agent (never `fork`: it must not inherit
-your own read of the draft). Give it: the entry's full content; the full
-content of its four code files; `docs/writing-standard.md`; the path of
-`docs/NON_NEGOTIABLES.md`; the titles and slugs of the existing entries (for
-a near-duplicate check); and this instruction, close to verbatim:
+Follow [docs/content-review.md](../../../docs/content-review.md) with:
 
-> Review this new DSA entry and its code adversarially against the Writing
-> Standard below and the DSA checklist after it; assume nothing about it is
-> fine until you've checked it yourself. Read docs/NON_NEGOTIABLES.md first;
-> a violation of any line there is always a real finding. Writing Standard:
-> are terms defined before they're used, would a reader with zero prior
-> background follow it, does it use concrete worked examples rather than
-> staying abstract, is the frontmatter `summary` one scannable sentence, does
-> the prose read as something a knowledgeable person wrote rather than
-> generically AI-patterned, is any figurative phrase over-explained, and is
-> every substantive technical claim actually true rather than confidently
-> stated. DSA checklist: (1) the code is correct in both languages: trace it
-> by hand on the entry's worked example and on the edge cases (empty input,
-> one element, duplicates, the boundaries), and flag any input it gets wrong;
-> (2) the code is idiomatic in each language rather than a transliteration of
-> the other; (3) the tests reach the edge cases, not just the happy path: name
-> any realistic bug (an off-by-one, a missed empty case) the tests would not
-> catch; (4) each walkthrough or implementation paragraph explains why its
-> lines are written that way, not only what they do; flag one that just
-> narrates; (5) every complexity claim is right, with its reason, and every
-> worked example's numbers are right: recompute them; (6) each prerequisite
-> is one the prose really needs, and nothing the prose relies on is missing
-> from the prerequisites; (7) every claim about a language, library or
-> standard function is true. Also check it isn't a near-duplicate of an
-> existing entry (listed below). For each finding, quote the text or code, or
-> name a realistic input that breaks it; label anything else "theoretical".
-> Re-raise a decision listed below as already made only with new evidence.
-> Do not edit any file; review only. Report findings ranked by severity,
-> quoting the text and saying what's wrong and what's true, or say explicitly
-> that you found nothing worth flagging.
-
-- No findings, or only cosmetic ones → done, go to Stage 4.
-- Real findings → finding triage, then fix. Confirm each against the files
-  yourself, and give it one of `/feature` Stage 4's outcomes; record each
-  Reject and Known limitation with a one-line reason in the handoff, and give
-  the re-review that list. A Reject must quote the text or code that
-  disproves the finding. Fix the rest yourself (a code fix changes the code
-  file and its chunk together, plus a test that would have caught it), then
-  re-run this stage with a new fresh agent on the updated files. **Cap at 2
-  rounds**, matching `add-topic`, `add-case-study` and `/feature`'s fix
-  loops. If findings persist after the second round, stop and surface them
-  to the user rather than continuing to iterate alone.
-
-## Stage 4 — Final gate
-
-Delete any `__pycache__` or `.pytest_cache` a manual pytest run left (the
-code-folder allowlist test fails on them), then re-run `npm run verify` on the
-final version and confirm it's green. Confirm
-`git status --porcelain -- src/content src/system-design` prints nothing (an
-entry never edits a topic or a case study). Summarize the entry and the review
-outcome for the user. Append a row for this run to
-[docs/pipeline-log.md](../../../docs/pipeline-log.md) (its header defines the
-columns; Run is `add-dsa-entry src/dsa/entries/<slug>.md`, Retro is `n/a`,
-Gate failures counts failed `verify` runs, Agents counts every agent you
-started, a batch drafter included), then run
-`npx prettier --write docs/pipeline-log.md` and `npm run check:pipeline-log`.
-The row goes in the entry's commit, together with the `.md` and the four code
-files. Ask before committing or pushing: this skill leaves the working tree
-ready, it doesn't ship it.
-
-## Batch mode — several entries at once
-
-The roadmap in docs/dsa.md is added in batches.
-
-1. Order the batch so every prerequisite is written before the entries that
-   link to it; an entry can only link to one that exists.
-2. One drafter agent per entry, in parallel, each in its own worktree
-   (`isolation: "worktree"`), runs Stages 0–2 only. A drafter whose entry
-   needs another entry from the same batch gets that entry's slug and title
-   and links to it; its own `verify` fails on the unknown prerequisite until
-   integration, which is expected and the only failure it may leave.
-3. Each entry gets one fresh Stage 3 reviewer, whose instruction adds:
-   "Report only High and Medium correctness findings."
-4. Its findings go through Stage 3's finding triage. You apply the fixes once,
-   with no re-review of that round (Fix rounds `1`); a High found then goes to
-   the user.
-5. Integrate: copy each entry's `.md` and code folder from its worktree, run
-   `npm run verify`, and add one pipeline-log row per entry.
-6. After the user's go-ahead, open one pull request for the batch, then remove
-   the worktrees and their `worktree-agent-*` branches.
+- **`<kind>`**: DSA entry and its code.
+- **Existing items**: the entries in `src/dsa/entries/`.
+- **Files**: the entry and its four code files, in full.
+- **`<checklist>`**: (1) the code is correct in both languages: trace it
+  by hand on the entry's worked example and on the edge cases (empty input,
+  one element, duplicates, the boundaries), and flag any input it gets wrong;
+  (2) the code is idiomatic in each language rather than a transliteration of
+  the other; (3) the tests reach the edge cases, not just the happy path: name
+  any realistic bug (an off-by-one, a missed empty case) the tests would not
+  catch; (4) each walkthrough or implementation paragraph explains why its
+  lines are written that way, not only what they do; flag one that just
+  narrates; (5) every complexity claim is right, with its reason, and every
+  worked example's numbers are right: recompute them; (6) each prerequisite
+  is one the prose really needs, and nothing the prose relies on is missing
+  from the prerequisites; (7) every claim about a language, library or
+  standard function is true.
+- **Fix step**: a code fix changes the code file and its chunk together,
+  plus a test that would have caught it.
+- **Pre-gate step**: delete any `__pycache__` or `.pytest_cache` a manual
+  pytest run left (the code-folder allowlist test fails on them).
+- **Scope check**: `git status --porcelain -- src/content src/system-design`
+  prints nothing (an entry never edits a topic or a case study).
+- **Commit**: the `.md` and the four code files, with the log row.
+- **Batch mode**: the roadmap in docs/dsa.md is added in batches. A drafter
+  whose entry needs another entry from the same batch gets that entry's slug
+  and title and links to it; its own `verify` fails on the unknown
+  prerequisite until integration, which is expected and the only failure it
+  may leave. Prerequisites can't form a cycle (`dsa.test.ts` checks), so plan
+  which batch-mate depends on which before drafting. There is no extra
+  integration step.

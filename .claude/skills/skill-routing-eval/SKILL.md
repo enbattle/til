@@ -5,41 +5,29 @@ description: Run this repo's skill-routing eval — checks whether a fresh sessi
 
 # Skill-routing eval
 
-Wraps the procedure in
-[`evals/skill-routing/HOW_TO_RUN.md`](../../../evals/skill-routing/HOW_TO_RUN.md)
-as an invokable skill for the same reason `docs-audit` is a skill and not
-just a markdown file someone has to remember exists: a procedure sitting
-in passive documentation only gets run if someone already knows to go
-find it, while a skill is surfaced to every session through the normal
-skill listing. Read `evals/README.md` for the full grading philosophy
-(some scenarios are ambiguous by design) before running this the first
-time.
+Given a task description, does a fresh session pick the skill this repo
+intends, or a direct edit? The scenarios are in
+[`evals/skill-routing/scenarios.md`](../../../evals/skill-routing/scenarios.md);
+read `evals/README.md` for the grading philosophy (some scenarios are
+ambiguous by design) before running this the first time.
 
 ## Stage 0 — Scope the run
 
-Running all scenarios is the default when asked to "run the eval" with no
-further qualifier, or after editing something with broad effect (e.g.
-`CLAUDE.md`'s general framing, a shared instruction all skills reference).
-
-Run **only the scenarios plausibly affected** when the trigger is
-narrower — e.g. only `add-topic`'s own `SKILL.md` changed, so only
-scenarios whose Expected answer depends on that file need re-checking.
-State which scenarios you're running and why before starting, the same
-way past runs in `evals/skill-routing/results/` explain their trigger.
+All scenarios by default, and after an edit with broad effect (`CLAUDE.md`'s
+general framing, an instruction every skill references). Run **only the
+scenarios plausibly affected** when the trigger is narrower: if only
+`add-topic`'s `SKILL.md` changed, only scenarios whose Expected answer
+depends on it. Say which you're running and why.
 
 ## Stage 1 — Run each in-scope scenario
 
-**The instruction below is this repo's single source of truth for the
-current list of valid routing targets.** `evals/skill-routing/HOW_TO_RUN.md`
-and `evals/README.md` both reference this list rather than restating it —
-when a skill is added or removed, this is the only place the list itself
-needs to change (this list has already gone stale twice from being
-hand-duplicated elsewhere, which is why nothing else repeats the full list now).
+**The instruction below is the single source of truth for the list of valid
+routing targets.** When a skill is added or removed, change it here only;
+nothing else repeats the list, since copies of it went stale twice.
 
-For each scenario in `evals/skill-routing/scenarios.md`, spawn a
-**fresh** `general-purpose` agent (never `fork` — it must not inherit
-this session's context or its guess at the expected answer). Give it
-only the scenario's prompt, verbatim, plus this instruction:
+For each scenario, spawn a **fresh** `general-purpose` agent (never `fork`:
+it must not inherit this session's context or its guess at the answer). Give
+it only the scenario's prompt, verbatim, inside this instruction:
 
 > You are a fresh Claude Code session that has just started working in
 > this repository. You have no other context beyond what's normally
@@ -54,29 +42,37 @@ only the scenario's prompt, verbatim, plus this instruction:
 > needed to inform that judgment. Report your routing decision and a
 > one-sentence reason why. Keep it under 100 words.
 
-Run independent scenarios in parallel (one message, multiple `Agent`
-calls) rather than sequentially.
+Run independent scenarios in parallel (one message, several `Agent` calls).
+Record each routing decision and its one-sentence reason.
 
 ## Stage 2 — Grade and log
 
-Compare each result to `scenarios.md`'s Expected (PASS / FAIL /
-AMBIGUOUS, per the grading rules in `evals/README.md` and
-`HOW_TO_RUN.md`). Log it in `evals/skill-routing/results/README.md` as
-`HOW_TO_RUN.md` step 5 says (a trend-table row, and the run's full log in
-place of the previous one).
+Grade each against the scenario's **Expected**:
 
-## Stage 3 — New skill? Add a scenario first
+- **PASS**: matches Expected, or one of the acceptable answers listed for an
+  ambiguous scenario, with defensible reasoning.
+- **FAIL**: doesn't match, or matches with reasoning that shows the right
+  rule wasn't applied (the right answer for the wrong reason: note it as a
+  near-miss).
+- **AMBIGUOUS**: you can't tell from the response. Say why; don't force a
+  grade.
 
-If this run was triggered by a _new_ skill being added to the repo,
-add a scenario for it to `scenarios.md` (a prompt that should route to
-it, per the format the existing scenarios use) before or as part of this
-run, then include that new scenario in Stage 1 — the same way `SR-09` was
-added the same day `docs-audit` was created.
+Log the run in `evals/skill-routing/results/README.md`: add a row to its
+trend table (date, trigger, counts, one-line note) and replace its "Latest
+run" section with this run's log: date, run by, trigger, a table of ID,
+routing decision, one-line reasoning and grade, then notes on anything that
+stood out. Git history keeps older logs.
+
+## Stage 3 — A new skill or a real misroute? Add a scenario first
+
+If a _new_ skill triggered this run, or a session's routing surprised you in
+real use, first add a scenario to `scenarios.md` in the existing format (the
+exact prompt, **Expected**, **Why**, **Fails if**) and include it. A scenario
+from something that actually happened beats several hypothetical ones.
 
 ## Stage 4 — Report
 
-Summarize for the user: which scenarios ran, the grades, anything
-surprising (a near-miss, reasoning that reveals the rule wasn't actually
-applied even though the label happened to match). Format-check the
-results file (`npm run format:check`) before considering this done. Ask
-before committing, same as always.
+Summarize for the user: which scenarios ran, the grades, and anything
+surprising (a near-miss, reasoning that shows the rule wasn't applied even
+though the label matched). Run `npm run format:check` on the results file.
+Ask before committing.

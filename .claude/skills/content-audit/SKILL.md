@@ -146,7 +146,7 @@ correctness claim that needs a judgment call the audit agent couldn't
 make on its own, resolve it yourself or ask the user rather than
 applying it blindly. A fix to a DSA entry's code changes the code file, the
 chunk quoted in the entry and a test that would have caught it together, as
-`add-dsa-entry` Stage 3 does.
+`add-dsa-entry`'s fix step does.
 
 ## Stage 4 — Final gate
 

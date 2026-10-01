@@ -6,51 +6,24 @@ features, and this covers practices for building the site itself
 (hooks, evals, CI gates, agent-workflow scaling) that were considered
 and explicitly **not** adopted, rather than never considered at all.
 
-**Why this file exists rather than just skipping these silently:** a
-solo, single-maintainer static site and a large engineering org solve
-different problems, and most of what follows is genuine best practice
-_at a scale this repo doesn't have_ — adopting it here would be exactly
-an "over-build ceremony before the basics are proven" anti-pattern.
-Recording the reasoning (not just the conclusion) means a future
-maintainer of this repo, or another repo using `til` as a reference, can
-tell "considered and rejected for a stated reason" apart from "never
-occurred to anyone," and can re-evaluate cheaply if the stated condition
-actually changes.
+Most of what follows is real best practice _at a scale this repo doesn't
+have_. Recording the reasoning lets a later session tell "considered and
+deferred for a stated reason" from "never occurred to anyone", and
+re-evaluate cheaply when the condition changes. The practices were reviewed
+against `til`'s tooling on 2026-09-16, from a Cursor engineering workshop
+("pstack") and Anthropic's
+[Claude Code best practices](https://code.claude.com/docs/en/best-practices).
 
-**Provenance:** the practices reviewed to produce this file came from a
-Cursor engineering workshop (Lauren Tan / "pstack" plugin, on building
-reliable AI-agent workflows in a production codebase) and Anthropic's own
-Claude Code best-practices guide
-(https://code.claude.com/docs/en/best-practices), reviewed against `til`'s
-actual SDLC tooling on 2026-09-16, plus additional practices common at
-larger engineering/AI organizations that came up in the same review. The
-practices that were adopted rather than deferred (the hex-color CI guard,
-`docs/SDLC.md`'s context-window note) are documented where they live, not
-repeated here.
+## Adding or using an entry
 
-## Adding an entry
-
-An entry belongs here only if a practice was **considered and deliberately
-not adopted yet**, usually because this repo doesn't yet have the scale or
-complexity that justifies it, with a **revisit when** that can be checked as
-true or false (or a plain statement of why there isn't one, as the
-session-hygiene entry gives). It is a reference for when the codebase grows
-into needing the practice, not a list of lessons or todos. A bug or a
-process gap found in a run is fixed in the place it lives (a check, a doc, a
-skill) and does not get an entry here; the `/feature` retrospective (Stage 6
-of `.claude/skills/feature/SKILL.md`) is where that decision gets made. When
-a revisit condition becomes true, adopt the practice and update or remove its
-entry rather than leaving a stale deferral (the header notes that adopted
-practices are documented where they live, not repeated here). Use the three-part format below.
-
-## How to use this file
-
-Each entry has three parts: **what it is**, **why it's deferred** (the
-actual reasoning, not just "not needed"), and **revisit when** (a
-concrete trigger condition, not "eventually"). Before adopting anything
-below, check whether the trigger condition is actually true now — most
-of these get worse, not better, if adopted before the condition that
-justifies them exists.
+An entry earns a place only when someone would otherwise propose the
+practice. Each has three parts: **what it is**, **why it's deferred** (the
+actual reasoning), and **revisit when** (a condition that can be checked as
+true or false). A bug or process gap found in a run is fixed where it lives
+(a check, a doc, a skill), not recorded here; the `/feature` retrospective
+decides that. Before adopting a practice, check that its condition is true
+now. When one becomes true, adopt the practice and update or remove its
+entry; adopted practices are documented where they live, not here.
 
 ---
 
@@ -72,9 +45,8 @@ of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk
 but only protects commits made through this exact hook config on this
 exact machine; it's trivially bypassed and duplicates gate logic that
-the skills already own (`/feature`, `add-topic`, `add-case-study` and
-`add-dsa-entry` each
-run `npm run verify` as their gate). The mechanism that
+the skills already own (every skill's final gate runs `npm run verify`).
+The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,
 doesn't fail open, can't be bypassed by local config. Branch protection is
@@ -91,40 +63,6 @@ fail-open problem is unchanged, so it stays deferred.
 commit that fails `verify` goes live despite the deploy gate, or red commits
 on `main` keep costing enough (broken history to bisect, reverts) that
 catching them before the push is worth the hook's complexity.
-
-### Token/compute cost tracking per agent task
-
-**What it is:** Measuring and logging token spend per verified
-successful task, not just raw agent output volume.
-
-**Why deferred:** Real advice for a team or org where inefficient agent
-usage compounds across many people and a shared budget. For a solo
-personal-site repo, there's no budget being pooled and no one else's
-spend to keep visible — the cost of a wasteful session is fully borne
-and immediately felt by the one person running it. When it is needed, the
-cheap first step is a cost column in [pipeline-log.md](pipeline-log.md)
-(agents spawned, rough tokens per run), not a metering system.
-**Revisit when:** Agent usage on this repo becomes heavy/frequent enough
-that cost becomes a real planning question, or if this repo is ever
-used as a template by a team where spend needs to be visible across
-people.
-
-### Git worktrees / `claude -p` fan-out for parallel agents
-
-**What it is:** Running many isolated Claude Code sessions in parallel
-across git worktrees or via scripted fan-out, each scoped with
-`--allowedTools`.
-
-**Why deferred:** Solves a scaling problem — coordinating many
-simultaneous agents — that a single-maintainer site doesn't have.
-`til`'s actual parallelism (e.g. running 5+ eval scenarios at once) is
-already handled by spawning subagents within one session, which is
-enough at this scale.
-**Revisit when:** A single task genuinely needs more simultaneous,
-independent agent work than subagents-within-a-session can reasonably
-provide — not just "more agents" as a goal in itself (the source
-research explicitly warns against optimizing for agent count/output
-volume).
 
 ### LLM-as-judge with a CI-gated automatic threshold
 
@@ -198,45 +136,6 @@ version of this same instinct, already covered by `CLAUDE.md`'s scope
 exclusions (tags, and no tracks or ordered curricula over the catalog); that's a product-scope call, not
 a process-tooling one, so it isn't repeated here.
 
-### Visual regression / end-to-end (Playwright) testing
-
-**What it is:** Automated screenshot diffing or browser-driven E2E tests
-run in CI on every change.
-**Why deferred:** Already an explicit, standing decision — `CLAUDE.md`'s
-"What's deliberately not built here" already excludes Playwright/E2E
-tests, with manual click-through via `npm run dev` as the accepted
-substitute. Listed here only for completeness against the source
-research, not because it's a new consideration.
-**Revisit when:** See `CLAUDE.md` directly — this isn't a
-process-tooling-specific trigger, it's the same one already governing
-product scope.
-
-### Signed commits / supply-chain provenance (commit signing, SLSA-style attestation)
-
-**What it is:** Cryptographically signing commits and/or attesting to a
-build's provenance, common at organizations shipping software other
-people's infrastructure depends on. (Pinning GitHub Actions to commit
-SHAs, from the same family, was adopted on 2026-09-24; see
-`.github/dependabot.yml`.)
-**Why deferred:** `til` is a static, read-only reference site with no
-downstream consumers depending on its supply chain integrity the way a
-library or a service would — the actual risk this defends against
-doesn't exist here yet.
-**Revisit when:** This repo starts shipping something other systems or
-people build on top of and trust (a published package, an API, a
-template other teams pull dependencies from).
-
-### Feature flags / progressive rollout
-
-**What it is:** Shipping code behind a runtime toggle, rolling out to a
-subset of traffic before full release.
-**Why deferred:** Structurally inapplicable — a statically-built,
-fully-deployed-on-push site has no concept of partial rollout or user
-segments to roll out to differently.
-**Revisit when:** `til` ever gains a deploy model with distinct
-audiences or gradual exposure — unlikely for a static personal site,
-but the condition, not "never," is what's recorded here.
-
 ### Prompt/spec diff-review enforcement (e.g., a hook flagging an eval scenario file edit)
 
 **What it is:** Treating changes to eval scenario files or skill prompts
@@ -252,39 +151,6 @@ repo where the existing skill discipline hasn't actually been skipped
 in practice.
 **Revisit when:** A scenario file is edited without a corresponding run
 in practice — evidence the existing discipline alone isn't holding.
-
-### PR templates with an embedded verification checklist
-
-**What it is:** A GitHub PR template listing the required verification
-commands as checkboxes, nudging a human reviewer/contributor.
-**Why deferred:** Solves a coordination problem between multiple
-people opening PRs against shared conventions. A solo maintainer
-opening their own PRs (if any) already has `CLAUDE.md` loaded by
-Claude Code automatically each session; a checklist duplicates
-information that's already the first thing read.
-**Revisit when:** Another contributor starts opening PRs against this
-repo who wouldn't otherwise see `docs/verification.md`.
-
-### Generic Claude Code session-hygiene advice (e.g., "kitchen sink session," "correcting over and over")
-
-**What it is:** Named failure patterns for how _a person_ should manage
-a single Claude Code session — clearing context between unrelated
-tasks, restarting after repeated failed corrections rather than
-continuing to patch a polluted context.
-**Why deferred (and why not just "add it to CLAUDE.md" as literal
-advice):** This is real, useful advice — but it's advice for how someone
-_works with_ Claude Code in general, not a fact about this repository.
-`CLAUDE.md`'s own discipline (documented in this same source material)
-says to exclude anything that's generic advice Claude would already
-know, on the grounds that a bloated file causes instructions to be
-ignored, not just wastes tokens. Recording this here rather than in
-`CLAUDE.md` is itself an application of that rule, not an oversight.
-**Revisit when:** Never, as a `CLAUDE.md` addition specifically — this
-entry exists for completeness against the source material, not because
-the trigger condition is expected to fire. If `til` ever needed
-repo-specific session-hygiene guidance (unlikely), that would be a
-different, genuinely repo-specific entry, not this one promoted
-verbatim.
 
 ### Aggregating friction across retrospectives
 

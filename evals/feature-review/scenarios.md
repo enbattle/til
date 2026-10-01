@@ -3,9 +3,9 @@
 Each scenario is a short spec and a diff against this repository's real code,
 exactly as `/feature`'s Stage 4 reviewer would receive them, with **exactly
 one** deliberately planted defect, or none for the control. The diffs are
-fixtures for this eval only: never apply them to the working tree. See
-`HOW_TO_RUN.md` for the procedure and grading, and `../README.md` for the
-general eval philosophy.
+fixtures for this eval only: never apply them to the working tree. The
+`feature-review-eval` skill has the procedure and grading, and `../README.md`
+the general eval philosophy.
 
 The planted defects are the kind a hurried implementer ships and a
 rubber-stamp review waves through: a subtle correctness bug, a quiet
@@ -259,7 +259,7 @@ diff (a real polish point). It fails if it reports a defect that isn't there.
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -195,3 +195,10 @@ export function recentTopics(count: number): Topic[] {
+@@ -195,3 +195,10 @@ export function getTopic(section: string, slug: string): Topic | undefined {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -309,7 +309,7 @@ acceptable.
 ## Triage scenarios
 
 These test Stage 4's finding triage, not the reviewer: each gives the triager
-a spec, a diff and one review finding (procedure in `HOW_TO_RUN.md`).
+a spec, a diff and one review finding (procedure in the skill's Stage 1).
 
 ### FR-06 — triage: a reachable finding
 
@@ -324,7 +324,7 @@ a spec, a diff and one review finding (procedure in `HOW_TO_RUN.md`).
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -195,3 +195,9 @@ export function recentTopics(count: number): Topic[] {
+@@ -195,3 +195,9 @@ export function getTopic(section: string, slug: string): Topic | undefined {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -365,7 +365,9 @@ Known limitation or Reject.
  import { TOPICS, getTopic, recentTopics, topicsBySection } from './content';
  import { neighbours } from './neighbours';
 +import { CASE_STUDIES } from './system-design';
-@@ -70,1 +71,9 @@ describe('content loader', () => {
+@@ -68,3 +69,10 @@ describe('content loader', () => {
+     }
+   });
  });
 +
 +describe('summaries', () => {
