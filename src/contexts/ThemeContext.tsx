@@ -1,18 +1,8 @@
-import { createContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { readStoredChoice, writeStoredChoice } from '@/lib/stored-choice';
-
-export type ThemePreference = 'light' | 'dark' | 'system';
-export type ResolvedTheme = 'light' | 'dark';
+import { ThemeContext, type ResolvedTheme, type ThemePreference } from './useTheme';
 
 const STORAGE_KEY = 'til-theme';
-
-export interface ThemeContextValue {
-  preference: ThemePreference;
-  resolved: ResolvedTheme;
-  setPreference: (preference: ThemePreference) => void;
-}
-
-export const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function getSystemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

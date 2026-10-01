@@ -17,6 +17,10 @@ npm run build
 npm run size && npm run check:bundle
 ```
 
+`npm run lint` runs oxlint with `--deny-warnings`, so a warning fails it like an
+error: a warning that prints on every run stops being read. Fix it, or silence
+one line with an `oxlint-disable-next-line` comment that says why.
+
 `npm run check:claude-md` fails if `CLAUDE.md` passes 150 lines or links to a
 file that doesn't exist. `CLAUDE.md` is loaded into every session and
 subagent on every turn, so it stays a router and detail lives in the docs it

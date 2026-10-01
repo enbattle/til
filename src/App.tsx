@@ -57,23 +57,25 @@ function SideNav({ className }: { className: string }) {
 }
 
 function AppShell() {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
+  // At most one overlay is open: search or the mobile nav.
+  const [overlay, setOverlay] = useState<'search' | 'nav' | null>(null);
   const { pathname } = useLocation();
+  // Defense in depth: a search result click (and a nav link click) already
+  // closes its own overlay before navigating, but any other route change
+  // (browser back/forward) closes it too, so a stale overlay is never left
+  // mounted over a different page. Reset during render when the path changes
+  // (React's pattern for adjusting state on a prop change), not in an effect.
+  // Focus restoration on close is handled inside SearchDialog/MobileNav
+  // (useFocusTrap).
+  const [overlayPath, setOverlayPath] = useState(pathname);
+  if (overlayPath !== pathname) {
+    setOverlayPath(pathname);
+    setOverlay(null);
+  }
+  const close = () => setOverlay(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [pathname]);
-
-  // Defense in depth: a search result click (and a nav link click) already
-  // closes its own overlay before navigating, but this also covers a route
-  // change from anything else (browser back/forward) while one happens to be
-  // open, so a stale overlay is never left mounted over a different page.
-  // Focus restoration on close is handled inside SearchDialog/MobileNav
-  // (useFocusTrap).
-  useEffect(() => {
-    setSearchOpen(false);
-    setNavOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -82,8 +84,7 @@ function AppShell() {
         (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
       if (isSearchShortcut) {
         event.preventDefault();
-        setNavOpen(false);
-        setSearchOpen(true);
+        setOverlay('search');
       }
     }
     window.addEventListener('keydown', onKeyDown);
@@ -93,11 +94,8 @@ function AppShell() {
   return (
     <div className="min-h-screen bg-bg-primary">
       <Header
-        onOpenSearch={() => setSearchOpen(true)}
-        onOpenNav={() => {
-          setSearchOpen(false);
-          setNavOpen(true);
-        }}
+        onOpenSearch={() => setOverlay('search')}
+        onOpenNav={() => setOverlay('nav')}
       />
       <div className="mx-auto flex max-w-5xl gap-8 px-4">
         <SideNav className="scrollbar-thin sticky top-[68px] hidden max-h-[calc(100vh-68px)] w-56 shrink-0 self-start overflow-y-auto overflow-x-hidden py-10 lg:block" />
@@ -141,8 +139,8 @@ function AppShell() {
           </ErrorBoundary>
         </main>
       </div>
-      {searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} />}
-      {navOpen && <MobileNav onClose={() => setNavOpen(false)} />}
+      {overlay === 'search' && <SearchDialog onClose={close} />}
+      {overlay === 'nav' && <MobileNav onClose={close} />}
     </div>
   );
 }

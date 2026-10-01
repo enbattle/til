@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom';
 import { SECTIONS, getSection } from '@/content/registry';
 import { TOPICS, recentTopics, topicsBySection } from '@/lib/content';
 import { TopicCard } from '@/components/TopicCard';
+// The site's one-line description; vite.config.ts fills index.html's meta tags
+// from the same field.
+import { description } from '../../package.json';
 
 export function HomePage() {
   const recent = recentTopics(5);
@@ -17,9 +20,8 @@ export function HomePage() {
           til
         </h1>
         <p className="mt-3 max-w-xl text-text-secondary">
-          A searchable reference of programming, systems, AI and learning topics, plus
-          worked System Design case studies for interview prep. {totalTopics}{' '}
-          {totalTopics === 1 ? 'topic' : 'topics'} so far, grouped into sections below.
+          {description} {totalTopics} {totalTopics === 1 ? 'topic' : 'topics'} so far,
+          grouped into sections below.
         </p>
       </section>
 

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "A searchable reference of programming, systems, AI and learning topics, plus worked System Design case studies for interview prep.",
+  "description": "A searchable reference of programming, systems, AI and learning topics, plus worked System Design case studies and data structures & algorithms entries for interview prep.",
   "homepage": "https://enbattle.github.io/til",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "oxlint",
+    "lint": "oxlint --deny-warnings",
     "typecheck": "tsc -b",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

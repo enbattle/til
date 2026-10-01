@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ThemePreference } from '@/contexts/ThemeContext';
-import { useTheme } from '@/contexts/useTheme';
+import { useTheme, type ThemePreference } from '@/contexts/useTheme';
 
 const NEXT: Record<ThemePreference, ThemePreference> = {
   light: 'dark',

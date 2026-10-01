@@ -4,30 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/til/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- This description is duplicated (by necessity — these SEO/social
-         tags can't reference another file) in package.json's "description"
-         and README.md's opening line, and repeated below in og:description and
-         twitter:description. Keep all five in sync by hand, and the home
-         page intro (src/pages/HomePage.tsx) close to it. -->
-    <meta
-      name="description"
-      content="A searchable reference of programming, systems, AI and learning topics, plus worked System Design case studies for interview prep."
-    />
+    <!-- %SITE_DESCRIPTION% is package.json's description, filled in at build
+         time by vite.config.ts's siteDescription plugin. -->
+    <meta name="description" content="%SITE_DESCRIPTION%" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf6f0" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#201a14" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="til" />
-    <meta
-      property="og:description"
-      content="A searchable reference of programming, systems, AI and learning topics, plus worked System Design case studies for interview prep."
-    />
+    <meta property="og:description" content="%SITE_DESCRIPTION%" />
     <meta property="og:url" content="https://enbattle.github.io/til/" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="til" />
-    <meta
-      name="twitter:description"
-      content="A searchable reference of programming, systems, AI and learning topics, plus worked System Design case studies for interview prep."
-    />
+    <meta name="twitter:description" content="%SITE_DESCRIPTION%" />
     <title>til</title>
     <!-- The faces requested here are also listed in src/main.tsx, which starts
          loading the ones only the lazy markdown bodies use at startup. A face
