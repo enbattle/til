@@ -225,7 +225,7 @@ coincides, so without the guard the walk would run off the end and crash.
   let walker = head;
   while (walker !== meet) {
     walker = walker!.next;
-    meet = meet.next;
+    meet = meet!.next;
   }
   return walker;
 }
@@ -237,8 +237,10 @@ longer hold and the pointers would meet somewhere else, or never. The walk
 stops the moment they are the same node, and that node is the cycle's start.
 When the whole list is one big cycle (the head is the start), `t` is 0, so the
 meeting node is the head itself, the two pointers coincide at once and the loop
-body never runs. The `walker!` in TypeScript is
-there for the same reason as `slow!` earlier.
+body never runs. The `walker!` and `meet!` in TypeScript are there for the same
+reason as `slow!` earlier: both pointers move around the cycle, so neither
+reaches `null`, but TypeScript can't prove that for a variable reassigned in a
+loop.
 
 ## Complexity
 

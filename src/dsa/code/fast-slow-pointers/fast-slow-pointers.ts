@@ -42,7 +42,7 @@ export function cycleStart(head: ListNode | null): ListNode | null {
   let walker = head;
   while (walker !== meet) {
     walker = walker!.next;
-    meet = meet.next;
+    meet = meet!.next;
   }
   return walker;
 }
