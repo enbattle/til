@@ -83,10 +83,13 @@ adds any ordering or integration step of its own.
    once. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
    out of the skill and its doc; reviewers run on Opus (`model: "opus"`),
    because catching a wrong claim is the step that needs the stronger model.
-   One Sonnet batch so far (DSA batch 3) drew about as many review findings as
-   the Opus batches before it. You link each worktree's `node_modules` to the
-   main checkout's (`cmd /c mklink /J` on Windows, `ln -s` elsewhere); a
-   drafter never modifies it.
+   The two Sonnet batches so far drew 1 High and 6 Mediums (DSA batch 3) and
+   0 and 10 (batch 4), against 0 and 7 for the last Opus batch, all fixed in
+   the prose. Each drafter runs `npm ci` in its own worktree first (under a
+   minute alone; not yet measured with a whole batch installing at once), so
+   no worktree shares the main checkout's `node_modules`. If `npm ci` fails,
+   the drafter stops and reports it rather than running checks without it,
+   since `npx` would then fetch a different version of the tool.
 2. Each item gets one fresh Stage 3 reviewer, whose instruction adds: "Report
    only High and Medium correctness findings." Its existing items include the
    batch-mates' titles and slugs, and it also gets the drafts of any
@@ -98,7 +101,4 @@ adds any ordering or integration step of its own.
    integration step, then run Stage 4 once for the batch (pre-gate steps,
    `npm run verify`, the scope check), with one pipeline-log row per item.
 5. After the user's go-ahead, open one pull request for the batch, then remove
-   the worktrees and their `worktree-agent-*` branches. Remove each
-   worktree's `node_modules` link first (`cmd /c rmdir node_modules` on
-   Windows, `rm node_modules` elsewhere): deleting a worktree with a Windows
-   junction still in it deletes the main checkout's `node_modules`.
+   the worktrees and their `worktree-agent-*` branches.
