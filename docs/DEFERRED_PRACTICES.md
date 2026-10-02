@@ -144,8 +144,8 @@ flags when `evals/**/scenarios.md` changes without a corresponding
 results-log entry.
 **Why deferred:** `til` already gets most of this benefit from
 the eval skills' own "add a scenario first" step ("add a
-scenario first, then run it") and the `nudge-sdlc` hook's existing
-reminder — adding a dedicated enforcement mechanism on top would be
+scenario first, then run it") and the `nudge-sdlc` hook's reminder on
+skill, hook and process-doc edits (it doesn't fire on `evals/` files) — adding a dedicated enforcement mechanism on top would be
 gating an already-lightly-gated process a second time for a solo
 repo where the existing skill discipline hasn't actually been skipped
 in practice.

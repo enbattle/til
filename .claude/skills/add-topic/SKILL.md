@@ -66,7 +66,7 @@ npm run verify
 
 `content.test.ts`, `registry.test.ts`, `system-design.test.ts` (a dead
 link from a case study), `catalog-gaps.test.ts` (which also fails on a dead
-link between systems topics) and `where-youll-meet-this.test.ts` already
+link in any topic or case-study body) and `where-youll-meet-this.test.ts` already
 catch structural problems (missing frontmatter field, section/registry
 mismatch, a systems topic without its closing "Where you'll meet this"
 section) — this stage is just confirming

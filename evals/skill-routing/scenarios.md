@@ -182,8 +182,8 @@ and unverified-technical-claim criteria. It's a full-corpus sweep of
 published content, which is a different axis from its neighbors:
 `docs-audit` covers meta-documentation (`CLAUDE.md`, `docs/`, `evals/`,
 `SKILL.md` files) staleness against current repo state, not the prose
-quality of published content; `add-topic` and `add-case-study` each review
-exactly one new file as part of writing it, not the entire existing corpus.
+quality of published content; `add-topic`, `add-case-study` and
+`add-dsa-entry` each review exactly one new item as part of writing it, not the entire existing corpus.
 **Fails if:** routed to `docs-audit` (wrong scope — meta-docs staleness,
 not topic-content quality), routed to `add-topic` (that skill's review
 pass covers a single new topic it's writing, not a sweep of everything
@@ -233,8 +233,8 @@ under `results/` still line up; don't reuse it.
 **Why:** Exact match for the skill's purpose: planted-defect diffs given to
 fresh reviewers running Stage 4's current instruction, graded against known
 defects and a clean control.
-**Fails if:** routed to `content-review-eval` (that checks `add-topic`'s
-prose review, not `/feature`'s code review), `skill-routing-eval` (checks
+**Fails if:** routed to `content-review-eval` (that checks the content
+skills' Stage 3 reviews, not `/feature`'s code review), `skill-routing-eval` (checks
 which skill gets picked, not whether a review catches defects), `/feature`
 itself, or done as an ad-hoc read of the reviewer prompt by the same session
 with no planted defect and no fresh reviewer, which can't show whether the
@@ -304,11 +304,15 @@ direct edit (a layout change plus a new guard is not a one-line fix).
 
 ### SR-18 — new DSA entry
 
-> Add the heap entry to DSA.
+> Add an LRU cache entry to DSA.
+
+(The prompt used to name the heap entry; that entry now exists, which made the
+prompt a request to edit an existing one. Keep the prompt naming an entry that
+doesn't exist yet.)
 
 **Expected:** `add-dsa-entry`
 **Why:** Exactly that skill's scope: a new file under `src/dsa/entries/` plus
-its Python and TypeScript code and tests under `src/dsa/code/heap/`, drafted
+its Python and TypeScript code and tests under `src/dsa/code/lru-cache/`, drafted
 to the data-structure template, checked by `npm run verify` (including
 `npm run test:py`), then reviewed by a fresh agent against the Writing
 Standard and the DSA checklist (code correct and idiomatic in both languages,

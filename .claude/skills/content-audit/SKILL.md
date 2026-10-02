@@ -51,8 +51,9 @@ roughly 10-15 files per agent is a reasonable target; adjust down if a
 section is unusually large. The case studies get batches of their
 own, split so each agent can read its share in full (each is 5,000–8,000
 words, so about three per agent); check 4 below applies to them. The DSA
-entries get a batch of their own too, since each comes with its code files and
-tests under `src/dsa/code/<slug>/`; check 6 below applies to them.
+entries get batches of their own too, about five entries per agent, since each
+comes with four code and test files under `src/dsa/code/<slug>/`; check 6
+below applies to them.
 
 ## Stage 2 — Independent audit, per batch
 
