@@ -77,7 +77,16 @@ don't ship it.
 adds any ordering or integration step of its own.
 
 1. One drafter agent per item, in parallel, each in its own worktree
-   (`isolation: "worktree"`), runs the skill's Stages 0–2 only.
+   (`isolation: "worktree"`), runs the skill's Stages 0–2 only, with Stage 2
+   replaced by the checks the skill's batch-mode bullet lists: several
+   `npm run verify` runs at once overload the machine, and step 4 runs it
+   once. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
+   out of the skill and its doc; reviewers run on Opus (`model: "opus"`),
+   because catching a wrong claim is the step that needs the stronger model.
+   One Sonnet batch so far (DSA batch 3) drew about as many review findings as
+   the Opus batches before it. You link each worktree's `node_modules` to the
+   main checkout's (`cmd /c mklink /J` on Windows, `ln -s` elsewhere); a
+   drafter never modifies it.
 2. Each item gets one fresh Stage 3 reviewer, whose instruction adds: "Report
    only High and Medium correctness findings." Its existing items include the
    batch-mates' titles and slugs, and it also gets the drafts of any
@@ -89,4 +98,7 @@ adds any ordering or integration step of its own.
    integration step, then run Stage 4 once for the batch (pre-gate steps,
    `npm run verify`, the scope check), with one pipeline-log row per item.
 5. After the user's go-ahead, open one pull request for the batch, then remove
-   the worktrees and their `worktree-agent-*` branches.
+   the worktrees and their `worktree-agent-*` branches. Remove each
+   worktree's `node_modules` link first (`cmd /c rmdir node_modules` on
+   Windows, `rm node_modules` elsewhere): deleting a worktree with a Windows
+   junction still in it deletes the main checkout's `node_modules`.

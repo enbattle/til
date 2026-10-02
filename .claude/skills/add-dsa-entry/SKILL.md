@@ -123,10 +123,12 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **Scope check**: `git status --porcelain -- src/content src/system-design`
   prints nothing (an entry never edits a topic or a case study).
 - **Commit**: the `.md` and the four code files, with the log row.
-- **Batch mode**: the roadmap in docs/dsa.md is added in batches. A drafter
-  whose entry needs another entry from the same batch gets that entry's slug
-  and title and links to it; its own `verify` fails on the unknown
-  prerequisite until integration, which is expected and the only failure it
-  may leave. Prerequisites can't form a cycle (`dsa.test.ts` checks), so plan
+- **Batch mode**: the roadmap in docs/dsa.md is added in batches. A drafter's
+  Stage 2 is `npm run typecheck`, `npm run test:py`,
+  `npx vitest run src/dsa/code/<slug> src/dsa/dsa-structure.test.ts src/dsa/dsa-code-chunks.test.ts src/lib/dsa.test.ts`,
+  and Prettier and oxlint on its files. A drafter whose entry needs another
+  entry from the same batch gets that entry's slug and title and links to it;
+  `dsa.test.ts` then fails on the unknown prerequisite until integration,
+  which is expected and the only failure it may leave. Prerequisites can't form a cycle (`dsa.test.ts` checks), so plan
   which batch-mate depends on which before drafting. There is no extra
   integration step.
