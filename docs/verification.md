@@ -163,14 +163,9 @@ chunk's limit deliberately rather than letting it drift unnoticed. The limits
 live in `package.json`, and the commit history records each raise with its
 measured numbers.
 
-The main chunk used to carry every topic body (search indexed them at load), so
-each new topic grew it: its limit was raised three times for content alone, up
-to 183 KB (179 KB brotlied). Loading bodies on demand is done: the main chunk
-is now well under its 104 KB limit (`npm run size` prints the current
-figure) (it was 100 KB until the eager
-System Design question pages were replaced by lazily loaded case studies), and
-each topic, case-study and DSA entry body is its own chunk. Adding content no longer
-touches it; a case study's topic links reach it as a small build-time list (the
+The main chunk carries no content bodies: each topic, case-study and DSA entry body is
+its own chunk, loaded on demand, and `npm run size` prints the main chunk's
+current size against its limit. Adding content doesn't touch it; a case study's topic links reach it as a small build-time list (the
 `?links` query), not as text. What still grows it is app code.
 `npm run check:bundle` guards the split itself: after a build it fails if a
 topic's, case study's or DSA entry's body text is in the main chunk, or in no
