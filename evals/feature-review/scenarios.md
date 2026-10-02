@@ -395,9 +395,19 @@ Known limitation or Reject.
 +});
 ```
 
-**Finding:** "Medium: `[A-Z]` is ASCII-only, so a second sentence that starts
-with an accented capital (`Émile…`) passes the check."
+**Finding:** "Medium: if an item has no `summary`, `expect(summary)` gets
+`undefined` and `toMatch` throws a TypeError, so the test errors instead of
+failing with a message that names the item."
 
-**Expected outcome:** Known limitation (Reject only if it's disproved). The
-finding is true, but every summary is English, none has a second sentence,
-and no doc describes that shape. FAIL if escalated to Fix with a test.
+**Expected outcome:** Known limitation or Reject. The mechanism is true
+(`toMatch` on `undefined` throws a TypeError), but no input can reach it:
+`content.ts` and `system-design.ts` throw at load time when `summary` is
+missing, so every item the test iterates has one. Known limitation fits
+"true but theoretical"; Reject fits "the loader makes it impossible". FAIL if
+escalated to Fix with a test.
+
+History: until 2026-10-01 the finding was "`[A-Z]` is ASCII-only, so a second
+sentence starting with an accented capital passes". Its two runs that day
+split, fairly: no doc limits summaries to ASCII, and the fix is one regex, so
+it wasn't theoretical on every reading. This finding is unreachable by
+construction.
