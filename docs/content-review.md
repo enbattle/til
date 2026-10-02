@@ -83,11 +83,11 @@ adds any ordering or integration step of its own.
    once. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
    out of the skill and its doc; reviewers run on Opus (`model: "opus"`),
    because catching a wrong claim is the step that needs the stronger model.
-   The two Sonnet batches so far drew 1 High and 6 Mediums (DSA batch 3) and
-   0 and 10 (batch 4), against 0 and 7 for the last Opus batch, all fixed in
-   the prose. Each drafter runs `npm ci` in its own worktree first (under a
-   minute alone; not yet measured with a whole batch installing at once), so
-   no worktree shares the main checkout's `node_modules`. If `npm ci` fails,
+   Five Sonnet-drafted DSA batches drew review findings comparable to the Opus
+   ones before them (the pipeline log has the counts). Each drafter runs
+   `npm ci` in its own worktree first (under 30 seconds, even with six
+   installing at once), so no worktree shares the main checkout's
+   `node_modules`. If `npm ci` fails,
    the drafter stops and reports it rather than running checks without it,
    since `npx` would then fetch a different version of the tool.
 2. Each item gets one fresh Stage 3 reviewer, whose instruction adds: "Report

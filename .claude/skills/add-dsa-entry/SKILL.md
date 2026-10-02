@@ -1,6 +1,6 @@
 ---
 name: add-dsa-entry
-description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add the heap entry to DSA", "write up sliding window", "the next batch of DSA entries") — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking or revising the writing of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
+description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add an LRU cache entry to DSA", "write up a difference-array entry", "add these three DSA entries") — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking or revising the writing of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
 ---
 
 # Add a DSA entry
@@ -123,7 +123,7 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **Scope check**: `git status --porcelain -- src/content src/system-design`
   prints nothing (an entry never edits a topic or a case study).
 - **Commit**: the `.md` and the four code files, with the log row.
-- **Batch mode**: the roadmap in docs/dsa.md is added in batches. A drafter's
+- **Batch mode**: several entries can be added at once. A drafter's
   Stage 2 is `npm run typecheck`, `npm run test:py`,
   `npx vitest run src/dsa/code/<slug> src/dsa/dsa-structure.test.ts src/dsa/dsa-code-chunks.test.ts src/lib/dsa.test.ts`,
   and Prettier and oxlint on its files. A drafter whose entry needs another
