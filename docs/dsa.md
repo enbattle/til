@@ -89,7 +89,7 @@ example, a `text` diagram in `What it is`) aren't compared.
 
 The code files:
 
-- `<slug_underscored>.py`: Python 3.11+ (CI runs 3.12), standard library only,
+- `<slug_underscored>.py`: Python 3.11+ (CI pins its version in `ci.yml`), standard library only,
   with type hints. `<slug>.ts`: no imports, exported functions or classes.
   Both idiomatic for their language rather than a transliteration of each
   other; the APIs match in shape (`lower_bound` / `lowerBound`).
@@ -167,19 +167,8 @@ Catalog topics and case studies don't link back.
 
 ## Scope
 
-The tab holds 42 entries, all written. Adding one beyond these is a scope
-decision for the user, not a gap; a new entry still goes through the
-`add-dsa-entry` skill.
-
-- **Data structures (12):** dynamic array, strings, linked list, stack, queue
-  and deque, hash map, heap and priority queue, binary tree, binary search
-  tree, trie, graph, union-find. No segment trees or Fenwick trees.
-- **Patterns (22):** two pointers, sliding window, prefix sums, fast and slow
-  pointers, monotonic stack, intervals, top-k with a heap, two heaps, k-way
-  merge, tree depth-first search, tree breadth-first search, graph
-  breadth-first search, graph depth-first search, backtracking, greedy, bit
-  manipulation, and dynamic programming split into six: one dimension, grids,
-  knapsack, two sequences, intervals, and state machines.
-- **Algorithms (8):** binary search, merge sort, quicksort and quickselect,
-  bucket and counting sort, topological sort, Dijkstra, Bellman-Ford, Prim and
-  Kruskal.
+The tab covers data structures, patterns and algorithms at interview depth;
+`src/dsa/entries/` and each file's `kind` are the list. Segment trees and
+Fenwick trees are deliberately left out. Adding an entry is a scope decision
+for the user, not a gap; a new entry still goes through the `add-dsa-entry`
+skill.

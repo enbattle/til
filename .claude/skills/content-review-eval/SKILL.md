@@ -36,7 +36,11 @@ scenario, read fresh, never from a cached copy:
 - `docs/writing-standard.md`;
 - the existing items for the near-duplicate check: the scenario's
   **Section**'s topics (`ls src/content/<section>/`) for `CR-*`, the case
-  studies for `CS-*`, the entries for `DS-*`.
+  studies for `CS-*`, the entries for `DS-*`. If a published item shares the
+  draft's slug (the `DS-*` base is a Prefix Sums entry, which now exists), leave
+  it out and tell the reviewer the draft is a rewrite of that item and that it
+  must not open the published file (comparing the two would expose the planted
+  line); otherwise a true near-duplicate finding confounds every grade.
 
 Build the draft as `scenarios.md` says (a `CS-*` or `DS-*` scenario is its
 base plus the scenario's replacements). Then spawn a **fresh**

@@ -48,3 +48,5 @@ Scope: the scenarios whose Expected answer depends on those two skills, SR-15 to
 Notes: every agent cited the skill descriptions' own exclusions, not keyword matches. Scenario prompts that name content can go stale as the content gets written; check that the named item still doesn't exist before each run.
 
 After the docs audit then changed `add-dsa-entry`'s description (its routing examples named entries that now exist), SR-18 was re-run once more: still `add-dsa-entry` (PASS).
+
+A follow-up edit to the bodies of `add-dsa-entry` and `content-review-eval` (no description changed) was checked with SR-12 and SR-18: SR-12 still routes to `content-review-eval` (PASS); SR-18 passed above, and the `add-dsa-entry` edit is to its Stage 1 body only.

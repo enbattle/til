@@ -87,7 +87,9 @@ adds any ordering or integration step of its own.
    ones before them (the pipeline log has the counts). Each drafter runs
    `npm ci` in its own worktree first (under 30 seconds, even with six
    installing at once), so no worktree shares the main checkout's
-   `node_modules`. If `npm ci` fails,
+   `node_modules`. Worktrees start from `main`, not from your branch, so start
+   a batch only after the user has merged the batch it builds on and you have
+   pulled `main`. If `npm ci` fails,
    the drafter stops and reports it rather than running checks without it,
    since `npx` would then fetch a different version of the tool.
 2. Each item gets one fresh Stage 3 reviewer, whose instruction adds: "Report

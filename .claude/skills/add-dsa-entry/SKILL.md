@@ -54,7 +54,10 @@ files: they set the depth, the tone and how a walkthrough explains a chunk.
    case (nothing found, a missing key), and where there's a brute-force or
    standard-library answer, compare against it on many seeded random inputs.
    Run `npm run test:py` and `npx vitest run src/dsa/code/<slug>` until both
-   pass, and check that a deliberately broken line makes each fail.
+   pass, and check that a deliberately broken line makes each fail. Break a
+   returned value or a comparison outside any loop header, never what decides
+   whether a loop ends (its condition, or the step that moves it forward): a
+   loop that never ends hangs the test run instead of failing it.
 3. **Entry.** `src/dsa/entries/<slug>.md`, slug kebab-case. Frontmatter
    `title`, a one-sentence `summary`, `date` (today) and `kind`. The `##`
    headings are the kind's template from docs/dsa.md, exactly. Then:
