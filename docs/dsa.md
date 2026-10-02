@@ -167,7 +167,7 @@ Catalog topics and case studies don't link back.
 
 ## Roadmap
 
-The tab's planned end state is 42 entries. Twenty-six are written; the rest are
+The tab's planned end state is 42 entries. Thirty-two are written; the rest are
 added in batches with the `add-dsa-entry` skill. Names are working titles.
 
 - **Data structures (12):** array and dynamic array (done), string (done),
@@ -179,11 +179,11 @@ added in batches with the `add-dsa-entry` skill. Names are working titles.
   (done), fast and slow pointers (done), monotonic stack (done), intervals
   (done), top-k with a heap (done), two heaps (done), k-way merge (done), tree
   depth-first search (done), tree breadth-first search (done), graph
-  breadth-first search (done), graph depth-first search (done), backtracking,
-  greedy, bit
-  manipulation, and dynamic programming split into six: one-dimensional,
-  grids, knapsack, two sequences (longest common subsequence, edit distance),
-  intervals, and state machines.
+  breadth-first search (done), graph depth-first search (done), backtracking
+  (done), greedy (done), bit manipulation (done), and dynamic programming split
+  into six: one-dimensional (done), grids (done), knapsack (done), two
+  sequences (longest common subsequence, edit distance), intervals, and state
+  machines.
 - **Algorithms (8):** binary search (done), merge sort, quicksort and
   quickselect, bucket and counting sort, topological sort, Dijkstra,
   Bellman-Ford, Prim and Kruskal.
