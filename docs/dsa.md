@@ -93,6 +93,12 @@ The code files:
   with type hints. `<slug>.ts`: no imports, exported functions or classes.
   Both idiomatic for their language rather than a transliteration of each
   other; the APIs match in shape (`lower_bound` / `lowerBound`).
+- The slug's underscored form must not be a Python standard-library module
+  name (`py -c "import sys; print('queue' in sys.stdlib_module_names)"`).
+  pytest puts each code folder first on the import path, so a `queue.py` or
+  `string.py` either loses to the standard module already imported or shadows
+  it for every later import in the run. Name the entry instead: `dynamic-array`,
+  `strings`, `queue-and-deque`.
 - `test_<slug_underscored>.py` (pytest) and `<slug>.test.ts` (vitest) import
   the real code files and cover the edge cases, not only the happy path: empty
   input, duplicates, the boundaries, and a comparison against a brute-force
@@ -161,11 +167,12 @@ Catalog topics and case studies don't link back.
 
 ## Roadmap
 
-The tab's planned end state is 42 entries. Three are written; the rest are
+The tab's planned end state is 42 entries. Eight are written; the rest are
 added in batches with the `add-dsa-entry` skill. Names are working titles.
 
-- **Data structures (12):** array and dynamic array, string, linked list,
-  stack, queue and deque, hash map (done), heap and priority queue, binary
+- **Data structures (12):** array and dynamic array (done), string (done),
+  linked list (done), stack (done), queue and deque (done), hash map (done),
+  heap and priority queue, binary
   tree, binary search tree, trie, graph, union-find. No segment trees or
   Fenwick trees.
 - **Patterns (22):** two pointers (done), sliding window, prefix sums, fast
