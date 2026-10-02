@@ -165,25 +165,21 @@ Nothing checks catalog links or see-also `/dsa/` links in DSA entries, so
 confirm each target exists (`ls src/content/*/`, `ls src/dsa/entries/`).
 Catalog topics and case studies don't link back.
 
-## Roadmap
+## Scope
 
-The tab's planned end state is 42 entries. Thirty-two are written; the rest are
-added in batches with the `add-dsa-entry` skill. Names are working titles.
+The tab holds 42 entries, all written. Adding one beyond these is a scope
+decision for the user, not a gap; a new entry still goes through the
+`add-dsa-entry` skill.
 
-- **Data structures (12):** array and dynamic array (done), string (done),
-  linked list (done), stack (done), queue and deque (done), hash map (done),
-  heap and priority queue (done), binary tree (done), binary search tree
-  (done), trie (done), graph (done), union-find (done). No segment trees or
-  Fenwick trees.
-- **Patterns (22):** two pointers (done), sliding window (done), prefix sums
-  (done), fast and slow pointers (done), monotonic stack (done), intervals
-  (done), top-k with a heap (done), two heaps (done), k-way merge (done), tree
-  depth-first search (done), tree breadth-first search (done), graph
-  breadth-first search (done), graph depth-first search (done), backtracking
-  (done), greedy (done), bit manipulation (done), and dynamic programming split
-  into six: one-dimensional (done), grids (done), knapsack (done), two
-  sequences (longest common subsequence, edit distance), intervals, and state
-  machines.
-- **Algorithms (8):** binary search (done), merge sort, quicksort and
-  quickselect, bucket and counting sort, topological sort, Dijkstra,
-  Bellman-Ford, Prim and Kruskal.
+- **Data structures (12):** dynamic array, strings, linked list, stack, queue
+  and deque, hash map, heap and priority queue, binary tree, binary search
+  tree, trie, graph, union-find. No segment trees or Fenwick trees.
+- **Patterns (22):** two pointers, sliding window, prefix sums, fast and slow
+  pointers, monotonic stack, intervals, top-k with a heap, two heaps, k-way
+  merge, tree depth-first search, tree breadth-first search, graph
+  breadth-first search, graph depth-first search, backtracking, greedy, bit
+  manipulation, and dynamic programming split into six: one dimension, grids,
+  knapsack, two sequences, intervals, and state machines.
+- **Algorithms (8):** binary search, merge sort, quicksort and quickselect,
+  bucket and counting sort, topological sort, Dijkstra, Bellman-Ford, Prim and
+  Kruskal.
