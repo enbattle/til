@@ -167,13 +167,13 @@ Catalog topics and case studies don't link back.
 
 ## Roadmap
 
-The tab's planned end state is 42 entries. Eight are written; the rest are
+The tab's planned end state is 42 entries. Fourteen are written; the rest are
 added in batches with the `add-dsa-entry` skill. Names are working titles.
 
 - **Data structures (12):** array and dynamic array (done), string (done),
   linked list (done), stack (done), queue and deque (done), hash map (done),
-  heap and priority queue, binary
-  tree, binary search tree, trie, graph, union-find. No segment trees or
+  heap and priority queue (done), binary tree (done), binary search tree
+  (done), trie (done), graph (done), union-find (done). No segment trees or
   Fenwick trees.
 - **Patterns (22):** two pointers (done), sliding window, prefix sums, fast
   and slow pointers, monotonic stack, intervals, top-k with a heap, two heaps,
