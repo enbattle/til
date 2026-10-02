@@ -167,7 +167,7 @@ Catalog topics and case studies don't link back.
 
 ## Roadmap
 
-The tab's planned end state is 42 entries. Fourteen are written; the rest are
+The tab's planned end state is 42 entries. Twenty are written; the rest are
 added in batches with the `add-dsa-entry` skill. Names are working titles.
 
 - **Data structures (12):** array and dynamic array (done), string (done),
@@ -175,10 +175,11 @@ added in batches with the `add-dsa-entry` skill. Names are working titles.
   heap and priority queue (done), binary tree (done), binary search tree
   (done), trie (done), graph (done), union-find (done). No segment trees or
   Fenwick trees.
-- **Patterns (22):** two pointers (done), sliding window, prefix sums, fast
-  and slow pointers, monotonic stack, intervals, top-k with a heap, two heaps,
-  k-way merge, tree depth-first search, tree breadth-first search, graph
-  breadth-first search, graph depth-first search, backtracking, greedy, bit
+- **Patterns (22):** two pointers (done), sliding window (done), prefix sums
+  (done), fast and slow pointers (done), monotonic stack (done), intervals
+  (done), top-k with a heap (done), two heaps, k-way merge, tree depth-first
+  search, tree breadth-first search, graph breadth-first search, graph
+  depth-first search, backtracking, greedy, bit
   manipulation, and dynamic programming split into six: one-dimensional,
   grids, knapsack, two sequences (longest common subsequence, edit distance),
   intervals, and state machines.
