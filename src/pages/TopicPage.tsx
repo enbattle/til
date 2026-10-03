@@ -3,8 +3,10 @@ import { getSection } from '@/content/registry';
 import { TOPICS, getTopic, loadTopicBody } from '@/lib/content';
 import { LazyBody } from '@/components/LazyBody';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { OnThisPage } from '@/components/OnThisPage';
 import { PageHeader } from '@/components/PageHeader';
 import { PrevNextNav } from '@/components/PrevNextNav';
+import { h2Headings } from '@/lib/headings';
 import { neighbours } from '@/lib/neighbours';
 import { caseStudiesForTopic } from '@/lib/system-design';
 
@@ -31,13 +33,15 @@ export function TopicPage() {
 
       {/* Keyed so moving between topics starts a fresh load instead of
           showing the previous topic's body until the new one arrives. The
-          navigation is passed as children so it appears only after the body. */}
+          section links and the navigation are passed as children so they
+          appear only after the body. */}
       <LazyBody
         key={`${topic.section}/${topic.slug}`}
         load={() => loadTopicBody(topic.section, topic.slug)}
       >
         {(body) => (
           <>
+            <OnThisPage headings={h2Headings(body)} />
             <MarkdownRenderer content={body} />
             {/* The way back from a System Design case study that uses this
                 topic. Generated from the case studies' own links at build

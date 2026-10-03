@@ -64,7 +64,7 @@ The body's `##` headings are exactly, in order
 
 An intro paragraph before `## Prerequisites` is fine. `hash-map.md`,
 `two-pointers.md` and `binary-search.md` are the reference examples for each
-kind. The page builds its Contents list from these headings with
+kind. The page builds its "On this page" list from these headings with
 `h2Headings`, as a case study does.
 
 ## Code pairs and the code files

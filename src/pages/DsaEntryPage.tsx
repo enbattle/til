@@ -1,7 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { Contents } from '@/components/Contents';
 import { LazyBody } from '@/components/LazyBody';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { OnThisPage } from '@/components/OnThisPage';
 import { PageHeader } from '@/components/PageHeader';
 import { PrevNextNav } from '@/components/PrevNextNav';
 import {
@@ -55,13 +55,13 @@ export function DsaEntryPage() {
         </nav>
       )}
 
-      {/* The body is its own lazily loaded chunk; the Contents list and the
+      {/* The body is its own lazily loaded chunk; the "On this page" list and the
           navigation under it wait for it (as on a case study page). Keyed so
           moving between entries starts a fresh load. */}
       <LazyBody key={entry.slug} load={() => loadDsaEntryBody(entry.slug)}>
         {(body) => (
           <>
-            <Contents headings={h2Headings(body)} />
+            <OnThisPage headings={h2Headings(body)} />
             <MarkdownRenderer content={body} codeTabs />
             <PrevNextNav
               label="More DSA entries"

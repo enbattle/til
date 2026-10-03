@@ -26,7 +26,8 @@ const DEFAULT_CLASSES =
 
 /**
  * A flat, numbered sidebar list of pages (`CaseStudyNav`, `DsaNav`). There's
- * nothing to expand, since each page has its own Contents list. Reused as
+ * nothing to expand, since each page has its own
+ * "On this page" list. Reused as
  * both the persistent desktop sidebar and the mobile overlay's content.
  */
 export function OrderedNav({

@@ -47,8 +47,8 @@ order: 1
   (`src/system-design/case-study-structure.test.ts`), and
   `High-level architecture` contains at least one diagram with alt text, such
   as `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page,
-  so the reference style counts too). The page builds its Contents
-  list from these headings, parsed with the renderer's own markdown stack and
+  so the reference style counts too). The page builds its "On this
+  page" list from these headings, parsed with the renderer's own markdown stack and
   heading-id pass (`h2Headings` in `src/lib/headings.ts`), so every entry links
   to the id its heading renders with; still, keep them plain text. The URL shortener
   (`url-shortener.md`) is the reference example to copy.

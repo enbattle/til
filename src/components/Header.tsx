@@ -16,7 +16,7 @@ interface HeaderProps {
 
 /**
  * Publishes the header's current height as `--header-height` on `<html>`, so
- * an in-page anchor (a case study's Contents link) can scroll its heading
+ * an in-page anchor (an "On this page" link) can scroll its heading
  * clear of this sticky header. The header wraps to two rows under `sm`, and to
  * three on the narrowest phones, so no fixed margin fits every width.
  */
@@ -52,7 +52,7 @@ export function Header({ onOpenSearch, onOpenNav }: HeaderProps) {
       ref={ref}
       className="sticky top-0 z-30 border-b border-border bg-bg-primary/95 backdrop-blur"
     >
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
+      <div className="mx-auto flex max-w-[90rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4">
         <div className="flex items-center gap-2">
           <button
             type="button"

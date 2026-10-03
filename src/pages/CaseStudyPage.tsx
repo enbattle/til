@@ -1,7 +1,7 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { Contents } from '@/components/Contents';
 import { LazyBody } from '@/components/LazyBody';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { OnThisPage } from '@/components/OnThisPage';
 import { PageHeader } from '@/components/PageHeader';
 import { PrevNextNav } from '@/components/PrevNextNav';
 import { h2Headings } from '@/lib/headings';
@@ -36,7 +36,7 @@ export function CaseStudyPage() {
       <LazyBody key={caseStudy.slug} load={() => loadCaseStudyBody(caseStudy.slug)}>
         {(body) => (
           <>
-            <Contents headings={h2Headings(body)} />
+            <OnThisPage headings={h2Headings(body)} />
             <MarkdownRenderer content={body} />
 
             {/* Generated from the body's own topic links (at build time), so a

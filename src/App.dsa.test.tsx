@@ -90,13 +90,22 @@ describe('DSA entry page (criterion 7)', () => {
     expect(chrome).toHaveTextContent(dsaKindLabel(entry.kind));
   });
 
-  it('has a Contents nav linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
+  it('has an "On this page" nav outside <main> linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
     const { main } = await openEntry('binary-search');
     const expected = h2Headings(dsaEntryBody('binary-search')).map((h) => h.text);
     expect(expected.length).toBeGreaterThan(0);
 
-    const contents = await within(main).findByRole('navigation', { name: 'Contents' });
-    const links = within(contents).getAllByRole('link');
+    const onThisPage = await waitFor(() => {
+      const navs = screen
+        .getAllByRole('navigation', { name: 'On this page' })
+        .filter((nav) => !main.contains(nav));
+      expect(navs).toHaveLength(1);
+      return navs[0];
+    });
+    expect(
+      screen.queryByRole('navigation', { name: 'Contents' }),
+    ).not.toBeInTheDocument();
+    const links = within(onThisPage).getAllByRole('link');
     expect(links.map((a) => a.textContent?.trim())).toEqual(expected);
 
     const prose = main.querySelector('.prose') as HTMLElement;

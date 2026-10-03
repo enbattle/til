@@ -49,9 +49,12 @@ describe('"Before this" with prerequisites (criterion 7)', () => {
     expect(
       before.compareDocumentPosition(prose) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    const contents = within(main).getByRole('navigation', { name: 'Contents' });
+    // The narrow-view "On this page" disclosure follows "Before this".
+    const onThisPage = within(main).getByRole('navigation', { name: 'On this page' });
+    const details = onThisPage.closest('details');
+    expect(details).not.toBeNull();
     expect(
-      before.compareDocumentPosition(contents) & Node.DOCUMENT_POSITION_FOLLOWING,
+      before.compareDocumentPosition(details!) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 

@@ -50,6 +50,12 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
   they navigate client-side and respect the GitHub Pages base path. An
   `https://` link renders as a normal new-tab external link, and an in-page
   `#heading-id` link as a plain same-tab anchor.
+- The topic page builds an "On this page" list from the body's `##`
+  headings: the right-hand nav from `xl` up, a collapsed disclosure above the
+  body below that (no list when there are no `##` headings). Each entry links
+  to the id its heading renders with (`h2Headings` in `src/lib/headings.ts`)
+  and shows the heading's text with any inline markdown stripped; still, keep
+  `##` headings plain text.
 
 ## Adding a topic to an existing section
 

@@ -10,8 +10,8 @@ import { CodeTabs } from './CodeTabs';
 import { Diagram } from './Diagram';
 
 /**
- * Keeps a heading clear of the sticky header when the browser jumps to it (a
- * Contents link or a `#id` URL): the header's measured height (`Header`
+ * Keeps a heading clear of the sticky header when the browser jumps to it (an
+ * "On this page" link or a `#id` URL): the header's measured height (`Header`
  * publishes it as `--header-height`; about 68px from `sm` up, about 105px at
  * 375px where the tabs wrap to a second row, more on the narrowest phones)
  * plus a little space. Before that runs, 8rem covers the two-row header.
@@ -117,8 +117,8 @@ const components: Components = {
     );
   },
   // Every h2 gets a stable id from `rehypeHeadingIds` (the same numbering the
-  // case-study Contents list links with), so a section can be linked to and
-  // the Contents anchors always land.
+  // "On this page" nav links with), so a section can be linked to and
+  // the nav's anchors always land.
   h2({ id, children }) {
     return (
       <h2 id={id} className={HEADING_SCROLL_MARGIN}>
