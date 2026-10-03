@@ -119,13 +119,22 @@ describe('case study page (criterion 8)', () => {
     ).toBeInTheDocument();
   });
 
-  it('has a Contents nav linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
+  it('has an "On this page" nav outside <main> linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
     const { main } = await openCaseStudy();
     const expected = h2Headings(caseStudyBody(SLUG)).map((h) => h.text);
     expect(expected.length).toBeGreaterThan(0);
 
-    const contents = await within(main).findByRole('navigation', { name: 'Contents' });
-    const links = within(contents).getAllByRole('link');
+    const onThisPage = await waitFor(() => {
+      const navs = screen
+        .getAllByRole('navigation', { name: 'On this page' })
+        .filter((nav) => !main.contains(nav));
+      expect(navs).toHaveLength(1);
+      return navs[0];
+    });
+    expect(
+      screen.queryByRole('navigation', { name: 'Contents' }),
+    ).not.toBeInTheDocument();
+    const links = within(onThisPage).getAllByRole('link');
     expect(links.map((a) => a.textContent?.trim())).toEqual(expected);
 
     const prose = main.querySelector('.prose') as HTMLElement;
@@ -143,12 +152,15 @@ describe('case study page (criterion 8)', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('places the Contents nav before the body', async () => {
+  it('places the "On this page" disclosure in <main> before the body', async () => {
     const { main } = await openCaseStudy();
-    const contents = await within(main).findByRole('navigation', { name: 'Contents' });
+    const onThisPage = await within(main).findByRole('navigation', {
+      name: 'On this page',
+    });
+    expect(onThisPage.closest('details')).not.toBeNull();
     const prose = main.querySelector('.prose') as HTMLElement;
     expect(
-      contents.compareDocumentPosition(prose) & Node.DOCUMENT_POSITION_FOLLOWING,
+      onThisPage.compareDocumentPosition(prose) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
@@ -276,8 +288,10 @@ describe('topic page back-links (criterion 10)', () => {
     expect(
       prose.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    // Every navigation in <main> but the "On this page" disclosure (which
+    // sits before the body) comes after the back-links.
     for (const other of within(main).getAllByRole('navigation')) {
-      if (other === nav) continue;
+      if (other === nav || other.closest('details')) continue;
       expect(
         nav.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();

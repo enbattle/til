@@ -41,8 +41,8 @@ export function LazyBody({
 }) {
   const [promise] = useState(load);
   const [state, setState] = useState<BodyState>({ status: 'loading' });
-  // The hash the page was opened with: a later in-page jump (a Contents link)
-  // is the browser's own and needs no help.
+  // The hash the page was opened with: a later in-page jump (an "On this
+  // page" link) is the browser's own and needs no help.
   const { hash: openedWith } = useLocation();
   const [hash] = useState(openedWith);
 

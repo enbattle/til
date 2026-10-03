@@ -22,8 +22,12 @@ notebook than a product. The UI follows that:
 - **Layout**: a persistent left-side section/topic nav (`SectionNav`, or
   `CaseStudyNav` on System Design routes and `DsaNav` on DSA routes — see
   "Case study navigation" and "DSA navigation" below)
-  alongside a centered content column (`max-w-3xl`), inside a wider
-  `max-w-5xl` shell. Above the `lg` breakpoint the nav is a sticky panel
+  alongside a reading column capped at 800px (`max-w-[50rem]`) at every
+  width, inside a 1440px shell (`max-w-[90rem]`, the header's inner row
+  shares the cap). From `xl` (1280px) the shell adds a 224px right column
+  after the reading column, on every route (empty on pages without sections,
+  so the reading column never moves sideways between pages), and space past
+  the three columns goes into the gaps, not the reading column. Above the `lg` breakpoint the nav is a sticky panel
   that scrolls with the page and then holds in place once it reaches its
   offset, with its own independent scroll region so it stays reachable
   on a long page instead of scrolling out of view; below it, the panel
@@ -73,13 +77,23 @@ notebook than a product. The UI follows that:
   (its number, hidden from screen readers since the `<ol>` already conveys
   order, then its title, wrapping rather than truncating), with the same bold
   plus accent-border current signal and `aria-current="page"`. There is
-  nothing to expand: each case study page carries its own **Contents** box
-  (a `<nav aria-label="Contents">` on `bg-secondary`, listing the body's
-  `##` sections as in-page anchors; the headings' `scroll-margin-top` is the
+  nothing to expand: each case study page (and each DSA entry and catalog
+  topic) carries its own **On this page** list (`OnThisPage`): the body's
+  `##` sections as in-page anchors, from `h2Headings`, in two copies of which
+  exactly one shows at any width. From `xl` it's a
+  `<nav aria-label="On this page">` portalled into the shell's right column (a plain `<div>` slot
+  provided through `PageAsideContext`, so an empty one adds no landmark),
+  sticky like the left nav with its own scroll, under a small uppercase label
+  styled like `OrderedNav`'s, its links in the left nav's non-current style
+  and no current-section highlighting. Below `xl` the same nav sits at the
+  top of the body in a native `<details>` on `bg-secondary`, closed by
+  default, whose `<summary>` reads "On this page". Both render inside
+  `LazyBody`'s children, so they appear once the body loads and unmount with
+  the page; a body with no `##` headings gets neither. The headings' `scroll-margin-top` is the
   sticky header's measured height plus 0.75rem, which `Header` publishes as
   `--header-height`, because the header's height varies with width: one row
   of about 68px from `sm` up, two rows of about 105px at 375px, three on the
-  narrowest phones. So the header never covers a heading a Contents link
+  narrowest phones. So the header never covers a heading an "On this page" link
   jumps to. The same goes for in-body links: a markdown link whose href
   starts with `#` (the "At a glance" section's links to headings) renders as
   a plain same-tab anchor, a `/…` link is a router `Link`, and an external
@@ -103,7 +117,7 @@ notebook than a product. The UI follows that:
   page show the entry's kind ("Data structure", "Pattern", "Algorithm") as
   text, never as a color alone. An entry page lists its prerequisites under
   the title as **Before this** (a `<nav aria-label="Before this">`, absent when
-  there are none), then the same Contents box as a case study.
+  there are none), then the same "On this page" list as a case study.
 - **Code tabs**: on a DSA entry page each Python/TypeScript code pair is one
   block (`CodeTabs`) with a two-tab `role="tablist"` ("Python",
   "TypeScript") over a single code block. It follows the WAI-ARIA tabs

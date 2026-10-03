@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { CodeLanguageProvider } from '@/contexts/CodeLanguageContext';
+import { PageAsideContext } from '@/contexts/usePageAside';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
@@ -31,6 +32,13 @@ const CaseStudyPage = lazy(() =>
 const DsaEntryPage = lazy(() =>
   import('@/pages/DsaEntryPage').then((m) => ({ default: m.DsaEntryPage })),
 );
+
+/** The two sticky side columns' shared classes. `px-1` keeps the 4px a focus
+ * ring takes (2px outline, 2px offset; `src/index.css`) inside the column,
+ * where `overflow-x-hidden` would otherwise clip it on the links' left and
+ * right edges. */
+const SIDE_COLUMN =
+  'scrollbar-thin sticky top-[68px] hidden max-h-[calc(100vh-68px)] w-56 shrink-0 self-start overflow-y-auto overflow-x-hidden px-1 py-10';
 
 /** The persistent sidebar: the case-study list on System Design routes, the
  * DSA list on DSA routes, the section tree everywhere else. (`MobileNav`
@@ -73,6 +81,9 @@ function AppShell() {
     setOverlay(null);
   }
   const close = () => setOverlay(null);
+  // The right column's element, held in state (via a callback ref) so pages
+  // rerender with it once it has mounted and can portal into it.
+  const [pageAside, setPageAside] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -97,47 +108,56 @@ function AppShell() {
         onOpenSearch={() => setOverlay('search')}
         onOpenNav={() => setOverlay('nav')}
       />
-      <div className="mx-auto flex max-w-5xl gap-8 px-4">
-        <SideNav className="scrollbar-thin sticky top-[68px] hidden max-h-[calc(100vh-68px)] w-56 shrink-0 self-start overflow-y-auto overflow-x-hidden py-10 lg:block" />
-        <main className="min-w-0 max-w-3xl flex-1 py-10">
-          {/* Keyed on pathname so navigating away from a page that errored
+      {/* From `xl`, the space past the 800px reading column and the two side
+          columns goes into the gaps (`justify-between`), not the column. */}
+      <div className="mx-auto flex max-w-[90rem] gap-8 px-4 xl:justify-between">
+        <SideNav className={`${SIDE_COLUMN} lg:block`} />
+        <PageAsideContext.Provider value={pageAside}>
+          <main className="min-w-0 max-w-[50rem] flex-1 py-10">
+            {/* Keyed on pathname so navigating away from a page that errored
               remounts a fresh boundary instead of staying stuck on the
               fallback for the rest of the session. */}
-          <ErrorBoundary key={pathname}>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/not-found" element={<NotFoundPage />} />
-              <Route path="/system-design" element={<SystemDesignPage />} />
-              <Route
-                path="/system-design/:slug"
-                element={
-                  <Suspense fallback={null}>
-                    <CaseStudyPage />
-                  </Suspense>
-                }
-              />
-              <Route path="/dsa" element={<DsaPage />} />
-              <Route
-                path="/dsa/:slug"
-                element={
-                  <Suspense fallback={null}>
-                    <DsaEntryPage />
-                  </Suspense>
-                }
-              />
-              <Route path="/:section" element={<SectionPage />} />
-              <Route
-                path="/:section/:slug"
-                element={
-                  <Suspense fallback={null}>
-                    <TopicPage />
-                  </Suspense>
-                }
-              />
-              <Route path="*" element={<Navigate to="/not-found" replace />} />
-            </Routes>
-          </ErrorBoundary>
-        </main>
+            <ErrorBoundary key={pathname}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/not-found" element={<NotFoundPage />} />
+                <Route path="/system-design" element={<SystemDesignPage />} />
+                <Route
+                  path="/system-design/:slug"
+                  element={
+                    <Suspense fallback={null}>
+                      <CaseStudyPage />
+                    </Suspense>
+                  }
+                />
+                <Route path="/dsa" element={<DsaPage />} />
+                <Route
+                  path="/dsa/:slug"
+                  element={
+                    <Suspense fallback={null}>
+                      <DsaEntryPage />
+                    </Suspense>
+                  }
+                />
+                <Route path="/:section" element={<SectionPage />} />
+                <Route
+                  path="/:section/:slug"
+                  element={
+                    <Suspense fallback={null}>
+                      <TopicPage />
+                    </Suspense>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/not-found" replace />} />
+              </Routes>
+            </ErrorBoundary>
+          </main>
+        </PageAsideContext.Provider>
+        {/* The right column: a page's "On this page" nav (OnThisPage portals
+            it in), sticky like the left nav. On every route, empty on pages
+            without sections, so the reading column never shifts between
+            pages. A plain div, so an empty one adds no landmark. */}
+        <div ref={setPageAside} className={`${SIDE_COLUMN} xl:block`} />
       </div>
       {overlay === 'search' && <SearchDialog onClose={close} />}
       {overlay === 'nav' && <MobileNav onClose={close} />}

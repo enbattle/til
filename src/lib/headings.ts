@@ -52,8 +52,8 @@ export function hastText(node: HastNode): string {
  * A rehype plugin that gives every h1 and h2 an id from its rendered text,
  * numbered in document order with `createHeadingIds` (duplicates become
  * `notes`, `notes-1`). `MarkdownRenderer` runs it on the tree it renders, and
- * `h2Headings` runs it on the same tree for the Contents list, so the two can't
- * disagree. It runs per render, so the numbering is fresh per body.
+ * `h2Headings` runs it on the same tree for the "On this page" nav, so the two
+ * can't disagree. It runs per render, so the numbering is fresh per body.
  */
 export function rehypeHeadingIds() {
   return (tree: HastNode) => {
@@ -79,9 +79,9 @@ const processor = markdownParser()
   .use(rehypeHeadingIds);
 
 /**
- * The Contents entries of a markdown body: every level-2 heading as it renders
- * (ATX `##` or setext `---`, anywhere the renderer puts one, with inline
- * markdown and entity references resolved), in order, with the id
+ * The "On this page" entries of a markdown body: every level-2 heading as it
+ * renders (ATX `##` or setext `---`, anywhere the renderer puts one, with
+ * inline markdown and entity references resolved), in order, with the id
  * `MarkdownRenderer` gives it. It parses with the renderer's own markdown
  * stack and heading-id pass, so it can't drift from the rendered ids. Level-1
  * headings (which the renderer shows as h2s too) take part in the numbering

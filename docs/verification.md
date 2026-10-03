@@ -146,8 +146,8 @@ run it after adding or editing a `.d2` file and commit what it writes. It is
 not part of `verify`, and CI never runs it.
 
 `npm run dev` for manual checking: click through the home page, a section,
-and a topic; open the System Design tab and a case study, follow a Contents
-link and open a diagram full size, and check that a topic the case study links
+and a topic; open the System Design tab and a case study, follow an "On this
+page" link and open a diagram full size, and check that a topic the case study links
 (e.g. `/systems-and-infrastructure/caching`) shows its "Used in these case
 studies:" back-link; toggle the theme and check the diagrams switch with it;
 open the DSA tab and an entry, switch a code block to TypeScript and reload
