@@ -63,7 +63,9 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   inputs that can change its outcome can be listed in full, the spec pins all
   of them (an allowlist), not a list of known-bad names, which is only as
   complete as the cases someone thought of. Where they can't (HTML sinks), the
-  spec says so and lists the vectors the guard must reject.
+  spec says so and lists the vectors the guard must reject. A guard over source
+  code matches parsed syntax (an AST), not a regex, as content checks use
+  `markdownParser()`.
 - A change to a script that is already locked (`docs/verification.md` lists
   them, e.g. `scripts/lib.mjs`) is assigned to the Stage 2 test-writer, which
   writes its planted cases first. A change that widens the lock shows its new
