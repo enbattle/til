@@ -28,6 +28,10 @@ per-script skip list; `ROOT` and `escapeRegExp` live there too.
 `check:raw-html` scans `.js`, `.jsx`, `.mjs`, `.ts` and `.tsx` under `src/`
 (minus tests), and `check:colors` scans `.ts`, `.tsx`, `.mjs` and `.css`;
 `.mjs` counts because `src/lib/markdown.mjs` ships to the browser.
+`check:raw-html` parses each file with `oxc-parser` and matches sinks in the
+syntax tree, not the text, so a file that doesn't parse fails the check; its
+header lists the forms it still can't see (aliasing, `Object.assign`,
+variable keys).
 
 `src/lib/text-encoding.test.ts` (part of `test:run`) fails on any tracked text
 file holding double-encoded UTF-8. That happens when a UTF-8 file is read as

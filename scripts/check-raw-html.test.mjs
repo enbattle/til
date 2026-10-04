@@ -2,6 +2,7 @@
 // Planted-violation tests for scripts/check-raw-html.mjs (NON_NEGOTIABLES #6).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { parseSync } from 'oxc-parser';
 import { afterEach, describe, expect, it } from 'vitest';
 import { markdownParser } from '../src/lib/markdown.mjs';
 import { cleanTemps, gitInit, run, tempDir } from '../src/test/guard-helpers.mjs';
@@ -48,7 +49,12 @@ export const SPAN_TABLE = {
     named: 'rehype-raw',
   },
   dangerouslySetInnerHTML: {
-    fixture: { src: { [BAD]: 'dangerouslySetInnerHTML={{}}' } },
+    fixture: {
+      src: {
+        [BAD]:
+          'export const B = ({ s }) => <div dangerouslySetInnerHTML={{ __html: s }} />;\n',
+      },
+    },
     named: 'dangerouslySetInnerHTML',
   },
   innerHTML: { fixture: { src: { [BAD]: 'el.innerHTML = html;' } }, named: '.innerHTML' },
@@ -200,6 +206,20 @@ const SINK_VARIANTS = {
     fixture: { src: { [BAD]: 'iframe.contentDocument!.writeln(html);' } },
     named: 'document.write',
   },
+  // docs/specs/raw-html-ast.md, criterion 6 and "Unwrapping": a parenthesized
+  // optional chain as the receiver or assignment target.
+  'R10 (iframe?.contentDocument).write': {
+    fixture: { src: { [BAD]: '(iframe?.contentDocument).write(html);' } },
+    named: 'document.write',
+  },
+  'R10 (frame?.contentWindow?.document).writeln': {
+    fixture: { src: { [BAD]: '(frame?.contentWindow?.document).writeln(html);' } },
+    named: 'document.write',
+  },
+  'R10 (el?.firstElementChild).innerHTML =': {
+    fixture: { src: { [BAD]: '(el?.firstElementChild).innerHTML = s;' } },
+    named: 'innerHTML',
+  },
 };
 
 // docs/specs/raw-html-sink-variants.md "Must pass": near-misses that must exit 0.
@@ -227,7 +247,214 @@ const NEAR_MISSES = {
   // "Review decisions", round 3: a cast to a type that isn't Document.
   'P8 (stream as Writable).write(s)': '(stream as Writable).write(s);',
   'P8 (doc as Docs).write(s)': '(doc as Docs).write(s);',
+  // docs/specs/raw-html-ast.md "Review decisions", round 1.
+  'P9 dangerouslySetInnerHTML in a comment only':
+    '// dangerouslySetInnerHTML is banned here\nexport {};',
+  'P9 stream.write.call(stream, s)': 'stream.write.call(stream, s);',
+  'P9 doc.write.bind(doc)': 'doc.write.bind(doc);',
+  "P9 const name = 'innerHTMLx'": "const name = 'innerHTMLx';",
+  // docs/specs/raw-html-ast.md "Review decisions", round 2: destructuring a
+  // method that isn't a sink, or from a receiver that isn't a document.
+  'P10 const { write } = stream': 'const { write } = stream;',
+  'P10 const { write: w } = fs': 'const { write: w } = fs;',
+  'P10 const { innerText } = el': 'const { innerText } = el;',
+  'P10 const { insertAdjacentText } = el': 'const { insertAdjacentText } = el;',
+  // docs/specs/raw-html-ast.md "Review decisions", round 3: nested
+  // destructuring under a parent key that isn't document-like, or of a
+  // property that isn't a sink.
+  'P11 const { stream: { write } } = x': 'const { stream: { write } } = x;',
+  'P11 const { a: { innerText } } = el': 'const { a: { innerText } } = el;',
 };
+
+// docs/specs/raw-html-ast.md, criterion 2: forms the regex version missed,
+// each of which must exit 1 naming the sink.
+const NEWLY_CAUGHT = {
+  'a comment between innerHTML and =': {
+    fixture: { src: { [BAD]: 'el.innerHTML /* c */ = s;' } },
+    named: 'innerHTML',
+  },
+  '[el.innerHTML] = [s]': {
+    fixture: { src: { [BAD]: '[el.innerHTML] = [s];' } },
+    named: 'innerHTML',
+  },
+  '({ h: el.outerHTML } = o)': {
+    fixture: { src: { [BAD]: '({ h: el.outerHTML } = o);' } },
+    named: 'outerHTML',
+  },
+  "document['write'](s)": {
+    fixture: { src: { [BAD]: "document['write'](s);" } },
+    named: 'document.write',
+  },
+  '(<Document>x).write(s) in a .ts file': {
+    fixture: { src: { 'components/Bad.ts': '(<Document>x).write(s);' } },
+    named: 'document.write',
+  },
+  'iframeDocument!!.write(s)': {
+    fixture: { src: { 'components/Bad.ts': 'iframeDocument!!.write(s);' } },
+    named: 'document.write',
+  },
+  "setAttributeNS(null, 'srcdoc', s)": {
+    fixture: { src: { [BAD]: "frame.setAttributeNS(null, 'srcdoc', s);" } },
+    named: 'srcdoc',
+  },
+  '<iframe {...{ srcDoc: s }} />': {
+    fixture: {
+      src: { [BAD]: 'export const F = ({ s }) => <iframe {...{ srcDoc: s }} />;\n' },
+    },
+    named: 'srcDoc',
+  },
+};
+
+// docs/specs/raw-html-ast.md "Review decisions", round 1: name references to
+// dangerouslySetInnerHTML, a comma-expression receiver, and references to a
+// sink method that aren't a direct call. Each must exit 1 naming the sink.
+const AST_ROUND_1 = {
+  "p['dangerouslySetInnerHTML'] = ... spread into JSX": {
+    fixture: {
+      src: {
+        [BAD]:
+          "const p = {}; p['dangerouslySetInnerHTML'] = { __html: s }; export const C = () => <div {...p} />;\n",
+      },
+    },
+    named: 'dangerouslySetInnerHTML',
+  },
+  'props.dangerouslySetInnerHTML = x': {
+    fixture: { src: { [BAD]: 'props.dangerouslySetInnerHTML = x;' } },
+    named: 'dangerouslySetInnerHTML',
+  },
+  "const k = 'dangerouslySetInnerHTML'": {
+    fixture: { src: { [BAD]: "const k = 'dangerouslySetInnerHTML';" } },
+    named: 'dangerouslySetInnerHTML',
+  },
+  'const k = `dangerouslySetInnerHTML`': {
+    fixture: { src: { [BAD]: 'const k = `dangerouslySetInnerHTML`;' } },
+    named: 'dangerouslySetInnerHTML',
+  },
+  '(0, document).write(s)': {
+    fixture: { src: { [BAD]: '(0, document).write(s);' } },
+    named: 'document.write',
+  },
+  'document.write`<b>${s}</b>`': {
+    fixture: { src: { [BAD]: 'document.write`<b>${s}</b>`;' } },
+    named: 'document.write',
+  },
+  'document.write.call(document, s)': {
+    fixture: { src: { [BAD]: 'document.write.call(document, s);' } },
+    named: 'document.write',
+  },
+  "el.insertAdjacentHTML.call(el, 'beforeend', s)": {
+    fixture: { src: { [BAD]: "el.insertAdjacentHTML.call(el, 'beforeend', s);" } },
+    named: 'insertAdjacentHTML',
+  },
+  "el.insertAdjacentHTML.apply(el, ['beforeend', s])": {
+    fixture: { src: { [BAD]: "el.insertAdjacentHTML.apply(el, ['beforeend', s]);" } },
+    named: 'insertAdjacentHTML',
+  },
+  'const f = el.insertAdjacentHTML': {
+    fixture: { src: { [BAD]: 'const f = el.insertAdjacentHTML;' } },
+    named: 'insertAdjacentHTML',
+  },
+};
+
+// docs/specs/raw-html-ast.md "Review decisions", round 2: a sink method pulled
+// off its receiver by destructuring. Each must exit 1 naming the sink.
+const AST_ROUND_2 = {
+  'const { write } = document; write(s)': {
+    fixture: { src: { [BAD]: 'const { write } = document; write(s);' } },
+    named: 'document.write',
+  },
+  'const { writeln: w } = iframe.contentDocument; w(s)': {
+    fixture: { src: { [BAD]: 'const { writeln: w } = iframe.contentDocument; w(s);' } },
+    named: 'document.write',
+  },
+  "const { insertAdjacentHTML: f } = el; f('beforeend', s)": {
+    fixture: {
+      src: { [BAD]: "const { insertAdjacentHTML: f } = el; f('beforeend', s);" },
+    },
+    named: 'insertAdjacentHTML',
+  },
+  'const { setHTMLUnsafe } = el': {
+    fixture: { src: { [BAD]: 'const { setHTMLUnsafe } = el;' } },
+    named: 'setHTMLUnsafe',
+  },
+};
+
+// docs/specs/raw-html-ast.md "Review decisions", round 3: a sink method pulled
+// out by nested destructuring. Each must exit 1 naming the sink.
+const AST_ROUND_3 = {
+  'const { contentDocument: { write } } = iframe': {
+    fixture: { src: { [BAD]: 'const { contentDocument: { write } } = iframe;' } },
+    named: 'document.write',
+  },
+  'const { document: { writeln } } = window': {
+    fixture: { src: { [BAD]: 'const { document: { writeln } } = window;' } },
+    named: 'document.write',
+  },
+  'const { a: { insertAdjacentHTML } } = x': {
+    fixture: { src: { [BAD]: 'const { a: { insertAdjacentHTML } } = x;' } },
+    named: 'insertAdjacentHTML',
+  },
+  'const { a: { b: { setHTMLUnsafe } } } = x': {
+    fixture: { src: { [BAD]: 'const { a: { b: { setHTMLUnsafe } } } = x;' } },
+    named: 'setHTMLUnsafe',
+  },
+};
+
+// docs/specs/raw-html-ast.md, criterion 3: forms the regex version wrongly
+// flagged, each of which must exit 0.
+const NO_LONGER_FLAGGED = {
+  'const srcDoc = x': 'const srcDoc = x;',
+  "function f(srcDoc = '') {}": "function f(srcDoc = '') {}",
+  "const { srcDoc = '' } = p": "const { srcDoc = '' } = p;",
+  'a sink in a line comment': '// el.innerHTML = s\nexport {};',
+  'a sink in a string': "const t = 'el.innerHTML = s';",
+  'a sink in a template literal': 'const t = `document.write(s)`;',
+  'a srcDoc type member': 'type P = { srcDoc?: string };',
+};
+
+// The allowed CodeBlock usage and the tooling-gaps plant, so the parse
+// assertion covers them too.
+const CODEBLOCK_FIXTURE = {
+  src: {
+    'components/CodeBlock.tsx':
+      'export const C = ({ __html }) => <pre dangerouslySetInnerHTML={{ __html }} />;\n',
+  },
+};
+const MJS_FIXTURE = {
+  src: { 'x.mjs': 'export const f = (el, s) => { el.innerHTML = s; };\n' },
+};
+
+/** Every planted source file in every table, as [label, filename, source]. */
+function plantedSources() {
+  const fixtures = [
+    ...Object.entries(SPAN_TABLE)
+      .filter(([, sink]) => sink)
+      .map(([label, { fixture }]) => [label, fixture]),
+    ...Object.entries(SCRIPT_ONLY_SINKS).map(([label, { fixture }]) => [label, fixture]),
+    ...Object.entries(SINK_VARIANTS).map(([label, { fixture }]) => [label, fixture]),
+    ...Object.entries(NEWLY_CAUGHT).map(([label, { fixture }]) => [label, fixture]),
+    ...Object.entries(AST_ROUND_1).map(([label, { fixture }]) => [label, fixture]),
+    ...Object.entries(AST_ROUND_2).map(([label, { fixture }]) => [label, fixture]),
+    ...Object.entries(AST_ROUND_3).map(([label, { fixture }]) => [label, fixture]),
+    ...Object.entries(NEAR_MISSES).map(([label, source]) => [
+      label,
+      { src: { [BAD]: source } },
+    ]),
+    ...Object.entries(NO_LONGER_FLAGGED).map(([label, source]) => [
+      label,
+      { src: { [BAD]: source } },
+    ]),
+    ['CodeBlock', CODEBLOCK_FIXTURE],
+    ['tooling-gaps x.mjs', MJS_FIXTURE],
+  ];
+  return fixtures.flatMap(([label, fixture]) =>
+    Object.entries(fixture.src ?? {}).map(([path, source]) => [
+      label,
+      `src/${path}`,
+      source,
+    ]),
+  );
+}
 
 /** Fails unless `spans` and SPAN_TABLE's keys are the same set, naming the
  * unclassified spans and the stale table entries. */
@@ -258,11 +485,17 @@ describe('check-raw-html', () => {
   const repo = (files) => check(files).status;
 
   it('passes clean code and the allowed CodeBlock usage', () => {
+    expect(repo(CODEBLOCK_FIXTURE)).toBe(0);
+  });
+
+  // docs/specs/raw-html-ast.md, criterion 1: every fixture is a valid program
+  // for the language its planted filename selects.
+  it.each(plantedSources())('the %s fixture (%s) parses', (_label, filename, source) => {
+    const { errors } = parseSync(filename, source);
     expect(
-      repo({
-        src: { 'components/CodeBlock.tsx': 'dangerouslySetInnerHTML={{ __html }}' },
-      }),
-    ).toBe(0);
+      errors.map((error) => error.message),
+      source,
+    ).toEqual([]);
   });
 
   // docs/specs/raw-html-sink-coverage.md: the test follows #6's own text.
@@ -304,9 +537,92 @@ describe('check-raw-html', () => {
   // docs/specs/tooling-gaps.md, criterion 3: src/lib/markdown.mjs ships to the
   // browser, so `.mjs` under src/ is app code too.
   it('fails on an innerHTML write in a planted src/x.mjs (tooling-gaps criterion 3)', () => {
+    expect(repo(MJS_FIXTURE)).toBe(1);
+  });
+
+  // docs/specs/raw-html-ast.md, criterion 2.
+  it.each(Object.entries(NEWLY_CAUGHT))(
+    'fails on %s, naming the sink on stderr (raw-html-ast criterion 2)',
+    (_form, { fixture, named }) => {
+      const result = check(fixture);
+      expect(result.status, result.stderr).toBe(1);
+      expect(
+        result.stderr
+          .split('\n')
+          .some((line) => line.toLowerCase().includes(named.toLowerCase())),
+        result.stderr,
+      ).toBe(true);
+    },
+  );
+
+  // docs/specs/raw-html-ast.md "Review decisions", round 1.
+  it.each(Object.entries(AST_ROUND_1))(
+    'fails on %s, naming the sink on stderr (raw-html-ast review round 1)',
+    (_form, { fixture, named }) => {
+      const result = check(fixture);
+      expect(result.status, result.stderr).toBe(1);
+      expect(
+        result.stderr
+          .split('\n')
+          .some((line) => line.toLowerCase().includes(named.toLowerCase())),
+        result.stderr,
+      ).toBe(true);
+    },
+  );
+
+  // docs/specs/raw-html-ast.md "Review decisions", round 2.
+  it.each(Object.entries(AST_ROUND_2))(
+    'fails on %s, naming the sink on stderr (raw-html-ast review round 2)',
+    (_form, { fixture, named }) => {
+      const result = check(fixture);
+      expect(result.status, result.stderr).toBe(1);
+      expect(
+        result.stderr
+          .split('\n')
+          .some((line) => line.toLowerCase().includes(named.toLowerCase())),
+        result.stderr,
+      ).toBe(true);
+    },
+  );
+
+  // docs/specs/raw-html-ast.md "Review decisions", round 3.
+  it.each(Object.entries(AST_ROUND_3))(
+    'fails on %s, naming the sink on stderr (raw-html-ast review round 3)',
+    (_form, { fixture, named }) => {
+      const result = check(fixture);
+      expect(result.status, result.stderr).toBe(1);
+      expect(
+        result.stderr
+          .split('\n')
+          .some((line) => line.toLowerCase().includes(named.toLowerCase())),
+        result.stderr,
+      ).toBe(true);
+    },
+  );
+
+  // docs/specs/raw-html-ast.md, criterion 3.
+  it.each(Object.entries(NO_LONGER_FLAGGED))(
+    'passes %s (raw-html-ast criterion 3)',
+    (_form, source) => {
+      const result = check({ src: { [BAD]: source } });
+      expect(result.status, result.stderr).toBe(0);
+    },
+  );
+
+  // docs/specs/raw-html-ast.md, criterion 4: unparseable code could hide a sink.
+  it('fails on a file that does not parse, naming it (raw-html-ast criterion 4)', () => {
+    const result = check({ src: { 'components/Broken.tsx': 'const = ;\n' } });
+    expect(result.status, result.stderr).toBe(1);
     expect(
-      repo({ src: { 'x.mjs': 'export const f = (el, s) => { el.innerHTML = s; };\n' } }),
-    ).toBe(1);
+      result.stderr
+        .split('\n')
+        .some(
+          (line) =>
+            line.includes('src/components/Broken.tsx') &&
+            line.includes('could not be parsed'),
+        ),
+      result.stderr,
+    ).toBe(true);
   });
 
   it('passes the real repository', () => {

@@ -65,7 +65,10 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   complete as the cases someone thought of. Where they can't (HTML sinks), the
   spec says so and lists the vectors the guard must reject. A guard over source
   code matches parsed syntax (an AST), not a regex, as content checks use
-  `markdownParser()`.
+  `markdownParser()`. Its vectors cover every way code can reach the sink, not
+  only spellings: e.g. a call, a bare reference (`.call`, an alias), an
+  assignment, a string or computed key, and destructuring at any depth,
+  parameters and `catch` included.
 - A change to a script that is already locked (`docs/verification.md` lists
   them, e.g. `scripts/lib.mjs`) is assigned to the Stage 2 test-writer, which
   writes its planted cases first. A change that widens the lock shows its new
