@@ -84,8 +84,16 @@ notebook than a product. The UI follows that:
   `<nav aria-label="On this page">` portalled into the shell's right column (a plain `<div>` slot
   provided through `PageAsideContext`, so an empty one adds no landmark),
   sticky like the left nav with its own scroll, under a small uppercase label
-  styled like `OrderedNav`'s, its links in the left nav's non-current style
-  and no current-section highlighting. Below `xl` the same nav sits at the
+  styled like `OrderedNav`'s, its links in the left nav's non-current style.
+  The section being read gets the left nav's current signal (bold plus the
+  accent border) and `aria-current="location"` in both copies, from one
+  `useCurrentHeading` state: the last `##` heading whose top has reached its
+  own `scroll-margin-top` (plus 2px), so a link jump marks its section, or
+  the last heading once the page is scrolled to the bottom (only when the
+  page can scroll, so a page that fits the viewport doesn't mark its last
+  heading on load); none above the first heading. It recomputes at most once per animation frame on a window
+  `scroll` or `resize` and only reads layout, never scrolling the window,
+  so it can't disturb `LazyBody`'s `keepInView`. Below `xl` the same nav sits at the
   top of the body in a native `<details>` on `bg-secondary`, closed by
   default, whose `<summary>` reads "On this page". Both render inside
   `LazyBody`'s children, so they appear once the body loads and unmount with
