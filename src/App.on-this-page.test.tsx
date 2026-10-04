@@ -109,9 +109,15 @@ describe.each(PAGES)('On this page on a $kind', ({ path, title, body }) => {
     const list = nav.querySelector('ol');
     expect(list).not.toBeNull();
     expect(list).not.toHaveClass('list-decimal');
+    // jsdom does no layout, so the scroll-spy (docs/specs/on-this-page-scroll-
+    // spy.md) may mark a link current here; that one is covered by
+    // App.on-this-page-scroll-spy.test.tsx, and every other link keeps the
+    // non-current style.
     for (const link of within(nav).getAllByRole('link')) {
       expect(list!.contains(link)).toBe(true);
-      expect(link).toHaveClass('border-l-2', 'border-transparent', 'hover:border-accent');
+      expect(link).toHaveClass('border-l-2');
+      if (link.hasAttribute('aria-current')) continue;
+      expect(link).toHaveClass('border-transparent', 'hover:border-accent');
     }
   });
 
