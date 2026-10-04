@@ -97,7 +97,9 @@ this instruction, close to verbatim:
 > requires new seed content to test against. Do not write or modify
 > any implementation file. Run the suite yourself when done and confirm the
 > new tests fail — report exactly which tests are red and why (missing
-> implementation, not a typo in the test).
+> implementation, not a typo in the test). A file that can't import a module
+> nothing implements yet is red as a whole and hides each test's own reason,
+> so a test that doesn't need that module goes in a file that doesn't import it.
 
 **Gate** (you run it):
 
@@ -108,7 +110,8 @@ npm run typecheck               # every error is a name the spec introduces but 
 npx prettier --check <changed test and fixture files> && npx oxlint <changed test files>   # no later stage may fix a locked file
 ```
 
-If an implementation file changed or the new tests pass immediately, re-run
+If an implementation file changed, or a new test passes immediately or is red
+for a reason other than missing implementation, re-run
 this stage with a corrected instruction. Cap: **2 corrected re-runs**, then
 go to the user (the criteria probably aren't testable as written). An edited
 existing test only has to fail if the edit encodes the new behavior.
@@ -135,8 +138,10 @@ npm run check:test-lock -- --verify   # lists exactly what the re-run changed
 ```
 
 Every listed path must be one the report named (or a fixture it depends on);
-a corrected test needn't fail. Re-take the snapshot and spawn a **fresh**
-implementer. Cap: **2 re-runs per feature**; a third wrong-test report goes
+a corrected test needn't fail. Re-take the snapshot and run Stage 3's gate.
+Green, and the earlier implementer's report covers its docs and any spec
+deviations: go on to Stage 4. Otherwise spawn a **fresh** implementer, which
+counts toward Stage 3's cap of 2. Cap: **2 re-runs per feature**; a third wrong-test report goes
 to the user as a spec problem.
 
 ## Stage 3 — Implementation (green) + docs
