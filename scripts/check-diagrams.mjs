@@ -40,7 +40,7 @@
 //
 // The manifest format is documented in scripts/diagram-manifest.mjs, which
 // this shares with render-diagrams.mjs. Set CHECK_DIAGRAMS_ROOT to check
-// another directory (the planted-violation tests in checks.test.mjs do).
+// another directory (the planted-violation tests in check-diagrams*.test.mjs do).
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import {

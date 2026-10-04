@@ -1,0 +1,24 @@
+{
+  "light": {
+    "bg-primary": "#faf6f0",
+    "bg-secondary": "#f2ebe0",
+    "bg-tertiary": "#ece2d3",
+    "text-primary": "#2b2420",
+    "text-secondary": "#5c5147",
+    "text-tertiary": "#6e6356",
+    "border": "#ddd1bf",
+    "accent": "#92400e",
+    "accent-soft": "#f3e3c8"
+  },
+  "dark": {
+    "bg-primary": "#201a14",
+    "bg-secondary": "#2a231b",
+    "bg-tertiary": "#342c22",
+    "text-primary": "#f2e9dc",
+    "text-secondary": "#c9bba6",
+    "text-tertiary": "#a39683",
+    "border": "#3d3428",
+    "accent": "#f0a83c",
+    "accent-soft": "#3d2f16"
+  }
+}

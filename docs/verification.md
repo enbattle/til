@@ -58,7 +58,7 @@ after Stage 2 (a config part the snapshot lacks counts as `added`):
 
 - every test file, vitest or pytest, including `conftest.py` and pytest's
   config files (`.pytest.ini` and `.pytest.toml` among them), everything under
-  `src/test/` (the shared setup and render helpers) and every vitest snapshot
+  `src/test/` (the shared setup, render and guard-test helpers) and every vitest snapshot
   (`__snapshots__/*.snap`);
 - the test runners' config: any `vitest.config.*` or `vitest.workspace.*`
   file, the `test` block of `vite.config.ts`, the `test*`

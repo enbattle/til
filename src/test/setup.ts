@@ -12,34 +12,38 @@ import '@testing-library/jest-dom/vitest';
 // findBy at 5s. Vitest's own testTimeout (vite.config.ts) is 15s, above this.
 configure({ asyncUtilTimeout: 10000 });
 
-// jsdom doesn't implement scrollTo — App.tsx calls it on every route change.
-window.scrollTo = () => {};
+// The DOM polyfills below only apply under jsdom. The guard tests under
+// scripts/ declare `// @vitest-environment node`, where there is no window.
+if (typeof window !== 'undefined') {
+  // jsdom doesn't implement scrollTo — App.tsx calls it on every route change.
+  window.scrollTo = () => {};
 
-// jsdom doesn't implement matchMedia — ThemeContext calls it to read the
-// system color-scheme preference, so any test rendering ThemeProvider needs
-// this polyfilled or it throws.
-if (!window.matchMedia) {
-  window.matchMedia = (query: string) =>
-    ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    }) as unknown as MediaQueryList;
+  // jsdom doesn't implement matchMedia — ThemeContext calls it to read the
+  // system color-scheme preference, so any test rendering ThemeProvider needs
+  // this polyfilled or it throws.
+  if (!window.matchMedia) {
+    window.matchMedia = (query: string) =>
+      ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+      }) as unknown as MediaQueryList;
+  }
+
+  // jsdom does no real layout, so `offsetParent` is always null — code that
+  // uses it as an "is this actually visible" check (useFocusTrap's focusable-
+  // elements filter) would otherwise see every element as hidden. Not a
+  // faithful polyfill of real offsetParent semantics, just enough for an
+  // attached element to read as non-null.
+  Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+    get() {
+      return this.parentElement;
+    },
+    configurable: true,
+  });
 }
-
-// jsdom does no real layout, so `offsetParent` is always null — code that
-// uses it as an "is this actually visible" check (useFocusTrap's focusable-
-// elements filter) would otherwise see every element as hidden. Not a
-// faithful polyfill of real offsetParent semantics, just enough for an
-// attached element to read as non-null.
-Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
-  get() {
-    return this.parentElement;
-  },
-  configurable: true,
-});

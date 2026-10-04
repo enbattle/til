@@ -1,7 +1,8 @@
+// @vitest-environment node
 // docs/specs/dsa-tab.md, criteria 12 and 15: pytest runs as part of
 // `npm run verify` (and so in CI and the deploy), from a pinned
 // requirements-dev.txt, on a Python that the workflows set up.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   existsSync,
@@ -14,7 +15,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 // Vitest runs from the repository root.
 const ROOT = resolve('.');
@@ -101,8 +102,10 @@ describe('scripts/test-python.mjs', () => {
   // docs/specs/dsa-tab.md, criterion 13: nothing outside the locked files can
   // make the runner pass a failing test. Each case runs the real runner in a
   // throwaway copy of the repository whose only test fails, plants one way
-  // to hijack pytest, and asserts the run still fails.
-  describe('against a failing test', () => {
+  // to hijack pytest, and asserts the run still fails. The cases run
+  // concurrently (each owns its own copy), since each one waits on a pytest
+  // run.
+  describe.concurrent('against a failing test', () => {
     function copy(fixed = false) {
       const root = mkdtempSync(join(tmpdir(), 'til-runner-'));
       const code = join(root, 'src/dsa/code/x');
@@ -125,32 +128,54 @@ describe('scripts/test-python.mjs', () => {
       return root;
     }
 
+    // Asynchronous, so the concurrent cases' pytest runs overlap.
     function runner(root, env = {}) {
-      return spawnSync(process.execPath, [join(root, 'scripts/test-python.mjs')], {
-        cwd: root,
-        encoding: 'utf8',
-        env: { ...process.env, ...env },
+      return new Promise((done, fail) => {
+        const child = spawn(process.execPath, [join(root, 'scripts/test-python.mjs')], {
+          cwd: root,
+          env: { ...process.env, ...env },
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.setEncoding('utf8').on('data', (chunk) => (stdout += chunk));
+        child.stderr.setEncoding('utf8').on('data', (chunk) => (stderr += chunk));
+        child.on('error', fail);
+        child.on('close', (status) => done({ status, stdout, stderr }));
       });
     }
 
-    function withCopy(fixed, body) {
+    async function withCopy(fixed, body) {
       const root = copy(fixed);
       try {
-        body(root);
+        await body(root);
       } finally {
         rmSync(root, { recursive: true, force: true });
       }
     }
 
-    it('passes when the code is right', () => {
-      withCopy(true, (root) => {
-        const result = runner(root);
-        expect(result.status, `${result.stdout}${result.stderr}`).toBe(0);
+    // One run of the runner on a copy whose code is right, shared by the two
+    // tests that only assert different things about it (its exit status, and
+    // what it leaves behind).
+    let fixed;
+    beforeAll(async () => {
+      await withCopy(true, async (root) => {
+        const result = await runner(root);
+        const left = readdirSync(root, { recursive: true }).filter((path) =>
+          /(^|[\\/])(__pycache__|\.pytest_cache)$/.test(String(path)),
+        );
+        fixed = { result, left };
       });
     });
 
-    it('fails when a test fails', () => {
-      withCopy(false, (root) => expect(runner(root).status).not.toBe(0));
+    it('passes when the code is right', () => {
+      const { result } = fixed;
+      expect(result.status, `${result.stdout}${result.stderr}`).toBe(0);
+    });
+
+    it('fails when a test fails', async () => {
+      await withCopy(false, async (root) =>
+        expect((await runner(root)).status).not.toBe(0),
+      );
     });
 
     it.each([
@@ -176,33 +201,29 @@ describe('scripts/test-python.mjs', () => {
         'src/dsa/code/pyproject.toml',
         '[tool.pytest.ini_options]\naddopts = "--co"\n',
       ],
-    ])('still fails with %s', (_label, path, content) => {
-      withCopy(false, (root) => {
+    ])('still fails with %s', async (_label, path, content) => {
+      await withCopy(false, async (root) => {
         writeFileSync(join(root, path), content);
-        expect(runner(root).status).not.toBe(0);
+        expect((await runner(root)).status).not.toBe(0);
       });
     });
 
     it.each([
       ['PYTEST_ADDOPTS=--co', { PYTEST_ADDOPTS: '--co' }],
       ['PYTEST_PLUGINS set to a plugin that exits 0', { PYTEST_PLUGINS: 'exitzero' }],
-    ])('still fails with %s in the environment', (_label, env) => {
-      withCopy(false, (root) => {
+    ])('still fails with %s in the environment', async (_label, env) => {
+      await withCopy(false, async (root) => {
         // A plugin importable from the working directory; the runner must
         // neither load it via PYTEST_PLUGINS nor let the directory onto sys.path.
         writeFileSync(join(root, 'exitzero.py'), 'raise SystemExit(0)\n');
-        expect(runner(root, env).status).not.toBe(0);
+        expect((await runner(root, env)).status).not.toBe(0);
       });
     });
 
     it('leaves no __pycache__ or .pytest_cache behind', () => {
-      withCopy(true, (root) => {
-        expect(runner(root).status).toBe(0);
-        const left = readdirSync(root, { recursive: true }).filter((path) =>
-          /(^|[\\/])(__pycache__|\.pytest_cache)$/.test(String(path)),
-        );
-        expect(left).toEqual([]);
-      });
+      const { result, left } = fixed;
+      expect(result.status).toBe(0);
+      expect(left).toEqual([]);
     });
   });
 });

@@ -34,18 +34,16 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-03 | /feature Stage 2 and re-run edits; add-dsa-entry ordering rule (#53) | 5    | 0    | 0         | Scoped run; SR-17 prompt refreshed (sticky nav now exists).  |
 | 2026-10-04 | add-dsa-entry step 2: the randomized-test convention                 | 2    | 0    | 0         | SR-17 and SR-18; SR-17 prompt refreshed again.               |
 | 2026-10-04 | /feature Stage 1 UI-criteria bullet; Stage 6 severity-first retro    | 4    | 0    | 0         | Scoped run: SR-01, SR-05, SR-07, SR-17.                      |
+| 2026-10-04 | /feature: where a guard's planted cases live (test split)            | 1    | 0    | 0         | SR-01 only; the edit can't change routing.                   |
 
-## Latest run: 2026-10-04, /feature Stage 1 and Stage 6 edits
+## Latest run: 2026-10-04, where a guard's planted cases live
 
 Run by: self
-Trigger: the escaped-defect retro of `docs/specs/focus-not-obscured.md` edited `/feature`'s body. Stage 1 gains a bullet: UI criteria cover viewport extremes and the DESIGN.md accessibility items the change touches, and an interactive component names its WAI-ARIA pattern. Stage 6 now judges each issue's severity first, and fixes one a stage let through on its first occurrence when it's user-visible, breaks a non-negotiable or falls under a published standard. `docs/SDLC.md` changed to match. No description or routing rule changed.
-Scope: the scenarios whose Expected answer depends on `/feature`: SR-01, SR-05 (its triage-first rule is Stage 0), SR-07 and SR-17.
+Trigger: `docs/specs/parallel-guard-tests.md` split `scripts/checks.test.mjs` into per-guard test files. `/feature`'s body (three places) now says a guard's planted-violation cases go in `scripts/<guard>.test.mjs`, and that NON_NEGOTIABLES #6's allowlist vector tables stay in `scripts/checks.test.mjs`. No description, routing rule or stage changed.
+Scope: the edit only says where test cases go inside a run already routed to `/feature`, so no scenario's Expected answer depends on it. SR-01 was run as a single `/feature` smoke check.
 
-| ID    | Routing decision      | Reasoning (1 line)                                                                                         | Grade |
-| ----- | --------------------- | ---------------------------------------------------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`            | Search-dialog behavior change needing design choices, keyboard and accessibility handling, and tests.      | PASS  |
-| SR-05 | Triage first (direct) | A bug of unknown size: reproduce and find the cause per `/feature` Stage 0, then route by what was found.  | PASS  |
-| SR-07 | `/feature`            | Computed metadata plus UI on cards and topic pages; content skills exclude app code.                       | PASS  |
-| SR-17 | `/feature`            | Page UI plus a diagram-check rule; `add-case-study` sends both to `/feature` (suggests two separate runs). | PASS  |
+| ID    | Routing decision | Reasoning (1 line)                                                                        | Grade |
+| ----- | ---------------- | ----------------------------------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`       | A search-dialog behavior change needing design choices and new tests; not a one-line fix. | PASS  |
 
-Notes: no near-misses. SR-17's agent added that the two halves are unrelated and would be better as two runs; the Expected answer allows that.
+Notes: none.

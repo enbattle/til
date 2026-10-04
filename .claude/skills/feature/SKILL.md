@@ -95,7 +95,9 @@ this instruction, close to verbatim:
 > Write tests covering every acceptance criterion in the spec above. Only
 > create or edit test files (any `*.test.*` or `*.spec.*` JS or TS file, such as
 > `*.test.ts`, `*.test.tsx` or `*.test.mjs`: what `check:test-lock` locks; a
-> guard script's planted-violation cases go in `scripts/checks.test.mjs`), a
+> guard script's planted-violation cases go in its own `scripts/<guard>.test.mjs`,
+> split further if large; NON_NEGOTIABLES #6's vector tables stay in
+> `scripts/checks.test.mjs`), a
 > new `test*` script in `package.json` and its `npm run` step in `verify` if
 > the tests need one, any locked script the spec assigns to you, and test fixture
 > content under `src/content/`, `src/system-design/` or `src/dsa/` only if the spec
@@ -190,7 +192,9 @@ Also:
   check, a CI step, a size or bundle assertion), plant the regression in a
   copy outside the working tree (`git worktree add` or `cp -R` into the
   scratchpad) and confirm it exits non-zero. Its planted cases belong in the
-  locked `scripts/checks.test.mjs`: Stage 2 wrote them if the spec planned the
+  guard's own locked test file under `scripts/` (`scripts/<guard>.test.mjs`;
+  allowlist vector tables stay in `scripts/checks.test.mjs`, NON_NEGOTIABLES #6):
+  Stage 2 wrote them if the spec planned the
   guard; otherwise report it and re-run Stage 2 for them before this gate
   passes.
 
@@ -300,7 +304,9 @@ Up to **2 rounds**, each in this order:
    re-take the snapshot. Any other change to a locked file goes here too,
    since a fixer may not touch one: prose in a fixture, or a locked script
    (the lock's own, a runner). For a script, the brief names it as allowed;
-   the test-writer adds the planted case to `scripts/checks.test.mjs`, shows
+   the test-writer adds the planted case to that guard's test file under
+   `scripts/` (`scripts/<guard>.test.mjs`; allowlist vector tables stay in
+   `scripts/checks.test.mjs`, NON_NEGOTIABLES #6), shows
    it failing, then edits the script, and the gate accepts the script in
    `--verify`. These runs don't count against Stage 2's caps and aren't
    logged.
