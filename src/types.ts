@@ -54,3 +54,12 @@ export interface DsaEntry {
   date: string;
   kind: DsaKind;
 }
+
+/** One kind's entries, as the DSA nav and landing page group them
+ * (`groupDsaEntries` in `src/lib/dsa.ts`). */
+export interface DsaGroup {
+  kind: DsaKind;
+  /** The group's plural heading, e.g. "Data structures". */
+  heading: string;
+  entries: DsaEntry[];
+}

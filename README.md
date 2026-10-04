@@ -24,8 +24,8 @@ sections, and the whole thing is deployed as a static site.
   are written in [D2](https://d2lang.com) and rendered at build time to
   static SVGs in the site's own colors, one per theme.
 - **DSA** — a third tab of data structures, patterns and algorithms at
-  interview depth, listed so that each entry comes after the ones it builds
-  on. Every code example is shown in Python and TypeScript (one switch sets
+  interview depth, grouped by those three kinds, with each group listed so
+  that an entry comes after the ones in it that it builds on. Every code example is shown in Python and TypeScript (one switch sets
   the language for the whole site and is remembered), and the code is the
   same code the entry's own tests run, with vitest and pytest.
 - **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's, case

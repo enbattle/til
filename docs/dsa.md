@@ -151,14 +151,26 @@ really needs it; with none, say so in prose (the structure test fails an empty
 section). A `/dsa/` link anywhere else in the body is a "see also" and doesn't
 count.
 
-`DSA_ENTRIES`, which orders the landing page, the sidebar and prev/next, is a
-topological order over prerequisites: every prerequisite comes before the
-entries that need it, and ties go by kind (data structures, then patterns,
-then algorithms), then title. A prerequisite cycle, a link to an entry that
-doesn't exist, or an entry listing itself throws at load time, naming the
-entries. Only the vitest tests that import `DSA_ENTRIES` catch it; `vite build`
-alone doesn't run that code, but `verify` still fails because `test:run`
-comes before `build`.
+`DSA_ENTRIES`, which orders the landing page, the sidebar and prev/next, is
+grouped by kind: data structures, then patterns, then algorithms
+(`DSA_GROUPS`, from `groupDsaEntries` in `src/lib/dsa.ts`). The landing page
+and the sidebar show each group under its own heading, numbered in one
+sequence across them. The order comes from one topological pass over all
+entries (`orderDsaEntries`): at each step it takes, among the entries whose
+prerequisites are all placed, the first by kind, then title, then slug. The
+groups then keep that order, kind by kind (`groupDsaEntries`). So a new entry
+sits among its kind by title unless a prerequisite holds it back; one of a
+later kind holds it until every entry of its own kind that's ready has gone,
+which puts it at or near the end of its group. That prerequisite comes after
+its dependent; today the only one is
+`binary-search-tree` -> `binary-search`, and its **Before this** link still
+works. `dsa.test.ts` pins that list, so a new backwards cross-group link fails
+the test until someone extends the list on purpose (ask the user first).
+
+A prerequisite cycle, a link to an entry that doesn't exist, or an entry
+listing itself throws at load time, naming the entries. Only the vitest tests
+that import `DSA_ENTRIES` catch it; `vite build` alone doesn't run that code,
+but `verify` still fails because `test:run` comes before `build`.
 
 Link a catalog topic where the prose uses it, as `[text](/<section>/<slug>)`.
 Nothing checks catalog links or see-also `/dsa/` links in DSA entries, so

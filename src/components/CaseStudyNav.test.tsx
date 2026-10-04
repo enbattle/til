@@ -38,6 +38,27 @@ describe('CaseStudyNav (criterion 9)', () => {
     expect(within(nav()).queryAllByRole('button')).toHaveLength(0);
   });
 
+  // docs/specs/dsa-kind-groups.md, criterion 5: grouping is DSA-only.
+  it('renders one flat numbered list, 1..N, with no group labels', () => {
+    renderNav('/system-design/url-shortener');
+    const lists = within(nav()).getAllByRole('list');
+    expect(lists).toHaveLength(1);
+    expect(lists[0].tagName).toBe('OL');
+    expect(lists[0]).not.toHaveAttribute('aria-labelledby');
+    expect(lists[0]).toHaveAccessibleName('');
+    // The only label is the nav's own small heading above the list.
+    expect(
+      [...nav().querySelectorAll('p, h2, h3, h4')].map((el) => el.textContent?.trim()),
+    ).toEqual(['Case studies']);
+    const links = within(lists[0]).getAllByRole('link');
+    expect(links).toHaveLength(CASE_STUDIES.length);
+    links.forEach((link, i) => {
+      expect(link.querySelector('[aria-hidden="true"]')?.textContent?.trim()).toBe(
+        `${i + 1}.`,
+      );
+    });
+  });
+
   it('marks no link current on the landing page', () => {
     renderNav('/system-design');
     for (const link of within(nav()).getAllByRole('link')) {

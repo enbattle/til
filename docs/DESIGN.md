@@ -111,11 +111,19 @@ notebook than a product. The UI follows that:
   at every width), so a section group the user opened survives a round trip
   between the tabs.
 - **DSA navigation**: on `/dsa` and `/dsa/*` the sidebar and `MobileNav` show
-  `DsaNav`, built like `CaseStudyNav`: a flat ordered list of the entries
-  (prerequisites first; docs/dsa.md), the same bold plus accent-border current
-  signal and `aria-current="page"`. The landing page's cards and each entry
-  page show the entry's kind ("Data structure", "Pattern", "Algorithm") as
-  text, never as a color alone. An entry page lists its prerequisites under
+  `DsaNav`, built on `OrderedNav` like `CaseStudyNav` but grouped: under the
+  "DSA" label, one `<p>` label per kind ("Data structures", "Patterns",
+  "Algorithms"; serif, sentence case, `text-primary`, so it reads as a
+  subheading under the uppercase "DSA" rather than a fourth label of the same
+  rank) followed by an `<ol>` named by it (`aria-labelledby`), each
+  in prerequisites-first order (docs/dsa.md). The visible numbers run 1..N
+  across the groups (each `<ol>` has a matching `start`), with the same bold
+  plus accent-border current signal and `aria-current="page"`. Groups don't
+  collapse. The landing page has the same groups as `<section>`s, each with an
+  `h2` and a `NumberedCardList` whose numbers continue across sections; its
+  cards carry no kind label, since the heading says it. Each entry page shows
+  the entry's kind ("Data structure", "Pattern", "Algorithm") as text, never
+  as a color alone. An entry page lists its prerequisites under
   the title as **Before this** (a `<nav aria-label="Before this">`, absent when
   there are none), then the same "On this page" list as a case study.
 - **Code tabs**: on a DSA entry page each Python/TypeScript code pair is one

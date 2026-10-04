@@ -6,9 +6,11 @@ import { parseFrontmatter } from './frontmatter';
 import { dsaPrerequisites } from './markdown.mjs';
 import {
   DSA_ENTRIES,
+  DSA_GROUPS,
   dsaKindLabel,
   getDsaEntry,
   getDsaPrerequisites,
+  groupDsaEntries,
   isDsaPath,
   loadAllDsaBodies,
   loadDsaEntryBody,
@@ -402,27 +404,120 @@ describe('DSA_ENTRIES and getDsaEntry (criteria 2 and 4)', () => {
   it('returns [] prerequisites for an unknown slug', () => {
     expect(getDsaPrerequisites('nope')).toEqual([]);
   });
+});
 
-  it('puts every real entry’s prerequisites before it', () => {
+// --- docs/specs/dsa-kind-groups.md, criterion 2: the real entries, grouped ---
+
+function realPrereqs(): Record<string, string[]> {
+  return Object.fromEntries(
+    DSA_ENTRIES.map((e) => [
+      e.slug,
+      dsaPrerequisites(parseFrontmatter(rawFor(e.slug)).content),
+    ]),
+  );
+}
+
+describe('DSA_GROUPS and DSA_ENTRIES over the real entries (dsa-kind-groups criterion 2)', () => {
+  it('has three groups in kind order', () => {
+    expect(DSA_GROUPS.map((g) => g.kind)).toEqual([
+      'data-structure',
+      'pattern',
+      'algorithm',
+    ]);
+    for (const group of DSA_GROUPS) {
+      for (const e of group.entries) expect(e.kind, e.slug).toBe(group.kind);
+    }
+  });
+
+  it('DSA_ENTRIES is the concatenation of the groups’ entries', () => {
+    expect(DSA_ENTRIES).toEqual(DSA_GROUPS.flatMap((g) => g.entries));
+  });
+
+  it('is exactly groupDsaEntries(orderDsaEntries(...)) over the real entries and their prerequisites', () => {
+    const prereqs = realPrereqs();
+    const expected = groupDsaEntries(
+      orderDsaEntries([...DSA_ENTRIES].reverse(), prereqs),
+    );
+    expect(DSA_GROUPS).toEqual(expected);
+    expect(DSA_ENTRIES).toEqual(expected.flatMap((g) => g.entries));
+  });
+
+  it('puts every same-kind prerequisite before its dependent', () => {
     const position = new Map(DSA_ENTRIES.map((e, i) => [e.slug, i]));
-    for (const e of DSA_ENTRIES) {
-      for (const slug of dsaPrerequisites(parseFrontmatter(rawFor(e.slug)).content)) {
-        expect(position.has(slug), `${e.slug} -> ${slug}`).toBe(true);
-        expect(position.get(slug)!, `${e.slug} -> ${slug}`).toBeLessThan(
-          position.get(e.slug)!,
+    for (const [slug, needs] of Object.entries(realPrereqs())) {
+      for (const prereq of needs) {
+        expect(position.has(prereq), `${slug} -> ${prereq}`).toBe(true);
+        if (getDsaEntry(prereq)!.kind !== getDsaEntry(slug)!.kind) continue;
+        expect(position.get(prereq)!, `${slug} -> ${prereq}`).toBeLessThan(
+          position.get(slug)!,
         );
       }
     }
   });
 
-  it('is exactly orderDsaEntries over the real entries and their prerequisites', () => {
-    const prereqs = Object.fromEntries(
-      DSA_ENTRIES.map((e) => [
-        e.slug,
-        dsaPrerequisites(parseFrontmatter(rawFor(e.slug)).content),
-      ]),
+  // Pinned: a new prerequisite that lands after its dependent fails here and
+  // has to be accepted on purpose.
+  it('has exactly one prerequisite after its dependent: binary-search-tree -> binary-search', () => {
+    const position = new Map(DSA_ENTRIES.map((e, i) => [e.slug, i]));
+    const backwards = Object.entries(realPrereqs()).flatMap(([slug, needs]) =>
+      needs
+        .filter((prereq) => position.get(prereq)! > position.get(slug)!)
+        .map((prereq) => `${slug} -> ${prereq}`),
     );
-    expect(orderDsaEntries([...DSA_ENTRIES].reverse(), prereqs)).toEqual(DSA_ENTRIES);
+    expect(backwards).toEqual(['binary-search-tree -> binary-search']);
+  });
+});
+
+// --- docs/specs/dsa-kind-groups.md, criterion 1: groupDsaEntries ---
+
+describe('groupDsaEntries (dsa-kind-groups criterion 1)', () => {
+  const DS1 = entry('ds1', 'data-structure', 'Zed Structure');
+  const DS2 = entry('ds2', 'data-structure', 'Abc Structure');
+  const PAT1 = entry('pat1', 'pattern', 'Zed Pattern');
+  const PAT2 = entry('pat2', 'pattern', 'Abc Pattern');
+  const ALG1 = entry('alg1', 'algorithm', 'Zed Algorithm');
+  const ALG2 = entry('alg2', 'algorithm', 'Abc Algorithm');
+
+  it('returns groups in kind order whatever the input order, each keeping input order', () => {
+    const groups = groupDsaEntries([ALG1, PAT1, DS1, ALG2, DS2, PAT2]);
+    expect(groups.map((g) => g.kind)).toEqual(['data-structure', 'pattern', 'algorithm']);
+    expect(groups.map((g) => g.entries)).toEqual([
+      [DS1, DS2],
+      [PAT1, PAT2],
+      [ALG1, ALG2],
+    ]);
+    // Input order, not title order: reversing the input reverses each group.
+    expect(
+      groupDsaEntries([PAT2, DS2, ALG2, DS1, ALG1, PAT1]).map((g) => g.entries),
+    ).toEqual([
+      [DS2, DS1],
+      [PAT2, PAT1],
+      [ALG2, ALG1],
+    ]);
+  });
+
+  it('names the groups "Data structures", "Patterns" and "Algorithms"', () => {
+    expect(groupDsaEntries([ALG1, PAT1, DS1])).toEqual([
+      { kind: 'data-structure', heading: 'Data structures', entries: [DS1] },
+      { kind: 'pattern', heading: 'Patterns', entries: [PAT1] },
+      { kind: 'algorithm', heading: 'Algorithms', entries: [ALG1] },
+    ]);
+  });
+
+  it('gives a kind with no entries no group', () => {
+    expect(groupDsaEntries([ALG1, DS1, ALG2]).map((g) => g.kind)).toEqual([
+      'data-structure',
+      'algorithm',
+    ]);
+    expect(groupDsaEntries([PAT1]).map((g) => g.heading)).toEqual(['Patterns']);
+    expect(groupDsaEntries([])).toEqual([]);
+  });
+
+  it('gives back exactly the input entries, with no loss or duplication', () => {
+    const input = [PAT1, ALG1, DS1, PAT2, DS2, ALG2];
+    const flat = groupDsaEntries(input).flatMap((g) => g.entries);
+    expect(flat).toHaveLength(input.length);
+    for (const e of input) expect(flat.filter((f) => f === e)).toHaveLength(1);
   });
 });
 
