@@ -72,6 +72,11 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   already locked changed, and re-takes the snapshot.
 - Scope in and out; files/modules touched; whether there's a user-facing UI
   surface (decides Stage 4's browser check).
+- A UI change: criteria cover content shorter than the screen, 375px and the
+  widest layout, and every item of DESIGN.md's accessibility checklist it
+  touches. A component that opens, closes or moves focus also names its
+  WAI-ARIA Authoring Practices pattern, looked up rather than recalled, and
+  makes each way that pattern starts and ends a state a criterion.
 - A check against [docs/NON_NEGOTIABLES.md](../../../docs/NON_NEGOTIABLES.md):
   if the request needs to break a line there, say so and let the user amend
   that file or change the request. Don't plan around it quietly.
@@ -333,13 +338,19 @@ out false. Evidence: the agents' reports, failed gates, tools that misbehaved.
 Don't invent friction or add a rule to justify the stage; a run with none
 reports "nothing to change" and only logs its row.
 
-For each real issue, first ask: could something be deleted or simplified
+For each real issue, first judge its severity. One a stage let through (it
+reached main, was caught only by chance, or was a High that review found
+because the spec or tests never covered it) that is user-visible, breaks a line
+of docs/NON_NEGOTIABLES.md or falls under a published standard (WCAG, WAI-ARIA,
+OWASP; looked up, not recalled) gets its process fix in this retro, on its
+first occurrence. Other friction may wait for the pattern `docs-audit` looks
+for; the Retro cell then says why, and what would trigger a revisit. Then ask: could something be deleted or simplified
 instead? Otherwise fix it at the strongest level that fits: (1) a mechanical
 check (script, test, CI step), which still gets Stage 3's planted-regression
 test; (2) a correction in place to the doc or skill that covers the area (a
 new section only when nothing fits); (3) a new sentence, only if neither
 applies. A retro aims for no net added words in process files; when it adds,
-the pipeline-log row's Retro cell says what it removed. Don't skip a real issue because it's small. A bug
+the pipeline-log row's Retro cell says what it removed. A bug
 this change didn't cause goes on the Stage 5 list, and a problem in a topic is
 fixed in 4a or listed there; neither is a retro edit. When the row's Agents
 count is high, name the stage that cost the most before proposing any change,
