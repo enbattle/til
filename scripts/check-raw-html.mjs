@@ -29,7 +29,9 @@
 //     `x as Readonly<Document>`) on a `.write` receiver;
 //   - array and `for…of` sources of a destructured `write`
 //     (`const [{ write }] = [document]`,
-//     `for (const { write } of [document])`).
+//     `for (const { write } of [document])`);
+//   - destructured function and `catch` parameters with no default
+//     (`({ insertAdjacentHTML }: HTMLElement) => …`, `catch ({ document: { write } })`).
 // A type-only mention of `dangerouslySetInnerHTML` (`type P = {
 // dangerouslySetInnerHTML?: X }`) is flagged too: a false positive that fails
 // closed.
