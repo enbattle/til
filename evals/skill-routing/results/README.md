@@ -33,16 +33,19 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-02 | Batch-mode edits in add-dsa-entry and add-case-study (#44, #46)      | 4    | 0    | 0         | SR-15 to SR-18; SR-18 prompt refreshed (heap now exists).    |
 | 2026-10-03 | /feature Stage 2 and re-run edits; add-dsa-entry ordering rule (#53) | 5    | 0    | 0         | Scoped run; SR-17 prompt refreshed (sticky nav now exists).  |
 | 2026-10-04 | add-dsa-entry step 2: the randomized-test convention                 | 2    | 0    | 0         | SR-17 and SR-18; SR-17 prompt refreshed again.               |
+| 2026-10-04 | /feature Stage 1 UI-criteria bullet; Stage 6 severity-first retro    | 4    | 0    | 0         | Scoped run: SR-01, SR-05, SR-07, SR-17.                      |
 
-## Latest run: 2026-10-04, the randomized-test convention in add-dsa-entry
+## Latest run: 2026-10-04, /feature Stage 1 and Stage 6 edits
 
 Run by: self
-Trigger: the test-consolidation change (`docs/specs/test-consolidation.md`) rewrote step 2 of `add-dsa-entry`'s body. Randomized comparisons are now one test per property, at most 50 seeded trials, with the seed in the failure message. No description changed.
-Scope: SR-18, the only scenario whose Expected answer depends on `add-dsa-entry`. SR-17 was also run because its prompt had gone stale again: its first half asked for current-section highlighting in the "On this page" list, which PR #55 built. It now asks for a "copy link" button beside each section heading (unbuilt). Its Expected answer is unchanged.
+Trigger: the escaped-defect retro of `docs/specs/focus-not-obscured.md` edited `/feature`'s body. Stage 1 gains a bullet: UI criteria cover viewport extremes and the DESIGN.md accessibility items the change touches, and an interactive component names its WAI-ARIA pattern. Stage 6 now judges each issue's severity first, and fixes one a stage let through on its first occurrence when it's user-visible, breaks a non-negotiable or falls under a published standard. `docs/SDLC.md` changed to match. No description or routing rule changed.
+Scope: the scenarios whose Expected answer depends on `/feature`: SR-01, SR-05 (its triage-first rule is Stage 0), SR-07 and SR-17.
 
-| ID    | Routing decision | Reasoning (1 line)                                                                                               | Grade |
-| ----- | ---------------- | ---------------------------------------------------------------------------------------------------------------- | ----- |
-| SR-17 | `/feature`       | Case-study page UI plus a new diagram-check rule; `add-case-study` sends page and tooling changes to `/feature`. | PASS  |
-| SR-18 | `add-dsa-entry`  | A new entry with tested code; checked that no LRU cache entry exists yet.                                        | PASS  |
+| ID    | Routing decision      | Reasoning (1 line)                                                                                         | Grade |
+| ----- | --------------------- | ---------------------------------------------------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`            | Search-dialog behavior change needing design choices, keyboard and accessibility handling, and tests.      | PASS  |
+| SR-05 | Triage first (direct) | A bug of unknown size: reproduce and find the cause per `/feature` Stage 0, then route by what was found.  | PASS  |
+| SR-07 | `/feature`            | Computed metadata plus UI on cards and topic pages; content skills exclude app code.                       | PASS  |
+| SR-17 | `/feature`            | Page UI plus a diagram-check rule; `add-case-study` sends both to `/feature` (suggests two separate runs). | PASS  |
 
-Notes: SR-17's feature half has now gone stale twice in two days, because this session built the very features its prompt named. When building a feature, check whether a scenario prompt names it.
+Notes: no near-misses. SR-17's agent added that the two halves are unrelated and would be better as two runs; the Expected answer allows that.
