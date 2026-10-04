@@ -118,6 +118,22 @@ describe('kthSmallest (TypeScript)', () => {
     expect(kthSmallest([[4, 8, 15]], 2)).toBe(8);
   });
 
+  it('reaches every rank of long lists', () => {
+    // The random lists below are short, so this covers ranks in the hundreds.
+    // The steps overlap (9 is in three lists), so duplicates span lists too.
+    const lists = [0, 1, 2, 3, 4].map((start) => {
+      const list: number[] = [];
+      for (let v = start; v < 600; v += 3 + start) list.push(v);
+      return list;
+    });
+    const everything = lists.flat().sort((a, b) => a - b);
+    expect(everything.length).toBeGreaterThan(500);
+    for (let k = 1; k <= everything.length; k++) {
+      expect(kthSmallest(lists, k), `k ${k}`).toBe(everything[k - 1]);
+    }
+    expect(kthSmallest(lists, everything.length + 1)).toBeNull();
+  });
+
   it('agrees with sorting the concatenation on many random inputs', () => {
     const random = makeRandom(13);
     for (let n = 0; n < 50; n++) {
