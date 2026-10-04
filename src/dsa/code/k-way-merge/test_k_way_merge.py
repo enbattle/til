@@ -103,6 +103,17 @@ def test_kth_smallest_single_list():
     assert kth_smallest([[4, 8, 15]], 2) == 8
 
 
+def test_kth_smallest_reaches_every_rank_of_long_lists():
+    # The random lists below are short, so this covers ranks in the hundreds.
+    # The steps overlap (9 is in three lists), so duplicates span lists too.
+    lists = [list(range(start, 600, 3 + start)) for start in range(5)]
+    everything = sorted(value for lst in lists for value in lst)
+    assert len(everything) > 500
+    for k in range(1, len(everything) + 1):
+        assert kth_smallest(lists, k) == everything[k - 1], f"k {k}"
+    assert kth_smallest(lists, len(everything) + 1) is None
+
+
 def test_kth_smallest_agrees_with_sorted_concatenation():
     rng = random.Random(13)
     for trial in range(50):
