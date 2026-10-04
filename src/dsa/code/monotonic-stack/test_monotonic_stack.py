@@ -62,14 +62,17 @@ def test_days_until_warmer(given, expected):
 
 def test_agrees_with_brute_force_on_many_duplicates():
     rng = random.Random(11)
-    for _ in range(500):
+    for trial in range(50):
         nums = [rng.randint(0, 4) for _ in range(rng.randint(0, 12))]
-        assert next_greater(nums) == brute_next_greater(nums)
-        assert days_until_warmer(nums) == brute_days(nums)
+        at = f"seed 11, trial {trial}: {nums}"
+        assert next_greater(nums) == brute_next_greater(nums), at
+        assert days_until_warmer(nums) == brute_days(nums), at
 
 
 def test_agrees_with_brute_force_on_wide_values():
     rng = random.Random(12)
-    for _ in range(200):
+    for trial in range(50):
         nums = [rng.randint(-50, 50) for _ in range(rng.randint(0, 30))]
-        assert next_greater(nums) == brute_next_greater(nums)
+        assert next_greater(nums) == brute_next_greater(nums), (
+            f"seed 12, trial {trial}: {nums}"
+        )

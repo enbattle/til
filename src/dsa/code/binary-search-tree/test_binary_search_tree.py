@@ -13,13 +13,13 @@ import pytest
 from binary_search_tree import BinarySearchTree
 
 
-def check(tree, expected):
+def check(tree, expected, where=""):
     """The tree holds exactly ``expected`` and the BST invariant holds."""
     expected = sorted(expected)
-    assert list(tree) == expected
-    assert len(tree) == len(expected)
+    assert list(tree) == expected, where
+    assert len(tree) == len(expected), where
     for key in expected:
-        assert key in tree
+        assert key in tree, where
 
     # Every node lies strictly between the bounds its ancestors set. A stack, not
     # recursion, because the sorted-insert test builds a path 3000 nodes deep.
@@ -30,10 +30,10 @@ def check(tree, expected):
         if node is None:
             continue
         nodes += 1
-        assert (low is None or node.key > low) and (high is None or node.key < high)
+        assert (low is None or node.key > low) and (high is None or node.key < high), where
         stack.append((node.left, low, node.key))
         stack.append((node.right, node.key, high))
-    assert nodes == len(expected)
+    assert nodes == len(expected), where
 
 
 def test_empty_tree():
@@ -171,28 +171,29 @@ OPERATIONS = ["insert", "insert", "delete", "delete", "contains", "range"]
 
 
 def test_matches_a_sorted_set_on_random_operations():
-    for seed in range(200):
+    for seed in range(50):
         rng = random.Random(seed)
         tree = BinarySearchTree()
         model: set[int] = set()
-        for _ in range(80):
+        for step in range(80):
             op = rng.choice(OPERATIONS)
             key = rng.randint(0, 30)
+            where = f"seed {seed}, step {step}: {op} {key}"
             if op == "insert":
-                assert tree.insert(key) is (key not in model)
+                assert tree.insert(key) is (key not in model), where
                 model.add(key)
             elif op == "delete":
-                assert tree.delete(key) is (key in model)
+                assert tree.delete(key) is (key in model), where
                 model.discard(key)
             elif op == "contains":
-                assert (key in tree) is (key in model)
+                assert (key in tree) is (key in model), where
             else:
                 hi = rng.randint(-2, 32)
                 expected = sorted(k for k in model if key <= k <= hi)
-                assert tree.keys_between(key, hi) == expected
-            assert list(tree) == sorted(model)
-            assert len(tree) == len(model)
+                assert tree.keys_between(key, hi) == expected, f"{where}..{hi}"
+            assert list(tree) == sorted(model), where
+            assert len(tree) == len(model), where
             if model:
-                assert tree.min() == min(model)
-                assert tree.max() == max(model)
-        check(tree, model)
+                assert tree.min() == min(model), where
+                assert tree.max() == max(model), where
+        check(tree, model, f"seed {seed}")

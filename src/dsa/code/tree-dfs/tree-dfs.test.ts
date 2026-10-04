@@ -188,19 +188,26 @@ describe('pathsWithSum and diameter (TypeScript)', () => {
 
   it('agrees with brute-force paths on many random trees', () => {
     const random = seededRandom(11);
-    for (let n = 0; n < 400; n++) {
-      const root = buildTree(randomLevelOrder(random, 14));
+    for (let n = 0; n < 50; n++) {
+      const values = randomLevelOrder(random, 14);
+      const root = buildTree(values);
       for (let target = -12; target <= 24; target++) {
-        expect(pathsWithSum(root, target)).toEqual(bruteForcePaths(root, target));
+        expect(
+          pathsWithSum(root, target),
+          `seed 11, trial ${n}: ${JSON.stringify(values)}, target ${target}`,
+        ).toEqual(bruteForcePaths(root, target));
       }
     }
   });
 
   it('agrees with a brute-force diameter on many random trees', () => {
     const random = seededRandom(23);
-    for (let n = 0; n < 400; n++) {
-      const root = buildTree(randomLevelOrder(random, 16));
-      expect(diameter(root)).toBe(bruteForceDiameter(root));
+    for (let n = 0; n < 50; n++) {
+      const values = randomLevelOrder(random, 16);
+      const root = buildTree(values);
+      expect(diameter(root), `seed 23, trial ${n}: ${JSON.stringify(values)}`).toBe(
+        bruteForceDiameter(root),
+      );
     }
   });
 

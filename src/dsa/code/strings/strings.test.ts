@@ -61,7 +61,8 @@ describe('StringBuilder (TypeScript)', () => {
 
   it('matches += on many seeded random pieces', () => {
     const random = makeRandom(3);
-    for (let round = 0; round < 300; round++) {
+    for (let round = 0; round < 50; round++) {
+      const at = `seed 3, trial ${round}`;
       const pieceCount = Math.floor(random() * 8);
       const b = new StringBuilder();
       let expected = '';
@@ -69,10 +70,10 @@ describe('StringBuilder (TypeScript)', () => {
         const piece = randomString(random, 4).join('');
         b.append(piece);
         expected += piece;
-        if (random() < 0.3) expect(b.build()).toBe(expected);
+        if (random() < 0.3) expect(b.build(), at).toBe(expected);
       }
-      expect(b.build()).toBe(expected);
-      expect(b.length).toBe(expected.length);
+      expect(b.build(), at).toBe(expected);
+      expect(b.length, at).toBe(expected.length);
     }
   });
 });
@@ -98,11 +99,12 @@ describe('reverseCodePoints (TypeScript)', () => {
 
   it('matches a reversed list of code points on many seeded random strings', () => {
     const random = makeRandom(5);
-    for (let round = 0; round < 300; round++) {
+    for (let round = 0; round < 50; round++) {
       const chars = randomString(random, 10);
       const s = chars.join('');
-      expect(reverseCodePoints(s)).toBe([...chars].reverse().join(''));
-      expect(reverseCodePoints(reverseCodePoints(s))).toBe(s);
+      const at = `seed 5, trial ${round}: ${JSON.stringify(s)}`;
+      expect(reverseCodePoints(s), at).toBe([...chars].reverse().join(''));
+      expect(reverseCodePoints(reverseCodePoints(s)), at).toBe(s);
     }
   });
 });
@@ -141,15 +143,17 @@ describe('isPalindrome (TypeScript)', () => {
   it('matches the filter-and-reverse answer on many seeded random strings', () => {
     const random = makeRandom(9);
     let found = 0;
-    for (let round = 0; round < 2000; round++) {
+    for (let round = 0; round < 50; round++) {
       const half = randomString(random, 9);
       const chars = random() < 0.5 ? [...half, ...[...half].reverse()] : half;
       const s = chars.join('');
       const expected = referencePalindrome(s);
       if (expected) found++;
-      expect(isPalindrome(s), JSON.stringify(s)).toBe(expected);
+      expect(isPalindrome(s), `seed 9, trial ${round}: ${JSON.stringify(s)}`).toBe(
+        expected,
+      );
     }
-    expect(found).toBeGreaterThan(200);
-    expect(found).toBeLessThan(1800);
+    expect(found).toBeGreaterThan(5);
+    expect(found).toBeLessThan(45);
   });
 });

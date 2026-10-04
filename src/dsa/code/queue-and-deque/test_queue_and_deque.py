@@ -204,28 +204,29 @@ def test_popped_items_are_released():
         assert ref() is None
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_matches_collections_deque_on_random_operations(seed):
-    rng = random.Random(seed)
-    d = Deque(rng.randint(1, 4))
-    ref = collections.deque()
-    for step in range(300):
-        op = rng.choice(["append", "appendleft", "pop", "popleft", "peek", "peekleft"])
-        if op in ("append", "appendleft"):
-            getattr(d, op)(step)
-            getattr(ref, op)(step)
-        elif not ref:
-            with pytest.raises(IndexError):
-                getattr(d, op)()
-        elif op == "peek":
-            assert d.peek() == ref[-1]
-        elif op == "peekleft":
-            assert d.peekleft() == ref[0]
-        else:
-            assert getattr(d, op)() == getattr(ref, op)()
-        assert len(d) == len(ref)
-        assert d.capacity >= len(d)
-    assert list(d) == list(ref)
+def test_matches_collections_deque_on_random_operations():
+    for seed in range(50):
+        rng = random.Random(seed)
+        d = Deque(rng.randint(1, 4))
+        ref = collections.deque()
+        for step in range(300):
+            at = f"seed {seed}, step {step}"
+            op = rng.choice(["append", "appendleft", "pop", "popleft", "peek", "peekleft"])
+            if op in ("append", "appendleft"):
+                getattr(d, op)(step)
+                getattr(ref, op)(step)
+            elif not ref:
+                with pytest.raises(IndexError):
+                    getattr(d, op)()
+            elif op == "peek":
+                assert d.peek() == ref[-1], at
+            elif op == "peekleft":
+                assert d.peekleft() == ref[0], at
+            else:
+                assert getattr(d, op)() == getattr(ref, op)(), at
+            assert len(d) == len(ref), at
+            assert d.capacity >= len(d), at
+        assert list(d) == list(ref), f"seed {seed}"
 
 
 def test_recent_counts_worked_example():
@@ -239,12 +240,12 @@ def test_recent_counts_edge_cases():
     assert recent_counts([0, 10, 11], 10) == [1, 2, 2]
 
 
-@pytest.mark.parametrize("seed", range(100))
-def test_recent_counts_matches_brute_force(seed):
-    rng = random.Random(seed)
-    times = sorted(rng.randint(0, 200) for _ in range(rng.randint(0, 60)))
-    window = rng.randint(0, 50)
-    expected = [
-        sum(1 for s in times[: i + 1] if s >= t - window) for i, t in enumerate(times)
-    ]
-    assert recent_counts(times, window) == expected
+def test_recent_counts_matches_brute_force():
+    for seed in range(50):
+        rng = random.Random(seed)
+        times = sorted(rng.randint(0, 200) for _ in range(rng.randint(0, 60)))
+        window = rng.randint(0, 50)
+        expected = [
+            sum(1 for s in times[: i + 1] if s >= t - window) for i, t in enumerate(times)
+        ]
+        assert recent_counts(times, window) == expected, f"seed {seed}: {(times, window)}"

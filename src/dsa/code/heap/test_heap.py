@@ -14,11 +14,11 @@ import pytest
 from heap import MinHeap, PriorityQueue, left, parent, right
 
 
-def assert_heap(h):
+def assert_heap(h, context=""):
     """Every item is no smaller than its parent."""
     items = h._items
     for i in range(1, len(items)):
-        assert not items[i] < items[parent(i)], (i, items)
+        assert not items[i] < items[parent(i)], f"{context}index {i} of {items}"
 
 
 def drain(h):
@@ -163,38 +163,39 @@ def test_works_with_tuples():
     assert drain(h) == [(1, "z"), (2, "a"), (2, "b")]
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_matches_heapq_on_random_operations(seed):
-    rng = random.Random(seed)
-    start = [rng.randint(0, 20) for _ in range(rng.randint(0, 30))]
-    h = MinHeap(start)
-    ref = list(start)
-    heapq.heapify(ref)
-    for _ in range(300):
-        op = rng.choice(["push", "push", "pop", "peek"])
-        if op == "push":
-            x = rng.randint(0, 20)
-            h.push(x)
-            heapq.heappush(ref, x)
-        elif not ref:
-            with pytest.raises(IndexError):
-                getattr(h, op)()
-        elif op == "pop":
-            assert h.pop() == heapq.heappop(ref)
-        else:
-            assert h.peek() == ref[0]
-        assert len(h) == len(ref)
-        assert_heap(h)
-    assert drain(h) == sorted(ref)
+def test_matches_heapq_on_random_operations():
+    for seed in range(50):
+        rng = random.Random(seed)
+        start = [rng.randint(0, 20) for _ in range(rng.randint(0, 30))]
+        h = MinHeap(start)
+        ref = list(start)
+        heapq.heapify(ref)
+        for step in range(300):
+            at = f"seed {seed}, step {step}: "
+            op = rng.choice(["push", "push", "pop", "peek"])
+            if op == "push":
+                x = rng.randint(0, 20)
+                h.push(x)
+                heapq.heappush(ref, x)
+            elif not ref:
+                with pytest.raises(IndexError):
+                    getattr(h, op)()
+            elif op == "pop":
+                assert h.pop() == heapq.heappop(ref), at
+            else:
+                assert h.peek() == ref[0], at
+            assert len(h) == len(ref), at
+            assert_heap(h, at)
+        assert drain(h) == sorted(ref), f"seed {seed}"
 
 
-@pytest.mark.parametrize("seed", range(100))
-def test_heapify_then_drain_sorts(seed):
-    rng = random.Random(seed + 1000)
-    data = [rng.randint(-50, 50) for _ in range(rng.randint(0, 200))]
-    h = MinHeap(data)
-    assert_heap(h)
-    assert drain(h) == sorted(data)
+def test_heapify_then_drain_sorts():
+    for seed in range(50):
+        rng = random.Random(seed + 1000)
+        data = [rng.randint(-50, 50) for _ in range(rng.randint(0, 200))]
+        h = MinHeap(data)
+        assert_heap(h, f"seed {seed}: ")
+        assert drain(h) == sorted(data), f"seed {seed}, input {data}"
 
 
 def test_priority_queue_lowest_priority_first():
@@ -240,17 +241,18 @@ def test_priority_queue_stores_none():
     assert pq.pop() is None
 
 
-@pytest.mark.parametrize("seed", range(100))
-def test_priority_queue_matches_a_stable_sort(seed):
-    rng = random.Random(seed + 2000)
-    pq = PriorityQueue()
-    ref = []  # (priority, order) pairs still waiting
-    for step in range(200):
-        if rng.random() < 0.6 or not ref:
-            p = rng.randint(0, 5)
-            pq.push(step, p)
-            ref.append((p, step))
-        else:
-            ref.sort(key=lambda e: e[0])  # stable: equal priorities keep their order
-            assert pq.pop() == ref.pop(0)[1]
-        assert len(pq) == len(ref)
+def test_priority_queue_matches_a_stable_sort():
+    for seed in range(50):
+        rng = random.Random(seed + 2000)
+        pq = PriorityQueue()
+        ref = []  # (priority, order) pairs still waiting
+        for step in range(200):
+            at = f"seed {seed}, step {step}"
+            if rng.random() < 0.6 or not ref:
+                p = rng.randint(0, 5)
+                pq.push(step, p)
+                ref.append((p, step))
+            else:
+                ref.sort(key=lambda e: e[0])  # stable: equal priorities keep their order
+                assert pq.pop() == ref.pop(0)[1], at
+            assert len(pq) == len(ref), at

@@ -152,8 +152,9 @@ describe('binary tree (TypeScript)', () => {
 
   // An independent reference: describe each node by its path from the root, a
   // string of "L" and "R" steps. Every traversal order is then a sort of the paths.
-  it('matches the path reference on 300 seeded random trees', () => {
-    for (let seed = 0; seed < 300; seed++) {
+  it('matches the path reference on 50 seeded random trees', () => {
+    for (let seed = 0; seed < 50; seed++) {
+      const where = `seed ${seed}`;
       const random = seeded(seed);
       const n = Math.floor(random() * 40);
       const tree = new Map<string, number>();
@@ -183,7 +184,7 @@ describe('binary tree (TypeScript)', () => {
         found.set(path, node.value);
         stack.push([path + 'L', node.left], [path + 'R', node.right]);
       }
-      expect(found).toEqual(tree);
+      expect(found, where).toEqual(tree);
 
       const sortBy = (l: string, r: string, end: string) => {
         const key = (p: string) => [...p].map((s) => (s === 'L' ? l : r)).join('') + end;
@@ -191,17 +192,17 @@ describe('binary tree (TypeScript)', () => {
           .sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0))
           .map((p) => tree.get(p));
       };
-      expect(preorder(root)).toEqual(sortBy('0', '1', ''));
-      expect(inorder(root)).toEqual(sortBy('0', '2', '1'));
-      expect(inorderIterative(root)).toEqual(inorder(root));
-      expect(postorder(root)).toEqual(sortBy('0', '1', '2'));
+      expect(preorder(root), where).toEqual(sortBy('0', '1', ''));
+      expect(inorder(root), where).toEqual(sortBy('0', '2', '1'));
+      expect(inorderIterative(root), where).toEqual(inorder(root));
+      expect(postorder(root), where).toEqual(sortBy('0', '1', '2'));
 
       const deepest = Math.max(-1, ...[...tree.keys()].map((p) => p.length));
       const levels: number[][] = Array.from({ length: deepest + 1 }, () => []);
       for (const path of byLevel) levels[path.length].push(tree.get(path) as number);
-      expect(levelOrder(root)).toEqual(levels);
-      expect(height(root)).toBe(deepest);
-      expect(size(root)).toBe(tree.size);
+      expect(levelOrder(root), where).toEqual(levels);
+      expect(height(root), where).toBe(deepest);
+      expect(size(root), where).toBe(tree.size);
     }
   });
 });

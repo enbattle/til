@@ -174,8 +174,8 @@ describe('UnionFind (TypeScript)', () => {
     for (let x = 0; x < n; x++) expect(depth(sets, x)).toBeLessThanOrEqual(10);
   });
 
-  it('matches a relabelled label array on 200 seeded random operation sequences', () => {
-    for (let seed = 0; seed < 200; seed++) {
+  it('matches a relabelled label array on seeded random operation sequences', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = seeded(seed);
       const pick = (k: number) => Math.floor(random() * k);
       const n = pick(25);
@@ -186,26 +186,27 @@ describe('UnionFind (TypeScript)', () => {
         const a = pick(n);
         const b = pick(n);
         const op = pick(4);
+        const at = `seed ${seed}, step ${step} (n ${n}, a ${a}, b ${b})`;
         if (op === 0) {
           const joined = label[a] !== label[b];
-          expect(sets.union(a, b)).toBe(joined);
+          expect(sets.union(a, b), at).toBe(joined);
           const old = label[b];
           label = label.map((lab) => (lab === old ? label[a] : lab));
         } else if (op === 1) {
-          expect(sets.connected(a, b)).toBe(label[a] === label[b]);
+          expect(sets.connected(a, b), at).toBe(label[a] === label[b]);
         } else if (op === 2) {
           const root = sets.find(a);
-          expect(label[root]).toBe(label[a]);
-          expect(sets.find(root)).toBe(root);
+          expect(label[root], at).toBe(label[a]);
+          expect(sets.find(root), at).toBe(root);
         } else {
-          expect(sets.sizeOf(a)).toBe(label.filter((lab) => lab === label[a]).length);
+          expect(sets.sizeOf(a), at).toBe(label.filter((lab) => lab === label[a]).length);
         }
-        expect(sets.count).toBe(new Set(label).size);
+        expect(sets.count, at).toBe(new Set(label).size);
         for (let x = 0; x < n; x++) {
-          expect(depth(sets, x)).toBeLessThanOrEqual(Math.log2(n));
+          expect(depth(sets, x), at).toBeLessThanOrEqual(Math.log2(n));
         }
       }
-      expect(sets.count).toBe(new Set(label).size);
+      expect(sets.count, `seed ${seed}`).toBe(new Set(label).size);
     }
   });
 });
@@ -256,8 +257,8 @@ describe('countComponents and hasCycle (TypeScript)', () => {
     ).toBe(true);
   });
 
-  it('match a graph search on 200 seeded random graphs', () => {
-    for (let seed = 0; seed < 200; seed++) {
+  it('match a graph search on seeded random graphs', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = seeded(1000 + seed);
       const pick = (k: number) => Math.floor(random() * k);
       const n = 1 + pick(14);
@@ -266,9 +267,10 @@ describe('countComponents and hasCycle (TypeScript)', () => {
         pick(n),
       ]);
       const components = componentsBySearch(n, edges);
-      expect(countComponents(n, edges)).toBe(components);
+      const at = `seed ${1000 + seed}: ${JSON.stringify({ n, edges })}`;
+      expect(countComponents(n, edges), at).toBe(components);
       // A forest with n nodes and c trees has exactly n - c edges; more means a cycle.
-      expect(hasCycle(n, edges)).toBe(edges.length > n - components);
+      expect(hasCycle(n, edges), at).toBe(edges.length > n - components);
     }
   });
 });

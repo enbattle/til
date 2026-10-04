@@ -58,9 +58,9 @@ def test_subsets_empty_and_single():
 
 def test_subsets_agree_with_itertools_on_random_inputs():
     rng = random.Random(11)
-    for _ in range(200):
+    for trial in range(50):
         values = rng.sample(range(-20, 20), rng.randint(0, 8))
-        assert subsets(values) == expected_subsets(values)
+        assert subsets(values) == expected_subsets(values), f"seed 11, trial {trial}: {values}"
 
 
 def test_subsets_count_is_two_to_the_n():
@@ -85,9 +85,11 @@ def test_permutations_empty_and_single():
 
 def test_permutations_agree_with_itertools_on_random_inputs():
     rng = random.Random(12)
-    for _ in range(200):
+    for trial in range(50):
         values = rng.sample(range(-20, 20), rng.randint(0, 6))
-        assert permutations(values) == [list(p) for p in itertools.permutations(values)]
+        assert permutations(values) == [list(p) for p in itertools.permutations(values)], (
+            f"seed 12, trial {trial}: {values}"
+        )
 
 
 def test_permutations_follow_input_positions_not_value_order():
@@ -148,9 +150,9 @@ def test_combination_sum_rejects_non_positive_candidates():
 
 def test_combination_sum_agrees_with_brute_force_on_random_inputs():
     rng = random.Random(13)
-    for _ in range(300):
+    for trial in range(50):
         candidates = [rng.randint(1, 8) for _ in range(rng.randint(0, 5))]
         target = rng.randint(0, 14)
         assert combination_sum(candidates, target) == expected_combination_sum(
             candidates, target
-        )
+        ), f"seed 13, trial {trial}: {candidates}, target {target}"

@@ -32,19 +32,17 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-01 | SR-17 prompt refreshed (the width guard already exists)              | 1    | 0    | 0         | Now asks for a node-count limit; routes to `/feature`.       |
 | 2026-10-02 | Batch-mode edits in add-dsa-entry and add-case-study (#44, #46)      | 4    | 0    | 0         | SR-15 to SR-18; SR-18 prompt refreshed (heap now exists).    |
 | 2026-10-03 | /feature Stage 2 and re-run edits; add-dsa-entry ordering rule (#53) | 5    | 0    | 0         | Scoped run; SR-17 prompt refreshed (sticky nav now exists).  |
+| 2026-10-04 | add-dsa-entry step 2: the randomized-test convention                 | 2    | 0    | 0         | SR-17 and SR-18; SR-17 prompt refreshed again.               |
 
-## Latest run: 2026-10-03, /feature retro edits and the add-dsa-entry ordering rule
+## Latest run: 2026-10-04, the randomized-test convention in add-dsa-entry
 
 Run by: self
-Trigger: run 1's retro edits to `.claude/skills/feature/SKILL.md` (Stage 2's test-writer instruction and re-run trigger; the test re-run path runs Stage 3's gate before spawning an implementer), plus PR #53's edit to `add-dsa-entry`'s body (a later-kind prerequisite fails the pinned list; ask the user).
-Scope: no description or routing rule changed, only skill bodies, so this covers the scenarios whose Expected answer depends on `/feature` or `add-dsa-entry`: SR-01, SR-05 (its triage-first rule is `/feature`'s Stage 0), SR-07, SR-17 and SR-18. Before running, SR-17's prompt was refreshed. Its first half asked for a sticky Contents list, which PR #52 built as the "On this page" nav, so it now asks to highlight the current section in that list while scrolling (still unbuilt). Its Expected answer is unchanged.
+Trigger: the test-consolidation change (`docs/specs/test-consolidation.md`) rewrote step 2 of `add-dsa-entry`'s body. Randomized comparisons are now one test per property, at most 50 seeded trials, with the seed in the failure message. No description changed.
+Scope: SR-18, the only scenario whose Expected answer depends on `add-dsa-entry`. SR-17 was also run because its prompt had gone stale again: its first half asked for current-section highlighting in the "On this page" list, which PR #55 built. It now asks for a "copy link" button beside each section heading (unbuilt). Its Expected answer is unchanged.
 
-| ID    | Routing decision      | Reasoning (1 line)                                                                                        | Grade |
-| ----- | --------------------- | --------------------------------------------------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`            | New search-dialog UI behavior needing a design choice, tests and UI review.                               | PASS  |
-| SR-05 | Triage first (direct) | A bug of unknown size: reproduce and find the cause per `/feature` Stage 0, then route by what was found. | PASS  |
-| SR-07 | `/feature`            | Computed metadata plus UI on cards and topic pages; content skills send app-code changes to `/feature`.   | PASS  |
-| SR-17 | `/feature`            | Page UI plus a new diagram-check rule; `add-case-study` sends page and tooling changes to `/feature`.     | PASS  |
-| SR-18 | `add-dsa-entry`       | A new entry with tested code; checked that no LRU cache entry exists yet.                                 | PASS  |
+| ID    | Routing decision | Reasoning (1 line)                                                                                               | Grade |
+| ----- | ---------------- | ---------------------------------------------------------------------------------------------------------------- | ----- |
+| SR-17 | `/feature`       | Case-study page UI plus a new diagram-check rule; `add-case-study` sends page and tooling changes to `/feature`. | PASS  |
+| SR-18 | `add-dsa-entry`  | A new entry with tested code; checked that no LRU cache entry exists yet.                                        | PASS  |
 
-Notes: every agent applied the intended rule, and none was a near-miss. SR-18's agent checked that the named entry still doesn't exist, as the previous run's note asks.
+Notes: SR-17's feature half has now gone stale twice in two days, because this session built the very features its prompt named. When building a feature, check whether a scenario prompt names it.

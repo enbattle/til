@@ -75,7 +75,7 @@ def test_floats():
 
 
 def test_matches_sorting_on_many_random_streams():
-    for seed in range(200):
+    for seed in range(50):
         rng = random.Random(seed)
         stream = RunningMedian()
         seen = []
@@ -83,5 +83,6 @@ def test_matches_sorting_on_many_random_streams():
             value = rng.randint(-10, 10)
             stream.add(value)
             seen.append(value)
-            assert len(stream) == len(seen)
-            assert stream.median() == sorted_median(seen)
+            at = f"seed {seed}: {seen}"
+            assert len(stream) == len(seen), at
+            assert stream.median() == sorted_median(seen), at

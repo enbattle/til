@@ -53,10 +53,10 @@ describe('countSetBits (TypeScript)', () => {
 
   it('agrees with toString(2) on many seeded random inputs', () => {
     const random = makeRandom(11);
-    for (let i = 0; i < 2000; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const bits = 1 + Math.floor(random() * 32);
       const n = Math.floor(random() * 2 ** bits);
-      expect(countSetBits(n)).toBe(popcountByString(n));
+      expect(countSetBits(n), `seed 11, trial ${trial}: ${n}`).toBe(popcountByString(n));
     }
   });
 });
@@ -86,10 +86,12 @@ describe('isPowerOfTwo (TypeScript)', () => {
 
   it('agrees with a set-bit count on many seeded random inputs', () => {
     const random = makeRandom(12);
-    for (let i = 0; i < 2000; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const bits = 1 + Math.floor(random() * 32);
       const n = Math.floor(random() * 2 ** bits);
-      expect(isPowerOfTwo(n)).toBe(n > 0 && popcountByString(n) === 1);
+      expect(isPowerOfTwo(n), `seed 12, trial ${trial}: ${n}`).toBe(
+        n > 0 && popcountByString(n) === 1,
+      );
     }
   });
 });
@@ -119,7 +121,7 @@ describe('singleNumber (TypeScript)', () => {
 
   it('agrees with a Map-based count on many seeded random inputs', () => {
     const random = makeRandom(13);
-    for (let i = 0; i < 500; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const pairs = Array.from(
         { length: Math.floor(random() * 13) },
         () => Math.floor(random() * 101) - 50,
@@ -133,7 +135,9 @@ describe('singleNumber (TypeScript)', () => {
       const counts = new Map<number, number>();
       for (const v of nums) counts.set(v, (counts.get(v) ?? 0) + 1);
       const expected = [...counts].find(([, c]) => c % 2 === 1)![0];
-      expect(singleNumber(nums)).toBe(expected);
+      expect(singleNumber(nums), `seed 13, trial ${trial}: ${JSON.stringify(nums)}`).toBe(
+        expected,
+      );
     }
   });
 });
@@ -159,16 +163,17 @@ describe('subsets (TypeScript)', () => {
 
   it('produces 2**n distinct subsets matching a combination count', () => {
     const random = makeRandom(14);
-    for (let i = 0; i < 60; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const n = Math.floor(random() * 9);
       const items = Array.from({ length: n }, (_, idx) => idx * 3 + 1);
       const got = subsets(items);
-      expect(got.length).toBe(2 ** n);
-      expect(new Set(got.map((s) => s.join(','))).size).toBe(2 ** n);
+      const where = `seed 14, trial ${trial}: n=${n}`;
+      expect(got.length, where).toBe(2 ** n);
+      expect(new Set(got.map((s) => s.join(','))).size, where).toBe(2 ** n);
       // Number of subsets of each size is C(n, size).
       let choose = 1;
       for (let size = 0; size <= n; size++) {
-        expect(got.filter((s) => s.length === size).length).toBe(choose);
+        expect(got.filter((s) => s.length === size).length, where).toBe(choose);
         choose = (choose * (n - size)) / (size + 1);
       }
     }

@@ -157,15 +157,16 @@ describe('LinkedList (TypeScript)', () => {
     expect([...list]).toEqual([2, 3, 4, 5]);
   });
 
-  it('matches an array on 200 seeded random operation sequences', () => {
+  it('matches an array on 50 seeded random operation sequences', () => {
     const ops = ['pushFront', 'pushBack', 'popFront', 'remove', 'find', 'reverse'];
-    for (let seed = 0; seed < 200; seed++) {
+    for (let seed = 0; seed < 50; seed++) {
       const random = seeded(seed);
       const list = new LinkedList<number>();
       const model: number[] = [];
       for (let step = 0; step < 60; step++) {
         const op = ops[Math.floor(random() * ops.length)];
         const value = Math.floor(random() * 6);
+        const at = `seed ${seed}, step ${step}: ${op}(${value})`;
         if (op === 'pushFront') {
           list.pushFront(value);
           model.unshift(value);
@@ -173,19 +174,19 @@ describe('LinkedList (TypeScript)', () => {
           list.pushBack(value);
           model.push(value);
         } else if (op === 'popFront') {
-          expect(list.popFront()).toBe(model.shift());
+          expect(list.popFront(), at).toBe(model.shift());
         } else if (op === 'remove') {
           const i = model.indexOf(value);
           if (i !== -1) model.splice(i, 1);
-          expect(list.remove(value)).toBe(i !== -1);
+          expect(list.remove(value), at).toBe(i !== -1);
         } else if (op === 'find') {
-          expect(list.find(value) !== null).toBe(model.includes(value));
+          expect(list.find(value) !== null, at).toBe(model.includes(value));
         } else {
           list.reverse();
           model.reverse();
         }
-        expect([...list]).toEqual(model);
-        expect(list.size).toBe(model.length);
+        expect([...list], at).toEqual(model);
+        expect(list.size, at).toBe(model.length);
       }
     }
   });

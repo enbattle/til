@@ -75,10 +75,12 @@ describe('mergeSorted (TypeScript)', () => {
 
   it('agrees with sorting the concatenation on many random inputs', () => {
     const random = makeRandom(11);
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const lists = randomLists(random);
       const expected = lists.flat().sort((a, b) => a - b);
-      expect(mergeSorted(lists)).toEqual(expected);
+      expect(mergeSorted(lists), `seed 11, trial ${n}: ${JSON.stringify(lists)}`).toEqual(
+        expected,
+      );
     }
   });
 });
@@ -118,12 +120,15 @@ describe('kthSmallest (TypeScript)', () => {
 
   it('agrees with sorting the concatenation on many random inputs', () => {
     const random = makeRandom(13);
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const lists = randomLists(random);
       const everything = lists.flat().sort((a, b) => a - b);
       for (let k = -1; k <= everything.length + 2; k++) {
         const expected = k >= 1 && k <= everything.length ? everything[k - 1] : null;
-        expect(kthSmallest(lists, k)).toBe(expected);
+        expect(
+          kthSmallest(lists, k),
+          `seed 13, trial ${n}, k ${k}: ${JSON.stringify(lists)}`,
+        ).toBe(expected);
       }
     }
   });

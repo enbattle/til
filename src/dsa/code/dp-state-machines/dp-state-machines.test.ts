@@ -99,12 +99,13 @@ describe('maxProfitWithFee (TypeScript)', () => {
 
   it('matches brute force on random inputs', () => {
     const rng = seeded(1);
-    for (let i = 0; i < 150; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const prices = randomPrices(rng);
       const fee = randInt(rng, 0, 4);
-      expect(maxProfitWithFee(prices, fee), `${prices} fee ${fee}`).toBe(
-        bruteForce(prices, { fee }),
-      );
+      expect(
+        maxProfitWithFee(prices, fee),
+        `seed 1, trial ${trial}: [${prices}] fee ${fee}`,
+      ).toBe(bruteForce(prices, { fee }));
     }
   });
 });
@@ -136,9 +137,9 @@ describe('maxProfitWithCooldown (TypeScript)', () => {
 
   it('matches brute force on random inputs', () => {
     const rng = seeded(2);
-    for (let i = 0; i < 150; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const prices = randomPrices(rng);
-      expect(maxProfitWithCooldown(prices), `${prices}`).toBe(
+      expect(maxProfitWithCooldown(prices), `seed 2, trial ${trial}: [${prices}]`).toBe(
         bruteForce(prices, { cooldown: true }),
       );
     }
@@ -181,22 +182,26 @@ describe('maxProfitKTransactions (TypeScript)', () => {
 
   it('matches brute force on random inputs', () => {
     const rng = seeded(3);
-    for (let i = 0; i < 150; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const prices = randomPrices(rng);
       const k = randInt(rng, 0, 4);
-      expect(maxProfitKTransactions(prices, k), `${prices} k ${k}`).toBe(
-        bruteForce(prices, { maxTrades: k }),
-      );
+      expect(
+        maxProfitKTransactions(prices, k),
+        `seed 3, trial ${trial}: [${prices}] k ${k}`,
+      ).toBe(bruteForce(prices, { maxTrades: k }));
     }
   });
 
   it('with a large k matches the zero-fee version', () => {
     const rng = seeded(4);
-    for (let i = 0; i < 100; i++) {
+    for (let trial = 0; trial < 50; trial++) {
       const prices = Array.from({ length: randInt(rng, 0, 30) }, () =>
         randInt(rng, 0, 50),
       );
-      expect(maxProfitKTransactions(prices, 100)).toBe(maxProfitWithFee(prices, 0));
+      expect(
+        maxProfitKTransactions(prices, 100),
+        `seed 4, trial ${trial}: [${prices}]`,
+      ).toBe(maxProfitWithFee(prices, 0));
     }
   });
 });

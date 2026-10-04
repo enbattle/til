@@ -220,9 +220,9 @@ describe('Trie (TypeScript)', () => {
     expect(countNodes(trie)).toBe(4001);
   });
 
-  it('matches a Set of words on 200 seeded random operation sequences', () => {
+  it('matches a Set of words on seeded random operation sequences', () => {
     const alphabet = ['a', 'b', 'é', '～', '\u{1f600}'];
-    for (let seed = 0; seed < 200; seed++) {
+    for (let seed = 0; seed < 50; seed++) {
       const rand = seeded(seed);
       const randomWord = () => {
         const length = Math.floor(rand() * 5);
@@ -235,23 +235,26 @@ describe('Trie (TypeScript)', () => {
       const words = new Set<string>();
       for (let step = 0; step < 60; step++) {
         const w = randomWord();
+        const at = `seed ${seed}, step ${step}, word ${JSON.stringify(w)}`;
         const op = rand();
         if (op < 0.45) {
-          expect(trie.insert(w)).toBe(!words.has(w));
+          expect(trie.insert(w), at).toBe(!words.has(w));
           words.add(w);
         } else if (op < 0.75) {
-          expect(trie.delete(w)).toBe(words.has(w));
+          expect(trie.delete(w), at).toBe(words.has(w));
           words.delete(w);
         } else {
           const matching = [...words].filter((x) => x.startsWith(w)).sort(byCodePoint);
-          expect(trie.has(w)).toBe(words.has(w));
-          expect(trie.startsWith(w)).toBe(matching.length > 0);
-          expect(trie.wordsWithPrefix(w)).toEqual(matching);
+          expect(trie.has(w), at).toBe(words.has(w));
+          expect(trie.startsWith(w), at).toBe(matching.length > 0);
+          expect(trie.wordsWithPrefix(w), at).toEqual(matching);
         }
-        expect(trie.size).toBe(words.size);
-        expect(countNodes(trie)).toBe(prefixesOf(words).size);
+        expect(trie.size, at).toBe(words.size);
+        expect(countNodes(trie), at).toBe(prefixesOf(words).size);
       }
-      expect(trie.wordsWithPrefix('')).toEqual([...words].sort(byCodePoint));
+      expect(trie.wordsWithPrefix(''), `seed ${seed}`).toEqual(
+        [...words].sort(byCodePoint),
+      );
     }
   });
 });

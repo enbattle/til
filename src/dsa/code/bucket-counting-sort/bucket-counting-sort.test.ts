@@ -62,23 +62,29 @@ describe('countingSort (TypeScript)', () => {
 
   it('is stable and matches the stable built-in sort on many random records', () => {
     const random = seeded(3);
-    for (let run = 0; run < 300; run++) {
+    for (let trial = 0; trial < 50; trial++) {
       const length = Math.floor(random() * 25);
       const records = Array.from({ length }, (_, id) => ({
         id,
         n: Math.floor(random() * 9) - 4,
       }));
       const expected = [...records].sort((a, b) => a.n - b.n);
-      expect(countingSort(records, -4, 4, (r) => r.n)).toEqual(expected);
+      expect(
+        countingSort(records, -4, 4, (r) => r.n),
+        `seed 3, trial ${trial}: ${JSON.stringify(records.map((r) => r.n))}`,
+      ).toEqual(expected);
     }
   });
 
   it('matches the built-in sort on many random integer arrays', () => {
     const random = seeded(1);
-    for (let run = 0; run < 300; run++) {
+    for (let trial = 0; trial < 50; trial++) {
       const length = Math.floor(random() * 40);
       const nums = Array.from({ length }, () => Math.floor(random() * 21) - 10);
-      expect(countingSort(nums, -10, 10)).toEqual([...nums].sort(ascending));
+      expect(
+        countingSort(nums, -10, 10),
+        `seed 1, trial ${trial}: ${JSON.stringify(nums)}`,
+      ).toEqual([...nums].sort(ascending));
     }
   });
 });
@@ -109,11 +115,13 @@ describe('radixSort (TypeScript)', () => {
 
   it('matches the built-in sort on many random arrays', () => {
     const random = seeded(2);
-    for (let run = 0; run < 300; run++) {
+    for (let trial = 0; trial < 50; trial++) {
       const length = Math.floor(random() * 40);
       const digits = Math.floor(random() * 9);
       const nums = Array.from({ length }, () => Math.floor(random() * 10 ** digits));
-      expect(radixSort(nums)).toEqual([...nums].sort(ascending));
+      expect(radixSort(nums), `seed 2, trial ${trial}: ${JSON.stringify(nums)}`).toEqual(
+        [...nums].sort(ascending),
+      );
     }
   });
 });
@@ -151,9 +159,12 @@ describe('bucketSort (TypeScript)', () => {
 
   it('matches the built-in sort on many random arrays', () => {
     const random = seeded(6);
-    for (let run = 0; run < 300; run++) {
+    for (let trial = 0; trial < 50; trial++) {
       const values = Array.from({ length: Math.floor(random() * 60) }, random);
-      expect(bucketSort(values)).toEqual([...values].sort(ascending));
+      expect(
+        bucketSort(values),
+        `seed 6, trial ${trial}: ${JSON.stringify(values)}`,
+      ).toEqual([...values].sort(ascending));
     }
   });
 
@@ -165,13 +176,23 @@ describe('bucketSort (TypeScript)', () => {
 });
 
 describe('insertionSort (TypeScript)', () => {
+  it('handles empty and single-item input', () => {
+    const empty: number[] = [];
+    insertionSort(empty);
+    expect(empty).toEqual([]);
+    const single = [0.5];
+    insertionSort(single);
+    expect(single).toEqual([0.5]);
+  });
+
   it('sorts in place', () => {
     const random = seeded(4);
-    for (let run = 0; run < 200; run++) {
+    for (let trial = 0; trial < 50; trial++) {
       const items = Array.from({ length: Math.floor(random() * 20) }, random);
+      const where = `seed 4, trial ${trial}: ${JSON.stringify(items)}`;
       const expected = [...items].sort(ascending);
       insertionSort(items);
-      expect(items).toEqual(expected);
+      expect(items, where).toEqual(expected);
     }
   });
 });

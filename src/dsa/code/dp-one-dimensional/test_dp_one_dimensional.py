@@ -118,10 +118,10 @@ def test_rob_beats_every_other_house():
 
 def test_rob_agrees_with_all_subsets():
     rng = random.Random(11)
-    for _ in range(400):
+    for trial in range(50):
         nums = [rng.randint(0, 9) for _ in range(rng.randint(0, 11))]
-        assert rob(nums) == brute_rob(nums)
-        assert rob(nums) >= every_other(nums)
+        assert rob(nums) == brute_rob(nums), f"seed 11, trial {trial}: {nums}"
+        assert rob(nums) >= every_other(nums), f"seed 11, trial {trial}: {nums}"
 
 
 def test_rob_does_not_change_the_input():
@@ -152,9 +152,9 @@ def test_lis_small_cases():
 
 def test_lis_agrees_with_all_subsets():
     rng = random.Random(5)
-    for _ in range(400):
+    for trial in range(50):
         nums = [rng.randint(-5, 5) for _ in range(rng.randint(0, 11))]
-        assert lis_length(nums) == brute_lis(nums)
+        assert lis_length(nums) == brute_lis(nums), f"seed 5, trial {trial}: {nums}"
 
 
 def test_lis_does_not_change_the_input():

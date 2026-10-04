@@ -55,12 +55,11 @@ def test_negative_numbers():
 
 def test_agrees_with_bisect_left():
     rng = random.Random(11)
-    for _ in range(200):
+    for trial in range(50):
         nums = sorted(rng.randint(-5, 5) for _ in range(rng.randint(0, 11)))
         for target in range(-7, 8):
             assert lower_bound(nums, target) == bisect_left(nums, target), (
-                nums,
-                target,
+                f"seed 11, trial {trial}: {nums}, {target}"
             )
 
 

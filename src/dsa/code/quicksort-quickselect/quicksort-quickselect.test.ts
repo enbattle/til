@@ -89,18 +89,20 @@ describe('quicksort (TypeScript)', () => {
   });
 
   it('matches a numeric sort with heavy duplicates', () => {
-    randomLists(21, 300, 40, 4).forEach((nums, seed) => {
-      expect(sortedCopy(nums, seed), JSON.stringify(nums)).toEqual(
-        [...nums].sort(ascending),
-      );
+    randomLists(21, 50, 40, 4).forEach((nums, seed) => {
+      expect(
+        sortedCopy(nums, seed),
+        `seed 21, trial ${seed}: ${JSON.stringify(nums)}`,
+      ).toEqual([...nums].sort(ascending));
     });
   });
 
   it('matches a numeric sort with few duplicates', () => {
-    randomLists(22, 200, 60, 10_000).forEach((nums, seed) => {
-      expect(sortedCopy(nums, seed), JSON.stringify(nums)).toEqual(
-        [...nums].sort(ascending),
-      );
+    randomLists(22, 50, 60, 10_000).forEach((nums, seed) => {
+      expect(
+        sortedCopy(nums, seed),
+        `seed 22, trial ${seed}: ${JSON.stringify(nums)}`,
+      ).toEqual([...nums].sort(ascending));
     });
   });
 
@@ -132,12 +134,12 @@ describe('quicksort (TypeScript)', () => {
 
 describe('quickselect (TypeScript)', () => {
   it('returns every k on many small lists', () => {
-    randomLists(31, 150, 9, 5).forEach((nums, seed) => {
+    randomLists(31, 50, 9, 5).forEach((nums, seed) => {
       const expected = [...nums].sort(ascending);
       for (let k = 0; k < nums.length; k++) {
         expect(
           quickselect([...nums], k, seeded(seed)),
-          `${JSON.stringify(nums)}, ${k}`,
+          `seed 31, trial ${seed}: ${JSON.stringify(nums)}, k=${k}`,
         ).toBe(expected[k]);
       }
     });
@@ -149,7 +151,10 @@ describe('quickselect (TypeScript)', () => {
       const length = 50 + Math.floor(random() * 250);
       const nums = Array.from({ length }, () => Math.floor(random() * 31));
       const k = Math.floor(random() * length);
-      expect(quickselect([...nums], k, seeded(seed))).toBe([...nums].sort(ascending)[k]);
+      expect(
+        quickselect([...nums], k, seeded(seed)),
+        `seed 32, trial ${seed}: ${JSON.stringify(nums)}, k=${k}`,
+      ).toBe([...nums].sort(ascending)[k]);
     }
   });
 

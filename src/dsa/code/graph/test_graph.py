@@ -221,37 +221,38 @@ def test_matrix_rows_are_independent():
     assert m.neighbours(2) == []
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_list_and_matrix_match_a_set_of_pairs(seed):
-    rng = random.Random(seed)
-    n = rng.randint(1, 7)
-    directed = rng.random() < 0.5
-    g = Graph(directed)
-    for v in range(n):
-        g.add_vertex(v)
-    m = AdjacencyMatrix(n, directed)
-    edges: set[tuple[int, int]] = set()
+def test_list_and_matrix_match_a_set_of_pairs():
+    for seed in range(50):
+        rng = random.Random(seed)
+        n = rng.randint(1, 7)
+        directed = rng.random() < 0.5
+        g = Graph(directed)
+        for v in range(n):
+            g.add_vertex(v)
+        m = AdjacencyMatrix(n, directed)
+        edges: set[tuple[int, int]] = set()
 
-    def key(u: int, v: int) -> tuple[int, int]:
-        return (u, v) if directed else (min(u, v), max(u, v))
+        def key(u: int, v: int, directed=directed) -> tuple[int, int]:
+            return (u, v) if directed else (min(u, v), max(u, v))
 
-    for _ in range(rng.randint(0, 60)):
-        u, v = rng.randrange(n), rng.randrange(n)
-        if rng.random() < 0.6:
-            expected = key(u, v) not in edges
-            edges.add(key(u, v))
-            assert g.add_edge(u, v) is expected
-            assert m.add_edge(u, v) is expected
-        else:
-            expected = key(u, v) in edges
-            edges.discard(key(u, v))
-            assert g.remove_edge(u, v) is expected
-            assert m.remove_edge(u, v) is expected
-        assert g.edge_count == m.edge_count == len(edges)
-        for a in range(n):
-            want = sorted(b for b in range(n) if key(a, b) in edges)
-            assert sorted(g.neighbours(a)) == want
-            assert m.neighbours(a) == want
-            assert g.degree(a) == m.degree(a) == len(want)
-            for b in range(n):
-                assert g.has_edge(a, b) is m.has_edge(a, b) is (key(a, b) in edges)
+        for step in range(rng.randint(0, 60)):
+            at = f"seed {seed}, step {step}"
+            u, v = rng.randrange(n), rng.randrange(n)
+            if rng.random() < 0.6:
+                expected = key(u, v) not in edges
+                edges.add(key(u, v))
+                assert g.add_edge(u, v) is expected, at
+                assert m.add_edge(u, v) is expected, at
+            else:
+                expected = key(u, v) in edges
+                edges.discard(key(u, v))
+                assert g.remove_edge(u, v) is expected, at
+                assert m.remove_edge(u, v) is expected, at
+            assert g.edge_count == m.edge_count == len(edges), at
+            for a in range(n):
+                want = sorted(b for b in range(n) if key(a, b) in edges)
+                assert sorted(g.neighbours(a)) == want, at
+                assert m.neighbours(a) == want, at
+                assert g.degree(a) == m.degree(a) == len(want), at
+                for b in range(n):
+                    assert g.has_edge(a, b) is m.has_edge(a, b) is (key(a, b) in edges), at

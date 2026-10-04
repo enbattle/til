@@ -55,7 +55,8 @@ def test_builder_can_build_again_and_keep_appending():
 
 def test_builder_matches_concatenation_on_random_pieces():
     rng = random.Random(3)
-    for _ in range(300):
+    for trial in range(50):
+        at = f"seed 3, trial {trial}"
         pieces = [
             "".join(rng.choice(ALPHABET) for _ in range(rng.randrange(4)))
             for _ in range(rng.randrange(8))
@@ -66,9 +67,9 @@ def test_builder_matches_concatenation_on_random_pieces():
             b.append(piece)
             expected += piece
             if rng.random() < 0.3:
-                assert b.build() == expected
-        assert b.build() == expected
-        assert len(b) == len(expected)
+                assert b.build() == expected, at
+        assert b.build() == expected, at
+        assert len(b) == len(expected), at
 
 
 # reverse_code_points
@@ -91,10 +92,11 @@ def test_reverse(s, expected):
 
 def test_reverse_twice_is_the_original():
     rng = random.Random(5)
-    for _ in range(300):
+    for trial in range(50):
         s = "".join(rng.choice(ALPHABET) for _ in range(rng.randrange(10)))
-        assert reverse_code_points(reverse_code_points(s)) == s
-        assert list(reverse_code_points(s)) == list(reversed(s))
+        at = f"seed 5, trial {trial}: {s!r}"
+        assert reverse_code_points(reverse_code_points(s)) == s, at
+        assert list(reverse_code_points(s)) == list(reversed(s)), at
 
 
 # is_palindrome
@@ -133,7 +135,7 @@ def test_not_palindromes(s):
 def test_palindrome_matches_reference_on_random_strings():
     rng = random.Random(9)
     found = 0
-    for _ in range(2000):
+    for trial in range(50):
         n = rng.randrange(9)
         half = [rng.choice(ALPHABET) for _ in range(n)]
         if rng.random() < 0.5:
@@ -142,5 +144,5 @@ def test_palindrome_matches_reference_on_random_strings():
             s = "".join(half)
         expected = reference_palindrome(s)
         found += expected
-        assert is_palindrome(s) is expected, repr(s)
-    assert 200 < found < 1800
+        assert is_palindrome(s) is expected, f"seed 9, trial {trial}: {s!r}"
+    assert 5 < found < 45

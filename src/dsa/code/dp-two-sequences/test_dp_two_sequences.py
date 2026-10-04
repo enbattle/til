@@ -97,18 +97,18 @@ def test_lcs_repeated_characters() -> None:
 
 
 def test_lcs_matches_brute_force_on_random_strings() -> None:
-    for seed in range(5):
-        for a, b in random_pairs(seed, 60, "abc", 8):
-            expected = brute_lcs_length(a, b)
-            assert lcs_length(a, b) == expected, (a, b)
-            result = lcs(a, b)
-            assert len(result) == expected, (a, b)
-            assert is_subsequence(result, a) and is_subsequence(result, b), (a, b)
+    for trial, (a, b) in enumerate(random_pairs(0, 50, "abc", 8)):
+        where = f"seed 0, trial {trial}: {a!r}, {b!r}"
+        expected = brute_lcs_length(a, b)
+        assert lcs_length(a, b) == expected, where
+        result = lcs(a, b)
+        assert len(result) == expected, where
+        assert is_subsequence(result, a) and is_subsequence(result, b), where
 
 
 def test_lcs_is_symmetric_in_length() -> None:
-    for a, b in random_pairs(11, 100, "abcd", 9):
-        assert lcs_length(a, b) == lcs_length(b, a)
+    for trial, (a, b) in enumerate(random_pairs(11, 50, "abcd", 9)):
+        assert lcs_length(a, b) == lcs_length(b, a), f"seed 11, trial {trial}: {a!r}, {b!r}"
 
 
 def test_edit_distance_known_examples() -> None:
@@ -140,27 +140,32 @@ def test_edit_distance_single_operations() -> None:
 
 
 def test_edit_distance_matches_brute_force_on_random_strings() -> None:
-    for seed in range(5):
-        for a, b in random_pairs(seed + 100, 40, "abc", 6):
-            assert edit_distance(a, b) == brute_edit_distance(a, b), (a, b)
+    for trial, (a, b) in enumerate(random_pairs(100, 50, "abc", 6)):
+        assert edit_distance(a, b) == brute_edit_distance(a, b), (
+            f"seed 100, trial {trial}: {a!r}, {b!r}"
+        )
 
 
 def test_edit_distance_is_symmetric_and_bounded() -> None:
-    for a, b in random_pairs(7, 100, "ab", 8):
+    for trial, (a, b) in enumerate(random_pairs(7, 50, "ab", 8)):
+        where = f"seed 7, trial {trial}: {a!r}, {b!r}"
         d = edit_distance(a, b)
-        assert d == edit_distance(b, a)
-        assert abs(len(a) - len(b)) <= d <= max(len(a), len(b))
+        assert d == edit_distance(b, a), where
+        assert abs(len(a) - len(b)) <= d <= max(len(a), len(b)), where
 
 
 def test_rolling_matches_table_on_random_strings() -> None:
-    for seed in range(5):
-        for a, b in random_pairs(seed + 200, 80, "abc", 9):
-            assert edit_distance_rolling(a, b) == edit_distance(a, b), (a, b)
+    for trial, (a, b) in enumerate(random_pairs(200, 50, "abc", 9)):
+        assert edit_distance_rolling(a, b) == edit_distance(a, b), (
+            f"seed 200, trial {trial}: {a!r}, {b!r}"
+        )
 
 
 def test_rolling_matches_brute_force_on_random_strings() -> None:
-    for a, b in random_pairs(300, 100, "ab", 6):
-        assert edit_distance_rolling(a, b) == brute_edit_distance(a, b), (a, b)
+    for trial, (a, b) in enumerate(random_pairs(300, 50, "ab", 6)):
+        assert edit_distance_rolling(a, b) == brute_edit_distance(a, b), (
+            f"seed 300, trial {trial}: {a!r}, {b!r}"
+        )
 
 
 def test_rolling_edge_cases() -> None:

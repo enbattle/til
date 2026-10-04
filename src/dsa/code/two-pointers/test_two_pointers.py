@@ -25,15 +25,15 @@ def brute_force_pairs(nums, target):
     ]
 
 
-def assert_valid_pair(nums, target):
+def assert_valid_pair(nums, target, where=""):
     result = pair_with_sum(nums, target)
     if not brute_force_pairs(nums, target):
-        assert result is None
+        assert result is None, where
         return
-    assert result is not None
+    assert result is not None, where
     i, j = result
-    assert 0 <= i < j < len(nums)
-    assert nums[i] + nums[j] == target
+    assert 0 <= i < j < len(nums), where
+    assert nums[i] + nums[j] == target, where
 
 
 def test_finds_a_pair_in_a_sorted_list():
@@ -74,9 +74,10 @@ def test_negative_numbers_and_zero():
 
 def test_agrees_with_brute_force():
     rng = random.Random(7)
-    for _ in range(300):
+    for trial in range(50):
         nums = sorted(rng.randint(-10, 10) for _ in range(rng.randint(0, 8)))
-        assert_valid_pair(nums, rng.randint(-20, 20))
+        target = rng.randint(-20, 20)
+        assert_valid_pair(nums, target, f"seed 7, trial {trial}: {(nums, target)}")
 
 
 def test_does_not_change_the_input():

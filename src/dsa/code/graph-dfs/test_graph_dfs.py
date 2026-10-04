@@ -89,14 +89,16 @@ def test_components_non_contiguous_labels():
 
 def test_components_match_brute_force_on_random_graphs():
     rng = random.Random(1)
-    for _ in range(400):
+    for trial in range(50):
         n = rng.randint(0, 12)
         edges = [
             (rng.randrange(n), rng.randrange(n))
             for _ in range(rng.randint(0, 14) if n else 0)
         ]
         graph = undirected(n, edges)
-        assert count_components(graph) == brute_components(graph), graph
+        assert count_components(graph) == brute_components(graph), (
+            f"seed 1, trial {trial}: {graph}"
+        )
 
 
 def test_components_deep_path_does_not_overflow_the_call_stack():
@@ -143,11 +145,11 @@ def test_islands_single_row_and_column():
 
 def test_islands_match_brute_force_on_random_grids():
     rng = random.Random(2)
-    for _ in range(400):
+    for trial in range(50):
         rows, cols = rng.randint(1, 8), rng.randint(1, 8)
         density = rng.choice([0.2, 0.5, 0.8])
         grid = [[int(rng.random() < density) for _ in range(cols)] for _ in range(rows)]
-        assert count_islands(grid) == brute_islands(grid), grid
+        assert count_islands(grid) == brute_islands(grid), f"seed 2, trial {trial}: {grid}"
 
 
 def test_islands_large_snake_does_not_overflow_the_call_stack():
@@ -192,7 +194,7 @@ def test_cycle_found_after_acyclic_branches():
 def test_cycle_matches_brute_force_on_random_graphs():
     rng = random.Random(3)
     seen_cycle = seen_acyclic = False
-    for _ in range(600):
+    for trial in range(50):
         n = rng.randint(0, 9)
         edges = [
             (rng.randrange(n), rng.randrange(n))
@@ -200,7 +202,7 @@ def test_cycle_matches_brute_force_on_random_graphs():
         ]
         graph = directed(n, edges)
         expected = brute_has_cycle(graph)
-        assert has_cycle(graph) == expected, graph
+        assert has_cycle(graph) == expected, f"seed 3, trial {trial}: {graph}"
         seen_cycle |= expected
         seen_acyclic |= not expected
     assert seen_cycle and seen_acyclic

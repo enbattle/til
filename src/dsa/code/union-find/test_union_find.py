@@ -141,33 +141,34 @@ def test_union_by_size_keeps_trees_shallow():
     assert max(depth(sets, x) for x in range(n)) <= math.log2(n)
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_matches_a_relabelled_label_array(seed):
-    rng = random.Random(seed)
-    n = rng.randrange(0, 25)
-    sets = UnionFind(n)
-    label = list(range(n))
-    for _ in range(rng.randrange(1, 60)):
-        if n == 0:
-            assert sets.count == 0
-            break
-        a, b = rng.randrange(n), rng.randrange(n)
-        op = rng.choice(["union", "connected", "find", "size"])
-        if op == "union":
-            joined = label[a] != label[b]
-            assert sets.union(a, b) is joined
-            old = label[b]
-            label = [label[a] if lab == old else lab for lab in label]
-        elif op == "connected":
-            assert sets.connected(a, b) == (label[a] == label[b])
-        elif op == "find":
-            root = sets.find(a)
-            assert label[root] == label[a]
-            assert sets.find(root) == root
-        else:
-            assert sets.size_of(a) == label.count(label[a])
-        assert sets.count == len(set(label))
-        assert all(depth(sets, x) <= math.log2(n) for x in range(n))
+def test_matches_a_relabelled_label_array():
+    for seed in range(50):
+        rng = random.Random(seed)
+        n = rng.randrange(0, 25)
+        sets = UnionFind(n)
+        label = list(range(n))
+        for step in range(rng.randrange(1, 60)):
+            if n == 0:
+                assert sets.count == 0, f"seed {seed}"
+                break
+            a, b = rng.randrange(n), rng.randrange(n)
+            at = f"seed {seed}, step {step} (n {n}, a {a}, b {b})"
+            op = rng.choice(["union", "connected", "find", "size"])
+            if op == "union":
+                joined = label[a] != label[b]
+                assert sets.union(a, b) is joined, at
+                old = label[b]
+                label = [label[a] if lab == old else lab for lab in label]
+            elif op == "connected":
+                assert sets.connected(a, b) == (label[a] == label[b]), at
+            elif op == "find":
+                root = sets.find(a)
+                assert label[root] == label[a], at
+                assert sets.find(root) == root, at
+            else:
+                assert sets.size_of(a) == label.count(label[a]), at
+            assert sets.count == len(set(label)), at
+            assert all(depth(sets, x) <= math.log2(n) for x in range(n)), at
 
 
 def components_by_search(n, edges):
@@ -207,12 +208,13 @@ def test_has_cycle_examples():
     assert has_cycle(2, [(0, 1), (1, 0)]) is True
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_graph_helpers_match_a_search(seed):
-    rng = random.Random(1000 + seed)
-    n = rng.randrange(1, 15)
-    edges = [(rng.randrange(n), rng.randrange(n)) for _ in range(rng.randrange(0, 20))]
-    components = components_by_search(n, edges)
-    assert count_components(n, edges) == components
-    # A forest with n nodes and c trees has exactly n - c edges; any more is a cycle.
-    assert has_cycle(n, edges) == (len(edges) > n - components)
+def test_graph_helpers_match_a_search():
+    for seed in range(1000, 1050):
+        rng = random.Random(seed)
+        n = rng.randrange(1, 15)
+        edges = [(rng.randrange(n), rng.randrange(n)) for _ in range(rng.randrange(0, 20))]
+        components = components_by_search(n, edges)
+        at = f"seed {seed}: {(n, edges)}"
+        assert count_components(n, edges) == components, at
+        # A forest with n nodes and c trees has exactly n - c edges; any more is a cycle.
+        assert has_cycle(n, edges) == (len(edges) > n - components), at

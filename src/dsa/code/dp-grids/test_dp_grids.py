@@ -81,9 +81,9 @@ def test_unique_paths_empty():
 
 def test_unique_paths_matches_brute_force():
     rng = random.Random(11)
-    for _ in range(400):
+    for trial in range(50):
         grid = random_grid(rng, 0, 1)
-        assert unique_paths(grid) == brute_unique_paths(grid), grid
+        assert unique_paths(grid) == brute_unique_paths(grid), f"seed 11, trial {trial}: {grid}"
 
 
 @pytest.mark.parametrize("fn", [min_path_sum, min_path_sum_rolling])
@@ -105,18 +105,18 @@ def test_min_path_sum_empty(fn):
 @pytest.mark.parametrize("fn", [min_path_sum, min_path_sum_rolling])
 def test_min_path_sum_matches_brute_force(fn):
     rng = random.Random(23)
-    for _ in range(400):
+    for trial in range(50):
         grid = random_grid(rng, 0, 9)
-        assert fn(grid) == brute_min_path_sum(grid), grid
+        assert fn(grid) == brute_min_path_sum(grid), f"seed 23, trial {trial}: {grid}"
 
 
 def test_min_path_sum_negative_values():
     rng = random.Random(5)
-    for _ in range(200):
+    for trial in range(50):
         grid = random_grid(rng, -5, 5)
         expected = brute_min_path_sum(grid)
-        assert min_path_sum(grid) == expected
-        assert min_path_sum_rolling(grid) == expected
+        assert min_path_sum(grid) == expected, f"seed 5, trial {trial}: {grid}"
+        assert min_path_sum_rolling(grid) == expected, f"seed 5, trial {trial}: {grid}"
 
 
 def test_functions_do_not_change_the_grid():

@@ -140,11 +140,12 @@ describe('0/1 knapsack (TypeScript)', () => {
 
   it('matches brute force on seeded random inputs', () => {
     const rng = seeded(2024);
-    for (let trial = 0; trial < 400; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const { weights, values, capacity } = randomItems(rng);
+      const where = `seed 2024, trial ${trial}: ${JSON.stringify([weights, values, capacity])}`;
       const expected = bruteZeroOne(weights, values, capacity);
-      expect(knapsackTable(weights, values, capacity)).toBe(expected);
-      expect(knapsack01(weights, values, capacity)).toBe(expected);
+      expect(knapsackTable(weights, values, capacity), where).toBe(expected);
+      expect(knapsack01(weights, values, capacity), where).toBe(expected);
     }
   });
 });
@@ -158,12 +159,13 @@ describe('unboundedKnapsack (TypeScript)', () => {
 
   it('matches brute force on seeded random inputs', () => {
     const rng = seeded(7);
-    for (let trial = 0; trial < 300; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const { weights, values, capacity } = randomItems(rng);
       if (weights.length === 0) continue;
-      expect(unboundedKnapsack(weights, values, capacity)).toBe(
-        bruteUnbounded(weights, values, capacity),
-      );
+      expect(
+        unboundedKnapsack(weights, values, capacity),
+        `seed 7, trial ${trial}: ${JSON.stringify([weights, values, capacity])}`,
+      ).toBe(bruteUnbounded(weights, values, capacity));
     }
   });
 });
@@ -185,9 +187,12 @@ describe('minCoins (TypeScript)', () => {
 
   it('matches brute force on seeded random inputs', () => {
     const rng = seeded(11);
-    for (let trial = 0; trial < 400; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const { coins, amount } = randomCoins(rng);
-      expect(minCoins(coins, amount)).toBe(bruteMinCoins(coins, amount));
+      expect(
+        minCoins(coins, amount),
+        `seed 11, trial ${trial}: ${JSON.stringify(coins)}, ${amount}`,
+      ).toBe(bruteMinCoins(coins, amount));
     }
   });
 });
@@ -215,10 +220,13 @@ describe('countCombinations and countOrderings (TypeScript)', () => {
 
   it('match brute force on seeded random inputs', () => {
     const rng = seeded(99);
-    for (let trial = 0; trial < 300; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const { coins, amount } = randomCoins(rng);
-      expect(countCombinations(coins, amount)).toBe(bruteCombinations(coins, amount));
-      expect(countOrderings(coins, amount)).toBe(bruteOrderings(coins, amount));
+      const where = `seed 99, trial ${trial}: ${JSON.stringify(coins)}, ${amount}`;
+      expect(countCombinations(coins, amount), where).toBe(
+        bruteCombinations(coins, amount),
+      );
+      expect(countOrderings(coins, amount), where).toBe(bruteOrderings(coins, amount));
     }
   });
 });

@@ -163,13 +163,14 @@ describe('DynamicArray (TypeScript)', () => {
     );
   });
 
-  it('matches a built-in array on 200 seeded random operation sequences', () => {
-    for (let seed = 0; seed < 200; seed++) {
+  it('matches a built-in array on 50 seeded random operation sequences', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const rand = seeded(seed);
       const int = (lo: number, hi: number) => lo + Math.floor(rand() * (hi - lo + 1));
       const a = new DynamicArray<number>(int(1, 4));
       const ref: number[] = [];
       for (let step = 0; step < 300; step++) {
+        const at = `seed ${seed}, step ${step}`;
         const op = rand();
         if (op < 0.35) {
           const x = int(0, 9);
@@ -181,22 +182,25 @@ describe('DynamicArray (TypeScript)', () => {
           a.insert(i, x);
           ref.splice(i, 0, x);
         } else if (op < 0.65) {
-          expect(a.pop()).toBe(ref.pop());
+          expect(a.pop(), at).toBe(ref.pop());
         } else if (op < 0.8 && ref.length > 0) {
           const i = int(0, ref.length - 1);
-          expect(a.removeAt(i)).toBe(ref.splice(i, 1)[0]);
+          expect(a.removeAt(i), at).toBe(ref.splice(i, 1)[0]);
         } else if (ref.length > 0) {
           const i = int(0, ref.length - 1);
-          expect(a.get(i)).toBe(ref[i]);
+          expect(a.get(i), at).toBe(ref[i]);
           const x = int(0, 9);
           a.set(i, x);
           ref[i] = x;
         }
-        expect(a.length).toBe(ref.length);
-        expect([...a]).toEqual(ref);
-        expect(a.length).toBeLessThanOrEqual(a.capacity);
+        expect(a.length, at).toBe(ref.length);
+        expect([...a], at).toEqual(ref);
+        expect(a.length, at).toBeLessThanOrEqual(a.capacity);
         const unused = storage(a).slice(a.length);
-        expect(unused.every((v) => v === undefined)).toBe(true);
+        expect(
+          unused.every((v) => v === undefined),
+          at,
+        ).toBe(true);
       }
     }
   });

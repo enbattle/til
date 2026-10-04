@@ -1,7 +1,5 @@
 import random
 
-import pytest
-
 from intervals import max_overlap, merge_intervals
 
 
@@ -98,13 +96,13 @@ def test_overlap_end_before_a_later_start_is_not_counted():
     assert max_overlap([(1, 2), (1, 2), (5, 6)]) == 2
 
 
-@pytest.mark.parametrize("seed", range(5))
-def test_agrees_with_brute_force(seed):
-    rng = random.Random(seed)
-    for _ in range(200):
+def test_agrees_with_brute_force():
+    rng = random.Random(0)
+    for trial in range(50):
         intervals = []
         for _ in range(rng.randint(0, 8)):
             start = rng.randint(-6, 12)
             intervals.append((start, start + rng.randint(0, 6)))
-        assert merge_intervals(intervals) == brute_merge(intervals)
-        assert max_overlap(intervals) == brute_max_overlap(intervals)
+        at = f"seed 0, trial {trial}: {intervals}"
+        assert merge_intervals(intervals) == brute_merge(intervals), at
+        assert max_overlap(intervals) == brute_max_overlap(intervals), at

@@ -222,14 +222,15 @@ describe('both functions against brute force (TypeScript)', () => {
     };
     const between = (low: number, high: number) =>
       low + Math.floor(random() * (high - low + 1));
-    for (let n = 0; n < 1000; n++) {
+    for (let n = 0; n < 50; n++) {
       const intervals: Interval[] = [];
       for (let k = between(0, 8); k > 0; k--) {
         const start = between(-6, 12);
         intervals.push([start, start + between(0, 6)]);
       }
-      expect(mergeIntervals(intervals)).toEqual(bruteMerge(intervals));
-      expect(maxOverlap(intervals)).toBe(bruteMaxOverlap(intervals));
+      const at = `seed 11, trial ${n}: ${JSON.stringify(intervals)}`;
+      expect(mergeIntervals(intervals), at).toEqual(bruteMerge(intervals));
+      expect(maxOverlap(intervals), at).toBe(bruteMaxOverlap(intervals));
     }
   });
 });

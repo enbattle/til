@@ -62,20 +62,23 @@ describe('nextGreater (TypeScript)', () => {
 
   it('agrees with brute force on many inputs full of duplicates', () => {
     const random = seededRandom(11);
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 13);
       const nums = Array.from({ length }, () => Math.floor(random() * 5));
-      expect(nextGreater(nums)).toEqual(bruteNextGreater(nums));
-      expect(daysUntilWarmer(nums)).toEqual(bruteDays(nums));
+      const at = `seed 11, trial ${n}: [${nums}]`;
+      expect(nextGreater(nums), at).toEqual(bruteNextGreater(nums));
+      expect(daysUntilWarmer(nums), at).toEqual(bruteDays(nums));
     }
   });
 
   it('agrees with brute force on wide values', () => {
     const random = seededRandom(12);
-    for (let n = 0; n < 200; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 31);
       const nums = Array.from({ length }, () => Math.floor(random() * 101) - 50);
-      expect(nextGreater(nums)).toEqual(bruteNextGreater(nums));
+      expect(nextGreater(nums), `seed 12, trial ${n}: [${nums}]`).toEqual(
+        bruteNextGreater(nums),
+      );
     }
   });
 });

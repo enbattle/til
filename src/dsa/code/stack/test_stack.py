@@ -67,30 +67,31 @@ def test_usable_again_after_emptying():
     assert len(s) == 1
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_matches_a_list_on_random_operations(seed):
-    rng = random.Random(seed)
-    s: Stack[int] = Stack()
-    model: list[int] = []
-    for _ in range(rng.randrange(1, 60)):
-        op = rng.choice(["push", "push", "pop", "peek"])
-        if op == "push":
-            x = rng.randrange(-5, 6)
-            s.push(x)
-            model.append(x)
-        elif op == "pop":
-            if model:
-                assert s.pop() == model.pop()
+def test_matches_a_list_on_random_operations():
+    for seed in range(50):
+        rng = random.Random(seed)
+        s: Stack[int] = Stack()
+        model: list[int] = []
+        for step in range(rng.randrange(1, 60)):
+            at = f"seed {seed}, step {step}"
+            op = rng.choice(["push", "push", "pop", "peek"])
+            if op == "push":
+                x = rng.randrange(-5, 6)
+                s.push(x)
+                model.append(x)
+            elif op == "pop":
+                if model:
+                    assert s.pop() == model.pop(), at
+                else:
+                    with pytest.raises(IndexError):
+                        s.pop()
+            elif model:
+                assert s.peek() == model[-1], at
             else:
                 with pytest.raises(IndexError):
-                    s.pop()
-        elif model:
-            assert s.peek() == model[-1]
-        else:
-            with pytest.raises(IndexError):
-                s.peek()
-        assert len(s) == len(model)
-        assert s.is_empty() == (not model)
+                    s.peek()
+            assert len(s) == len(model), at
+            assert s.is_empty() == (not model), at
 
 
 @pytest.mark.parametrize(
@@ -130,6 +131,6 @@ def balanced_by_erasing(text: str) -> bool:
 
 def test_is_balanced_matches_brute_force_on_random_strings():
     rng = random.Random(3)
-    for _ in range(3000):
+    for trial in range(50):
         text = "".join(rng.choice("()[]{}x") for _ in range(rng.randrange(0, 11)))
-        assert is_balanced(text) == balanced_by_erasing(text), text
+        assert is_balanced(text) == balanced_by_erasing(text), f"seed 3, trial {trial}: {text!r}"

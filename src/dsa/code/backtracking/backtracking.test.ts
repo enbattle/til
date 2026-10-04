@@ -107,9 +107,12 @@ describe('subsets (TypeScript)', () => {
 
   it('agrees with a bitmask enumeration on many random inputs', () => {
     const random = makeRandom(11);
-    for (let n = 0; n < 200; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const values = distinctValues(random, randomInt(random, 0, 8));
-      expect(subsets(values)).toEqual(expectedSubsets(values));
+      expect(
+        subsets(values),
+        `seed 11, trial ${trial}: ${JSON.stringify(values)}`,
+      ).toEqual(expectedSubsets(values));
     }
   });
 
@@ -144,9 +147,12 @@ describe('permutations (TypeScript)', () => {
 
   it('agrees with a position-tuple enumeration on many random inputs', () => {
     const random = makeRandom(12);
-    for (let n = 0; n < 150; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const values = distinctValues(random, randomInt(random, 0, 6));
-      expect(permutations(values)).toEqual(expectedPermutations(values));
+      expect(
+        permutations(values),
+        `seed 12, trial ${trial}: ${JSON.stringify(values)}`,
+      ).toEqual(expectedPermutations(values));
     }
   });
 
@@ -214,14 +220,15 @@ describe('combinationSum (TypeScript)', () => {
 
   it('agrees with a brute-force count on many random inputs', () => {
     const random = makeRandom(13);
-    for (let n = 0; n < 300; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const candidates = Array.from({ length: randomInt(random, 0, 5) }, () =>
         randomInt(random, 1, 8),
       );
       const target = randomInt(random, 0, 14);
-      expect(combinationSum(candidates, target)).toEqual(
-        expectedCombinationSum(candidates, target),
-      );
+      expect(
+        combinationSum(candidates, target),
+        `seed 13, trial ${trial}: ${JSON.stringify(candidates)}, target ${target}`,
+      ).toEqual(expectedCombinationSum(candidates, target));
     }
   });
 });

@@ -81,11 +81,14 @@ describe('maxWindowSum (TypeScript)', () => {
 
   it('agrees with a brute-force search on many random arrays', () => {
     const random = seededRandom(11);
-    for (let n = 0; n < 300; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const length = Math.floor(random() * 13);
       const nums = Array.from({ length }, () => Math.floor(random() * 21) - 10);
       const k = 1 + Math.floor(random() * 14);
-      expect(maxWindowSum(nums, k)).toBe(bruteMaxWindowSum(nums, k));
+      expect(
+        maxWindowSum(nums, k),
+        `seed 11, trial ${trial}: ${JSON.stringify({ nums, k })}`,
+      ).toBe(bruteMaxWindowSum(nums, k));
     }
   });
 });
@@ -116,13 +119,16 @@ describe('longestUniqueSubstring (TypeScript)', () => {
     const random = seededRandom(5);
     for (const alphabet of ['ab', 'abcd', 'abcdefgh', 'a\u{1F600}\u{1F601}b']) {
       const letters = Array.from(alphabet);
-      for (let n = 0; n < 150; n++) {
+      for (let trial = 0; trial < 50; trial++) {
         const length = Math.floor(random() * 15);
         const text = Array.from(
           { length },
           () => letters[Math.floor(random() * letters.length)],
         ).join('');
-        expect(longestUniqueSubstring(text)).toBe(bruteLongestUnique(text));
+        expect(
+          longestUniqueSubstring(text),
+          `seed 5, alphabet ${alphabet}, trial ${trial}: ${JSON.stringify(text)}`,
+        ).toBe(bruteLongestUnique(text));
       }
     }
   });

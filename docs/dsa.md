@@ -102,7 +102,15 @@ The code files:
 - `test_<slug_underscored>.py` (pytest) and `<slug>.test.ts` (vitest) import
   the real code files and cover the edge cases, not only the happy path: empty
   input, duplicates, the boundaries, and a comparison against a brute-force
-  or standard-library answer on many generated inputs where one exists.
+  or standard-library answer on seeded random inputs where one exists.
+- A randomized comparison is one test per property that loops over its
+  trials: at most 50, from a fixed seed (`random.Random(seed)` in pytest, a
+  small seeded generator such as mulberry32 in vitest). Put the seed, and the step or input where cheap, in
+  every assertion's message so a failure can be replayed. Don't parametrize
+  over seeds (`parametrize("seed", …)`, `it.each` over seed arrays): it
+  multiplies the test count and run time without adding coverage. Random
+  inputs rarely hit the edges, so cover empty input and size 1 with explicit
+  fixed cases. `src/dsa/code/heap/` shows the pattern in both languages.
 - Prettier formats the `.ts` file and leaves the markdown's code alone when a
   chunk isn't a complete program, which is the usual case. Keep lines under 90
   characters so the chunks scroll less on a phone.

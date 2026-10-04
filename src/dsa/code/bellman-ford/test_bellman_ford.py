@@ -168,22 +168,28 @@ def test_agrees_with_brute_force_on_many_random_graphs():
     rng = random.Random(7)
     none_count = 0
     negative_edge_count = 0
-    for _ in range(3000):
+    for trial in range(50):
         n, edges, source = random_graph(rng)
         expected = brute_force(n, edges, source)
-        assert bellman_ford(n, edges, source) == expected, (n, edges, source)
+        assert bellman_ford(n, edges, source) == expected, (
+            f"seed 7, trial {trial}: n={n}, edges={edges}, source={source}"
+        )
         if expected is None:
             none_count += 1
         elif any(w < 0 for _, _, w in edges):
             negative_edge_count += 1
-    assert none_count > 100
-    assert negative_edge_count > 100
+    # The sample reaches both kinds of graph: a negative cycle, and negative
+    # edges with no negative cycle.
+    assert none_count >= 5
+    assert negative_edge_count >= 10
 
 
 def test_edge_order_does_not_change_the_answer():
     rng = random.Random(21)
-    for _ in range(500):
+    for trial in range(50):
         n, edges, source = random_graph(rng)
         shuffled = edges[:]
         rng.shuffle(shuffled)
-        assert bellman_ford(n, shuffled, source) == bellman_ford(n, edges, source)
+        assert bellman_ford(n, shuffled, source) == bellman_ford(n, edges, source), (
+            f"seed 21, trial {trial}: n={n}, edges={edges}, source={source}"
+        )

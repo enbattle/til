@@ -46,12 +46,14 @@ def test_range_sum_rejects_bad_ranges():
 
 def test_range_sum_agrees_with_sum_on_random_inputs():
     rng = random.Random(11)
-    for _ in range(300):
+    for trial in range(50):
         nums = [rng.randint(-9, 9) for _ in range(rng.randint(1, 12))]
         prefix = build_prefix(nums)
         left = rng.randrange(len(nums))
         right = rng.randrange(left, len(nums))
-        assert range_sum(prefix, left, right) == sum(nums[left : right + 1])
+        assert range_sum(prefix, left, right) == sum(nums[left : right + 1]), (
+            f"seed 11, trial {trial}: {nums}, {left}..{right}"
+        )
 
 
 def test_count_empty_and_single():
@@ -92,7 +94,9 @@ def test_count_does_not_change_the_input():
 
 def test_count_agrees_with_brute_force():
     rng = random.Random(5)
-    for _ in range(400):
+    for trial in range(50):
         nums = [rng.randint(-4, 4) for _ in range(rng.randint(0, 10))]
         k = rng.randint(-6, 6)
-        assert count_subarrays_with_sum(nums, k) == brute_count(nums, k)
+        assert count_subarrays_with_sum(nums, k) == brute_count(nums, k), (
+            f"seed 5, trial {trial}: {nums}, k {k}"
+        )

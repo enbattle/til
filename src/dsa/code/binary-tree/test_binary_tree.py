@@ -201,19 +201,20 @@ def paths_of(root):
     return found
 
 
-@pytest.mark.parametrize("seed", range(300))
-def test_matches_the_path_reference_on_random_trees(seed):
-    rng = random.Random(seed)
-    tree = random_paths(rng, rng.randrange(40))
-    root = build_tree(serialize(tree))
-    assert paths_of(root) == tree
-    assert preorder(root) == by_key(tree, {"L": "0", "R": "1"}, "")
-    assert inorder(root) == by_key(tree, {"L": "0", "R": "2"}, "1")
-    assert inorder_iterative(root) == inorder(root)
-    assert postorder(root) == by_key(tree, {"L": "0", "R": "1"}, "2")
-    levels = [[] for _ in range(1 + max(map(len, tree), default=-1))]
-    for path in level_paths(tree):
-        levels[len(path)].append(tree[path])
-    assert level_order(root) == levels
-    assert height(root) == max(map(len, tree), default=-1)
-    assert size(root) == len(tree)
+def test_matches_the_path_reference_on_random_trees():
+    for seed in range(50):
+        where = f"seed {seed}"
+        rng = random.Random(seed)
+        tree = random_paths(rng, rng.randrange(40))
+        root = build_tree(serialize(tree))
+        assert paths_of(root) == tree, where
+        assert preorder(root) == by_key(tree, {"L": "0", "R": "1"}, ""), where
+        assert inorder(root) == by_key(tree, {"L": "0", "R": "2"}, "1"), where
+        assert inorder_iterative(root) == inorder(root), where
+        assert postorder(root) == by_key(tree, {"L": "0", "R": "1"}, "2"), where
+        levels = [[] for _ in range(1 + max(map(len, tree), default=-1))]
+        for path in level_paths(tree):
+            levels[len(path)].append(tree[path])
+        assert level_order(root) == levels, where
+        assert height(root) == max(map(len, tree), default=-1), where
+        assert size(root) == len(tree), where

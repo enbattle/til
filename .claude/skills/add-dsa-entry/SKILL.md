@@ -52,7 +52,11 @@ files: they set the depth, the tone and how a walkthrough explains a chunk.
    (vitest), importing the real files. Cover empty input, single elements,
    duplicates, boundaries (the smallest and largest answers), the failure
    case (nothing found, a missing key), and where there's a brute-force or
-   standard-library answer, compare against it on many seeded random inputs.
+   standard-library answer, compare against it on seeded random inputs: one
+   test per property that loops over at most 50 trials from a fixed seed,
+   with the seed (and step) in each assertion's message so a failure can be
+   replayed, no parametrizing over seeds, and empty input and size 1 still
+   as explicit fixed cases (docs/dsa.md, "Code pairs"; `heap` is the model).
    Run `npm run test:py` and `npx vitest run src/dsa/code/<slug>` until both
    pass, and check that a deliberately broken line makes each fail. Break a
    returned value or a comparison outside any loop header, never what decides

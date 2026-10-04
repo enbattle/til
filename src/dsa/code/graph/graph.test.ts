@@ -230,8 +230,8 @@ describe('Graph and AdjacencyMatrix (TypeScript)', () => {
     expect(m.neighbours(2)).toEqual([]);
   });
 
-  it('list and matrix match a set of pairs on 200 seeded random sequences', () => {
-    for (let seed = 0; seed < 200; seed++) {
+  it('list and matrix match a set of pairs on 50 seeded random sequences', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = seeded(seed);
       const n = 1 + Math.floor(random() * 7);
       const directed = random() < 0.5;
@@ -245,29 +245,33 @@ describe('Graph and AdjacencyMatrix (TypeScript)', () => {
       for (let step = 0; step < steps; step++) {
         const u = Math.floor(random() * n);
         const v = Math.floor(random() * n);
+        const at = `seed ${seed}, step ${step}`;
         if (random() < 0.6) {
           const expected = !edges.has(key(u, v));
           edges.add(key(u, v));
-          expect(g.addEdge(u, v)).toBe(expected);
-          expect(m.addEdge(u, v)).toBe(expected);
+          expect(g.addEdge(u, v), at).toBe(expected);
+          expect(m.addEdge(u, v), at).toBe(expected);
         } else {
           const expected = edges.has(key(u, v));
           edges.delete(key(u, v));
-          expect(g.removeEdge(u, v)).toBe(expected);
-          expect(m.removeEdge(u, v)).toBe(expected);
+          expect(g.removeEdge(u, v), at).toBe(expected);
+          expect(m.removeEdge(u, v), at).toBe(expected);
         }
-        expect(g.edgeCount).toBe(edges.size);
-        expect(m.edgeCount).toBe(edges.size);
+        expect(g.edgeCount, at).toBe(edges.size);
+        expect(m.edgeCount, at).toBe(edges.size);
         for (let a = 0; a < n; a++) {
           const want: number[] = [];
           for (let b = 0; b < n; b++) if (edges.has(key(a, b))) want.push(b);
-          expect([...g.neighbours(a)].sort((x, y) => x - y)).toEqual(want);
-          expect(m.neighbours(a)).toEqual(want);
-          expect(g.degree(a)).toBe(want.length);
-          expect(m.degree(a)).toBe(want.length);
+          expect(
+            [...g.neighbours(a)].sort((x, y) => x - y),
+            at,
+          ).toEqual(want);
+          expect(m.neighbours(a), at).toEqual(want);
+          expect(g.degree(a), at).toBe(want.length);
+          expect(m.degree(a), at).toBe(want.length);
           for (let b = 0; b < n; b++) {
-            expect(g.hasEdge(a, b)).toBe(edges.has(key(a, b)));
-            expect(m.hasEdge(a, b)).toBe(edges.has(key(a, b)));
+            expect(g.hasEdge(a, b), at).toBe(edges.has(key(a, b)));
+            expect(m.hasEdge(a, b), at).toBe(edges.has(key(a, b)));
           }
         }
       }

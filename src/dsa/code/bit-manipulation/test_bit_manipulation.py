@@ -26,10 +26,10 @@ def test_count_set_bits_boundaries_and_big_ints():
 
 def test_count_set_bits_agrees_with_bin_and_bit_count():
     rng = random.Random(11)
-    for _ in range(2000):
+    for trial in range(50):
         n = rng.getrandbits(rng.randint(1, 80))
-        assert count_set_bits(n) == bin(n).count("1")
-        assert count_set_bits(n) == n.bit_count()
+        assert count_set_bits(n) == bin(n).count("1"), f"seed 11, trial {trial}: {n}"
+        assert count_set_bits(n) == n.bit_count(), f"seed 11, trial {trial}: {n}"
 
 
 def test_count_set_bits_rejects_negative():
@@ -49,9 +49,11 @@ def test_is_power_of_two_known_values():
 
 def test_is_power_of_two_agrees_with_bit_count():
     rng = random.Random(12)
-    for _ in range(2000):
+    for trial in range(50):
         n = rng.getrandbits(rng.randint(1, 70))
-        assert is_power_of_two(n) == (n > 0 and n.bit_count() == 1)
+        assert is_power_of_two(n) == (n > 0 and n.bit_count() == 1), (
+            f"seed 12, trial {trial}: {n}"
+        )
 
 
 def test_single_number_small_cases():
@@ -75,13 +77,13 @@ def test_single_number_rejects_empty():
 
 def test_single_number_agrees_with_counter():
     rng = random.Random(13)
-    for _ in range(500):
+    for trial in range(50):
         pairs = [rng.randint(-50, 50) for _ in range(rng.randint(0, 12))]
         lone = rng.randint(-100, 100)
         nums = pairs + pairs + [lone]
         rng.shuffle(nums)
         expected = next(v for v, c in Counter(nums).items() if c % 2 == 1)
-        assert single_number(nums) == expected
+        assert single_number(nums) == expected, f"seed 13, trial {trial}: {nums}"
 
 
 def test_subsets_small_cases():
@@ -101,15 +103,16 @@ def test_subsets_small_cases():
 
 def test_subsets_agrees_with_combinations():
     rng = random.Random(14)
-    for _ in range(100):
+    for trial in range(50):
         items = rng.sample(range(100), rng.randint(0, 8))
         expected = {
             frozenset(c) for size in range(len(items) + 1) for c in combinations(items, size)
         }
         got = subsets(items)
-        assert len(got) == 2 ** len(items)
-        assert {frozenset(s) for s in got} == expected
-        assert len({frozenset(s) for s in got}) == len(got)
+        where = f"seed 14, trial {trial}: {items}"
+        assert len(got) == 2 ** len(items), where
+        assert {frozenset(s) for s in got} == expected, where
+        assert len({frozenset(s) for s in got}) == len(got), where
 
 
 def test_subsets_does_not_change_input():
