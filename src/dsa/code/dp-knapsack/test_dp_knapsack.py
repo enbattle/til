@@ -102,11 +102,12 @@ def test_01_item_is_used_at_most_once():
 
 def test_01_matches_brute_force():
     rng = random.Random(2024)
-    for _ in range(400):
+    for trial in range(50):
         weights, values, capacity = random_items(rng)
+        where = f"seed 2024, trial {trial}: {weights}, {values}, {capacity}"
         expected = brute_01(weights, values, capacity)
-        assert knapsack_table(weights, values, capacity) == expected
-        assert knapsack_01(weights, values, capacity) == expected
+        assert knapsack_table(weights, values, capacity) == expected, where
+        assert knapsack_01(weights, values, capacity) == expected, where
 
 
 def test_unbounded_knapsack_basics():
@@ -117,12 +118,14 @@ def test_unbounded_knapsack_basics():
 
 def test_unbounded_knapsack_matches_brute_force():
     rng = random.Random(7)
-    for _ in range(300):
+    for trial in range(50):
         weights, values, capacity = random_items(rng)
         if not weights:
             continue
         expected = brute_unbounded(weights, values, capacity)
-        assert unbounded_knapsack(weights, values, capacity) == expected
+        assert unbounded_knapsack(weights, values, capacity) == expected, (
+            f"seed 7, trial {trial}: {weights}, {values}, {capacity}"
+        )
 
 
 def test_min_coins_greedy_counterexample():
@@ -141,9 +144,11 @@ def test_min_coins_edge_cases():
 
 def test_min_coins_matches_brute_force():
     rng = random.Random(11)
-    for _ in range(400):
+    for trial in range(50):
         coins, amount = random_coins(rng)
-        assert min_coins(coins, amount) == brute_min_coins(coins, amount)
+        assert min_coins(coins, amount) == brute_min_coins(coins, amount), (
+            f"seed 11, trial {trial}: {coins}, {amount}"
+        )
 
 
 def test_ways_worked_example():
@@ -168,14 +173,17 @@ def test_ways_edge_cases():
 
 def test_ways_match_brute_force():
     rng = random.Random(99)
-    for _ in range(300):
+    for trial in range(50):
         coins, amount = random_coins(rng)
-        assert count_combinations(coins, amount) == brute_combinations(coins, amount)
-        assert count_orderings(coins, amount) == brute_orderings(coins, amount)
+        where = f"seed 99, trial {trial}: {coins}, {amount}"
+        assert count_combinations(coins, amount) == brute_combinations(coins, amount), where
+        assert count_orderings(coins, amount) == brute_orderings(coins, amount), where
 
 
 def test_combinations_never_exceed_orderings():
     rng = random.Random(5)
-    for _ in range(100):
+    for trial in range(50):
         coins, amount = random_coins(rng)
-        assert count_combinations(coins, amount) <= count_orderings(coins, amount)
+        assert count_combinations(coins, amount) <= count_orderings(coins, amount), (
+            f"seed 5, trial {trial}: {coins}, {amount}"
+        )

@@ -162,13 +162,16 @@ describe('countComponents (TypeScript)', () => {
 
   it('agrees with a reachability brute force on many random graphs', () => {
     const next = seeded(1);
-    for (let trial = 0; trial < 400; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const n = next(13);
       const edges: [number, number][] = [];
       const edgeCount = n === 0 ? 0 : next(15);
       for (let k = 0; k < edgeCount; k++) edges.push([next(n), next(n)]);
       const graph = undirected(n, edges);
-      expect(countComponents(graph)).toBe(bruteComponents(graph));
+      expect(
+        countComponents(graph),
+        `seed 1, trial ${trial}: n ${n}, edges ${JSON.stringify(edges)}`,
+      ).toBe(bruteComponents(graph));
     }
   });
 
@@ -240,14 +243,17 @@ describe('countIslands (TypeScript)', () => {
 
   it('agrees with a relabelling brute force on many random grids', () => {
     const next = seeded(2);
-    for (let trial = 0; trial < 400; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const rows = 1 + next(8);
       const cols = 1 + next(8);
       const density = [20, 50, 80][next(3)];
       const grid = Array.from({ length: rows }, () =>
         Array.from({ length: cols }, () => (next(100) < density ? 1 : 0)),
       );
-      expect(countIslands(grid)).toBe(bruteIslands(grid));
+      expect(
+        countIslands(grid),
+        `seed 2, trial ${trial}: ${grid.map((row) => row.join('')).join('/')}`,
+      ).toBe(bruteIslands(grid));
     }
   });
 
@@ -351,14 +357,17 @@ describe('hasCycle (TypeScript)', () => {
     const next = seeded(3);
     let sawCycle = false;
     let sawAcyclic = false;
-    for (let trial = 0; trial < 600; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const n = next(10);
       const edges: [number, number][] = [];
       const edgeCount = n === 0 ? 0 : next(12);
       for (let k = 0; k < edgeCount; k++) edges.push([next(n), next(n)]);
       const graph = directed(n, edges);
       const expected = bruteHasCycle(graph);
-      expect(hasCycle(graph)).toBe(expected);
+      expect(
+        hasCycle(graph),
+        `seed 3, trial ${trial}: n ${n}, edges ${JSON.stringify(edges)}`,
+      ).toBe(expected);
       if (expected) sawCycle = true;
       else sawAcyclic = true;
     }

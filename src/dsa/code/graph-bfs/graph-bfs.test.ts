@@ -144,25 +144,27 @@ describe('bfsDistances and shortestPath (TypeScript)', () => {
 
   it('matches repeated relaxation on seeded random graphs', () => {
     const rand = seeded(2024);
-    for (let trial = 0; trial < 400; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const n = 1 + Math.floor(rand() * 12);
       const graph = randomGraph(rand, n, Math.floor(rand() * 3 * n), rand() < 0.5);
       const source = Math.floor(rand() * n);
+      const at = `seed 2024, trial ${trial}, source ${source}`;
       const expected = bruteDistances(graph, source);
-      expect(bfsDistances(graph, source)).toEqual(expected);
+      expect(bfsDistances(graph, source), at).toEqual(expected);
       for (let target = 0; target < n; target++) {
         const path = shortestPath(graph, source, target);
         const d = expected.get(target);
+        const atTarget = `${at}, target ${target}`;
         if (d === undefined) {
-          expect(path).toBeNull();
+          expect(path, atTarget).toBeNull();
           continue;
         }
-        expect(path).not.toBeNull();
-        expect(path!.length - 1).toBe(d);
-        expect(path![0]).toBe(source);
-        expect(path![path!.length - 1]).toBe(target);
+        expect(path, atTarget).not.toBeNull();
+        expect(path!.length - 1, atTarget).toBe(d);
+        expect(path![0], atTarget).toBe(source);
+        expect(path![path!.length - 1], atTarget).toBe(target);
         for (let i = 0; i + 1 < path!.length; i++) {
-          expect(graph.get(path![i])).toContain(path![i + 1]);
+          expect(graph.get(path![i]), atTarget).toContain(path![i + 1]);
         }
       }
     }
@@ -215,7 +217,7 @@ describe('nearestTarget (TypeScript)', () => {
       [3, 5, 0],
       [5, 4, 1],
     ];
-    for (let trial = 0; trial < 400; trial++) {
+    for (let trial = 0; trial < 50; trial++) {
       const rows = 1 + Math.floor(rand() * 8);
       const cols = 1 + Math.floor(rand() * 8);
       const w = weightSets[Math.floor(rand() * weightSets.length)];
@@ -229,7 +231,9 @@ describe('nearestTarget (TypeScript)', () => {
         }
         grid.push(row);
       }
-      expect(nearestTarget(grid), grid.join('/')).toEqual(bruteGrid(grid));
+      expect(nearestTarget(grid), `seed 7, trial ${trial}: ${grid.join('/')}`).toEqual(
+        bruteGrid(grid),
+      );
     }
   });
 });

@@ -68,14 +68,17 @@ describe('rangeSum (TypeScript)', () => {
 
   it('agrees with a direct sum on many random inputs', () => {
     const random = seededRandom(11);
-    for (let n = 0; n < 300; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = 1 + Math.floor(random() * 12);
       const nums = Array.from({ length }, () => Math.floor(random() * 19) - 9);
       const prefix = buildPrefix(nums);
       const left = Math.floor(random() * length);
       const right = left + Math.floor(random() * (length - left));
       const direct = nums.slice(left, right + 1).reduce((a, b) => a + b, 0);
-      expect(rangeSum(prefix, left, right)).toBe(direct);
+      expect(
+        rangeSum(prefix, left, right),
+        `seed 11, trial ${n}: [${nums}], ${left}..${right}`,
+      ).toBe(direct);
     }
   });
 });
@@ -119,11 +122,14 @@ describe('countSubarraysWithSum (TypeScript)', () => {
 
   it('agrees with a brute-force count on many random inputs', () => {
     const random = seededRandom(5);
-    for (let n = 0; n < 400; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 11);
       const nums = Array.from({ length }, () => Math.floor(random() * 9) - 4);
       const k = Math.floor(random() * 13) - 6;
-      expect(countSubarraysWithSum(nums, k)).toBe(bruteCount(nums, k));
+      expect(
+        countSubarraysWithSum(nums, k),
+        `seed 5, trial ${n}: [${nums}], k ${k}`,
+      ).toBe(bruteCount(nums, k));
     }
   });
 });

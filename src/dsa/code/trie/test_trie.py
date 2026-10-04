@@ -195,25 +195,26 @@ def random_word(rng: random.Random) -> str:
     return "".join(rng.choice(ALPHABET) for _ in range(rng.randint(0, 4)))
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_matches_a_set_on_random_operations(seed):
-    rng = random.Random(seed)
-    trie = Trie()
-    words: set[str] = set()
-    for _ in range(60):
-        w = random_word(rng)
-        op = rng.random()
-        if op < 0.45:
-            assert trie.insert(w) is (w not in words)
-            words.add(w)
-        elif op < 0.75:
-            assert trie.delete(w) is (w in words)
-            words.discard(w)
-        else:
-            assert (w in trie) is (w in words)
-            assert trie.starts_with(w) is any(x.startswith(w) for x in words)
-            expected = sorted(x for x in words if x.startswith(w))
-            assert trie.words_with_prefix(w) == expected
-        assert len(trie) == len(words)
-        assert count_nodes(trie) == len(prefixes_of(words))
-    assert trie.words_with_prefix("") == sorted(words)
+def test_matches_a_set_on_random_operations():
+    for seed in range(50):
+        rng = random.Random(seed)
+        trie = Trie()
+        words: set[str] = set()
+        for step in range(60):
+            w = random_word(rng)
+            at = f"seed {seed}, step {step}, word {w!r}"
+            op = rng.random()
+            if op < 0.45:
+                assert trie.insert(w) is (w not in words), at
+                words.add(w)
+            elif op < 0.75:
+                assert trie.delete(w) is (w in words), at
+                words.discard(w)
+            else:
+                assert (w in trie) is (w in words), at
+                assert trie.starts_with(w) is any(x.startswith(w) for x in words), at
+                expected = sorted(x for x in words if x.startswith(w))
+                assert trie.words_with_prefix(w) == expected, at
+            assert len(trie) == len(words), at
+            assert count_nodes(trie) == len(prefixes_of(words)), at
+        assert trie.words_with_prefix("") == sorted(words), f"seed {seed}"

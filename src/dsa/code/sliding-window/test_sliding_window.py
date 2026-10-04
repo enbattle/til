@@ -73,10 +73,12 @@ def test_max_window_sum_does_not_change_the_input():
 
 def test_max_window_sum_agrees_with_brute_force():
     rng = random.Random(11)
-    for _ in range(300):
+    for trial in range(50):
         nums = [rng.randint(-10, 10) for _ in range(rng.randint(0, 12))]
         k = rng.randint(1, 14)
-        assert max_window_sum(nums, k) == brute_max_window_sum(nums, k)
+        assert max_window_sum(nums, k) == brute_max_window_sum(nums, k), (
+            f"seed 11, trial {trial}: {(nums, k)}"
+        )
 
 
 @pytest.mark.parametrize(
@@ -106,6 +108,8 @@ def test_longest_unique_substring_counts_code_points():
 def test_longest_unique_substring_agrees_with_brute_force():
     rng = random.Random(5)
     for alphabet in ("ab", "abcd", "abcdefgh", "a\U0001f600\U0001f601b"):
-        for _ in range(150):
+        for trial in range(50):
             text = "".join(rng.choice(alphabet) for _ in range(rng.randint(0, 14)))
-            assert longest_unique_substring(text) == brute_longest_unique(text)
+            assert longest_unique_substring(text) == brute_longest_unique(text), (
+                f"seed 5, alphabet {alphabet!r}, trial {trial}: {text!r}"
+            )

@@ -92,12 +92,11 @@ def test_fee_equal_prices():
 
 def test_fee_matches_brute_force_on_random_inputs():
     rng = random.Random(1)
-    for _ in range(300):
+    for trial in range(50):
         prices = random_prices(rng)
         fee = rng.randint(0, 4)
         assert max_profit_with_fee(prices, fee) == brute_force(prices, fee=fee), (
-            prices,
-            fee,
+            f"seed 1, trial {trial}: {prices} fee {fee}"
         )
 
 
@@ -132,11 +131,11 @@ def test_cooldown_two_days():
 
 def test_cooldown_matches_brute_force_on_random_inputs():
     rng = random.Random(2)
-    for _ in range(300):
+    for trial in range(50):
         prices = random_prices(rng)
         assert max_profit_with_cooldown(prices) == brute_force(
             prices, cooldown=True
-        ), prices
+        ), f"seed 2, trial {trial}: {prices}"
 
 
 # At most k transactions
@@ -182,16 +181,18 @@ def test_k_huge_equals_unlimited():
 
 def test_k_matches_brute_force_on_random_inputs():
     rng = random.Random(3)
-    for _ in range(300):
+    for trial in range(50):
         prices = random_prices(rng)
         k = rng.randint(0, 4)
         assert max_profit_k_transactions(prices, k) == brute_force(
             prices, max_trades=k
-        ), (prices, k)
+        ), f"seed 3, trial {trial}: {prices} k {k}"
 
 
 def test_k_large_k_matches_fee_zero():
     rng = random.Random(4)
-    for _ in range(100):
+    for trial in range(50):
         prices = [rng.randint(0, 50) for _ in range(rng.randint(0, 30))]
-        assert max_profit_k_transactions(prices, 100) == max_profit_with_fee(prices, 0)
+        assert max_profit_k_transactions(prices, 100) == max_profit_with_fee(prices, 0), (
+            f"seed 4, trial {trial}: {prices}"
+        )

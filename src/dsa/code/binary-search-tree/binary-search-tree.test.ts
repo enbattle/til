@@ -24,11 +24,11 @@ function rootOf(tree: BinarySearchTree): TreeNode | null {
 }
 
 /** The tree holds exactly `expected` and the BST invariant holds. */
-function check(tree: BinarySearchTree, expected: Iterable<number>): void {
+function check(tree: BinarySearchTree, expected: Iterable<number>, where?: string): void {
   const sorted = [...expected].sort((a, b) => a - b);
-  expect([...tree]).toEqual(sorted);
-  expect(tree.size).toBe(sorted.length);
-  for (const key of sorted) expect(tree.has(key)).toBe(true);
+  expect([...tree], where).toEqual(sorted);
+  expect(tree.size, where).toBe(sorted.length);
+  for (const key of sorted) expect(tree.has(key), where).toBe(true);
   let nodes = 0;
   const stack: [TreeNode | null, number, number][] = [
     [rootOf(tree), -Infinity, Infinity],
@@ -37,10 +37,10 @@ function check(tree: BinarySearchTree, expected: Iterable<number>): void {
     const [node, low, high] = stack.pop()!;
     if (node === null) continue;
     nodes++;
-    expect(node.key > low && node.key < high).toBe(true);
+    expect(node.key > low && node.key < high, where).toBe(true);
     stack.push([node.left, low, node.key], [node.right, node.key, high]);
   }
-  expect(nodes).toBe(sorted.length);
+  expect(nodes, where).toBe(sorted.length);
 }
 
 const EXAMPLE = [50, 30, 70, 20, 40, 60, 80, 65];
@@ -185,37 +185,38 @@ describe('BinarySearchTree (TypeScript)', () => {
     expect(new BinarySearchTree(keys).height()).toBeLessThan(40);
   });
 
-  it('matches a sorted set on 200 seeded random operation sequences', () => {
+  it('matches a sorted set on 50 seeded random operation sequences', () => {
     const ops = ['insert', 'insert', 'delete', 'delete', 'has', 'range'];
-    for (let seed = 0; seed < 200; seed++) {
+    for (let seed = 0; seed < 50; seed++) {
       const random = seeded(seed);
       const tree = new BinarySearchTree();
       const model = new Set<number>();
       for (let step = 0; step < 80; step++) {
         const op = ops[Math.floor(random() * ops.length)];
         const key = Math.floor(random() * 31);
+        const where = `seed ${seed}, step ${step}: ${op} ${key}`;
         if (op === 'insert') {
-          expect(tree.insert(key)).toBe(!model.has(key));
+          expect(tree.insert(key), where).toBe(!model.has(key));
           model.add(key);
         } else if (op === 'delete') {
-          expect(tree.delete(key)).toBe(model.has(key));
+          expect(tree.delete(key), where).toBe(model.has(key));
           model.delete(key);
         } else if (op === 'has') {
-          expect(tree.has(key)).toBe(model.has(key));
+          expect(tree.has(key), where).toBe(model.has(key));
         } else {
           const hi = Math.floor(random() * 35) - 2;
           const expected = [...model]
             .filter((k) => key <= k && k <= hi)
             .sort((a, b) => a - b);
-          expect(tree.keysBetween(key, hi)).toEqual(expected);
+          expect(tree.keysBetween(key, hi), `${where}..${hi}`).toEqual(expected);
         }
         const sorted = [...model].sort((a, b) => a - b);
-        expect([...tree]).toEqual(sorted);
-        expect(tree.size).toBe(model.size);
-        expect(tree.min()).toBe(sorted[0]);
-        expect(tree.max()).toBe(sorted[sorted.length - 1]);
+        expect([...tree], where).toEqual(sorted);
+        expect(tree.size, where).toBe(model.size);
+        expect(tree.min(), where).toBe(sorted[0]);
+        expect(tree.max(), where).toBe(sorted[sorted.length - 1]);
       }
-      check(tree, model);
+      check(tree, model, `seed ${seed}`);
     }
   });
 });

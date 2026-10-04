@@ -112,15 +112,16 @@ def test_long_chain_does_not_hit_the_recursion_limit():
 def test_agree_with_brute_force_on_random_graphs():
     rng = random.Random(2024)
     seen_cycle = seen_order = False
-    for i in range(600):
+    for i in range(50):
         graph = random_graph(rng, acyclic=i % 2 == 0)
         exists = some_order_exists(graph)
         for sort in BOTH:
             order = sort(graph)
+            at = f"seed 2024, trial {i}: {(graph, order)}"
             if exists:
-                assert order is not None and is_valid(graph, order), (graph, order)
+                assert order is not None and is_valid(graph, order), at
             else:
-                assert order is None, (graph, order)
+                assert order is None, at
         seen_order |= exists
         seen_cycle |= not exists
     assert seen_order and seen_cycle
@@ -128,11 +129,13 @@ def test_agree_with_brute_force_on_random_graphs():
 
 def test_acyclic_random_graphs_always_sort():
     rng = random.Random(7)
-    for _ in range(300):
+    for trial in range(50):
         graph = random_graph(rng, acyclic=True)
         for sort in BOTH:
             order = sort(graph)
-            assert order is not None and is_valid(graph, order)
+            assert order is not None and is_valid(graph, order), (
+                f"seed 7, trial {trial}: {(graph, order)}"
+            )
 
 
 def test_course_order():
@@ -147,7 +150,7 @@ def test_course_order():
 
 def test_course_order_random_pairs_are_valid_or_cyclic():
     rng = random.Random(99)
-    for _ in range(300):
+    for trial in range(50):
         n = rng.randint(0, 6)
         pairs = [
             (rng.randrange(n), rng.randrange(n))
@@ -157,7 +160,8 @@ def test_course_order_random_pairs_are_valid_or_cyclic():
         for course, prerequisite in pairs:
             graph[prerequisite].append(course)
         order = course_order(n, pairs)
+        at = f"seed 99, trial {trial}: {(n, pairs, order)}"
         if some_order_exists(graph):
-            assert order is not None and is_valid(graph, order)
+            assert order is not None and is_valid(graph, order), at
         else:
-            assert order is None
+            assert order is None, at

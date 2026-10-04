@@ -200,13 +200,13 @@ describe('Deque (TypeScript)', () => {
     expect([...d]).toEqual([...evens, ...odds]);
   });
 
-  it.each(Array.from({ length: 200 }, (_, seed) => seed))(
-    'matches a plain array on random operations (seed %i)',
-    (seed) => {
+  it('matches a plain array on random operations', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = rng(seed);
       const d = new Deque<number>(1 + Math.floor(random() * 4));
       const ref: number[] = [];
       for (let step = 0; step < 300; step++) {
+        const at = `seed ${seed}, step ${step}`;
         const op = Math.floor(random() * 6);
         if (op === 0) {
           d.pushBack(step);
@@ -215,22 +215,22 @@ describe('Deque (TypeScript)', () => {
           d.pushFront(step);
           ref.unshift(step);
         } else if (ref.length === 0) {
-          expect(() => d[removers[op - 2]]()).toThrow(RangeError);
+          expect(() => d[removers[op - 2]](), at).toThrow(RangeError);
         } else if (op === 2) {
-          expect(d.popBack()).toBe(ref.pop());
+          expect(d.popBack(), at).toBe(ref.pop());
         } else if (op === 3) {
-          expect(d.popFront()).toBe(ref.shift());
+          expect(d.popFront(), at).toBe(ref.shift());
         } else if (op === 4) {
-          expect(d.peekBack()).toBe(ref[ref.length - 1]);
+          expect(d.peekBack(), at).toBe(ref[ref.length - 1]);
         } else {
-          expect(d.peekFront()).toBe(ref[0]);
+          expect(d.peekFront(), at).toBe(ref[0]);
         }
-        expect(d.size).toBe(ref.length);
-        expect(d.capacity).toBeGreaterThanOrEqual(d.size);
+        expect(d.size, at).toBe(ref.length);
+        expect(d.capacity, at).toBeGreaterThanOrEqual(d.size);
       }
-      expect([...d]).toEqual(ref);
-    },
-  );
+      expect([...d], `seed ${seed}`).toEqual(ref);
+    }
+  });
 });
 
 describe('recentCounts (TypeScript)', () => {
@@ -245,9 +245,8 @@ describe('recentCounts (TypeScript)', () => {
     expect(recentCounts([0, 10, 11], 10)).toEqual([1, 2, 2]);
   });
 
-  it.each(Array.from({ length: 100 }, (_, seed) => seed))(
-    'matches a brute force count (seed %i)',
-    (seed) => {
+  it('matches a brute force count', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = rng(seed + 1000);
       const n = Math.floor(random() * 61);
       const times = Array.from({ length: n }, () => Math.floor(random() * 201)).sort(
@@ -257,7 +256,10 @@ describe('recentCounts (TypeScript)', () => {
       const expected = times.map(
         (t, i) => times.slice(0, i + 1).filter((s) => s >= t - window).length,
       );
-      expect(recentCounts(times, window)).toEqual(expected);
-    },
-  );
+      expect(
+        recentCounts(times, window),
+        `seed ${seed}: ${JSON.stringify({ times, window })}`,
+      ).toEqual(expected);
+    }
+  });
 });

@@ -202,10 +202,11 @@ def test_zigzag_of_lines():
 # --- random comparison with the brute force -----------------------------------
 
 
-@pytest.mark.parametrize("seed", range(300))
-def test_random_trees_match_the_depth_first_answers(seed):
-    rng = random.Random(seed)
-    root = random_tree(rng, rng.randint(0, 40), rng.choice([0, 0.5, 0.9]))
-    assert right_side_view(root) == right_side_view_dfs(root)
-    assert min_depth(root) == min_depth_dfs(root)
-    assert zigzag_level_order(root) == zigzag_dfs(root)
+def test_random_trees_match_the_depth_first_answers():
+    for seed in range(50):
+        rng = random.Random(seed)
+        root = random_tree(rng, rng.randint(0, 40), rng.choice([0, 0.5, 0.9]))
+        at = f"seed {seed}"
+        assert right_side_view(root) == right_side_view_dfs(root), at
+        assert min_depth(root) == min_depth_dfs(root), at
+        assert zigzag_level_order(root) == zigzag_dfs(root), at

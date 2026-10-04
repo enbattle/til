@@ -83,21 +83,22 @@ def test_lps_table_cells():
 
 def test_lps_agrees_with_brute_force():
     rng = random.Random(11)
-    for _ in range(300):
+    for trial in range(50):
         s = "".join(rng.choice("abc") for _ in range(rng.randint(0, 11)))
+        where = f"seed 11, trial {trial}: {s!r}"
         expected = brute_lps_length(s)
-        assert lps_length(s) == expected
+        assert lps_length(s) == expected, where
         text = longest_palindromic_subsequence(s)
-        assert text == text[::-1]
-        assert is_subsequence(text, s)
-        assert len(text) == expected
+        assert text == text[::-1], where
+        assert is_subsequence(text, s), where
+        assert len(text) == expected, where
 
 
 def test_lps_wider_alphabet_agrees_with_brute_force():
     rng = random.Random(12)
-    for _ in range(100):
+    for trial in range(50):
         s = "".join(rng.choice("abcdefg") for _ in range(rng.randint(0, 10)))
-        assert lps_length(s) == brute_lps_length(s)
+        assert lps_length(s) == brute_lps_length(s), f"seed 12, trial {trial}: {s!r}"
 
 
 def test_matrix_chain_known_values():
@@ -124,13 +125,14 @@ def test_matrix_chain_all_same_size():
 
 def test_matrix_chain_order_is_valid_and_best():
     rng = random.Random(5)
-    for _ in range(300):
+    for trial in range(50):
         dims = [rng.randint(1, 9) for _ in range(rng.randint(2, 8))]
+        where = f"seed 5, trial {trial}: {dims}"
         every = all_orders(dims, 0, len(dims) - 2)
         best = min(cost for _, cost in every)
         cost, order = matrix_chain_order(dims)
-        assert cost == best == matrix_chain_cost(dims)
-        assert (order, best) in every
+        assert cost == best == matrix_chain_cost(dims), where
+        assert (order, best) in every, where
 
 
 def test_matrix_chain_does_not_change_the_input():

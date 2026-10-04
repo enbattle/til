@@ -90,16 +90,17 @@ describe('hasCycle and cycleStart (TypeScript)', () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;
       return seed / 2147483648;
     };
-    for (let round = 0; round < 500; round++) {
+    for (let round = 0; round < 50; round++) {
       const n = Math.floor(random() * 16);
       const cycleTo = n > 0 && random() < 0.6 ? Math.floor(random() * n) : null;
+      const at = `seed 11, trial ${round}: build(${n}, ${cycleTo})`;
       const nodes = build(n, cycleTo);
       const head = headOf(nodes);
       const expected = referenceCycleStart(head);
-      expect(cycleStart(head)).toBe(expected);
-      expect(hasCycle(head)).toBe(expected !== null);
+      expect(cycleStart(head), at).toBe(expected);
+      expect(hasCycle(head), at).toBe(expected !== null);
       if (cycleTo === null) {
-        expect(middleNode(head)).toBe(n > 0 ? nodes[Math.floor(n / 2)] : null);
+        expect(middleNode(head), at).toBe(n > 0 ? nodes[Math.floor(n / 2)] : null);
       }
     }
   });

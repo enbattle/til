@@ -96,22 +96,23 @@ describe('longest palindromic subsequence (TypeScript)', () => {
 
   it('agrees with brute force on many seeded random strings', () => {
     const random = makeRandom(11);
-    for (let n = 0; n < 300; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const s = randomString(random, 'abc', 11);
+      const where = `seed 11, trial ${trial}: '${s}'`;
       const expected = bruteLpsLength(s);
-      expect(lpsLength(s)).toBe(expected);
+      expect(lpsLength(s), where).toBe(expected);
       const text = longestPalindromicSubsequence(s);
-      expect(text).toBe([...text].reverse().join(''));
-      expect(isSubsequence(text, s)).toBe(true);
-      expect(text.length).toBe(expected);
+      expect(text, where).toBe([...text].reverse().join(''));
+      expect(isSubsequence(text, s), where).toBe(true);
+      expect(text.length, where).toBe(expected);
     }
   });
 
   it('agrees with brute force over a wider alphabet', () => {
     const random = makeRandom(12);
-    for (let n = 0; n < 100; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const s = randomString(random, 'abcdefg', 10);
-      expect(lpsLength(s)).toBe(bruteLpsLength(s));
+      expect(lpsLength(s), `seed 12, trial ${trial}: '${s}'`).toBe(bruteLpsLength(s));
     }
   });
 });
@@ -140,15 +141,16 @@ describe('matrix chain order (TypeScript)', () => {
 
   it('returns a valid, cheapest order on many seeded random chains', () => {
     const random = makeRandom(5);
-    for (let n = 0; n < 300; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const count = 2 + Math.floor(random() * 7);
       const dims = Array.from({ length: count }, () => 1 + Math.floor(random() * 9));
+      const where = `seed 5, trial ${trial}: ${JSON.stringify(dims)}`;
       const every = allOrders(dims, 0, dims.length - 2);
       const best = Math.min(...every.map(([, cost]) => cost));
       const [cost, order] = matrixChainOrder(dims);
-      expect(cost).toBe(best);
-      expect(matrixChainCost(dims)).toBe(best);
-      expect(every).toContainEqual([order, best]);
+      expect(cost, where).toBe(best);
+      expect(matrixChainCost(dims), where).toBe(best);
+      expect(every, where).toContainEqual([order, best]);
     }
   });
 

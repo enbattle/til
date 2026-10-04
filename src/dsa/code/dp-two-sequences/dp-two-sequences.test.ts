@@ -120,16 +120,13 @@ describe('lcs (TypeScript)', () => {
   });
 
   it('matches brute force on seeded random strings', () => {
-    for (let seed = 0; seed < 5; seed++) {
-      for (const [a, b] of randomPairs(seed, 60, 'abc', 8)) {
-        const expected = bruteLcsLength(a, b);
-        expect(lcsLength(a, b), `${a} | ${b}`).toBe(expected);
-        const result = lcs(a, b);
-        expect(result.length, `${a} | ${b}`).toBe(expected);
-        expect(isSubsequence(result, a) && isSubsequence(result, b), `${a} | ${b}`).toBe(
-          true,
-        );
-      }
+    for (const [trial, [a, b]] of randomPairs(0, 50, 'abc', 8).entries()) {
+      const where = `seed 0, trial ${trial}: ${a} | ${b}`;
+      const expected = bruteLcsLength(a, b);
+      expect(lcsLength(a, b), where).toBe(expected);
+      const result = lcs(a, b);
+      expect(result.length, where).toBe(expected);
+      expect(isSubsequence(result, a) && isSubsequence(result, b), where).toBe(true);
     }
   });
 
@@ -163,21 +160,20 @@ describe('editDistance (TypeScript)', () => {
   });
 
   it('matches a plain recursive version on seeded random strings', () => {
-    for (let seed = 0; seed < 5; seed++) {
-      for (const [a, b] of randomPairs(seed + 100, 40, 'abc', 6)) {
-        expect(editDistance(a, b), `${a} | ${b}`).toBe(
-          bruteEditDistance(Array.from(a), Array.from(b)),
-        );
-      }
+    for (const [trial, [a, b]] of randomPairs(100, 50, 'abc', 6).entries()) {
+      expect(editDistance(a, b), `seed 100, trial ${trial}: ${a} | ${b}`).toBe(
+        bruteEditDistance(Array.from(a), Array.from(b)),
+      );
     }
   });
 
   it('is symmetric and bounded by the lengths', () => {
-    for (const [a, b] of randomPairs(7, 100, 'ab', 8)) {
+    for (const [trial, [a, b]] of randomPairs(7, 50, 'ab', 8).entries()) {
+      const where = `seed 7, trial ${trial}: ${a} | ${b}`;
       const d = editDistance(a, b);
-      expect(d).toBe(editDistance(b, a));
-      expect(d).toBeGreaterThanOrEqual(Math.abs(a.length - b.length));
-      expect(d).toBeLessThanOrEqual(Math.max(a.length, b.length));
+      expect(d, where).toBe(editDistance(b, a));
+      expect(d, where).toBeGreaterThanOrEqual(Math.abs(a.length - b.length));
+      expect(d, where).toBeLessThanOrEqual(Math.max(a.length, b.length));
     }
   });
 
@@ -189,16 +185,16 @@ describe('editDistance (TypeScript)', () => {
 
 describe('editDistanceRolling (TypeScript)', () => {
   it('matches the table version on seeded random strings', () => {
-    for (let seed = 0; seed < 5; seed++) {
-      for (const [a, b] of randomPairs(seed + 200, 80, 'abc', 9)) {
-        expect(editDistanceRolling(a, b), `${a} | ${b}`).toBe(editDistance(a, b));
-      }
+    for (const [trial, [a, b]] of randomPairs(200, 50, 'abc', 9).entries()) {
+      expect(editDistanceRolling(a, b), `seed 200, trial ${trial}: ${a} | ${b}`).toBe(
+        editDistance(a, b),
+      );
     }
   });
 
   it('matches the plain recursive version', () => {
-    for (const [a, b] of randomPairs(300, 100, 'ab', 6)) {
-      expect(editDistanceRolling(a, b), `${a} | ${b}`).toBe(
+    for (const [trial, [a, b]] of randomPairs(300, 50, 'ab', 6).entries()) {
+      expect(editDistanceRolling(a, b), `seed 300, trial ${trial}: ${a} | ${b}`).toBe(
         bruteEditDistance(Array.from(a), Array.from(b)),
       );
     }

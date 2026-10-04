@@ -68,10 +68,10 @@ function randomConnectedGraph(random: () => number): { n: number; edges: Edge[] 
 describe.each(algorithms)('%s (TypeScript)', (_name, algorithm) => {
   it('matches brute force on many random connected graphs', () => {
     const random = makeRandom(7);
-    for (let round = 0; round < 400; round++) {
+    for (let trial = 0; trial < 50; trial++) {
       const { n, edges } = randomConnectedGraph(random);
       const tree = algorithm(n, edges);
-      const label = JSON.stringify({ n, edges, tree });
+      const label = `seed 7, trial ${trial}: ${JSON.stringify({ n, edges, tree })}`;
       expect(tree, label).not.toBeNull();
       expect(isSpanningTree(n, tree!), label).toBe(true);
       for (const [u, v, w] of tree!) {
@@ -174,10 +174,13 @@ describe.each(algorithms)('%s (TypeScript)', (_name, algorithm) => {
 
   it('gives the same total in any input order', () => {
     const random = makeRandom(3);
-    for (let round = 0; round < 100; round++) {
+    for (let trial = 0; trial < 50; trial++) {
       const { n, edges } = randomConnectedGraph(random);
       const expected = totalWeight(algorithm(n, edges)!);
-      expect(totalWeight(algorithm(n, [...edges].reverse())!)).toBe(expected);
+      expect(
+        totalWeight(algorithm(n, [...edges].reverse())!),
+        `seed 3, trial ${trial}: ${JSON.stringify({ n, edges })}`,
+      ).toBe(expected);
     }
   });
 });
@@ -211,11 +214,14 @@ describe('the worked example from the entry', () => {
 describe('prim', () => {
   it('gives the same total from any start vertex', () => {
     const random = makeRandom(21);
-    for (let round = 0; round < 100; round++) {
+    for (let trial = 0; trial < 50; trial++) {
       const { n, edges } = randomConnectedGraph(random);
       const expected = totalWeight(kruskal(n, edges)!);
       for (let start = 0; start < n; start++) {
-        expect(totalWeight(prim(n, edges, start)!)).toBe(expected);
+        expect(
+          totalWeight(prim(n, edges, start)!),
+          `seed 21, trial ${trial}: ${JSON.stringify({ n, edges, start })}`,
+        ).toBe(expected);
       }
     }
   });

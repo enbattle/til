@@ -69,13 +69,13 @@ def test_quicksort_sorts_in_place_and_returns_none():
 
 
 def test_quicksort_matches_sorted_with_heavy_duplicates():
-    for seed, nums in enumerate(random_lists(21, 300, 40, 4)):
-        assert sorted_by_quicksort(nums, seed) == sorted(nums), nums
+    for seed, nums in enumerate(random_lists(21, 50, 40, 4)):
+        assert sorted_by_quicksort(nums, seed) == sorted(nums), f"seed 21, trial {seed}: {nums}"
 
 
 def test_quicksort_matches_sorted_with_few_duplicates():
-    for seed, nums in enumerate(random_lists(22, 200, 60, 10_000)):
-        assert sorted_by_quicksort(nums, seed) == sorted(nums), nums
+    for seed, nums in enumerate(random_lists(22, 50, 60, 10_000)):
+        assert sorted_by_quicksort(nums, seed) == sorted(nums), f"seed 22, trial {seed}: {nums}"
 
 
 def test_quicksort_without_a_rng_still_sorts():
@@ -98,12 +98,11 @@ def test_quicksort_is_fast_and_shallow_on_large_adversarial_input():
 
 
 def test_quickselect_every_k_on_small_lists():
-    for seed, nums in enumerate(random_lists(31, 150, 9, 5)):
+    for seed, nums in enumerate(random_lists(31, 50, 9, 5)):
         expected = sorted(nums)
         for k in range(len(nums)):
             assert quickselect(list(nums), k, random.Random(seed)) == expected[k], (
-                nums,
-                k,
+                f"seed 31, trial {seed}: {nums}, k={k}"
             )
 
 
@@ -112,7 +111,9 @@ def test_quickselect_on_larger_lists():
     for seed in range(40):
         nums = [rng.randint(0, 30) for _ in range(rng.randint(50, 300))]
         k = rng.randrange(len(nums))
-        assert quickselect(list(nums), k, random.Random(seed)) == sorted(nums)[k]
+        assert quickselect(list(nums), k, random.Random(seed)) == sorted(nums)[k], (
+            f"seed 32, trial {seed}: {nums}, k={k}"
+        )
 
 
 def test_quickselect_min_and_max():

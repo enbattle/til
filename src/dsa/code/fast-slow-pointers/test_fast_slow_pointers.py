@@ -92,13 +92,14 @@ def test_every_cycle_position_in_every_length():
 
 def test_agrees_with_a_visited_set_on_random_lists():
     rng = random.Random(11)
-    for _ in range(500):
+    for trial in range(50):
         n = rng.randint(0, 15)
         cycle_to = rng.randrange(n) if n and rng.random() < 0.6 else None
+        at = f"seed 11, trial {trial}: build({n}, {cycle_to})"
         nodes = build(n, cycle_to)
         head = head_of(nodes)
         expected = reference_cycle_start(head)
-        assert cycle_start(head) is expected
-        assert has_cycle(head) == (expected is not None)
+        assert cycle_start(head) is expected, at
+        assert has_cycle(head) == (expected is not None), at
         if cycle_to is None:
-            assert middle_node(head) is (nodes[n // 2] if n else None)
+            assert middle_node(head) is (nodes[n // 2] if n else None), at

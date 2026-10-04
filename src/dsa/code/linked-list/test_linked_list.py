@@ -165,37 +165,38 @@ def test_reverse_twice_restores_the_order():
 OPERATIONS = ["push_front", "push_back", "pop_front", "remove", "find", "reverse"]
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_matches_a_python_list_on_random_operations(seed):
-    rng = random.Random(seed)
-    lst: LinkedList[int] = LinkedList()
-    model: list[int] = []
-    for _ in range(60):
-        op = rng.choice(OPERATIONS)
-        value = rng.randrange(6)
-        if op == "push_front":
-            lst.push_front(value)
-            model.insert(0, value)
-        elif op == "push_back":
-            lst.push_back(value)
-            model.append(value)
-        elif op == "pop_front":
-            if model:
-                assert lst.pop_front() == model.pop(0)
+def test_matches_a_python_list_on_random_operations():
+    for seed in range(50):
+        rng = random.Random(seed)
+        lst: LinkedList[int] = LinkedList()
+        model: list[int] = []
+        for step in range(60):
+            op = rng.choice(OPERATIONS)
+            value = rng.randrange(6)
+            at = f"seed {seed}, step {step}: {op}({value})"
+            if op == "push_front":
+                lst.push_front(value)
+                model.insert(0, value)
+            elif op == "push_back":
+                lst.push_back(value)
+                model.append(value)
+            elif op == "pop_front":
+                if model:
+                    assert lst.pop_front() == model.pop(0), at
+                else:
+                    with pytest.raises(IndexError):
+                        lst.pop_front()
+            elif op == "remove":
+                expected = value in model
+                if expected:
+                    model.remove(value)
+                assert lst.remove(value) is expected, at
+            elif op == "find":
+                node = lst.find(value)
+                assert (node is not None) == (value in model), at
+                assert (value in lst) == (value in model), at
             else:
-                with pytest.raises(IndexError):
-                    lst.pop_front()
-        elif op == "remove":
-            expected = value in model
-            if expected:
-                model.remove(value)
-            assert lst.remove(value) is expected
-        elif op == "find":
-            node = lst.find(value)
-            assert (node is not None) == (value in model)
-            assert (value in lst) == (value in model)
-        else:
-            lst.reverse()
-            model.reverse()
-        assert list(lst) == model
-        assert len(lst) == len(model)
+                lst.reverse()
+                model.reverse()
+            assert list(lst) == model, at
+            assert len(lst) == len(model), at

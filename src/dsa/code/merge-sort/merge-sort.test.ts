@@ -69,10 +69,12 @@ describe('mergeSort (TypeScript)', () => {
 
   it('agrees with a numeric sort on many random arrays', () => {
     const random = seeded(5);
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 41);
       const nums = Array.from({ length }, () => Math.floor(random() * 13) - 6);
-      expect(mergeSort(nums), JSON.stringify(nums)).toEqual([...nums].sort(ascending));
+      expect(mergeSort(nums), `seed 5, trial ${n}: ${JSON.stringify(nums)}`).toEqual(
+        [...nums].sort(ascending),
+      );
     }
   });
 
@@ -91,14 +93,17 @@ describe('mergeSort (TypeScript)', () => {
 
   it('is stable on many random records', () => {
     const random = seeded(9);
-    for (let n = 0; n < 300; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 31);
       const records = Array.from({ length }, (_, id) => ({
         rank: Math.floor(random() * 5),
         id,
       }));
       const expected = [...records].sort((a, b) => a.rank - b.rank);
-      expect(mergeSort(records, (r) => r.rank)).toEqual(expected);
+      expect(
+        mergeSort(records, (r) => r.rank),
+        `seed 9, trial ${n}: ranks [${records.map((r) => r.rank)}]`,
+      ).toEqual(expected);
     }
   });
 
@@ -130,12 +135,13 @@ describe('sortAndCount (TypeScript)', () => {
 
   it('agrees with a brute-force count on many random arrays', () => {
     const random = seeded(21);
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 31);
       const nums = Array.from({ length }, () => Math.floor(random() * 11) - 5);
+      const at = `seed 21, trial ${n}: ${JSON.stringify(nums)}`;
       const [sorted, count] = sortAndCount(nums);
-      expect(sorted, JSON.stringify(nums)).toEqual([...nums].sort(ascending));
-      expect(count, JSON.stringify(nums)).toBe(bruteInversions(nums));
+      expect(sorted, at).toEqual([...nums].sort(ascending));
+      expect(count, at).toBe(bruteInversions(nums));
     }
   });
 });

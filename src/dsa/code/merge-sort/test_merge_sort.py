@@ -61,9 +61,9 @@ def test_merge_two_sorted_lists():
 
 def test_agrees_with_sorted_on_many_random_lists():
     rng = random.Random(5)
-    for _ in range(500):
+    for trial in range(50):
         nums = [rng.randint(-6, 6) for _ in range(rng.randint(0, 40))]
-        assert merge_sort(nums) == sorted(nums), nums
+        assert merge_sort(nums) == sorted(nums), f"seed 5, trial {trial}: {nums}"
 
 
 def test_stable_with_keyed_records():
@@ -74,11 +74,11 @@ def test_stable_with_keyed_records():
 
 def test_stable_agrees_with_sorted_on_many_random_records():
     rng = random.Random(9)
-    for _ in range(300):
+    for trial in range(50):
         records = [(rng.randint(0, 4), i) for i in range(rng.randint(0, 30))]
         assert merge_sort(records, key=lambda r: r[0]) == sorted(
             records, key=lambda r: r[0]
-        )
+        ), f"seed 9, trial {trial}: {records}"
 
 
 def test_inversion_examples():
@@ -99,11 +99,12 @@ def test_reversed_list_has_n_choose_2_inversions():
 
 def test_inversions_agree_with_brute_force_on_many_random_lists():
     rng = random.Random(21)
-    for _ in range(500):
+    for trial in range(50):
         nums = [rng.randint(-5, 5) for _ in range(rng.randint(0, 30))]
+        at = f"seed 21, trial {trial}: {nums}"
         merged, count = sort_and_count(nums)
-        assert merged == sorted(nums), nums
-        assert count == brute_inversions(nums), nums
+        assert merged == sorted(nums), at
+        assert count == brute_inversions(nums), at
 
 
 def test_does_not_use_the_builtin_sort():

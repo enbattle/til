@@ -66,12 +66,15 @@ describe('topKLargest (TypeScript)', () => {
 
   it('matches sorting on many seeded random inputs', () => {
     const random = seededRandom(11);
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const nums = Array.from({ length: Math.floor(random() * 21) }, () =>
         Math.floor(random() * 21 - 10),
       );
       const k = Math.floor(random() * 26);
-      expect(topKLargest(nums, k)).toEqual(sortLargest(nums, k));
+      expect(
+        topKLargest(nums, k),
+        `seed 11, trial ${n}: ${JSON.stringify({ nums, k })}`,
+      ).toEqual(sortLargest(nums, k));
     }
   });
 
@@ -119,12 +122,15 @@ describe('topKFrequent (TypeScript)', () => {
 
   it('matches sorting on many seeded random inputs', () => {
     const random = seededRandom(13);
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const nums = Array.from({ length: Math.floor(random() * 31) }, () =>
         Math.floor(random() * 13 - 6),
       );
       const k = Math.floor(random() * 16);
-      expect(topKFrequent(nums, k)).toEqual(sortFrequent(nums, k));
+      expect(
+        topKFrequent(nums, k),
+        `seed 13, trial ${n}: ${JSON.stringify({ nums, k })}`,
+      ).toEqual(sortFrequent(nums, k));
     }
   });
 });

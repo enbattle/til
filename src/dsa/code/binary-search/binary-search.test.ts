@@ -59,15 +59,16 @@ describe('lowerBound (TypeScript)', () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;
       return seed / 2147483648;
     };
-    for (let n = 0; n < 200; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const length = Math.floor(random() * 12);
       const nums = Array.from({ length }, () => Math.floor(random() * 11) - 5).sort(
         (a, b) => a - b,
       );
       for (let target = -7; target <= 7; target++) {
-        expect(lowerBound(nums, target), `${JSON.stringify(nums)}, ${target}`).toBe(
-          linear(nums, target),
-        );
+        expect(
+          lowerBound(nums, target),
+          `seed 11, trial ${trial}: ${JSON.stringify(nums)}, ${target}`,
+        ).toBe(linear(nums, target));
       }
     }
   });

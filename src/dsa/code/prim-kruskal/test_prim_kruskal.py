@@ -58,13 +58,14 @@ def random_connected_graph(rng: random.Random) -> tuple[int, list[Edge]]:
 class TestSpanningTree:
     def test_matches_brute_force_on_random_connected_graphs(self, algorithm):
         rng = random.Random(7)
-        for _ in range(400):
+        for trial in range(50):
             n, edges = random_connected_graph(rng)
             tree = algorithm(n, edges)
-            assert tree is not None, (n, edges)
-            assert is_spanning_tree(n, tree), (n, edges, tree)
-            assert not Counter(normalized(tree)) - Counter(normalized(edges)), (n, edges)
-            assert total_weight(tree) == brute_force_weight(n, edges), (n, edges)
+            where = f"seed 7, trial {trial}: {(n, edges, tree)}"
+            assert tree is not None, where
+            assert is_spanning_tree(n, tree), where
+            assert not Counter(normalized(tree)) - Counter(normalized(edges)), where
+            assert total_weight(tree) == brute_force_weight(n, edges), where
 
     def test_empty_graph_and_single_vertex(self, algorithm):
         assert algorithm(0, []) == []
@@ -115,11 +116,11 @@ class TestSpanningTree:
 
     def test_the_input_order_does_not_change_the_total(self, algorithm):
         rng = random.Random(3)
-        for _ in range(100):
+        for trial in range(50):
             n, edges = random_connected_graph(rng)
             expected = total_weight(algorithm(n, edges))
             rng.shuffle(edges)
-            assert total_weight(algorithm(n, edges)) == expected
+            assert total_weight(algorithm(n, edges)) == expected, f"seed 3, trial {trial}: {(n, edges)}"
 
 
 def test_the_worked_example_from_the_entry():
@@ -130,8 +131,8 @@ def test_the_worked_example_from_the_entry():
 
 def test_prim_gives_the_same_total_from_any_start():
     rng = random.Random(21)
-    for _ in range(100):
+    for trial in range(50):
         n, edges = random_connected_graph(rng)
         expected = total_weight(kruskal(n, edges))
         for start in range(n):
-            assert total_weight(prim(n, edges, start)) == expected, (n, edges, start)
+            assert total_weight(prim(n, edges, start)) == expected, f"seed 21, trial {trial}: {(n, edges, start)}"

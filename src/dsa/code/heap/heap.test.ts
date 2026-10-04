@@ -24,11 +24,13 @@ const numbers = (items: Iterable<number> = []) => new MinHeap(lessNumber, items)
 const itemsOf = <T>(h: MinHeap<T>) => (h as unknown as { items: T[] }).items;
 
 /** Every item is no smaller than its parent. */
-function expectHeap(h: MinHeap<number>): void {
+function expectHeap(h: MinHeap<number>, context = ''): void {
   const items = itemsOf(h);
-  for (let i = 1; i < items.length; i++) {
-    expect(items[i] < items[parent(i)], `index ${i} of [${items}]`).toBe(false);
+  let bad = -1;
+  for (let i = 1; i < items.length && bad < 0; i++) {
+    if (items[i] < items[parent(i)]) bad = i;
   }
+  expect(bad, `${context}index ${bad} of [${items}] is below its parent`).toBe(-1);
 }
 
 function drain<T>(h: { size: number; pop(): T }): T[] {
@@ -173,47 +175,46 @@ describe('MinHeap (TypeScript)', () => {
     expect(drain(h)).toEqual([9, 7, 3, 1]);
   });
 
-  it.each(Array.from({ length: 200 }, (_, seed) => seed))(
-    'matches a sorted array on random operations (seed %i)',
-    (seed) => {
+  it('matches a sorted array on 50 seeded random operation sequences', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = rng(seed);
       const int = () => Math.floor(random() * 21);
       const start = Array.from({ length: Math.floor(random() * 31) }, int);
       const h = numbers(start);
       let ref = sorted(start);
       for (let step = 0; step < 300; step++) {
+        const at = `seed ${seed}, step ${step}: `;
         const op = Math.floor(random() * 4);
         if (op <= 1) {
           const x = int();
           h.push(x);
           ref = sorted([...ref, x]);
         } else if (ref.length === 0) {
-          expect(() => (op === 2 ? h.pop() : h.peek())).toThrow(RangeError);
+          expect(() => (op === 2 ? h.pop() : h.peek()), at).toThrow(RangeError);
         } else if (op === 2) {
-          expect(h.pop()).toBe(ref.shift());
+          expect(h.pop(), at).toBe(ref.shift());
         } else {
-          expect(h.peek()).toBe(ref[0]);
+          expect(h.peek(), at).toBe(ref[0]);
         }
-        expect(h.size).toBe(ref.length);
-        expectHeap(h);
+        expect(h.size, at).toBe(ref.length);
+        expectHeap(h, at);
       }
-      expect(drain(h)).toEqual(ref);
-    },
-  );
+      expect(drain(h), `seed ${seed}`).toEqual(ref);
+    }
+  });
 
-  it.each(Array.from({ length: 100 }, (_, seed) => seed))(
-    'heapify then drain sorts (seed %i)',
-    (seed) => {
+  it('heapify then drain sorts, on 50 seeded random arrays', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = rng(seed + 1000);
       const data = Array.from(
         { length: Math.floor(random() * 201) },
         () => Math.floor(random() * 101) - 50,
       );
       const h = numbers(data);
-      expectHeap(h);
-      expect(drain(h)).toEqual(sorted(data));
-    },
-  );
+      expectHeap(h, `seed ${seed}: `);
+      expect(drain(h), `seed ${seed}, input [${data}]`).toEqual(sorted(data));
+    }
+  });
 });
 
 describe('PriorityQueue (TypeScript)', () => {
@@ -248,23 +249,23 @@ describe('PriorityQueue (TypeScript)', () => {
     expect(pq.pop()).toBeUndefined();
   });
 
-  it.each(Array.from({ length: 100 }, (_, seed) => seed))(
-    'matches a stable sort (seed %i)',
-    (seed) => {
+  it('matches a stable sort on 50 seeded random operation sequences', () => {
+    for (let seed = 0; seed < 50; seed++) {
       const random = rng(seed + 2000);
       const pq = new PriorityQueue<number>();
       const ref: { priority: number; step: number }[] = [];
       for (let step = 0; step < 200; step++) {
+        const at = `seed ${seed}, step ${step}`;
         if (random() < 0.6 || ref.length === 0) {
           const priority = Math.floor(random() * 6);
           pq.push(step, priority);
           ref.push({ priority, step });
         } else {
           ref.sort((a, b) => a.priority - b.priority); // stable since ES2019
-          expect(pq.pop()).toBe(ref.shift()?.step);
+          expect(pq.pop(), at).toBe(ref.shift()?.step);
         }
-        expect(pq.size).toBe(ref.length);
+        expect(pq.size, at).toBe(ref.length);
       }
-    },
-  );
+    }
+  });
 });

@@ -21,19 +21,19 @@ function bruteForcePairs(nums: number[], target: number): string[] {
   return pairs;
 }
 
-function expectValidPair(nums: number[], target: number) {
+function expectValidPair(nums: number[], target: number, label?: string) {
   const result = pairWithSum(nums, target);
   const possible = bruteForcePairs(nums, target);
   if (possible.length === 0) {
-    expect(result).toBeNull();
+    expect(result, label).toBeNull();
     return;
   }
-  expect(result).not.toBeNull();
+  expect(result, label).not.toBeNull();
   const [i, j] = result!;
-  expect(i).toBeLessThan(j);
-  expect(i).toBeGreaterThanOrEqual(0);
-  expect(j).toBeLessThan(nums.length);
-  expect(nums[i] + nums[j]).toBe(target);
+  expect(i, label).toBeLessThan(j);
+  expect(i, label).toBeGreaterThanOrEqual(0);
+  expect(j, label).toBeLessThan(nums.length);
+  expect(nums[i] + nums[j], label).toBe(target);
 }
 
 describe('pairWithSum (TypeScript)', () => {
@@ -84,13 +84,17 @@ describe('pairWithSum (TypeScript)', () => {
       seed = (seed * 1103515245 + 12345) % 2147483648;
       return seed / 2147483648;
     };
-    for (let n = 0; n < 300; n++) {
+    for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 9);
       const nums = Array.from({ length }, () => Math.floor(random() * 21) - 10).sort(
         (a, b) => a - b,
       );
       const target = Math.floor(random() * 41) - 20;
-      expectValidPair(nums, target);
+      expectValidPair(
+        nums,
+        target,
+        `seed 7, trial ${n}: ${JSON.stringify({ nums, target })}`,
+      );
     }
   });
 

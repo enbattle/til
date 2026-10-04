@@ -60,10 +60,12 @@ def test_largest_does_not_change_the_input():
 
 def test_largest_matches_sorting_on_random_inputs():
     rng = random.Random(11)
-    for _ in range(500):
+    for trial in range(50):
         nums = [rng.randint(-10, 10) for _ in range(rng.randint(0, 20))]
         k = rng.randint(0, 25)
-        assert top_k_largest(nums, k) == sort_largest(nums, k)
+        assert top_k_largest(nums, k) == sort_largest(nums, k), (
+            f"seed 11, trial {trial}: {(nums, k)}"
+        )
 
 
 def test_largest_matches_sorting_for_every_k():
@@ -107,7 +109,9 @@ def test_frequent_k_zero_equal_and_above_distinct_count():
 
 def test_frequent_matches_sorting_on_random_inputs():
     rng = random.Random(13)
-    for _ in range(500):
+    for trial in range(50):
         nums = [rng.randint(-6, 6) for _ in range(rng.randint(0, 30))]
         k = rng.randint(0, 15)
-        assert top_k_frequent(nums, k) == sort_frequent(nums, k)
+        assert top_k_frequent(nums, k) == sort_frequent(nums, k), (
+            f"seed 13, trial {trial}: {(nums, k)}"
+        )

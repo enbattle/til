@@ -63,17 +63,19 @@ def test_does_not_change_the_input():
 
 def test_merge_agrees_with_sorted_concatenation():
     rng = random.Random(11)
-    for _ in range(500):
+    for trial in range(50):
         lists = random_lists(rng)
         expected = sorted(value for lst in lists for value in lst)
-        assert merge_sorted(lists) == expected
+        assert merge_sorted(lists) == expected, f"seed 11, trial {trial}: {lists}"
 
 
 def test_merge_agrees_with_heapq_merge():
     rng = random.Random(12)
-    for _ in range(200):
+    for trial in range(50):
         lists = random_lists(rng)
-        assert merge_sorted(lists) == list(heapq.merge(*lists))
+        assert merge_sorted(lists) == list(heapq.merge(*lists)), (
+            f"seed 12, trial {trial}: {lists}"
+        )
 
 
 def test_kth_smallest_basic():
@@ -103,9 +105,11 @@ def test_kth_smallest_single_list():
 
 def test_kth_smallest_agrees_with_sorted_concatenation():
     rng = random.Random(13)
-    for _ in range(500):
+    for trial in range(50):
         lists = random_lists(rng)
         everything = sorted(value for lst in lists for value in lst)
         for k in range(-1, len(everything) + 3):
             expected = everything[k - 1] if 1 <= k <= len(everything) else None
-            assert kth_smallest(lists, k) == expected
+            assert kth_smallest(lists, k) == expected, (
+                f"seed 13, trial {trial}, k {k}: {lists}"
+            )

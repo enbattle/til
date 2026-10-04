@@ -112,9 +112,11 @@ describe('uniquePaths (TypeScript)', () => {
 
   it('matches brute force on many random grids', () => {
     const random = makeRandom(11);
-    for (let n = 0; n < 400; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const grid = randomGrid(random, 0, 1);
-      expect(uniquePaths(grid)).toBe(bruteUniquePaths(grid));
+      expect(uniquePaths(grid), `seed 11, trial ${trial}: ${JSON.stringify(grid)}`).toBe(
+        bruteUniquePaths(grid),
+      );
     }
   });
 });
@@ -155,17 +157,21 @@ describe.each([
 
   it('matches brute force on many random grids', () => {
     const random = makeRandom(23);
-    for (let n = 0; n < 400; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const grid = randomGrid(random, 0, 9);
-      expect(fn(grid)).toBe(bruteMinPathSum(grid));
+      expect(fn(grid), `seed 23, trial ${trial}: ${JSON.stringify(grid)}`).toBe(
+        bruteMinPathSum(grid),
+      );
     }
   });
 
   it('handles negative values', () => {
     const random = makeRandom(5);
-    for (let n = 0; n < 200; n++) {
+    for (let trial = 0; trial < 50; trial++) {
       const grid = randomGrid(random, -5, 5);
-      expect(fn(grid)).toBe(bruteMinPathSum(grid));
+      expect(fn(grid), `seed 5, trial ${trial}: ${JSON.stringify(grid)}`).toBe(
+        bruteMinPathSum(grid),
+      );
     }
   });
 

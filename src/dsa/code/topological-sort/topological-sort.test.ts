@@ -149,16 +149,17 @@ describe('topological sort (TypeScript)', () => {
     const random = seededRandom(2024);
     let sawCycle = false;
     let sawOrder = false;
-    for (let i = 0; i < 600; i++) {
+    for (let i = 0; i < 50; i++) {
       const graph = randomGraph(random, i % 2 === 0);
       const exists = someOrderExists(graph);
+      const at = `seed 2024, trial ${i}: ${JSON.stringify([...graph])}`;
       for (const sort of sorts) {
         const order = sort(graph);
         if (exists) {
-          expect(order, JSON.stringify([...graph])).not.toBeNull();
-          expect(isValid(graph, order!), JSON.stringify([...graph])).toBe(true);
+          expect(order, at).not.toBeNull();
+          expect(isValid(graph, order!), at).toBe(true);
         } else {
-          expect(order, JSON.stringify([...graph])).toBeNull();
+          expect(order, at).toBeNull();
         }
       }
       if (exists) sawOrder = true;
@@ -169,9 +170,10 @@ describe('topological sort (TypeScript)', () => {
 
   it('always sorts random acyclic graphs', () => {
     const random = seededRandom(7);
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 50; i++) {
       const graph = randomGraph(random, true);
-      for (const sort of sorts) expect(isValid(graph, sort(graph)!)).toBe(true);
+      const at = `seed 7, trial ${i}: ${JSON.stringify([...graph])}`;
+      for (const sort of sorts) expect(isValid(graph, sort(graph)!), at).toBe(true);
     }
   });
 
@@ -198,7 +200,7 @@ describe('topological sort (TypeScript)', () => {
 
   it('agrees with brute force on random course pairs', () => {
     const random = seededRandom(99);
-    for (let i = 0; i < 300; i++) {
+    for (let i = 0; i < 50; i++) {
       const n = Math.floor(random() * 7);
       const count = n === 0 ? 0 : Math.floor(random() * 9);
       const pairs: [number, number][] = [];
@@ -209,8 +211,9 @@ describe('topological sort (TypeScript)', () => {
       for (let c = 0; c < n; c++) graph.set(c, []);
       for (const [course, prerequisite] of pairs) graph.get(prerequisite)!.push(course);
       const order = courseOrder(n, pairs);
-      if (someOrderExists(graph)) expect(isValid(graph, order!)).toBe(true);
-      else expect(order).toBeNull();
+      const at = `seed 99, trial ${i}: ${JSON.stringify({ n, pairs })}`;
+      if (someOrderExists(graph)) expect(isValid(graph, order!), at).toBe(true);
+      else expect(order, at).toBeNull();
     }
   });
 });

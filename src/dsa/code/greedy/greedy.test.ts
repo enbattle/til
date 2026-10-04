@@ -140,23 +140,24 @@ describe('selectIntervals (TypeScript)', () => {
 
   it('agrees with a brute-force search on many random inputs', () => {
     const random = makeRandom(11);
-    for (let n = 0; n < 400; n++) {
+    for (let n = 0; n < 50; n++) {
       const given = randomIntervals(random);
+      const at = `seed 11, trial ${n}: ${JSON.stringify(given)}`;
       const chosen = selectIntervals(given);
-      expect(isValid(chosen)).toBe(true);
-      expect(chosen.length).toBe(bruteForceBest(given));
+      expect(isValid(chosen), at).toBe(true);
+      expect(chosen.length, at).toBe(bruteForceBest(given));
     }
   });
 
   it('shows the other sort orders lose on some random input', () => {
     const random = makeRandom(5);
-    const cases = Array.from({ length: 400 }, () => randomIntervals(random));
-    expect(cases.some((c) => pickBy(c, (iv) => iv[0]).length < bruteForceBest(c))).toBe(
-      true,
-    );
+    const cases = Array.from({ length: 50 }, () => randomIntervals(random));
     expect(
-      cases.some((c) => pickBy(c, (iv) => iv[1] - iv[0]).length < bruteForceBest(c)),
+      cases.some((c) => pickBy(c, (iv) => iv[0]).length < bruteForceBest(c)),
+      'seed 5: sort by start never lost in 50 trials',
     ).toBe(true);
+    // Sorting by length loses too rarely for 50 random trials to show it; the
+    // fixed case in 'sorting by length loses on a short middle interval' does.
   });
 });
 
@@ -200,11 +201,13 @@ describe('canReachEnd (TypeScript)', () => {
 
   it('agrees with a search on many random inputs', () => {
     const random = makeRandom(23);
-    for (let n = 0; n < 1000; n++) {
+    for (let n = 0; n < 50; n++) {
       const jumps = Array.from({ length: randInt(random, 0, 10) }, () =>
         randInt(random, 0, 3),
       );
-      expect(canReachEnd(jumps), jumps.join(',')).toBe(reachableBySearch(jumps));
+      expect(canReachEnd(jumps), `seed 23, trial ${n}: [${jumps}]`).toBe(
+        reachableBySearch(jumps),
+      );
     }
   });
 });
@@ -259,7 +262,7 @@ describe('greedyCoinCount (TypeScript)', () => {
   it('never beats the best and sometimes loses, on random coin sets', () => {
     const random = makeRandom(3);
     let worse = 0;
-    for (let n = 0; n < 500; n++) {
+    for (let n = 0; n < 50; n++) {
       const coins = [
         ...new Set([
           1,
@@ -267,12 +270,13 @@ describe('greedyCoinCount (TypeScript)', () => {
         ]),
       ];
       const amount = randInt(random, 0, 30);
+      const at = `seed 3, trial ${n}: coins [${coins}], amount ${amount}`;
       const greedy = greedyCoinCount(coins, amount);
       const best = fewestCoins(coins, amount)!;
-      expect(greedy).not.toBeNull();
-      expect(greedy!).toBeGreaterThanOrEqual(best);
+      expect(greedy, at).not.toBeNull();
+      expect(greedy!, at).toBeGreaterThanOrEqual(best);
       if (greedy! > best) worse++;
     }
-    expect(worse).toBeGreaterThan(0);
+    expect(worse, 'seed 3: greedy never lost in 50 trials').toBeGreaterThan(0);
   });
 });

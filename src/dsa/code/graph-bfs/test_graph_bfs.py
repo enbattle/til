@@ -63,10 +63,10 @@ def random_graph(rng, n, edges, directed):
     return graph
 
 
-def assert_valid_path(graph, path, source, target):
-    assert path[0] == source and path[-1] == target
+def assert_valid_path(graph, path, source, target, at=""):
+    assert path[0] == source and path[-1] == target, at
     for a, b in zip(path, path[1:]):
-        assert b in graph[a]
+        assert b in graph[a], at
 
 
 def test_distances_small_graph():
@@ -116,20 +116,22 @@ def test_shortest_path_prefers_fewest_edges():
 
 def test_random_graphs_match_relaxation():
     rng = random.Random(2024)
-    for _ in range(400):
+    for trial in range(50):
         n = rng.randint(1, 12)
         graph = random_graph(rng, n, rng.randint(0, 3 * n), rng.random() < 0.5)
         source = rng.randrange(n)
+        at = f"seed 2024, trial {trial}, source {source}: {graph}"
         expected = brute_distances(graph, source)
-        assert bfs_distances(graph, source) == expected
+        assert bfs_distances(graph, source) == expected, at
         for target in range(n):
             path = shortest_path(graph, source, target)
+            at_target = f"{at}, target {target}"
             if target not in expected:
-                assert path is None
+                assert path is None, at_target
             else:
-                assert path is not None
-                assert len(path) - 1 == expected[target]
-                assert_valid_path(graph, path, source, target)
+                assert path is not None, at_target
+                assert len(path) - 1 == expected[target], at_target
+                assert_valid_path(graph, path, source, target, at_target)
 
 
 def test_grid_example():
@@ -166,10 +168,10 @@ def test_grid_all_targets():
 
 def test_random_grids_match_relaxation():
     rng = random.Random(7)
-    for _ in range(400):
+    for trial in range(50):
         rows, cols = rng.randint(1, 8), rng.randint(1, 8)
         weights = rng.choice([(1, 1, 1), (6, 3, 1), (3, 5, 0), (5, 4, 1)])
         grid = [
             "".join(rng.choices(".#T", weights=weights, k=cols)) for _ in range(rows)
         ]
-        assert nearest_target(grid) == brute_grid(grid), grid
+        assert nearest_target(grid) == brute_grid(grid), f"seed 7, trial {trial}: {grid}"

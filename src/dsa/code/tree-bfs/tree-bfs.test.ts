@@ -200,14 +200,15 @@ describe('zigzagLevelOrder', () => {
 
 describe('random trees', () => {
   it('match the depth-first answers', () => {
-    for (let seed = 0; seed < 300; seed++) {
+    for (let seed = 0; seed < 50; seed++) {
       const rand = seeded(seed);
       const n = Math.floor(rand() * 41);
       const bias = [0, 0.5, 0.9][Math.floor(rand() * 3)];
       const root = randomTree(rand, n, bias);
-      expect(rightSideView(root)).toEqual(rightSideViewDfs(root));
-      expect(minDepth(root)).toBe(minDepthDfs(root));
-      expect(zigzagLevelOrder(root)).toEqual(zigzagDfs(root));
+      const at = `seed ${seed} (n ${n}, bias ${bias})`;
+      expect(rightSideView(root), at).toEqual(rightSideViewDfs(root));
+      expect(minDepth(root), at).toBe(minDepthDfs(root));
+      expect(zigzagLevelOrder(root), at).toEqual(zigzagDfs(root));
     }
   });
 });

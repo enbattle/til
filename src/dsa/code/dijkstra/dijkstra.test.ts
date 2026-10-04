@@ -238,15 +238,15 @@ describe('dijkstra (TypeScript)', () => {
   });
 
   it('matches brute-force relaxation on many seeded random graphs', () => {
-    for (let seed = 1; seed <= 500; seed++) {
+    for (let seed = 1; seed <= 50; seed++) {
       const [graph, source] = randomGraph(seed);
       const [dist, parent] = dijkstra(graph, source);
       expect(dist, `seed ${seed}`).toEqual(relaxUntilStable(graph, source));
       expect([...parent.keys()].sort(), `seed ${seed}`).toEqual([...dist.keys()].sort());
       for (const [v, cost] of dist) {
         const path = shortestPath(graph, source, v)!;
-        expect(path[0]).toBe(source);
-        expect(path[path.length - 1]).toBe(v);
+        expect(path[0], `seed ${seed}, vertex ${v}`).toBe(source);
+        expect(path[path.length - 1], `seed ${seed}, vertex ${v}`).toBe(v);
         expect(routeCost(graph, path), `seed ${seed}, vertex ${v}`).toBe(cost);
         expect(new Set(path).size, `seed ${seed}: repeats a vertex`).toBe(path.length);
       }

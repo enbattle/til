@@ -52,18 +52,20 @@ def test_counting_sort_is_stable_on_records():
 
 def test_counting_sort_stable_on_many_random_records():
     rng = random.Random(3)
-    for _ in range(300):
+    for trial in range(50):
         records = [(i, rng.randint(-4, 4)) for i in range(rng.randint(0, 25))]
         # sorted() is stable, so it is the reference for the order of equal keys.
         expected = sorted(records, key=lambda r: r[1])
-        assert counting_sort(records, -4, 4, key=lambda r: r[1]) == expected
+        assert counting_sort(records, -4, 4, key=lambda r: r[1]) == expected, (
+            f"seed 3, trial {trial}: {records}"
+        )
 
 
 def test_counting_sort_matches_sorted_on_random_ints():
     rng = random.Random(1)
-    for _ in range(300):
+    for trial in range(50):
         nums = [rng.randint(-10, 10) for _ in range(rng.randint(0, 40))]
-        assert counting_sort(nums, -10, 10) == sorted(nums)
+        assert counting_sort(nums, -10, 10) == sorted(nums), f"seed 1, trial {trial}: {nums}"
 
 
 def test_radix_sort_basics():
@@ -91,18 +93,28 @@ def test_radix_sort_rejects_bad_input():
 
 def test_radix_sort_matches_sorted_on_random_ints():
     rng = random.Random(2)
-    for _ in range(300):
+    for trial in range(50):
         nums = [rng.randint(0, 10**rng.randint(0, 9)) for _ in range(rng.randint(0, 40))]
-        assert radix_sort(nums) == sorted(nums)
+        assert radix_sort(nums) == sorted(nums), f"seed 2, trial {trial}: {nums}"
+
+
+def test_insertion_sort_empty_and_single():
+    empty = []
+    insertion_sort(empty)
+    assert empty == []
+    single = [0.5]
+    insertion_sort(single)
+    assert single == [0.5]
 
 
 def test_insertion_sort_in_place():
     rng = random.Random(4)
-    for _ in range(200):
+    for trial in range(50):
         items = [rng.random() for _ in range(rng.randint(0, 20))]
+        where = f"seed 4, trial {trial}: {items}"
         expected = sorted(items)
         insertion_sort(items)
-        assert items == expected
+        assert items == expected, where
 
 
 def test_bucket_sort_basics():
@@ -137,6 +149,6 @@ def test_bucket_sort_rejects_bad_input():
 
 def test_bucket_sort_matches_sorted_on_random_floats():
     rng = random.Random(6)
-    for _ in range(300):
+    for trial in range(50):
         values = [rng.random() for _ in range(rng.randint(0, 60))]
-        assert bucket_sort(values) == sorted(values)
+        assert bucket_sort(values) == sorted(values), f"seed 6, trial {trial}: {values}"

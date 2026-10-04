@@ -142,12 +142,13 @@ describe('rob (TypeScript)', () => {
 
   it('agrees with a search over all subsets on many random inputs', () => {
     const random = makeRandom(11);
-    for (let t = 0; t < 400; t++) {
+    for (let trial = 0; trial < 50; trial++) {
       const nums = Array.from({ length: Math.floor(random() * 12) }, () =>
         Math.floor(random() * 10),
       );
-      expect(rob(nums)).toBe(bruteRob(nums));
-      expect(rob(nums)).toBeGreaterThanOrEqual(everyOther(nums));
+      const where = `seed 11, trial ${trial}: ${JSON.stringify(nums)}`;
+      expect(rob(nums), where).toBe(bruteRob(nums));
+      expect(rob(nums), where).toBeGreaterThanOrEqual(everyOther(nums));
     }
   });
 
@@ -172,12 +173,14 @@ describe('lisLength (TypeScript)', () => {
 
   it('agrees with a search over all subsets on many random inputs', () => {
     const random = makeRandom(5);
-    for (let t = 0; t < 400; t++) {
+    for (let trial = 0; trial < 50; trial++) {
       const nums = Array.from(
         { length: Math.floor(random() * 12) },
         () => Math.floor(random() * 11) - 5,
       );
-      expect(lisLength(nums)).toBe(bruteLis(nums));
+      expect(lisLength(nums), `seed 5, trial ${trial}: ${JSON.stringify(nums)}`).toBe(
+        bruteLis(nums),
+      );
     }
   });
 

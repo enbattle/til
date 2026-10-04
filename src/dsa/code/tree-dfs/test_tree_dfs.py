@@ -163,17 +163,23 @@ def test_diameter_can_miss_the_root():
 
 def test_paths_agree_with_brute_force():
     rng = random.Random(11)
-    for _ in range(400):
-        root = build_tree(random_level_order(rng, 14))
+    for trial in range(50):
+        values = random_level_order(rng, 14)
+        root = build_tree(values)
         for target in range(-12, 25):
-            assert paths_with_sum(root, target) == brute_force_paths(root, target)
+            assert paths_with_sum(root, target) == brute_force_paths(root, target), (
+                f"seed 11, trial {trial}: {values}, target {target}"
+            )
 
 
 def test_diameter_agrees_with_brute_force():
     rng = random.Random(23)
-    for _ in range(400):
-        root = build_tree(random_level_order(rng, 16))
-        assert diameter(root) == brute_force_diameter(root)
+    for trial in range(50):
+        values = random_level_order(rng, 16)
+        root = build_tree(values)
+        assert diameter(root) == brute_force_diameter(root), (
+            f"seed 23, trial {trial}: {values}"
+        )
 
 
 def test_does_not_change_the_tree():

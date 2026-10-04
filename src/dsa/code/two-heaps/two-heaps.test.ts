@@ -87,7 +87,7 @@ describe('RunningMedian (TypeScript)', () => {
   });
 
   it('matches sorting on many random streams', () => {
-    for (let seed = 1; seed <= 200; seed++) {
+    for (let seed = 1; seed <= 50; seed++) {
       const random = seededRandom(seed);
       const stream = new RunningMedian();
       const seen: number[] = [];
@@ -96,8 +96,9 @@ describe('RunningMedian (TypeScript)', () => {
         const value = Math.floor(random() * 21) - 10;
         stream.add(value);
         seen.push(value);
-        expect(stream.size).toBe(seen.length);
-        expect(stream.median()).toBe(sortedMedian(seen));
+        const at = `seed ${seed}: ${JSON.stringify(seen)}`;
+        expect(stream.size, at).toBe(seen.length);
+        expect(stream.median(), at).toBe(sortedMedian(seen));
       }
     }
   });

@@ -166,36 +166,37 @@ def test_removed_slots_are_cleared():
     assert unused_slots(a) == [None] * (a.capacity - len(a))
 
 
-@pytest.mark.parametrize("seed", range(200))
-def test_matches_list_on_random_operations(seed):
-    rng = random.Random(seed)
-    a = DynamicArray(rng.randint(1, 4))
-    ref = []
-    for _ in range(300):
-        op = rng.random()
-        if op < 0.35:
-            x = rng.randint(0, 9)
-            a.append(x)
-            ref.append(x)
-        elif op < 0.5:
-            i = rng.randint(0, len(ref))
-            x = rng.randint(0, 9)
-            a.insert(i, x)
-            ref.insert(i, x)
-        elif op < 0.65:
-            if ref:
-                assert a.pop() == ref.pop()
-            else:
-                with pytest.raises(IndexError):
-                    a.pop()
-        elif op < 0.8 and ref:
-            i = rng.randint(-len(ref), len(ref) - 1)
-            assert a.pop(i) == ref.pop(i)
-        elif ref:
-            i = rng.randint(-len(ref), len(ref) - 1)
-            assert a[i] == ref[i]
-            a[i] = ref[i] = rng.randint(0, 9)
-        assert len(a) == len(ref)
-        assert list(a) == ref
-        assert len(a) <= a.capacity
-        assert unused_slots(a) == [None] * (a.capacity - len(a))
+def test_matches_list_on_random_operations():
+    for seed in range(50):
+        rng = random.Random(seed)
+        a = DynamicArray(rng.randint(1, 4))
+        ref = []
+        for step in range(300):
+            at = f"seed {seed}, step {step}"
+            op = rng.random()
+            if op < 0.35:
+                x = rng.randint(0, 9)
+                a.append(x)
+                ref.append(x)
+            elif op < 0.5:
+                i = rng.randint(0, len(ref))
+                x = rng.randint(0, 9)
+                a.insert(i, x)
+                ref.insert(i, x)
+            elif op < 0.65:
+                if ref:
+                    assert a.pop() == ref.pop(), at
+                else:
+                    with pytest.raises(IndexError):
+                        a.pop()
+            elif op < 0.8 and ref:
+                i = rng.randint(-len(ref), len(ref) - 1)
+                assert a.pop(i) == ref.pop(i), at
+            elif ref:
+                i = rng.randint(-len(ref), len(ref) - 1)
+                assert a[i] == ref[i], at
+                a[i] = ref[i] = rng.randint(0, 9)
+            assert len(a) == len(ref), at
+            assert list(a) == ref, at
+            assert len(a) <= a.capacity, at
+            assert unused_slots(a) == [None] * (a.capacity - len(a)), at

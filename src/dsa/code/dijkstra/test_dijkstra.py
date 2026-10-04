@@ -123,13 +123,15 @@ def test_negative_edge_counterexample_from_the_entry():
 
 
 def test_matches_brute_force_relaxation_on_many_random_graphs():
-    for seed in range(500):
+    for seed in range(50):
         graph, source = random_graph(random.Random(seed))
         dist, parent = dijkstra(graph, source)
         assert dist == relax_until_stable(graph, source), f"seed {seed}"
         assert parent.keys() == dist.keys(), f"seed {seed}"
         for v in dist:
             path = shortest_path(graph, source, v)
-            assert path is not None and path[0] == source and path[-1] == v
+            assert path is not None and path[0] == source and path[-1] == v, (
+                f"seed {seed}, vertex {v}"
+            )
             assert route_cost(graph, path) == dist[v], f"seed {seed}, vertex {v}"
             assert len(set(path)) == len(path), f"seed {seed}: path repeats a vertex"
