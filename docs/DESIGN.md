@@ -93,16 +93,30 @@ notebook than a product. The UI follows that:
   page can scroll, so a page that fits the viewport doesn't mark its last
   heading on load); none above the first heading. It recomputes at most once per animation frame on a window
   `scroll` or `resize` and only reads layout, never scrolling the window,
-  so it can't disturb `LazyBody`'s `keepInView`. Below `xl` the same nav sits at the
-  top of the body in a native `<details>` on `bg-secondary`, closed by
-  default, whose `<summary>` reads "On this page". Both render inside
+  so it can't disturb `LazyBody`'s `keepInView`. Below `xl` the copy is a
+  `<nav aria-label="On this page">` bar at the top of the body, sticky
+  directly under the header (`top` is `--header-height`, `z-20` under the
+  header's `z-30`, the header's `bg-primary/95` blurred surface and a bottom
+  border), one fixed height (`--on-this-page-height` in `src/index.css`). It
+  holds one disclosure `<button>` (`aria-expanded`, `aria-controls`, an
+  `aria-hidden` chevron) reading "On this page", then the current section's
+  heading when there is one, truncated with an ellipsis on one line (the full
+  title stays in the button's accessible name, and the open panel shows it in
+  full). The button toggles a panel over the content just below the bar, on
+  `bg-secondary` with a border, capped at 60vh and scrolling inside itself,
+  holding the same links with the same current mark. It closes on the button,
+  a link click (the browser still makes the jump), `Escape` (focus returns to
+  the button), a pointer press outside the bar, or keyboard focus moving
+  outside the bar (Tab past the last link); closed it's `hidden`, so its
+  links aren't tab stops. Not a modal: no focus trap, no scroll lock. Both
+  copies render inside
   `LazyBody`'s children, so they appear once the body loads and unmount with
   the page; a body with no `##` headings gets neither. The headings' `scroll-margin-top` is the
   sticky header's measured height plus 0.75rem, which `Header` publishes as
   `--header-height`, because the header's height varies with width: one row
   of about 68px from `sm` up, two rows of about 105px at 375px, three on the
-  narrowest phones. So the header never covers a heading an "On this page" link
-  jumps to. The same goes for in-body links: a markdown link whose href
+  narrowest phones. Below `xl` it also adds the bar's height. So neither the
+  header nor the bar covers a heading an "On this page" link jumps to. The same goes for in-body links: a markdown link whose href
   starts with `#` (the "At a glance" section's links to headings) renders as
   a plain same-tab anchor, a `/…` link is a router `Link`, and an external
   link opens in a new tab with `rel="noreferrer"`. Opening a topic or case study at a `#<heading-id>` URL works too:
@@ -249,7 +263,10 @@ than a new one added ad hoc.
   real `<button>` — reachable and activatable without a mouse. Code tabs move
   with the arrow keys and select with Enter or Space. A diagram or
   table that scrolls sideways is a focusable region, scrolled with the arrow
-  keys.
+  keys. The narrow-view "On this page" bar's button opens and closes its
+  panel with Enter or Space, Tab moves on into the panel's links (it isn't a
+  modal, so there's no focus trap), and `Escape` closes it and returns focus
+  to the button.
 
 Any new component should be checked against this list before it's
 considered done, not just against "does it look right."

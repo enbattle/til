@@ -29,6 +29,11 @@
   --color-accent: #92400e;
   --color-accent-hover: #7c3609;
   --color-accent-soft: #f3e3c8;
+
+  /* The sticky "On this page" bar's height below `xl` (OnThisPage), in one
+     place because the headings' scroll margin (MarkdownRenderer) adds it to
+     the header's height so an in-page jump lands below the bar. */
+  --on-this-page-height: 2.75rem;
 }
 
 .dark {

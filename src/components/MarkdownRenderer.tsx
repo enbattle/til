@@ -15,8 +15,12 @@ import { Diagram } from './Diagram';
  * publishes it as `--header-height`; about 68px from `sm` up, about 105px at
  * 375px where the tabs wrap to a second row, more on the narrowest phones)
  * plus a little space. Before that runs, 8rem covers the two-row header.
+ * Below `xl` the sticky "On this page" bar (`OnThisPage`) sits under the
+ * header too, so its height (`--on-this-page-height`, index.css) is added;
+ * from `xl` the bar is hidden and the margin is the header's alone.
  */
-const HEADING_SCROLL_MARGIN = 'scroll-mt-[calc(var(--header-height,8rem)_+_0.75rem)]';
+const HEADING_SCROLL_MARGIN =
+  'scroll-mt-[calc(var(--header-height,8rem)_+_var(--on-this-page-height)_+_0.75rem)] xl:scroll-mt-[calc(var(--header-height,8rem)_+_0.75rem)]';
 
 /** The fence language of a `<pre>` holding one `<code class="language-x">`
  * (a fenced code block), or undefined for anything else. */
