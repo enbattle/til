@@ -12,15 +12,17 @@ import { renderAt } from '@/test/render';
 // docs/specs/on-this-page-scroll-spy.md, criteria 2-8: the "On this page" nav
 // marks the section being read, through the real App on a case study, a DSA
 // entry and a catalog topic. jsdom does no layout, so each heading's
-// getBoundingClientRect top is stubbed (by id), as are its computed
-// scroll-margin-top, window.scrollY, innerHeight and the document's scroll
-// height. A test sets a layout, dispatches `scroll` or `resize`, and waits for
+// getBoundingClientRect top is stubbed (by id), as are the root's computed
+// scroll-padding-top (80px; docs/specs/focus-not-obscured.md, criterion 3),
+// each heading's computed scroll-margin-top (0), window.scrollY, innerHeight
+// and the document's scroll height. A test sets a layout, dispatches `scroll` or `resize`, and waits for
 // the animation frame with waitFor. The hook itself is tested only through the
 // rendered page, so this file doesn't import it. The narrow-view copy is the
 // "On this page" bar's panel (docs/specs/on-this-page-bar.md), opened on load.
 
 const NAME = 'On this page';
-const MARGIN = 80;
+/** The root's stubbed scroll-padding-top: the reading line. */
+const PADDING = 80;
 const INNER_HEIGHT = 800;
 const SCROLL_HEIGHT = 10000;
 const CURRENT = ['font-bold', 'border-accent', 'text-text-primary'];
@@ -79,18 +81,24 @@ function rect(top: number): DOMRect {
   } as DOMRect;
 }
 
-/** A computed style whose scroll-margin-top is MARGIN, for a stubbed heading. */
-function withMargin(style: CSSStyleDeclaration): CSSStyleDeclaration {
+/** A computed style reporting `property` (a CSS name, e.g. `scroll-padding-top`)
+ * as `value`, by that name and its camelCase form. */
+function withStyle(
+  style: CSSStyleDeclaration,
+  property: string,
+  value: string,
+): CSSStyleDeclaration {
+  const camel = property.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
   return new Proxy(style, {
     get(target, prop) {
-      if (prop === 'scrollMarginTop') return `${MARGIN}px`;
+      if (prop === camel) return value;
       if (prop === 'getPropertyValue')
         return (name: string) =>
-          name === 'scroll-margin-top' ? `${MARGIN}px` : target.getPropertyValue(name);
-      const value = Reflect.get(target, prop, target) as unknown;
-      return typeof value === 'function'
-        ? (value as (...args: unknown[]) => unknown).bind(target)
-        : value;
+          name === property ? value : target.getPropertyValue(name);
+      const real = Reflect.get(target, prop, target) as unknown;
+      return typeof real === 'function'
+        ? (real as (...args: unknown[]) => unknown).bind(target)
+        : real;
     },
   });
 }
@@ -134,7 +142,11 @@ beforeEach(() => {
   const realGetComputedStyle = window.getComputedStyle.bind(window);
   vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
     const style = realGetComputedStyle(el, pseudo);
-    return tops.has(el.id) ? withMargin(style) : style;
+    // focus-not-obscured: the reading line is the root's scroll padding, and
+    // the headings carry no scroll margin of their own.
+    if (el === document.documentElement)
+      return withStyle(style, 'scroll-padding-top', `${PADDING}px`);
+    return tops.has(el.id) ? withStyle(style, 'scroll-margin-top', '0px') : style;
   });
 });
 
@@ -173,7 +185,7 @@ const SECOND = [-400, 40, 400];
 /** The third heading past its reading line, the fourth not. */
 const THIRD = [-800, -400, 20, 500];
 /** Scrolled near the top: only the first heading past its reading line. */
-const FIRST = [MARGIN, 400];
+const FIRST = [PADDING, 400];
 const MID_PAGE = 1000;
 const BOTTOM = SCROLL_HEIGHT - INNER_HEIGHT;
 
@@ -259,6 +271,14 @@ describe.each(PAGES)('scroll-spy on a $kind', ({ path, title, body }) => {
   it('marks exactly the second heading’s link in both copies once it is past its reading line and the third isn’t (criterion 2)', async () => {
     const main = await openPage(path, title, body);
     scrollTo(SECOND);
+    await waitFor(() => expectCurrent(main, 1));
+  });
+
+  it('takes the reading line from the root’s scroll-padding-top: the second heading is current at top 82, not at 83 (focus-not-obscured criterion 3)', async () => {
+    const main = await openPage(path, title, body);
+    scrollTo([-400, PADDING + 3, 400]);
+    await waitFor(() => expectCurrent(main, 0));
+    scrollTo([-400, PADDING + 2, 400]);
     await waitFor(() => expectCurrent(main, 1));
   });
 

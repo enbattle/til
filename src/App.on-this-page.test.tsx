@@ -24,17 +24,17 @@ import { escapeRegExp, renderAt } from '@/test/render';
 // jsdom applies no Tailwind CSS, so the bar and the right nav are both in the
 // tree; the tests tell them apart by whether they sit inside <main>, and pin
 // the class tokens that hide one or the other. Layout is stubbed as in
-// App.on-this-page-scroll-spy.test.tsx (each heading's viewport top by id, its
-// computed scroll-margin-top, scrollY, innerHeight and the scroll height),
+// App.on-this-page-scroll-spy.test.tsx (each heading's viewport top by id, the
+// root's computed scroll-padding-top with each heading's scroll-margin-top at
+// 0, scrollY, innerHeight and the scroll height),
 // which covers marking the current section. Stage 4's browser check verifies
 // the real layout.
 
 const NAME = 'On this page';
-const MARGIN = 80;
+/** The root's stubbed scroll-padding-top: the reading line. */
+const PADDING = 80;
 const INNER_HEIGHT = 800;
 const SCROLL_HEIGHT = 10000;
-/** The existing heading scroll margin, kept from `xl` up (bar criterion 9). */
-const XL_MARGIN = 'scroll-mt-[calc(var(--header-height,8rem)_+_0.75rem)]';
 
 /** The mocked case study's body: inline markdown and a repeated heading. */
 const DEMO_BODY = [
@@ -135,17 +135,24 @@ function rect(top: number): DOMRect {
   } as DOMRect;
 }
 
-function withMargin(style: CSSStyleDeclaration): CSSStyleDeclaration {
+/** A computed style reporting `property` (a CSS name, e.g. `scroll-padding-top`)
+ * as `value`, by that name and its camelCase form. */
+function withStyle(
+  style: CSSStyleDeclaration,
+  property: string,
+  value: string,
+): CSSStyleDeclaration {
+  const camel = property.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
   return new Proxy(style, {
     get(target, prop) {
-      if (prop === 'scrollMarginTop') return `${MARGIN}px`;
+      if (prop === camel) return value;
       if (prop === 'getPropertyValue')
         return (name: string) =>
-          name === 'scroll-margin-top' ? `${MARGIN}px` : target.getPropertyValue(name);
-      const value = Reflect.get(target, prop, target) as unknown;
-      return typeof value === 'function'
-        ? (value as (...args: unknown[]) => unknown).bind(target)
-        : value;
+          name === property ? value : target.getPropertyValue(name);
+      const real = Reflect.get(target, prop, target) as unknown;
+      return typeof real === 'function'
+        ? (real as (...args: unknown[]) => unknown).bind(target)
+        : real;
     },
   });
 }
@@ -189,7 +196,11 @@ beforeEach(() => {
   const realGetComputedStyle = window.getComputedStyle.bind(window);
   vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
     const style = realGetComputedStyle(el, pseudo);
-    return tops.has(el.id) ? withMargin(style) : style;
+    // focus-not-obscured: the reading line is the root's scroll padding, and
+    // the headings carry no scroll margin of their own.
+    if (el === document.documentElement)
+      return withStyle(style, 'scroll-padding-top', `${PADDING}px`);
+    return tops.has(el.id) ? withStyle(style, 'scroll-margin-top', '0px') : style;
   });
 });
 
@@ -482,16 +493,18 @@ describe.each(PAGES)('On this page bar on a $kind', ({ path, title, body }) => {
     expect(panelLinks(button)).toHaveLength(headingIds.length);
   });
 
-  it('gives a rendered h2 the xl: scroll margin unchanged and a different narrow-screen margin on the header height (criterion 9)', async () => {
+  // docs/specs/focus-not-obscured.md, criterion 2 (replacing bar criterion 9):
+  // the root's scroll-padding-top (src/index.css, criterion 1, tested in
+  // src/index-css.test.ts) now keeps a jump below the sticky header and bar,
+  // and a heading margin on top of it would double the offset.
+  it('gives no rendered h2 a scroll-mt-* class at any breakpoint (focus-not-obscured criterion 2)', async () => {
     const { prose } = await openPage(path, title, body);
-    const h2 = prose.querySelector('h2') as HTMLElement;
-    expect(h2).not.toBeNull();
-    const tokens = [...h2.classList];
-    expect(tokens).toContain(`xl:${XL_MARGIN}`);
-    const narrow = tokens.filter((t) => t.startsWith('scroll-mt-'));
-    expect(narrow, h2.className).toHaveLength(1);
-    expect(narrow[0]).toContain('--header-height');
-    expect(narrow[0]).not.toBe(XL_MARGIN);
+    const headings = [...prose.querySelectorAll('h2')];
+    expect(headings.length).toBeGreaterThan(0);
+    for (const h2 of headings) {
+      const margins = [...h2.classList].filter((t) => /(^|:)scroll-mt-/.test(t));
+      expect(margins, `#${h2.id}: ${h2.className}`).toEqual([]);
+    }
   });
 });
 

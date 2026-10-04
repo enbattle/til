@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { stickyOffset } from '@/lib/sticky-offset';
 
 /** Slack, in px, for a heading at its reading line and for the page bottom. */
 const SLACK = 2;
@@ -7,13 +8,14 @@ interface HeadingPosition {
   id: string;
   /** The heading's viewport top (`getBoundingClientRect().top`). */
   top: number;
-  /** Its computed `scroll-margin-top`: where an in-page link leaves it. */
+  /** Where an in-page link leaves it: the root's `scroll-padding-top`
+   * (`stickyOffset`). */
   margin: number;
 }
 
 /**
  * Which section is being read: the last heading whose top has reached its
- * reading line (its own scroll-margin-top plus 2px), so a link jump always
+ * reading line (its `margin` plus 2px), so a link jump always
  * marks that link's section; or, scrolled to the bottom of a page that can
  * scroll, the last heading, since a short final section may never reach the
  * line. `null` above the
@@ -46,15 +48,12 @@ export function useCurrentHeading(ids: string[]): string | null {
     const list = key ? key.split('\n') : [];
     const update = () => {
       const headings: HeadingPosition[] = [];
+      // Every heading lands at the same line: the root's scroll padding.
+      const margin = stickyOffset();
       for (const id of list) {
         const element = document.getElementById(id);
         if (!element) continue;
-        const margin = parseFloat(getComputedStyle(element).scrollMarginTop);
-        headings.push({
-          id,
-          top: element.getBoundingClientRect().top,
-          margin: Number.isNaN(margin) ? 0 : margin,
-        });
+        headings.push({ id, top: element.getBoundingClientRect().top, margin });
       }
       // Only a page that can scroll has a bottom to reach; one that fits
       // the viewport would otherwise mark its last heading on load.

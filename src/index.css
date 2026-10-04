@@ -31,9 +31,33 @@
   --color-accent-soft: #f3e3c8;
 
   /* The sticky "On this page" bar's height below `xl` (OnThisPage), in one
-     place because the headings' scroll margin (MarkdownRenderer) adds it to
-     the header's height so an in-page jump lands below the bar. */
+     place because the root's scroll padding (below) adds it to the header's
+     height so focus and an in-page jump land below the bar. */
   --on-this-page-height: 2.75rem;
+}
+
+/*
+ * Keeps whatever the browser scrolls into view clear of the sticky header (and,
+ * below `xl`, the "On this page" bar under it): a focus move (WCAG 2.2 SC
+ * 2.4.11, Focus Not Obscured), an "On this page" link, a `#heading` URL and
+ * `scrollIntoView` all leave this much room above their target. The header's
+ * measured height (`Header` publishes it as `--header-height`; about 68px from
+ * `sm` up, about 105px at 375px where the tabs wrap) plus a little space;
+ * before that runs, 8rem covers the two-row header. Below `xl` the bar's height
+ * is added on every page, bar or not (more room, never less). `stickyOffset`
+ * (src/lib/sticky-offset.ts) reads it back for the scroll-spy and LazyBody's
+ * hash hold. The headings carry no scroll margin: it would add to this.
+ */
+html {
+  scroll-padding-top: calc(
+    var(--header-height, 8rem) + var(--on-this-page-height) + 0.75rem
+  );
+}
+
+@media (min-width: 80rem) {
+  html {
+    scroll-padding-top: calc(var(--header-height, 8rem) + 0.75rem);
+  }
 }
 
 .dark {

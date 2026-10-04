@@ -108,7 +108,7 @@ function renderBody() {
 
 /** Render, wait for the initial hash scroll, and make the heading report that
  * it has drifted from its scroll margin (so a realign would scroll it). */
-async function openAtHash() {
+async function openAtHash(top = 200) {
   const scroll = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {
     scrollY = OWN_POSITION;
   });
@@ -117,18 +117,110 @@ async function openAtHash() {
   await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
   expect(observers.length).toBeGreaterThan(0);
   vi.spyOn(heading, 'getBoundingClientRect').mockReturnValue({
-    top: 200,
-    bottom: 230,
+    top,
+    bottom: top + 30,
     left: 0,
     right: 100,
     width: 100,
     height: 30,
     x: 0,
-    y: 200,
+    y: top,
     toJSON: () => ({}),
   } as DOMRect);
   return scroll;
 }
+
+// docs/specs/focus-not-obscured.md, criterion 4: the hold's alignment check
+// reads the root's computed scroll-padding-top (what the browser's own
+// scrollIntoView now leaves above the heading), not the heading's own
+// scroll-margin-top, which is gone. The root's padding is stubbed to PADDING
+// and the heading's margin to 0.
+
+const PADDING = 80;
+
+/** A computed style reporting `property` (a CSS name) as `value`, by that name
+ * and its camelCase form. */
+function withStyle(
+  style: CSSStyleDeclaration,
+  property: string,
+  value: string,
+): CSSStyleDeclaration {
+  const camel = property.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
+  return new Proxy(style, {
+    get(target, prop) {
+      if (prop === camel) return value;
+      if (prop === 'getPropertyValue')
+        return (name: string) =>
+          name === property ? value : target.getPropertyValue(name);
+      const real = Reflect.get(target, prop, target) as unknown;
+      return typeof real === 'function'
+        ? (real as (...args: unknown[]) => unknown).bind(target)
+        : real;
+    },
+  });
+}
+
+/** Stubs the root's scroll-padding-top to PADDING and the target heading's
+ * scroll-margin-top to 0 (restored by vi.restoreAllMocks in afterEach). */
+function stubRootPadding() {
+  const realGetComputedStyle = window.getComputedStyle.bind(window);
+  vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) => {
+    const style = realGetComputedStyle(el, pseudo);
+    if (el === document.documentElement)
+      return withStyle(style, 'scroll-padding-top', `${PADDING}px`);
+    if (el.id === 'target') return withStyle(style, 'scroll-margin-top', '0px');
+    return style;
+  });
+}
+
+describe('LazyBody hash scroll-hold aligns to the root’s scroll padding (focus-not-obscured criterion 4)', () => {
+  it('treats the heading as aligned when its top equals the root’s scroll-padding-top, and does not re-scroll', async () => {
+    stubRootPadding();
+    const scroll = await openAtHash(PADDING);
+    resize();
+    resize();
+    expect(scroll).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-scrolls when the heading has drifted to the top edge, under the sticky strip', async () => {
+    stubRootPadding();
+    const scroll = await openAtHash(0);
+    resize();
+    expect(scroll).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-scrolls when the heading has drifted below the root’s scroll-padding-top', async () => {
+    stubRootPadding();
+    const scroll = await openAtHash(PADDING + 120);
+    resize();
+    expect(scroll).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps holding after a scroll that leaves the heading at the root’s scroll-padding-top', async () => {
+    stubRootPadding();
+    const scroll = await openAtHash(PADDING);
+    // Scroll anchoring moves the page but leaves the heading aligned: kept.
+    scrollY = USER_POSITION;
+    scrollEvent();
+    // Then the layout shifts the heading off its line: the hold realigns.
+    vi.spyOn(
+      screen.getByRole('heading', { name: 'Target' }),
+      'getBoundingClientRect',
+    ).mockReturnValue({
+      top: 0,
+      bottom: 30,
+      left: 0,
+      right: 100,
+      width: 100,
+      height: 30,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+    resize();
+    expect(scroll).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe('LazyBody hash scroll-hold stops when the reader scrolls (retro)', () => {
   it('keeps realigning after a scroll event it caused itself (the harness works)', async () => {
