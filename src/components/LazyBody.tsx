@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
+import { stickyOffset } from '@/lib/sticky-offset';
 
 type BodyState =
   | { status: 'loading' }
@@ -25,8 +26,8 @@ type BodyState =
  * Opening a page at `#<heading-id>` (a shared link to a section) can't rely on
  * the browser's own jump: the body isn't there yet when it tries. So once the
  * body has rendered, the element named by the hash the page was opened with
- * (if any) is scrolled into view, once per load; the headings'
- * `scroll-margin` keeps it below the sticky header. Content above it can
+ * (if any) is scrolled into view, once per load; the root's
+ * `scroll-padding-top` keeps it below the sticky header. Content above it can
  * still change height for a moment after that (a web font swapping in reflows
  * text, the header re-wraps), and the browser's scroll anchoring doesn't always
  * make up the difference, so `keepInView` holds the heading in place while
@@ -85,8 +86,9 @@ const USER_INPUT = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
  * loaded, never past `MAX_SETTLE_MS`. It watches the document body (the
  * header re-wrapping, the page growing) and every block beside the target (one
  * block growing while another shrinks), and only scrolls when the heading has
- * drifted from where its `scroll-margin` puts it. The first wheel, touch, key
- * or pointer press stops it at once, so it never fights the reader, and so
+ * drifted from where the root's scroll padding (`stickyOffset`) puts it. The
+ * first wheel, touch, key or pointer press stops it at once, so it never
+ * fights the reader, and so
  * does any scroll it didn't cause (a scrollbar drag, find-in-page, assistive
  * technology): a `scroll` event that finds the page somewhere other than its
  * own last scroll left it, with the heading no longer aligned. (A scroll that
@@ -98,10 +100,8 @@ function keepInView(target: HTMLElement): () => void {
   if (typeof ResizeObserver === 'undefined') return () => {};
   // Where the page was left by the last scroll this hold made or accepted.
   let expectedY = window.scrollY;
-  const aligned = () => {
-    const margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
-    return Math.abs(target.getBoundingClientRect().top - margin) <= 1;
-  };
+  const aligned = () =>
+    Math.abs(target.getBoundingClientRect().top - stickyOffset()) <= 1;
   const realign = () => {
     if (aligned()) return;
     target.scrollIntoView();

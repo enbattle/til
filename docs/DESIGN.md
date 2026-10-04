@@ -88,7 +88,8 @@ notebook than a product. The UI follows that:
   The section being read gets the left nav's current signal (bold plus the
   accent border) and `aria-current="location"` in both copies, from one
   `useCurrentHeading` state: the last `##` heading whose top has reached its
-  own `scroll-margin-top` (plus 2px), so a link jump marks its section, or
+  reading line, the root's `scroll-padding-top` (plus 2px, read through
+  `stickyOffset` in `src/lib/sticky-offset.ts`), so a link jump marks its section, or
   the last heading once the page is scrolled to the bottom (only when the
   page can scroll, so a page that fits the viewport doesn't mark its last
   heading on load); none above the first heading. It recomputes at most once per animation frame on a window
@@ -111,17 +112,22 @@ notebook than a product. The UI follows that:
   links aren't tab stops. Not a modal: no focus trap, no scroll lock. Both
   copies render inside
   `LazyBody`'s children, so they appear once the body loads and unmount with
-  the page; a body with no `##` headings gets neither. The headings' `scroll-margin-top` is the
-  sticky header's measured height plus 0.75rem, which `Header` publishes as
+  the page; a body with no `##` headings gets neither. The root's
+  `scroll-padding-top` (on `html` in `src/index.css`) is the sticky header's
+  measured height plus 0.75rem, which `Header` publishes as
   `--header-height`, because the header's height varies with width: one row
   of about 68px from `sm` up, two rows of about 105px at 375px, three on the
-  narrowest phones. Below `xl` it also adds the bar's height. So neither the
-  header nor the bar covers a heading an "On this page" link jumps to. The same goes for in-body links: a markdown link whose href
+  narrowest phones. Below `xl` it also adds the bar's height (on every page,
+  bar or not: more room, never less). The browser leaves that room above
+  anything it scrolls into view, so neither the header nor the bar covers a
+  heading an "On this page" link jumps to, or a focused element Tab or
+  Shift+Tab scrolls to. The headings carry no `scroll-margin-top`: it would
+  add to the padding and land every jump too low. The same goes for in-body links: a markdown link whose href
   starts with `#` (the "At a glance" section's links to headings) renders as
   a plain same-tab anchor, a `/…` link is a router `Link`, and an external
   link opens in a new tab with `rel="noreferrer"`. Opening a topic or case study at a `#<heading-id>` URL works too:
   the body loads after the browser's own jump, so `LazyBody` scrolls the
-  heading into view once the body renders, and the same scroll margin applies;
+  heading into view once the body renders, and the same scroll padding applies;
   after that it re-aligns the heading whenever layout above it shifts, for at
   least 1.5 seconds and until `document.fonts.ready`, never past 5 seconds. It
   stops at once on the reader's first wheel, touch, key or pointer press, and
@@ -247,6 +253,12 @@ than a new one added ad hoc.
 - **Focus states**: every interactive element gets a visible focus ring
   (`:focus-visible` in `src/index.css`) — never `outline: none` without a
   replacement.
+- **Focus not hidden by sticky elements** (WCAG 2.2 SC 2.4.11): a focused
+  element is never entirely covered by the sticky header or the "On this
+  page" bar. The root's `scroll-padding-top` (`src/index.css`) reserves that
+  strip, so any new sticky element's height belongs in it. Checked in a
+  browser by tabbing through a long page in both directions (Tab and
+  Shift+Tab) at a phone width and a desktop width.
 - **Semantic headings**: one `h1` per page, no skipped levels, so the
   document structure a screen reader announces matches the visual
   hierarchy.

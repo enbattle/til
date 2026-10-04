@@ -9,19 +9,6 @@ import { CodeBlock } from './CodeBlock';
 import { CodeTabs } from './CodeTabs';
 import { Diagram } from './Diagram';
 
-/**
- * Keeps a heading clear of the sticky header when the browser jumps to it (an
- * "On this page" link or a `#id` URL): the header's measured height (`Header`
- * publishes it as `--header-height`; about 68px from `sm` up, about 105px at
- * 375px where the tabs wrap to a second row, more on the narrowest phones)
- * plus a little space. Before that runs, 8rem covers the two-row header.
- * Below `xl` the sticky "On this page" bar (`OnThisPage`) sits under the
- * header too, so its height (`--on-this-page-height`, index.css) is added;
- * from `xl` the bar is hidden and the margin is the header's alone.
- */
-const HEADING_SCROLL_MARGIN =
-  'scroll-mt-[calc(var(--header-height,8rem)_+_var(--on-this-page-height)_+_0.75rem)] xl:scroll-mt-[calc(var(--header-height,8rem)_+_0.75rem)]';
-
 /** The fence language of a `<pre>` holding one `<code class="language-x">`
  * (a fenced code block), or undefined for anything else. */
 function fenceLanguage(node: HastNode | undefined): string | undefined {
@@ -114,21 +101,14 @@ const components: Components = {
   // how a topic happens to be written, rather than relying on a writing
   // convention nobody's forced to follow.
   h1({ id, children }) {
-    return (
-      <h2 id={id} className={HEADING_SCROLL_MARGIN}>
-        {children}
-      </h2>
-    );
+    return <h2 id={id}>{children}</h2>;
   },
   // Every h2 gets a stable id from `rehypeHeadingIds` (the same numbering the
   // "On this page" nav links with), so a section can be linked to and
-  // the nav's anchors always land.
+  // the nav's anchors always land. The root's `scroll-padding-top`
+  // (index.css) keeps a jump to it below the sticky header and bar.
   h2({ id, children }) {
-    return (
-      <h2 id={id} className={HEADING_SCROLL_MARGIN}>
-        {children}
-      </h2>
-    );
+    return <h2 id={id}>{children}</h2>;
   },
   // A diagram on its own line is a markdown paragraph, but the diagram is a
   // block (its own scroll box), and a block inside a <p> is invalid HTML, so

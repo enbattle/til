@@ -56,8 +56,8 @@ function HeadingLinks({
  * browser still makes the jump), Escape (focus goes back to the button), a
  * pointer press outside the bar, or focus moving outside the bar. Closed, it's `hidden` rather than unmounted,
  * so a clicked link is still in the document when the browser follows it.
- * Its height is `--on-this-page-height` (index.css), which the headings'
- * scroll margin adds so a jump lands below the bar.
+ * Its height is `--on-this-page-height` (index.css), which the root's
+ * scroll padding adds so focus and a jump land below the bar.
  */
 function OnThisPageBar({
   headings,
