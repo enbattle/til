@@ -1,4 +1,4 @@
-import type { DsaEntry, DsaKind } from '@/types';
+import type { DsaEntry, DsaGroup, DsaKind } from '@/types';
 import { createCollection } from './content';
 
 // Frontmatter and prerequisite links only, eagerly: enough for the landing
@@ -37,6 +37,13 @@ const KIND_LABELS: Record<DsaKind, string> = {
 export function dsaKindLabel(kind: DsaKind): string {
   return KIND_LABELS[kind];
 }
+
+// The group headings on the DSA nav and landing page.
+const KIND_HEADINGS: Record<DsaKind, string> = {
+  'data-structure': 'Data structures',
+  pattern: 'Patterns',
+  algorithm: 'Algorithms',
+};
 
 function isKind(value: string): value is DsaKind {
   return (KINDS as readonly string[]).includes(value);
@@ -130,6 +137,20 @@ export function orderDsaEntries(
   return ordered;
 }
 
+/**
+ * `entries` split by kind: one group per kind that has entries, in kind order
+ * (data structures, patterns, algorithms), each keeping its entries in input
+ * order. A stable partition, so a prerequisite of the same kind still comes
+ * first; one of another kind can come later.
+ */
+export function groupDsaEntries(entries: DsaEntry[]): DsaGroup[] {
+  return KINDS.map((kind) => ({
+    kind,
+    heading: KIND_HEADINGS[kind],
+    entries: entries.filter((entry) => entry.kind === kind),
+  })).filter((group) => group.entries.length > 0);
+}
+
 /** One cycle among `remaining`, as slugs with the first repeated at the end.
  * Every remaining entry waits on another remaining one, so following those
  * links must come back to an entry already seen. */
@@ -167,11 +188,18 @@ const entries = createCollection({
   key: slugOf,
 });
 
-/** Every DSA entry, prerequisites first (see `orderDsaEntries`). Metadata
- * only. Throws at load time on a bad file or a broken prerequisite, so the
- * tests that import it fail (and with them `verify`, where `test:run` runs
- * before `build`); `vite build` alone doesn't run this code. */
-export const DSA_ENTRIES: DsaEntry[] = orderDsaEntries(entries.items, PREREQS);
+/** The DSA entries grouped by kind, each group prerequisites first (see
+ * `orderDsaEntries` and `groupDsaEntries`). Metadata only. Throws at load
+ * time on a bad file or a broken prerequisite, so the tests that import it
+ * fail (and with them `verify`, where `test:run` runs before `build`); `vite
+ * build` alone doesn't run this code. */
+export const DSA_GROUPS: DsaGroup[] = groupDsaEntries(
+  orderDsaEntries(entries.items, PREREQS),
+);
+
+/** Every DSA entry, group by group: the one sequence the landing page, the
+ * sidebar, the numbering and Previous/Next share. */
+export const DSA_ENTRIES: DsaEntry[] = DSA_GROUPS.flatMap((group) => group.entries);
 
 export function getDsaEntry(slug: string): DsaEntry | undefined {
   return entries.get(slug);

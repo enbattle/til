@@ -22,6 +22,95 @@ function nav() {
   return screen.getByRole('navigation', { name: NAV_NAME });
 }
 
+// docs/specs/dsa-kind-groups.md, criterion 4. The groups, computed from the
+// entries' kinds: kind order, each group in DSA_ENTRIES order.
+const KIND_GROUPS = (
+  [
+    ['data-structure', 'Data structures'],
+    ['pattern', 'Patterns'],
+    ['algorithm', 'Algorithms'],
+  ] as const
+)
+  .map(([kind, heading]) => ({
+    kind,
+    heading,
+    entries: DSA_ENTRIES.filter((e) => e.kind === kind),
+  }))
+  .filter((g) => g.entries.length > 0);
+
+/** Checks `navEl` holds one labelled list per group, as criterion 4 asks. */
+function expectGroupedLists(navEl: HTMLElement) {
+  expect(KIND_GROUPS.map((g) => g.heading)).toEqual([
+    'Data structures',
+    'Patterns',
+    'Algorithms',
+  ]);
+  const lists = within(navEl).getAllByRole('list');
+  expect(lists.map((l) => l.tagName)).toEqual(KIND_GROUPS.map(() => 'OL'));
+  // Each list is named by its group's label, which comes right before it.
+  let number = 0;
+  KIND_GROUPS.forEach((group, i) => {
+    const list = lists[i];
+    expect(list).toHaveAccessibleName(group.heading);
+    const labelId = list.getAttribute('aria-labelledby');
+    expect(labelId, group.heading).toBeTruthy();
+    const label = document.getElementById(labelId!);
+    expect(label).not.toBeNull();
+    expect(navEl.contains(label)).toBe(true);
+    expect(label!.textContent?.trim()).toBe(group.heading);
+    expect(label!.tagName).toBe('P');
+    expect(
+      label!.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    if (i > 0) {
+      expect(
+        lists[i - 1].compareDocumentPosition(label!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+
+    const links = within(list).getAllByRole('link');
+    expect(links.map((a) => a.getAttribute('href'))).toEqual(
+      group.entries.map((e) => `/dsa/${e.slug}`),
+    );
+    expect(Number(list.getAttribute('start') ?? '1')).toBe(number + 1);
+    for (const link of links) {
+      number += 1;
+      const visible = link.querySelector('[aria-hidden="true"]');
+      expect(visible?.textContent?.trim()).toBe(`${number}.`);
+    }
+  });
+  // Across the lists, the links are exactly DSA_ENTRIES in order.
+  expect(
+    within(navEl)
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href')),
+  ).toEqual(DSA_ENTRIES.map((e) => `/dsa/${e.slug}`));
+  expect(number).toBe(DSA_ENTRIES.length);
+}
+
+describe('DsaNav groups (dsa-kind-groups criterion 4)', () => {
+  it('shows the group labels in kind order, each naming the list of its links, numbered 1..N', () => {
+    renderNav();
+    expectGroupedLists(nav());
+  });
+
+  it('keeps the "DSA" label above the groups', () => {
+    renderNav();
+    const first = nav().querySelector('p');
+    expect(first?.textContent?.trim()).toBe('DSA');
+  });
+
+  it('still marks the current entry with aria-current="page" when grouped', () => {
+    const slug = KIND_GROUPS.at(-1)!.entries[0].slug;
+    renderNav(`/dsa/${slug}`);
+    expectGroupedLists(nav());
+    const current = within(nav())
+      .getAllByRole('link')
+      .filter((a) => a.getAttribute('aria-current') === 'page');
+    expect(current.map((a) => a.getAttribute('href'))).toEqual([`/dsa/${slug}`]);
+  });
+});
+
 describe('DsaNav (criterion 8)', () => {
   it('lists exactly one link per entry, in DSA_ENTRIES order, each to its page', () => {
     renderNav();
@@ -104,6 +193,15 @@ describe('MobileNav on DSA routes (criterion 8)', () => {
       expect(
         screen.queryByRole('navigation', { name: 'Case studies' }),
       ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(['/dsa', '/dsa/binary-search'])(
+    'shows the DSA nav grouped by kind, numbered 1..N, in the dialog at %s (dsa-kind-groups criterion 4)',
+    (path) => {
+      renderMobileNav(path);
+      const dialog = screen.getByRole('dialog', { name: 'Navigation' });
+      expectGroupedLists(within(dialog).getByRole('navigation', { name: NAV_NAME }));
     },
   );
 

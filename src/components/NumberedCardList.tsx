@@ -5,16 +5,15 @@ interface NumberedCard {
   number: number;
   title: string;
   summary: string;
-  /** An optional small line under the title (a DSA entry's kind). */
-  label?: string;
 }
 
 /** A landing page's numbered list of cards (System Design, DSA), one link
- * each, in the order given. */
+ * each, in the order given. `start` follows the first card's number, so a
+ * list that continues another's numbering (a DSA group) says so. */
 export function NumberedCardList({ cards }: { cards: NumberedCard[] }) {
   return (
-    <ol className="space-y-3">
-      {cards.map(({ to, number, title, summary, label }) => (
+    <ol start={cards[0]?.number} className="space-y-3">
+      {cards.map(({ to, number, title, summary }) => (
         <li key={to}>
           <Link
             to={to}
@@ -27,11 +26,6 @@ export function NumberedCardList({ cards }: { cards: NumberedCard[] }) {
               <span className="block font-serif text-base font-semibold text-text-primary">
                 {title}
               </span>
-              {label && (
-                <span className="mt-0.5 block text-xs font-medium tracking-wide text-text-tertiary uppercase">
-                  {label}
-                </span>
-              )}
               <span className="mt-1 block text-sm text-text-secondary">{summary}</span>
             </span>
           </Link>

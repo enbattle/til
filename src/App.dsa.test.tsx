@@ -9,6 +9,22 @@ import { escapeRegExp, renderAt } from '@/test/render';
 // docs/specs/dsa-tab.md, criteria 6-8 on the whole app: the /dsa landing page,
 // the /dsa/:slug entry page and the sidebar choice.
 
+// The groups the landing page and the nav show (docs/specs/dsa-kind-groups.md),
+// computed from the entries' kinds: kind order, each group in DSA_ENTRIES order.
+const KIND_GROUPS = (
+  [
+    ['data-structure', 'Data structures'],
+    ['pattern', 'Patterns'],
+    ['algorithm', 'Algorithms'],
+  ] as const
+)
+  .map(([kind, heading]) => ({
+    kind,
+    heading,
+    entries: DSA_ENTRIES.filter((e) => e.kind === kind),
+  }))
+  .filter((g) => g.entries.length > 0);
+
 afterEach(() => {
   localStorage.clear();
 });
@@ -40,26 +56,73 @@ describe('DSA landing (criterion 6)', () => {
     ).toBeTruthy();
   });
 
-  it('lists every entry in DSA_ENTRIES order in one numbered list, with number, title, kind label and summary', () => {
+  // docs/specs/dsa-kind-groups.md, criterion 6.
+  it('has the h2s "Data structures", "Patterns" and "Algorithms" in order, each labelling a section', () => {
     renderAt('/dsa');
     const main = screen.getByRole('main');
-    const cards = within(main)
+    const h2s = within(main).getAllByRole('heading', { level: 2 });
+    expect(h2s.map((h) => h.textContent?.trim())).toEqual(
+      KIND_GROUPS.map((g) => g.heading),
+    );
+    expect(KIND_GROUPS.map((g) => g.heading)).toEqual([
+      'Data structures',
+      'Patterns',
+      'Algorithms',
+    ]);
+    for (const h2 of h2s) {
+      const section = h2.closest('section');
+      expect(section, h2.textContent ?? '').not.toBeNull();
+      expect(section!.getAttribute('aria-labelledby')).toBe(h2.id);
+      expect(h2.id).not.toBe('');
+      expect(within(main).getByRole('region', { name: h2.textContent!.trim() })).toBe(
+        section,
+      );
+    }
+  });
+
+  it('puts each group’s cards in its section, in order, with numbers continuing across sections and no kind label', () => {
+    renderAt('/dsa');
+    const main = screen.getByRole('main');
+    expect(DSA_ENTRIES.length).toBeGreaterThanOrEqual(3);
+    let number = 0;
+    for (const group of KIND_GROUPS) {
+      const section = within(main).getByRole('region', { name: group.heading });
+      const cards = within(section)
+        .getAllByRole('link')
+        .filter((a) => a.getAttribute('href')?.startsWith('/dsa/'));
+      expect(cards.map((a) => a.getAttribute('href'))).toEqual(
+        group.entries.map((e) => `/dsa/${e.slug}`),
+      );
+      group.entries.forEach((entry, i) => {
+        number += 1;
+        const card = cards[i].closest('li') ?? cards[i];
+        // The number comes first, then the title.
+        expect(cards[i].textContent ?? '').toMatch(
+          new RegExp(`^\\s*${number}\\s*${escapeRegExp(entry.title)}`),
+        );
+        expect(card).toHaveTextContent(entry.summary);
+        const label = dsaKindLabel(entry.kind);
+        const labelled = [...card.querySelectorAll('*')].filter(
+          (el) => el.textContent?.trim().toLowerCase() === label.toLowerCase(),
+        );
+        expect(labelled, `${entry.slug} shows "${label}"`).toHaveLength(0);
+      });
+    }
+    // Across the sections, the cards are exactly DSA_ENTRIES in order.
+    const all = within(main)
       .getAllByRole('link')
       .filter((a) => a.getAttribute('href')?.startsWith('/dsa/'));
-    expect(DSA_ENTRIES.length).toBeGreaterThanOrEqual(3);
-    expect(cards.map((a) => a.getAttribute('href'))).toEqual(
+    expect(all.map((a) => a.getAttribute('href'))).toEqual(
       DSA_ENTRIES.map((e) => `/dsa/${e.slug}`),
     );
-    const list = cards[0].closest('ol');
-    expect(list).not.toBeNull();
-    for (const card of cards) expect(card.closest('ol')).toBe(list);
-    DSA_ENTRIES.forEach((entry, i) => {
-      const card = cards[i].closest('li') ?? cards[i];
-      expect(card).toHaveTextContent(entry.title);
-      expect(card).toHaveTextContent(entry.summary);
-      expect(card).toHaveTextContent(dsaKindLabel(entry.kind));
-      expect(card).toHaveTextContent(String(i + 1));
-    });
+    expect(number).toBe(DSA_ENTRIES.length);
+  });
+
+  it('no longer says "Every entry comes after the ones it builds on"', () => {
+    renderAt('/dsa');
+    expect(screen.getByRole('main').textContent).not.toContain(
+      'Every entry comes after the ones it builds on',
+    );
   });
 
   it('navigates to an entry when its card is clicked', async () => {
@@ -162,6 +225,22 @@ describe('DSA entry page (criterion 7)', () => {
       expect(adjacent).toEqual(expected);
     },
   );
+
+  // docs/specs/dsa-kind-groups.md, criterion 7.
+  it('Next crosses from the last data structure to the first pattern', async () => {
+    const lastDs = DSA_ENTRIES.map((e) => e.kind).lastIndexOf('data-structure');
+    expect(lastDs).toBeGreaterThanOrEqual(0);
+    const firstPattern = DSA_ENTRIES.find((e) => e.kind === 'pattern')!;
+    // DSA_ENTRIES is grouped, so the entry after the last data structure is
+    // the first pattern.
+    expect(DSA_ENTRIES[lastDs + 1]).toBe(firstPattern);
+    const { main } = await openEntry(DSA_ENTRIES[lastDs].slug);
+    const adjacent = chromeLinks(main)
+      .filter((a) => !a.closest('nav[aria-label="Before this"]'))
+      .map((a) => a.getAttribute('href'))
+      .filter((href): href is string => !!href && href.startsWith('/dsa/'));
+    expect(adjacent.at(-1)).toBe(`/dsa/${firstPattern.slug}`);
+  });
 
   it('renders its code pairs as Python/TypeScript tabs', async () => {
     const { main } = await openEntry('binary-search');
