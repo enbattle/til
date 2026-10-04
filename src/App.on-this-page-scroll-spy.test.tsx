@@ -16,7 +16,8 @@ import { renderAt } from '@/test/render';
 // scroll-margin-top, window.scrollY, innerHeight and the document's scroll
 // height. A test sets a layout, dispatches `scroll` or `resize`, and waits for
 // the animation frame with waitFor. The hook itself is tested only through the
-// rendered page, so this file doesn't import it.
+// rendered page, so this file doesn't import it. The narrow-view copy is the
+// "On this page" bar's panel (docs/specs/on-this-page-bar.md), opened on load.
 
 const NAME = 'On this page';
 const MARGIN = 80;
@@ -201,10 +202,17 @@ async function openPage(path: string, title: string, body: () => string) {
   const main = screen.getByRole('main');
   await waitFor(() => expect(main.querySelector('.prose')).not.toBeNull());
   await waitFor(() => expect(navs(main)).toHaveLength(2));
+  // The in-<main> copy is the bar's panel (docs/specs/on-this-page-bar.md):
+  // open it so its links are rendered.
+  const button = within(navs(main)[0]).getByRole('button', {
+    name: new RegExp(`^${NAME}`),
+  });
+  await userEvent.setup().click(button);
+  await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'true'));
   return main;
 }
 
-/** Both copies of the nav: the disclosure's (in <main>), then the right nav. */
+/** Both "On this page" navigations: the bar (in <main>), then the right nav. */
 function navs(main: HTMLElement) {
   const all = screen.queryAllByRole('navigation', { name: NAME });
   return [
@@ -213,12 +221,20 @@ function navs(main: HTMLElement) {
   ];
 }
 
+/** Both copies of the links: the open bar panel's, then the right nav's. */
+function copiesOf(main: HTMLElement) {
+  const found = navs(main);
+  expect(found).toHaveLength(2);
+  expect(found.filter((n) => main.contains(n))).toHaveLength(1);
+  const button = within(found[0]).getByRole('button', { name: new RegExp(`^${NAME}`) });
+  const panel = document.getElementById(button.getAttribute('aria-controls') ?? '');
+  expect(panel).not.toBeNull();
+  return [panel!, found[1]];
+}
+
 /** Asserts that in both copies exactly heading `index` is current (or none). */
 function expectCurrent(main: HTMLElement, index: number | null) {
-  const copies = navs(main);
-  expect(copies).toHaveLength(2);
-  expect(copies.filter((n) => main.contains(n))).toHaveLength(1);
-  for (const nav of copies) {
+  for (const nav of copiesOf(main)) {
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => a.getAttribute('href'))).toEqual(
       headingIds.map((id) => `#${id}`),

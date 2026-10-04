@@ -1,4 +1,5 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
@@ -79,20 +80,28 @@ describe('MarkdownRenderer heading ids', () => {
 
 describe('CaseStudyPage "On this page"', () => {
   // Through the real App, so the shell's right column exists for the right
-  // nav. Both copies are checked: the disclosure inside <main> and the right
-  // nav outside it.
+  // nav. Both copies are checked: the open panel of the bar inside <main>
+  // (docs/specs/on-this-page-bar.md) and the right nav outside it.
   async function renderPage() {
+    const user = userEvent.setup();
     const utils = renderAt('/system-design/demo');
     await screen.findByRole('heading', { level: 1, name: 'Design a Demo' });
     const main = screen.getByRole('main');
     await waitFor(() => expect(main.querySelectorAll('.prose h2').length).toBe(4));
-    const navs = await waitFor(() => {
+    const [bar, right] = await waitFor(() => {
       const found = screen.getAllByRole('navigation', { name: 'On this page' });
-      expect(found.filter((nav) => !main.contains(nav))).toHaveLength(1);
-      expect(found.filter((nav) => main.contains(nav))).toHaveLength(1);
-      return found;
+      const outside = found.filter((nav) => !main.contains(nav));
+      const inside = found.filter((nav) => main.contains(nav));
+      expect(outside).toHaveLength(1);
+      expect(inside).toHaveLength(1);
+      return [inside[0], outside[0]];
     });
-    return { ...utils, main, navs };
+    const button = within(bar).getByRole('button', { name: /^On this page/ });
+    await user.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    const panel = document.getElementById(button.getAttribute('aria-controls') ?? '');
+    expect(panel).not.toBeNull();
+    return { ...utils, main, navs: [panel!, right] };
   }
 
   it('links every entry to the id of the h2 it names, in both copies', async () => {

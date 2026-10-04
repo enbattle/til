@@ -152,12 +152,16 @@ describe('case study page (criterion 8)', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('places the "On this page" disclosure in <main> before the body', async () => {
+  it('places the "On this page" bar in <main> before the body', async () => {
     const { main } = await openCaseStudy();
     const onThisPage = await within(main).findByRole('navigation', {
       name: 'On this page',
     });
-    expect(onThisPage.closest('details')).not.toBeNull();
+    // docs/specs/on-this-page-bar.md: a bar with a disclosure button, no <details>.
+    expect(main.querySelector('details')).toBeNull();
+    expect(
+      within(onThisPage).getByRole('button', { name: /^On this page/ }),
+    ).toHaveAttribute('aria-expanded', 'false');
     const prose = main.querySelector('.prose') as HTMLElement;
     expect(
       onThisPage.compareDocumentPosition(prose) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -288,10 +292,10 @@ describe('topic page back-links (criterion 10)', () => {
     expect(
       prose.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    // Every navigation in <main> but the "On this page" disclosure (which
-    // sits before the body) comes after the back-links.
+    // Every navigation in <main> but the "On this page" bar (which sits
+    // before the body) comes after the back-links.
     for (const other of within(main).getAllByRole('navigation')) {
-      if (other === nav || other.closest('details')) continue;
+      if (other === nav || other.getAttribute('aria-label') === 'On this page') continue;
       expect(
         nav.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();

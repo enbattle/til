@@ -10,8 +10,9 @@ import { caseStudyBody, dsaEntryBody, rawTopic } from '@/test/content';
 import { escapeRegExp, renderAt } from '@/test/render';
 
 // docs/specs/on-this-page-nav.md: the wider shell, the right-hand "On this
-// page" nav (outside <main>) and its narrow-view <details> disclosure (inside
-// <main>), on a case study, a DSA entry and a catalog topic page. jsdom applies
+// page" nav (outside <main>) and its narrow-view copy inside <main>, now the
+// sticky bar of docs/specs/on-this-page-bar.md (which replaced the <details>
+// disclosure), on a case study, a DSA entry and a catalog topic page. jsdom applies
 // no Tailwind CSS, so both copies of the nav are in the tree here; the tests
 // tell them apart by whether they sit inside <main>, and pin the class tokens
 // that hide one or the other (criteria 7-8). Stage 4's browser check verifies
@@ -121,29 +122,33 @@ describe.each(PAGES)('On this page on a $kind', ({ path, title, body }) => {
     }
   });
 
-  it('has a closed <details> "On this page" disclosure in <main>, before the body’s first heading, with the same links (criterion 2)', async () => {
+  it('has a closed "On this page" bar in <main>, before the body’s first heading, whose panel holds the same links, and no <details> (docs/specs/on-this-page-bar.md, criteria 1 and 4)', async () => {
+    const user = userEvent.setup();
     const { main, prose } = await openPage(path, title);
     const headings = expected();
 
-    const details = await waitFor(() => {
-      const found = main.querySelectorAll('details');
+    const bar = await waitFor(() => {
+      const found = within(main).getAllByRole('navigation', { name: NAME });
       expect(found).toHaveLength(1);
       return found[0];
     });
-    expect(details).not.toHaveAttribute('open');
-    expect(prose.contains(details)).toBe(false);
+    expect(prose.contains(bar)).toBe(false);
+    expect(main.querySelector('details')).toBeNull();
 
-    const summary = details.querySelector('summary');
-    expect(summary).not.toBeNull();
-    expect(summary!.textContent?.trim()).toBe(NAME);
-
-    const nav = within(details).getByRole('navigation', { name: NAME });
-    expect(hrefs(nav)).toEqual(headings.map((h) => `#${h.id}`));
+    const button = within(bar).getByRole('button', {
+      name: new RegExp(`^${escapeRegExp(NAME)}`),
+    });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    await user.click(button);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    const panel = document.getElementById(button.getAttribute('aria-controls') ?? '');
+    expect(panel).not.toBeNull();
+    expect(hrefs(panel!)).toEqual(headings.map((h) => `#${h.id}`));
 
     const firstHeading = prose.querySelector('h2, h3, h4, h5, h6') as HTMLElement;
     expect(firstHeading).not.toBeNull();
     expect(
-      details.compareDocumentPosition(firstHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+      bar.compareDocumentPosition(firstHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
@@ -155,7 +160,7 @@ describe.each(PAGES)('On this page on a $kind', ({ path, title, body }) => {
     ).not.toBeInTheDocument();
   });
 
-  it('puts the right nav in a column hidden below xl and shown from xl, and the disclosure carries xl:hidden (criterion 7)', async () => {
+  it('puts the right nav in a column hidden below xl and shown from xl, and the bar carries xl:hidden (criterion 7)', async () => {
     const { main } = await openPage(path, title);
     await waitFor(() => expect(rightNavs(main)).toHaveLength(1));
     const [nav] = rightNavs(main);
@@ -166,8 +171,9 @@ describe.each(PAGES)('On this page on a $kind', ({ path, title, body }) => {
     expect(columns[0].contains(nav)).toBe(true);
     expect(columns[0].tagName).not.toBe('ASIDE');
 
-    const details = main.querySelector('details');
-    expect(details).toHaveClass('xl:hidden');
+    const bar = within(main).getByRole('navigation', { name: NAME });
+    expect(bar).toHaveClass('xl:hidden');
+    expect(main.querySelector('details')).toBeNull();
   });
 });
 

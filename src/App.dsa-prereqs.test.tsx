@@ -49,12 +49,15 @@ describe('"Before this" with prerequisites (criterion 7)', () => {
     expect(
       before.compareDocumentPosition(prose) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    // The narrow-view "On this page" disclosure follows "Before this".
+    // The narrow-view "On this page" bar (docs/specs/on-this-page-bar.md)
+    // follows "Before this"; the <details> disclosure is gone.
     const onThisPage = within(main).getByRole('navigation', { name: 'On this page' });
-    const details = onThisPage.closest('details');
-    expect(details).not.toBeNull();
+    expect(main.querySelector('details')).toBeNull();
     expect(
-      before.compareDocumentPosition(details!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      within(onThisPage).getByRole('button', { name: /^On this page/ }),
+    ).toBeVisible();
+    expect(
+      before.compareDocumentPosition(onThisPage) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
