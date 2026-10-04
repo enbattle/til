@@ -31,22 +31,20 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-01 | docs-audit description gains friction aggregation                    | 1    | 0    | 0         | SR-09 only: still routes to `docs-audit`.                    |
 | 2026-10-01 | SR-17 prompt refreshed (the width guard already exists)              | 1    | 0    | 0         | Now asks for a node-count limit; routes to `/feature`.       |
 | 2026-10-02 | Batch-mode edits in add-dsa-entry and add-case-study (#44, #46)      | 4    | 0    | 0         | SR-15 to SR-18; SR-18 prompt refreshed (heap now exists).    |
+| 2026-10-03 | /feature Stage 2 and re-run edits; add-dsa-entry ordering rule (#53) | 5    | 0    | 0         | Scoped run; SR-17 prompt refreshed (sticky nav now exists).  |
 
-## Latest run: 2026-10-02, batch-mode skill edits
+## Latest run: 2026-10-03, /feature retro edits and the add-dsa-entry ordering rule
 
 Run by: self
-Trigger: PRs #44 and #46 edited the bodies of `add-dsa-entry` and `add-case-study` (their batch-mode bullets: drafter checks, `npm ci` per worktree) and `docs/content-review.md`'s Batch mode. The evals were deferred at merge time and run now.
-Scope: the scenarios whose Expected answer depends on those two skills, SR-15 to SR-18; no description or routing rule changed, so the rest are unaffected. Before running, SR-18's prompt was refreshed: it named the heap entry, which now exists, so it had become a request to edit an existing entry (the same staleness SR-15's note describes). It now names an LRU cache entry.
+Trigger: run 1's retro edits to `.claude/skills/feature/SKILL.md` (Stage 2's test-writer instruction and re-run trigger; the test re-run path runs Stage 3's gate before spawning an implementer), plus PR #53's edit to `add-dsa-entry`'s body (a later-kind prerequisite fails the pinned list; ask the user).
+Scope: no description or routing rule changed, only skill bodies, so this covers the scenarios whose Expected answer depends on `/feature` or `add-dsa-entry`: SR-01, SR-05 (its triage-first rule is `/feature`'s Stage 0), SR-07, SR-17 and SR-18. Before running, SR-17's prompt was refreshed. Its first half asked for a sticky Contents list, which PR #52 built as the "On this page" nav, so it now asks to highlight the current section in that list while scrolling (still unbuilt). Its Expected answer is unchanged.
 
-| ID    | Routing decision | Reasoning (1 line)                                                                                    | Grade |
-| ----- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----- |
-| SR-15 | `add-case-study` | A new case study with D2 diagrams; no existing one covers a collaborative editor.                     | PASS  |
-| SR-16 | `content-audit`  | Scoped to `url-shortener.md`: revising a published case study's prose and checking its claims.        | PASS  |
-| SR-17 | `/feature`       | Page UI plus a new diagram-check rule; `add-case-study` sends page and tooling changes to `/feature`. | PASS  |
-| SR-18 | `add-dsa-entry`  | A new entry under `src/dsa/entries/` with code and tests; no DSA page or tooling change.              | PASS  |
+| ID    | Routing decision      | Reasoning (1 line)                                                                                        | Grade |
+| ----- | --------------------- | --------------------------------------------------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`            | New search-dialog UI behavior needing a design choice, tests and UI review.                               | PASS  |
+| SR-05 | Triage first (direct) | A bug of unknown size: reproduce and find the cause per `/feature` Stage 0, then route by what was found. | PASS  |
+| SR-07 | `/feature`            | Computed metadata plus UI on cards and topic pages; content skills send app-code changes to `/feature`.   | PASS  |
+| SR-17 | `/feature`            | Page UI plus a new diagram-check rule; `add-case-study` sends page and tooling changes to `/feature`.     | PASS  |
+| SR-18 | `add-dsa-entry`       | A new entry with tested code; checked that no LRU cache entry exists yet.                                 | PASS  |
 
-Notes: every agent cited the skill descriptions' own exclusions, not keyword matches. Scenario prompts that name content can go stale as the content gets written; check that the named item still doesn't exist before each run.
-
-After the docs audit then changed `add-dsa-entry`'s description (its routing examples named entries that now exist), SR-18 was re-run once more: still `add-dsa-entry` (PASS).
-
-A follow-up edit to the bodies of `add-dsa-entry` and `content-review-eval` (no description changed) was checked with SR-12 and SR-18: SR-12 still routes to `content-review-eval` (PASS); SR-18 passed above, and the `add-dsa-entry` edit is to its Stage 1 body only.
+Notes: every agent applied the intended rule, and none was a near-miss. SR-18's agent checked that the named entry still doesn't exist, as the previous run's note asks.

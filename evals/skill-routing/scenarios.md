@@ -285,8 +285,8 @@ and its diagrams; it has no path for revising a published one) or `/feature`
 
 ### SR-17 — changing the case-study page or diagram tooling (trap)
 
-> On a case study page, make the Contents list stick to the side of the
-> screen on wide monitors, and have the diagram check fail when a diagram has
+> On a case study page, highlight the section I'm reading in the "On this
+> page" list as I scroll, and have the diagram check fail when a diagram has
 > more than 12 boxes in it.
 
 **Expected:** `/feature`
