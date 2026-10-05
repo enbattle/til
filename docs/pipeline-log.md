@@ -41,8 +41,10 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
   reviewers, triagers, fixers and eval agents included. `—` on rows from
   before the column existed.
 - **Retro** — what was actually applied after the user's decision, in a few
-  words, or `nothing to change` (which the check rejects on a row with gate
-  failures or findings: say why none called for a change). `n/a` for
+  words, what was declined and why, or `nothing to change` (which the check
+  rejects on a row with gate failures or findings: say why none called for a
+  change). Never a proposal still pending: the row is written once the user
+  has decided, and the check rejects "pending" from 2026-10-05. `n/a` for
   `add-topic`, `add-case-study` and `add-dsa-entry`, which have no
   retrospective.
 - **Escaped defect** — empty until a later fix traces a bug to this run.

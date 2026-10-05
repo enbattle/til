@@ -13,7 +13,7 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-02 | After PRs #39 to #48 (DSA tab complete) | Text fixes applied; full log in git history.                    |
 | 2026-10-04 | After PRs #52 to #65                    | Latest run, below.                                              |
 
-Last friction aggregation (docs-audit Stage 2b): 2026-10-04, 73 data rows. Settled from 2026-10-02 (#50): per-test timeouts deferred (DEFERRED_PRACTICES); `__pycache__` off in `test-python.mjs`; batches start from main; CI failures and re-run agents counted in rows; per-drafter `verify` declined. Declined: none yet (the 2026-10-04 proposals are with the user, listed below).
+Last friction aggregation (docs-audit Stage 2b): 2026-10-04, 73 data rows. Settled from 2026-10-02 (#50): per-test timeouts deferred (DEFERRED_PRACTICES); `__pycache__` off in `test-python.mjs`; batches start from main; CI failures and re-run agents counted in rows; per-drafter `verify` declined. 2026-10-04 proposals (listed below), applied in the follow-up PR: 1, with the Stage 1 list shortened to a pointer rather than deleted; 3; 4, plus `check:pipeline-log` rejecting "pending" from 2026-10-05; 2 needed nothing new. Declined: none.
 
 ## Latest run: 2026-10-04, after PRs #52 to #65
 

@@ -89,26 +89,29 @@ since no doc yet says authors comment quoted values.
 
 ---
 
-### FR-02 — non-negotiable: an icon-only button with no accessible name
+### FR-02 — non-negotiable: a new-tab link without `rel="noreferrer"`
 
-**Planted defect:** the new button's only content is a decorative arrow
-(`aria-hidden`), and it has no `aria-label` or visible text, so a screen
-reader announces an unnamed "button". That breaks `docs/NON_NEGOTIABLES.md`
-#1 (DESIGN.md's accessibility checklist). No test or `check:*` script
-catches it (the linter has no accessibility rules), so only a reviewer that
-reads the non-negotiables does.
+**Planted defect:** the new link opens github.com in a new tab
+(`target="_blank"`) with no `rel="noreferrer"`, so the browser sends the
+topic's URL as the `Referer` to a third party. That breaks
+`docs/NON_NEGOTIABLES.md` #7. `MarkdownRenderer.test.tsx` checks only the
+links markdown renders, not one a page adds, and the linter's default rules
+don't flag it, so only a reviewer that reads the non-negotiables does.
 
-History: the first FR-02 (dropping `rel="noreferrer"`) was replaced because
-a test already covered it; the second (turning on `rehype-raw`) was
-replaced when `check:raw-html` made it mechanical. Rotate this one the same
-way if a check ever starts catching unnamed buttons.
+History: the first FR-02 (dropping `rel="noreferrer"` in `MarkdownRenderer`)
+was replaced because a test already covered it; the second (turning on
+`rehype-raw`) was replaced when `check:raw-html` made it mechanical; the
+third (an icon-only button with no accessible name) was rotated on
+2026-10-04 when Stage 4's instruction changed, and FR-08 now plants a
+NON_NEGOTIABLES #1 defect. Rotate this one if a test or lint rule ever
+checks every page's external links.
 
 **Spec:**
 
-> Long topic pages get a "back to top" control at the end of the article.
-> Acceptance criteria: (1) It appears after the previous/next navigation on
-> every topic page. (2) Activating it scrolls the window to the top. (3) It
-> is keyboard-operable.
+> Topic pages get a "Suggest an edit" link to the topic's markdown file on
+> GitHub. Acceptance criteria: (1) It appears after the previous/next
+> navigation on every topic page. (2) It opens the topic's file on
+> github.com in a new tab. (3) Its text says it goes to GitHub.
 
 **Diff:**
 
@@ -119,21 +122,23 @@ way if a check ever starts catching unnamed buttons.
                prev={prev && { to: `/${section.slug}/${prev.slug}`, title: prev.title }}
                next={next && { to: `/${section.slug}/${next.slug}`, title: next.title }}
              />
-+            <button
-+              type="button"
-+              onClick={() => window.scrollTo({ top: 0 })}
-+              className="mt-8 rounded-full border border-border p-2 text-text-secondary hover:text-accent"
++            <a
++              href={`https://github.com/enbattle/til/blob/main/src/content/${topic.section}/${topic.slug}.md`}
++              target="_blank"
++              className="text-sm text-accent hover:text-accent-hover"
 +            >
-+              <span aria-hidden="true">↑</span>
-+            </button>
++              Suggest an edit on GitHub
++            </a>
            </>
          )}
        </LazyBody>
 ```
 
-**Expected finding:** the button has no accessible name (the arrow is
-`aria-hidden`, and there is no `aria-label`), which breaks non-negotiable
-#1, so at least high severity.
+**Expected finding:** the link opens in a new tab without
+`rel="noreferrer"`, which breaks non-negotiable #7, so at least high
+severity. Naming `rel="noopener noreferrer"` as the fix passes; naming only
+`noopener` (which browsers now imply) is AMBIGUOUS, since it misses the
+referrer the rule is about.
 
 ---
 
@@ -253,6 +258,61 @@ and `hidden` is always 0 (the fix: ask for more results, e.g.
 `searchContent(query, Infinity)`, and slice to 8 for display). Medium
 severity or higher. A finding that only notes the missing test, without
 seeing that the feature can't work, is AMBIGUOUS.
+
+---
+
+### FR-08 — non-negotiable: a sticky strip that hides focus
+
+**Planted defect:** from `xl` the new strip is sticky 2.5rem tall directly
+under the header, but the root's `scroll-padding-top` (`src/index.css`, the
+`min-width: 80rem` rule) still leaves room for the header alone. An "On this
+page" jump, a `#heading` URL (`LazyBody` scrolls by the same padding through
+`stickyOffset()`) and a link Tab scrolls to all land under the strip. That
+fails WCAG 2.2 SC 2.4.11, an item of DESIGN.md's accessibility checklist, so
+it breaks `docs/NON_NEGOTIABLES.md` #1. The spec, like the one this came
+from, never mentions focus, and no test checks scroll padding against a new
+sticky element.
+
+History: added 2026-10-04 from a real escaped defect. The
+`on-this-page-bar` run (docs/pipeline-log.md) shipped a sticky bar whose open
+panel and height hid focused elements, fixed by `docs/specs/focus-not-obscured.md`.
+
+**Spec:**
+
+> On wide screens, topic pages pin a strip under the header naming the
+> section and topic, so a reader deep in a long topic keeps their place.
+> Acceptance criteria: (1) From 1280px wide, a strip reading
+> "<section> · <title>" stays directly under the header while the page
+> scrolls. (2) Below 1280px nothing changes (the On this page bar already
+> sits there). (3) It's decorative and hidden from screen readers, since the
+> page's heading already names the topic.
+
+**Diff:**
+
+```diff
+--- a/src/pages/TopicPage.tsx
++++ b/src/pages/TopicPage.tsx
+@@ -28,7 +28,13 @@ export function TopicPage() {
+       <PageHeader
+         back={{ to: `/${section.slug}`, label: section.label }}
+         title={topic.title}
+         meta={topic.date}
+       />
++      <div
++        aria-hidden="true"
++        className="sticky top-[var(--header-height,8rem)] z-20 hidden h-10 truncate border-b border-border bg-bg-primary/95 py-2 text-sm text-text-secondary backdrop-blur xl:block"
++      >
++        {section.label} · {topic.title}
++      </div>
+
+       {/* Keyed so moving between topics starts a fresh load instead of
+```
+
+**Expected finding:** from `xl`, the strip covers the top 2.5rem below the
+header, and `scroll-padding-top` doesn't include it, so a heading an "On this
+page" link jumps to and an element keyboard focus scrolls to can sit under
+it (WCAG 2.4.11, non-negotiable #1). High severity. Naming the overlap only
+for in-page jumps, without focus, is AMBIGUOUS.
 
 ---
 

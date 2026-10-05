@@ -14,15 +14,30 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-09-29 | New triage scenarios FR-06/FR-07 (branch chore/harness-practices)               | 4    | 0    | 0         | Triage only; both outcomes matched twice.              |
 | 2026-10-01 | Lint went strict (FR-03 rotated), FR-01 rotated, Stage 4 wording for DSA        | 13   | 1    | 0         | FR-07 split.                                           |
 | 2026-10-01 | FR-07 finding replaced (unreachable by construction)                            | 2    | 0    | 0         | Both proposed Reject, each with a reproduction.        |
+| 2026-10-04 | Escaped defect (FR-08 added); Stage 4 guard sentence edited (FR-02 rotated)     | 16   | 0    | 0         | Every planted defect was each review's top finding.    |
 
-## Latest run: 2026-10-01, FR-07 finding replaced
+## Latest run: 2026-10-04, escaped defect and Stage 4 edit
 
 Run by: self
-Trigger: the rotation run before it (the trend row above) split FR-07 one run each way, a sign the scenario was ambiguous rather than the reviewer wrong. FR-07's planted finding was replaced with one that is unreachable by construction (PR #40), and only FR-07 was re-run.
+Trigger: two of evals/README's rows. A defect escaped a `/feature` review: the `on-this-page-bar` run's sticky bar hid focused elements (WCAG 2.4.11), fixed by `docs/specs/focus-not-obscured.md`; FR-08 plants the same kind of defect. And Stage 4's reviewer instruction changed: a new guard is now tried every way the reviewer can find, with the misses reported as one finding that lists each vector. FR-02 was rotated for it, from an unnamed icon button to a new-tab link without `rel="noreferrer"` (NON_NEGOTIABLES #7), since FR-08 now covers #1. FR-02's hunk header was updated to the current `TopicPage.tsx` beforehand. All eight scenarios ran twice, from prompts built from the live `scenarios.md` and Stage 4 text.
 
-| ID    | Run | Proposed outcome                                    | Grade |
-| ----- | --- | --------------------------------------------------- | ----- |
-| FR-07 | 1   | Reject, with a reproduction showing it can't happen | PASS  |
-| FR-07 | 2   | Reject, with a reproduction showing it can't happen | PASS  |
+| ID    | Run | Finding summary or proposed outcome                                                     | Grade |
+| ----- | --- | --------------------------------------------------------------------------------------- | ----- |
+| FR-01 | 1   | Medium, top: quoted value plus comment cut inside the quotes; mirror symptom named      | PASS  |
+| FR-01 | 2   | Medium, top: same, both symptoms                                                        | PASS  |
+| FR-02 | 1   | High, top: new-tab link without `rel="noreferrer"`, NN #7                               | PASS  |
+| FR-02 | 2   | High, top: same                                                                         | PASS  |
+| FR-03 | 1   | High, top: `queryRef` never updated, so the first Escape closes                         | PASS  |
+| FR-03 | 2   | High, top: same                                                                         | PASS  |
+| FR-04 | 1   | Nothing flagged; NaN input noted as outside the spec                                    | PASS  |
+| FR-04 | 2   | Nothing flagged; same note                                                              | PASS  |
+| FR-05 | 1   | Critical, top: `searchContent`'s default limit of 8 means "+N more" never renders       | PASS  |
+| FR-05 | 2   | Critical, top: same                                                                     | PASS  |
+| FR-06 | 1   | Fix with a test; three real `vs. ` summaries, reproduced                                | PASS  |
+| FR-06 | 2   | Fix with a test; same evidence                                                          | PASS  |
+| FR-07 | 1   | Reject; the loader throws on a missing summary first, reproduced in a worktree          | PASS  |
+| FR-07 | 2   | Reject; same reproduction                                                               | PASS  |
+| FR-08 | 1   | High, top: from `xl` the strip covers jumps and focus; `scroll-padding-top` excludes it | PASS  |
+| FR-08 | 2   | High, top: same, WCAG 2.4.11 and NN #1, plus scroll-spy and hash-hold knock-ons         | PASS  |
 
-Notes: the decision the rotation run left for the user is settled by this re-run. That run's full log, with the other scenarios, is in git history.
+Notes: no run disagreed with its pair. The ceiling effect persists: every planted defect was each review's top finding, as in every run since 2026-09-23. FR-05's planned rotation (a cause several hops from the diff) is still open. FR-08 is the first scenario taken from a real escaped defect; both runs found it from DESIGN.md's checklist item and `index.css` without a browser.

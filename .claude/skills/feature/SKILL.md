@@ -65,10 +65,9 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   complete as the cases someone thought of. Where they can't (HTML sinks), the
   spec says so and lists the vectors the guard must reject. A guard over source
   code matches parsed syntax (an AST), not a regex, as content checks use
-  `markdownParser()`. Its vectors cover every way code can reach the sink, not
-  only spellings: e.g. a call, a bare reference (`.call`, an alias), an
-  assignment, a string or computed key, and destructuring at any depth,
-  parameters and `catch` included.
+  `markdownParser()`. Its vectors cover each route code can take to the sink,
+  not only spellings (`scripts/check-raw-html.mjs`'s header lists the routes
+  found so far).
 - A change to a script that is already locked (`docs/verification.md` lists
   them, e.g. `scripts/lib.mjs`) is assigned to the Stage 2 test-writer, which
   writes its planted cases first. A change that widens the lock shows its new
@@ -87,7 +86,9 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   that file or change the request. Don't plan around it quietly.
 
 `ExitPlanMode` for approval. **Once approved**, save the spec as
-`docs/specs/<slug>.md` (kebab-case). Stages 2–4 get this file, never your
+`docs/specs/<slug>.md` (kebab-case), and run `npx prettier --write` on it
+after every edit (here, `## As built`, `## Review decisions`), since each
+`verify` runs `format:check` over it. Stages 2–4 get this file, never your
 exploration or reasoning.
 
 ## Stage 2 — Tests first (red)
@@ -197,8 +198,7 @@ Also:
   check, a CI step, a size or bundle assertion), plant the regression in a
   copy outside the working tree (`git worktree add` or `cp -R` into the
   scratchpad) and confirm it exits non-zero. Its planted cases belong in the
-  guard's own locked test file under `scripts/` (`scripts/<guard>.test.mjs`;
-  allowlist vector tables stay in `scripts/checks.test.mjs`, NON_NEGOTIABLES #6):
+  guard's own locked test file (Stage 2's instruction says which file):
   Stage 2 wrote them if the spec planned the
   guard; otherwise report it and re-run Stage 2 for them before this gate
   passes.
@@ -228,8 +228,10 @@ subagent reports or framing of yours. Instruction, close to verbatim:
 > page with the widest content (tables, long code lines) for each kind of
 > page the change renders, not only the page the diff names, since a change
 > to a shared wrapper affects all of them. If the change adds a check or guard
-> script, try at least one other way of regressing what it guards that it
-> might miss, in a copy of the repo outside the working tree. For every
+> script, try every way you can find of regressing what it guards that it
+> might miss, in a copy of the repo outside the working tree, and report the
+> ones it misses as one finding that lists each missed vector with its own
+> trigger (triage rules on each vector). For every
 > finding, say whether this diff introduced it or it was already there, and
 > name a realistic trigger: for app behavior, real inputs or content; for a
 > guard or check, an edit an author following docs/content.md,
@@ -309,10 +311,8 @@ Up to **2 rounds**, each in this order:
    re-take the snapshot. Any other change to a locked file goes here too,
    since a fixer may not touch one: prose in a fixture, or a locked script
    (the lock's own, a runner). For a script, the brief names it as allowed;
-   the test-writer adds the planted case to that guard's test file under
-   `scripts/` (`scripts/<guard>.test.mjs`; allowlist vector tables stay in
-   `scripts/checks.test.mjs`, NON_NEGOTIABLES #6), shows
-   it failing, then edits the script, and the gate accepts the script in
+   the test-writer adds the planted case to that guard's test file (Stage 2's
+   instruction says which file), shows it failing, then edits the script, and the gate accepts the script in
    `--verify`. These runs don't count against Stage 2's caps and aren't
    logged.
 2. A **fresh** `general-purpose` fixer (not the Stage 3 agent) gets the
@@ -388,8 +388,13 @@ on. Once approved, commit the retro edits separately and run the eval
 `evals/README.md`'s table names for them.
 
 Then append this run's row to [docs/pipeline-log.md](../../../docs/pipeline-log.md),
-following its header (columns, the Retro cell, **Escaped defect**), in the
-feature's commit, with no independent read, and run
+following its header (columns, the Retro cell, **Escaped defect**), once the
+user has decided on the retro edits: in the retro commit; when there is none,
+in the feature's commit if it isn't made yet, else a commit of its own. Until
+then the Stage 5 handoff carries the row's draft, so a later session can
+append it. The Retro cell records that decision (applied, or declined with its
+reason), never a pending proposal (`check:pipeline-log` rejects one). No
+independent read; run
 `npx prettier --write docs/pipeline-log.md`, `npm run check:pipeline-log` and
 `npm run format:check`. A bug this run fixed that an earlier approved run
 introduced is friction for this retro.

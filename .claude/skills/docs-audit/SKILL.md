@@ -8,8 +8,11 @@ description: Audit every documentation file in this repo (CLAUDE.md, README.md, 
 Manual/periodic, same cadence philosophy as the `evals/` suite — not run
 on every commit, since a full-repo audit is too slow and too much to review
 for that. `.claude/hooks/nudge-precommit.js` only reminds a session to
-_consider_ it before a commit or push, unless every changed path is published
-content.
+_consider_ it before a commit or push that changes anything besides published
+content, adding that an audit is due once 10 pull requests (not Dependabot's,
+nor the last audit's own) have merged since the last commit to this skill's
+results log. Drift across changes is what only a full audit sees, and it grows
+with merges.
 
 ## Why an independent read, not a self-check
 

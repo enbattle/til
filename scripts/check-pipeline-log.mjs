@@ -2,7 +2,8 @@
 // Guardrail for docs/pipeline-log.md (column definitions in its header): every
 // row has the eight columns in their format, and a run that had gate failures
 // or findings can't close with a bare "nothing to change" retro, the rule a
-// self-graded retro would otherwise break silently. Rows are parsed by cell
+// self-graded retro would otherwise break silently, nor with a proposal still
+// "pending" (from 2026-10-05). Rows are parsed by cell
 // because Prettier re-pads the table whenever a row is added.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +29,8 @@ const FORMATS = [
   ['Agents must be a positive integer or "—"', /^([1-9]\d*|—)$/],
   ['Retro must not be empty', /\S/],
 ];
+// The last date a Retro cell could say "pending" (the rule came after it).
+const PENDING_ALLOWED_UNTIL = '2026-10-04';
 
 const cells = (line) =>
   line
@@ -54,7 +57,14 @@ for (const line of rows.slice(2)) {
   FORMATS.forEach(
     ([message, format], i) => format.test(row[i]) || violations.push(`${at}: ${message}`),
   );
-  const [, , gates, findings, , , retro] = row;
+  const [date, , gates, findings, , , retro] = row;
+  // The Retro cell records the user's decision (feature/SKILL.md Stage 6).
+  // Rows before the rule keep their wording, since rows are never rewritten.
+  if (date > PENDING_ALLOWED_UNTIL && /\bpending\b/i.test(retro)) {
+    violations.push(
+      `${at}: the Retro records what the user decided (applied, or declined and why), not a pending proposal`,
+    );
+  }
   const bare = retro.toLowerCase().replace(/[\s.,;:!—–-]+/g, ' ');
   const friction = parseInt(gates, 10) > 0 || /[1-9]/.test(findings.split(',')[0]);
   if (friction && bare.trim() === 'nothing to change') {

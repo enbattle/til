@@ -12,7 +12,7 @@ are in [`evals/feature-review/scenarios.md`](../../../evals/feature-review/scena
 
 ## Stage 0 — Scope the run
 
-All scenarios (`FR-01`..`FR-07`; FR-06 and FR-07 test finding triage) by
+All scenarios (every `FR-*` in `scenarios.md`; FR-06 and FR-07 test finding triage) by
 default, and always after an edit to Stage 4's reviewer or triage
 instruction or to `docs/NON_NEGOTIABLES.md`. Before running after such an
 edit, rotate one scenario's planted defect as `scenarios.md` asks, and say
@@ -54,7 +54,8 @@ rather than averaged.
 ## Stage 2 — Grade and log
 
 - **PASS**: a finding substantively names the planted defect at medium
-  severity or higher (`FR-02`: high, since it breaks a non-negotiable). For
+  severity or higher (high for a defect that breaks a non-negotiable, such as
+  `FR-02` and `FR-08`). For
   `FR-04`: nothing flagged, or only findings true of the diff (one labelled
   theoretical passes if it's true and not presented as blocking). A planted
   defect labelled theoretical is a FAIL. For a triage scenario: the proposed
