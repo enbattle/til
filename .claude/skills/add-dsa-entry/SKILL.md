@@ -1,6 +1,6 @@
 ---
 name: add-dsa-entry
-description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add an LRU cache entry to DSA", "write up a difference-array entry", "add these three DSA entries") — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking or revising the writing of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
+description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add an LRU cache entry to DSA", "write up a difference-array entry", "add these three DSA entries"), or to rewrite existing entries to the current five-minute template or merge several into one — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking the writing quality of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
 ---
 
 # Add a DSA entry
@@ -34,6 +34,12 @@ don't edit another entry except to link to the new one from prose where it
 belongs (a link from an older entry's `## Prerequisites` would make the older
 entry depend on the newer one, so it goes elsewhere in the body).
 
+Rewriting an entry to the current template, or merging several into one
+(docs/dsa.md's "Scope" lists the merges), also follows this skill. A merge
+deletes the old entries and their code folders in the same change and repoints
+every `/dsa/<old-slug>` link (`git grep -n "/dsa/<old-slug>"`). Treat the old
+text and code as research notes, not a draft to trim.
+
 `npm run test:py` needs Python 3.11+ with pytest. If it isn't installed, say
 so and give the install command from docs/dsa.md; don't finish an entry whose
 Python tests never ran.
@@ -42,12 +48,17 @@ Python tests never ran.
 
 Write it yourself, directly, as `add-topic` does. Read the reference entry for
 the kind first (docs/dsa.md's "Templates" names one per kind), with its code
-files: they set the depth, the tone and how a walkthrough explains a chunk.
+files: they set the length, the voice and how comments carry the reasons.
+Read the Writing Standard's "Case studies and DSA entries" section too: it
+sets the five-minute budget and the voice.
 
 1. **Code.** `src/dsa/code/<slug>/<slug_underscored>.py` (stdlib only, type
    hints, Python 3.11+) and `<slug>.ts` (no imports, exported API). Each is
    idiomatic in its own language, not a line-by-line transliteration of the
-   other, but the APIs match in shape. Keep lines under 90 characters.
+   other, but the APIs match in shape. Keep lines under 90 characters. One
+   core implementation, about 30–60 lines per language without comments, with
+   a comment giving the reason at each line where the obvious alternative
+   would break (docs/dsa.md, "Code pairs and the code files").
 2. **Tests.** `test_<slug_underscored>.py` (pytest) and `<slug>.test.ts`
    (vitest), importing the real files. Cover empty input, single elements,
    duplicates, boundaries (the smallest and largest answers), the failure
@@ -72,14 +83,19 @@ files: they set the depth, the tone and how a walkthrough explains a chunk.
    - **Code chunks** are copied from the finished code files, in file order,
      as pairs: a ` ```python ` fence directly followed by a ` ```typescript `
      fence. Every non-blank line of each file appears once, in order.
-   - **Walkthrough** (pattern, algorithm): at least three pairs, each followed
-     by a paragraph that explains why those lines are the way they are, for a
-     reader with zero background: what would break with the obvious
-     alternative (`<=` for `<`, `mid` for `mid + 1`), not a restatement of
-     what the line does. **Implementation** (data structure) does the same
-     where it helps, and **Tricky lines** names the specific lines.
-   - Work a small concrete example by hand (a table of pointer positions, the
-     buckets after three inserts) and recompute it before moving on.
+   - **Walkthrough** (pattern, algorithm): at least two pairs, each followed
+     by one to three sentences that connect it to the next step. The code's
+     comments already say why each tricky line is written that way (`<` for
+     `<=`, `mid + 1` for `mid`), so the prose doesn't repeat them.
+     **Implementation** (data structure) does the same.
+   - **When to use it** lists the signals in a problem statement that point
+     here; **Pitfalls** names two to four real mistakes, each tied to a line.
+   - Carry one small concrete example through the entry (a table of pointer
+     positions, the buckets after three inserts) and recompute it before
+     moving on.
+   - **Budget**: at most 1,150 words of prose, code not counted. Run
+     `npx vitest run src/dsa/dsa-structure.test.ts` for the count rather than
+     estimating it.
    - **Complexity** and **Operations and costs** give time and space with the
      reason, not just the answer, and every figure is checked.
    - Link a catalog topic where the prose uses it, as `[text](/<section>/<slug>)`
@@ -120,13 +136,15 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   (2) the code is idiomatic in each language rather than a transliteration of
   the other; (3) the tests reach the edge cases, not just the happy path: name
   any realistic bug (an off-by-one, a missed empty case) the tests would not
-  catch; (4) each walkthrough or implementation paragraph explains why its
-  lines are written that way, not only what they do; flag one that just
-  narrates; (5) every complexity claim is right, with its reason, and every
+  catch; (4) every line where the obvious alternative would break has a
+  comment giving the reason, in both languages; flag a comment or paragraph
+  that just narrates what a line does; (5) every complexity claim is right, with its reason, and every
   worked example's numbers are right: recompute them; (6) each prerequisite
   is one the prose really needs, and nothing the prose relies on is missing
   from the prerequisites; (7) every claim about a language, library or
-  standard function is true.
+  standard function is true; (8) `When to use it` would let a reader spot
+  this entry in a problem it never shows, and the entry spends no words on a
+  variant or edge case that wouldn't change how they solve it.
 - **Fix step**: a code fix changes the code file and its chunk together,
   plus a test that would have caught it.
 - **Pre-gate step**: delete any `__pycache__` or `.pytest_cache` a manual

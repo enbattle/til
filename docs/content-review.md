@@ -33,7 +33,11 @@ replace a checklist item that doesn't apply to this draft with "none"):
 > scannable sentence, does the prose read as something a knowledgeable person
 > wrote rather than generically AI-patterned, is any figurative phrase
 > over-explained, and is every substantive technical claim actually true
-> rather than confidently stated. Checklist: <checklist> Also check it isn't a
+> rather than confidently stated. A case study or DSA entry is also held to
+> the standard's "Case studies and DSA entries" section: would a reader
+> finish it, could they defend its main choice and guess at a question it
+> never asked, and does it spend words on an edge case that changes nothing.
+> Checklist: <checklist> Also check it isn't a
 > near-duplicate of an existing <kind> (listed below). For each finding, quote
 > the text or code, or name a realistic input that breaks it; label anything
 > else "theoretical". Re-raise a decision listed below as already made only

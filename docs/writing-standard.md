@@ -16,7 +16,8 @@ pass on denser subjects, not assumed on the first read. Concretely:
   description.
 - The `summary` frontmatter field is a one-sentence scannable hook — it's
   the only place terseness is the goal. The body is a teaching write-up,
-  not a short "gotcha" note.
+  not a short "gotcha" note. (Case studies and DSA entries are short by
+  design; the last section below says how they meet this standard.)
 - Prose reads like something a knowledgeable person actually wrote, not
   a generically AI-patterned draft: avoid stock rhetorical crutches
   ("not just X — it's Y," "that's the real/actual X" as a closer),
@@ -35,9 +36,9 @@ pass on denser subjects, not assumed on the first read. Concretely:
   re-teach a topic's mechanism (that's the topic's job, one link away). Where
   the design uses a topic, it says what that choice buys and costs here, in
   this design's numbers, then links. Its estimates are worked arithmetic that
-  follows from its stated requirements, every deep dive compares at least two
-  options, and it describes a plausible design ("a URL shortener like
-  TinyURL"), never how a specific company built theirs.
+  follows from its stated requirements, every key decision names the
+  alternative it turns down, and it describes a plausible design ("a URL
+  shortener like TinyURL"), never how a specific company built theirs.
 - A systems topic's `Where you'll meet this` section says what the topic does
   in a kind of system, in terms of what the topic just taught; it doesn't
   re-teach the mechanism. It makes claims about generic systems only, never
@@ -46,3 +47,41 @@ pass on denser subjects, not assumed on the first read. Concretely:
 - Every substantive technical claim is independently verified against
   real knowledge of the subject before publishing, not assumed correct
   because it reads confidently.
+
+## Case studies and DSA entries
+
+These pages prepare a reader to talk through a design or a problem in an
+interview. A reader who zones out halfway learns nothing, so they trade
+completeness for a page someone finishes and remembers. Where a rule above
+pulls the other way, this section decides for these pages; catalog topics keep
+their full depth, and they are where these pages send a reader for more.
+
+- **About five minutes.** At most 1,150 words of prose, about five minutes at
+  230 words a minute. Tables count; code blocks, diagrams and frontmatter
+  don't.
+- **Enough to reason, not everything.** An interview never covers every
+  scenario, and a reader will be asked things no page mentions. Teach the few
+  decisions that shape the answer and the reasoning behind each, well enough
+  that the reader can make an educated guess at a question the page never
+  asked. Leave out an exception or edge case that doesn't change a decision.
+- **Why not the obvious alternative?** Interviewers push on this, so every
+  decision names the alternative a reader would suggest and why it loses here,
+  in a sentence or two. One alternative, not a survey of all of them.
+- **The rule behind it.** A decision ends with the general rule it
+  illustrates ("read-heavy and fine with slightly stale data: cache in
+  front"), since the rule is what transfers to the next question.
+- **A good lecturer's voice.** Talk to the reader as "you", the way someone
+  who loves the subject thinks out loud in front of a class. Ask the question
+  the reader is about to ask, then answer it. Carry one running example
+  through the page instead of starting a new one per section, and let each
+  section hand off to the next ("That gets codes minted. Serving them fast is
+  the harder part."). Keep paragraphs to a few sentences. The energy comes
+  from pace and concrete examples, never from exclamation marks, hype words or
+  the stock phrases banned above.
+- **Zero background, briefly.** Define a term in a short phrase at first use
+  and link the catalog topic for the rest, rather than teaching it here.
+- **Code explains itself.** In a DSA entry, comments carry the reason behind a
+  line, at the line where the obvious alternative would break
+  (`lo = mid + 1  # mid was already checked; keeping it can loop forever`).
+  They don't narrate what each line does. The prose after a chunk of code
+  connects it to the next step.

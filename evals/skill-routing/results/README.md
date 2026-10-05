@@ -37,16 +37,23 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-04 | /feature: where a guard's planted cases live (test split)            | 1    | 0    | 0         | SR-01 only; the edit can't change routing.                   |
 | 2026-10-04 | /feature Stage 1 guard edits (#63, #64); docs-audit gate fixes       | 2    | 0    | 0         | SR-01 and SR-18; logs #64's unlogged SR-01 pass too.         |
 | 2026-10-04 | Friction follow-ups: /feature Stages 1, 4, 6; docs-audit; the hook   | 2    | 0    | 0         | SR-01 and SR-09.                                             |
+| 2026-10-05 | Five-minute content: add-case-study, add-dsa-entry, content-audit    | 8    | 0    | 0         | SR-19 and SR-20 added; SR-16's reasoning refreshed.          |
 
-## Latest run: 2026-10-04, friction follow-ups
+## Latest run: 2026-10-05, five-minute content
 
 Run by: self
-Trigger: the 2026-10-04 friction aggregation's follow-ups. `/feature`: Stage 4 tries every way past a new guard and reports the misses as one finding; Stage 1's sink-route list became a sentence pointing at `check-raw-html.mjs`'s header, and specs are formatted after every edit; Stage 6 writes the pipeline-log row once the user decides; two copies of where a guard's tests go point at Stage 2. `docs-audit`'s intro and `nudge-precommit.js` now say when an audit is due (10 merged pull requests). `feature-review-eval`'s body no longer hard-codes the scenario range. No skill description changed.
-Scope: SR-01 (`/feature`) and SR-09 (`docs-audit`), the scenarios whose Expected answer depends on the edited skills and hook. `feature-review-eval`'s edit is to its body only, so SR-14 wasn't run.
+Trigger: branch `docs/digestible-content`. `add-case-study` and `add-dsa-entry` now own rewrites to the five-minute template (and, for DSA, merges), and their descriptions say so; `content-audit`'s description hands those to them; the Writing Standard gains a "Case studies and DSA entries" section; the case-study checklist, `docs/case-studies.md` and `docs/dsa.md` change templates and budgets.
+Scope: the scenarios whose Expected answer depends on the three edited descriptions: SR-06 (direct edit to existing content), SR-11 (`content-audit` sweep), SR-15 (new case study), SR-16 (polish an existing case study), SR-18 (new DSA entry), plus the two new traps, SR-19 (rewrite to the template) and SR-20 (merge DSA entries). SR-12 ran afterwards, once `content-review-eval`'s description was updated to name the new planted problems.
 
-| ID    | Routing decision | Reasoning (1 line)                                                                             | Grade |
-| ----- | ---------------- | ---------------------------------------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`       | A nontrivial UI change with new state, keyboard and accessibility handling and tests.          | PASS  |
-| SR-09 | `docs-audit`     | Its description covers checking docs, skills and evals for staleness after a batch of changes. | PASS  |
+| ID    | Routing decision           | Reasoning (1 line)                                                                      | Grade |
+| ----- | -------------------------- | --------------------------------------------------------------------------------------- | ----- |
+| SR-06 | Direct                     | A few words added to an existing topic is a small, unambiguous change.                  | PASS  |
+| SR-11 | `content-audit`            | A sweep of everything published for AI tone, over-explained analogies and wrong claims. | PASS  |
+| SR-12 | `content-review-eval`      | Checking that a review still catches a planted violation after its wording changed.     | PASS  |
+| SR-15 | `add-case-study`           | A new case study with diagrams; no collaborative-editor file exists.                    | PASS  |
+| SR-16 | `content-audit` (one file) | A quality pass on a published case study; template rewrites belong to `add-case-study`. | PASS  |
+| SR-18 | `add-dsa-entry`            | A new entry; no LRU entry exists.                                                       | PASS  |
+| SR-19 | `add-case-study`           | Its description covers rewriting a case study to the five-minute template.              | PASS  |
+| SR-20 | `add-dsa-entry`            | Its description covers merges, and docs/dsa.md's migration table names the two entries. | PASS  |
 
-Notes: none.
+Notes: SR-16 and SR-19 drew the line between them the intended way (polishing keeps the page's shape; a template rewrite doesn't), each citing the other skill's description.

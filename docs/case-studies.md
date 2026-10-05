@@ -7,8 +7,8 @@ checked. Read this before adding or changing a case study or its diagrams;
 The header has three tabs: **Catalog** (the topics in [content.md](content.md)),
 **System Design**, a numbered list of worked design case studies ("Design a
 URL Shortener (like TinyURL)"), and **DSA** ([dsa.md](dsa.md)). Each case study takes a product through the standard
-approach and links into the catalog wherever it uses a topic; it never holds a
-copy of a topic.
+interview approach in about five minutes of reading and links into the catalog
+wherever it uses a topic; it never holds a copy of a topic.
 
 ```
 src/system-design/
@@ -40,40 +40,55 @@ order: 1
   listed, numbered and linked prev/next in ascending `order`. `parseCaseStudy`
   throws at load time, naming the file and field, if any of the four fields is
   missing or `order` isn't a positive integer.
-- **The template is enforced.** The body's `##` headings are exactly, in
-  order: `At a glance`, `Requirements`, `Back-of-the-envelope estimates`,
-  `Data model`, `API design`, `High-level architecture`, two or more
-  `Deep dive: <topic>`, `Failure modes and bottlenecks`, `Trade-offs`
-  (`src/system-design/case-study-structure.test.ts`), and
-  `High-level architecture` contains at least one diagram with alt text, such
-  as `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page,
-  so the reference style counts too). The page builds its "On this
-  page" list from these headings, parsed with the renderer's own markdown stack and
-  heading-id pass (`h2Headings` in `src/lib/headings.ts`), so every entry links
-  to the id its heading renders with; still, keep them plain text. The URL shortener
-  (`url-shortener.md`) is the reference example to copy.
-- **At a glance is a one-screen summary.** It comes after the intro and
-  before `Requirements`, about 250–400 words, and holds four paragraphs, each
-  opening with a bold lead-in and followed by a list, in this order:
-  `**Requirements.**` (4–6 bullets with their numbers), `**Key numbers.**`
-  (4–5 figures from the estimates, each with its one-line derivation),
-  `**Key decisions.**` (exactly 3, each "decision: one-line reason") and
-  `**Likely follow-ups.**` (4–6 interviewer questions, each with a
-  one-sentence answer). Every decision and follow-up links to the section that
-  argues it in full with an in-page link, `[text](#heading-id)`, using the id
-  the heading renders with (`headingId` in `src/lib/headings.ts`: "Deep dive:
-  the read path" is `#deep-dive-the-read-path`). It doesn't embed the
-  architecture diagram; it ends with a standalone paragraph linking to
-  `#high-level-architecture`. Every figure in it must match the body. The
-  structure test checks that `## At a glance` is the first `##` heading; that
-  the four bold lead-ins appear in that order; that every item (nested items
-  included) of every list under `Key decisions` and `Likely follow-ups`,
-  including a list inside a blockquote, has its own in-page link; that the
-  section's last block is a standalone paragraph linking to
-  `#high-level-architecture`; and that every in-page link anywhere in the body
-  resolves to the id of a `#` or `##` heading as the page renders it (a `###`
-  heading has no id, so a link to one fails). The renderer keeps a `#…` link in
-  the same tab.
+- **Migrating (2026-10).** The case studies are being rewritten from a
+  6,000-word template (an `At a glance` summary, estimates, data model, API,
+  architecture, deep dives, failure modes, trade-offs) to the five-minute
+  template below. Until that pull request lands, the published case studies
+  and `case-study-structure.test.ts` still follow the old one, and git history
+  has its rules. The rewrite changes the test, the case studies and this note
+  together.
+- **A case study is a five-minute read.** The whole page is the summary a
+  reader takes into an interview, with enough reasoning under each decision to
+  defend it and to guess well at a question it never asked. It meets the
+  Writing Standard's "Case studies and DSA entries" section: at most 1,150
+  words of prose (diagrams and code don't count), one rejected alternative per
+  decision, and the voice of a good lecturer. Depth beyond that lives in the
+  catalog topics it links.
+- **The template is enforced.** An intro of two to four sentences (the
+  interview question and what makes it interesting) comes before the first
+  heading. The body's `##` headings are then exactly, in order:
+  - `Requirements`: 4–6 bullets, with the non-functional targets as numbers,
+    and one line on what's out of scope.
+  - `Key numbers`: 4–5 figures, each with its one-line derivation from a
+    requirement or a stated assumption.
+  - `High-level architecture`: at least one diagram with alt text, such as
+    `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page, so
+    the reference style counts too), then one paragraph that follows a request
+    through it.
+  - `API and data model`: the two or three endpoints and the main table or
+    record, with a sentence on the choice in them that matters (the key, the
+    index).
+  - Exactly three `Decision: <topic>` headings, each about 100–150 words:
+    the choice, why in this design's numbers, the alternative a reader would
+    suggest and why it loses here, and a last paragraph opening with
+    `**Rule of thumb.**` that states the general rule.
+  - `Likely follow-ups`: a list of 4–6 interviewer questions, each in bold,
+    with a one- or two-sentence answer.
+
+  `src/system-design/case-study-structure.test.ts` checks the headings, the
+  three decisions and each one's `**Rule of thumb.**` paragraph, the follow-up
+  count, the diagram, and the word budget (prose words on the rendered page,
+  outside code blocks and image alt text). An in-page link,
+  `[text](#heading-id)`, uses the id the heading renders with (`headingId` in
+  `src/lib/headings.ts`: "Decision: the read path" is
+  `#decision-the-read-path`), and the test fails one that resolves to no `#` or
+  `##` heading (a `###` heading has no id). The renderer keeps a `#…` link in
+  the same tab. The page builds its "On this page" list from these headings,
+  parsed with the renderer's own markdown stack and heading-id pass
+  (`h2Headings` in `src/lib/headings.ts`), so keep them plain text. The URL
+  shortener (`url-shortener.md`) is rewritten first and is the reference
+  example to copy.
+
 - **Links are the data.** A case study's catalog links are extracted at build
   time (the `?links` query, running `extractTopicRefs` from
   `src/lib/markdown.mjs`), and the page's "Go deeper" list and each
@@ -103,7 +118,7 @@ order: 1
   such as `"Issue #123"`, or in a comment is fine. A `.d2` can't import another file (`...@x`,
   `x: @../y`): the imported file would escape the source hash and the color
   guard, so both `check:diagrams` and `npm run diagrams` reject it. Changing a `--color-*` token the
-  diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 5: nodes, participants and width; `check:diagrams` enforces only the width) and lay it out to fit the ~720px
+  diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 4: nodes, participants and width; `check:diagrams` enforces only the width) and lay it out to fit the ~720px
   content column (`direction: down` usually fits better than `right`), use
   `shape: sequence_diagram` for a request flow, and look at the rendered SVG
   in both themes before committing. Commit the source, both SVGs and
