@@ -1,11 +1,17 @@
 # High-level architecture of the ride-sharing service. Driver pings flow
 # through the gateways to the location service, which keeps the latest
 # position in the in-memory index and appends every ping to the event log,
-# which also carries the trip service's ride-request events (relayed from its
-# outbox; not drawn, since that edge closes a loop that doubles the width). Rides go through the trip service; matching workers find, rank and claim
+# which also carries the trip service's ride requests for the surge job. The
+# trip service tells the location service which rider follows which driver.
+# Rides go through the trip service; matching workers find, rank and claim
 # drivers and send offers through the gateways. Arrows point from the side
 # that starts the call or sends the data.
 direction: down
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
 
 apps: Rider and driver apps {
   style.multiple: true
@@ -45,6 +51,8 @@ trip -> store: "conditional\nwrites"
 trip -> match: "match\njobs"
 trip -> gw: "trip\nupdates"
 trip -> routing: "quote\nETAs"
+trip -> loc: "rider follows\ndriver"
+trip -> log: "ride\nrequests"
 match -> index: "who is\nnear?"
 match -> routing: "ETAs"
 match -> store: "claim\ndriver"

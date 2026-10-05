@@ -42,39 +42,21 @@
     }
   },
   "ecommerce-checkout/architecture.d2": {
-    "sha256": "482d31cd833aa0a7b631fbeca1a4397c4d7cc3ddabb79f3a900d06dc99a57c4e",
-    "width": 785,
-    "height": 1650,
+    "sha256": "4838adca226ada22bf054d17fbd6aa5244a222f8d97024b809d79757907a7185",
+    "width": 958,
+    "height": 1503,
     "svgs": {
-      "light": "fbcafa1fc7be6085312318eb76b850283cbcc10523512c5f99d8b3ffff7d4761",
-      "dark": "82c18248d2a135c6bb51567e673de436de092da5a57cbf4ff07e25ebb06b8ed0"
-    }
-  },
-  "ecommerce-checkout/checkout-saga.d2": {
-    "sha256": "4dcef924279caa930302258a060c756886b83c5ffd4631512777b55f36865d9e",
-    "width": 938,
-    "height": 2188,
-    "svgs": {
-      "light": "a362f3af48653c00245b0e7b57a7d7430e53c2dfd003071f64e7176831f507f0",
-      "dark": "16956e83d4a65b2fa695c4d8b1a7fc8634a6f0d98e16e3637a10474d41e9b271"
+      "light": "de1413433ea506499f8b0796ea4524cd40d425d393d4df8afa211812c8f0835b",
+      "dark": "c124db68c685298c95a8934dba9c43f90d9ecf99d31c4ac948138836ce8151d6"
     }
   },
   "file-storage/architecture.d2": {
-    "sha256": "e7255c49ae4eaf2abf43534c0fed1c59f5e85f331d413620f922da11f8b33284",
-    "width": 943,
-    "height": 1352,
+    "sha256": "21f6e73be0a5b1275e82f991de02f6bc34a6074c2af80845fea5d583f7e828dc",
+    "width": 664,
+    "height": 1272,
     "svgs": {
-      "light": "1ca29d9f5bcdfae3fe9e8113e5a4f03fcab9bf10cf667f54040b75d46a4e6607",
-      "dark": "a2238ddffaf7cab9dce8e90150bf1fd27cd545d0e0a20e8ad6d32e1708016185"
-    }
-  },
-  "file-storage/edit-sync-sequence.d2": {
-    "sha256": "bf127305faadd3c4970ab7930642cd9bdb2c399234c88c6cfe0ceaec6407ae24",
-    "width": 947,
-    "height": 1664,
-    "svgs": {
-      "light": "fbff53db31ab5e686cea83cd6543333ea1c3f61bc4d8678871d688715e169d55",
-      "dark": "29c27c4f96dc171212dc1d19b7abce9a70eb5b5a5fe0f37ff4da9f84877f39b2"
+      "light": "cb6b71291e9cdf251c97d48c3ca6e9e61b64adff9da9c3b8977b1f059d06c7b2",
+      "dark": "adcb6ea8335cb658c995f2e4a02a44181d56854074de664e5a9440399b9ba63b"
     }
   },
   "llm-chat-serving/architecture.d2": {
@@ -177,21 +159,12 @@
     }
   },
   "ride-sharing/architecture.d2": {
-    "sha256": "c3a63b4556b95739f75aebb4ad7d53d8af52443c8d2e7ceaae8063f540e76889",
-    "width": 924,
-    "height": 1835,
+    "sha256": "63cf00aef3c44bfdae88b7f596d35e210714a24e2950f82402051a8354ab3543",
+    "width": 916,
+    "height": 2221,
     "svgs": {
-      "light": "de974faad01fc884e1a289dc94c1cb7f2913bf2b45e95ab9d5878e223a68a2a5",
-      "dark": "b4c2d3be2ec07c1e63f60d0571a2053425f94631fe272a48e124e0c253b3ba95"
-    }
-  },
-  "ride-sharing/match-sequence.d2": {
-    "sha256": "59fec3dfa0a2774b4649a0e1be72e7cd2a2e90a7e002ae4628ee52bee9f3a48b",
-    "width": 843,
-    "height": 1968,
-    "svgs": {
-      "light": "f4ccc8ac642b6a071a4c4b723baa2990129146d1856120c8b54d607fff3da61f",
-      "dark": "36c0e28c3d2eda14ef205e1b4da99dedece0c024ac1a915337e39d36a029d0bc"
+      "light": "d7b9b2fd014aacdfd4c4f5431848925352f7965bbaa9cea219df5ceadbde800a",
+      "dark": "e91ecefc27c911f5a9f26a5db4dc3e0f94064d5e925fb7705c50863a82b9978e"
     }
   },
   "search-engine/architecture.d2": {
@@ -264,24 +237,6 @@
     "svgs": {
       "light": "3067ae0f73fdc4800105a76bafa895a5a596551ba4128dcde18049d8f0e00f2c",
       "dark": "65b482cdb47ee4ffa10a9be9182e8b6422e0301279ff98ca728199a2a2331185"
-    }
-  },
-  "video-streaming/playback-sequence.d2": {
-    "sha256": "9eaf2b1c8506a385f410a8c5c32afc6035f56a146bdd385cc4c39d239145c50d",
-    "width": 934,
-    "height": 1551,
-    "svgs": {
-      "light": "9278ba04bbfba2fee1423eae8be82309532c0cf39166a3d1856833e2d38f247f",
-      "dark": "405b3d55995779609fe9d5f54aad6f1f5b0b8e117fe1b10b40344a5a0b9beb97"
-    }
-  },
-  "video-streaming/transcode-pipeline.d2": {
-    "sha256": "a441ac34a72026303e593e54a4ca43fe14cbb8b628f314505324c922758df670",
-    "width": 806,
-    "height": 1134,
-    "svgs": {
-      "light": "f889f6a9d7b2624e136fbe5b716943390dd7b70a86fc579d74ad8d034012016c",
-      "dark": "cbabd98f329476997de892dd314e311541e9290449b16459338c1d209431db85"
     }
   }
 }

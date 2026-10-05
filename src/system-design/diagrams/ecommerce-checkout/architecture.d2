@@ -5,7 +5,6 @@ direction: down
 vars: { d2-config: { layout-engine: elk } }
 
 client: Browser or app
-cdn: CDN
 gw: API gateway
 catalog: Catalog service
 ccache: Catalog cache {
@@ -23,17 +22,16 @@ events: Order event stream {
 }
 consumers: "Email, fulfilment"
 
-client -> cdn: "images, scripts"
 client -> gw: "HTTPS API"
 gw -> catalog: "product pages"
 gw -> cart: "cart"
-gw -> order: "quote, place order"
+gw -> order: "orders"
 catalog -> ccache: "read first"
 order -> cart: "read cart"
-catalog -> order: "current prices"
+order -> catalog: "current prices"
 order -> orderdb: "state + outbox"
 order -> inv: "reserve, commit, release"
 order -> pay: "authorize, void"
 orderdb -> events: "outbox relay"
-events -> cart: "remove ordered items"
+events -> cart: "clear ordered items"
 events -> consumers: "order events"

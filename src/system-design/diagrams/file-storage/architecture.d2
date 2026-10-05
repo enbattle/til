@@ -1,9 +1,8 @@
 # High-level architecture of cloud file storage: metadata goes through the API
-# servers to the namespace database (split by namespace) and the chunk index
-# (split by hash), while chunk bytes go directly between clients and the object
-# store on presigned URLs. Arrows point from the side that starts a request,
-# except the two leaving the namespace database, which show journal rows and
-# chunk reference changes (including the nightly purge's) flowing out.
+# servers to the namespace database (split by namespace), while chunk bytes go
+# directly between clients and the object store on presigned URLs. Arrows point
+# from the side that starts a request, except the one leaving the namespace
+# database, which shows journal rows flowing out to the relay.
 vars: {
   d2-config: {
     layout-engine: elk
@@ -23,10 +22,7 @@ notify: "Notification\nservers" {
 cache: Permission cache {
   shape: stored_data
 }
-db: "Namespace DB (32 shards)\nwith nightly purge" {
-  shape: cylinder
-}
-chunkidx: "Chunk index\n(by hash)" {
+db: "Namespace DB\n(sharded by namespace)" {
   shape: cylinder
 }
 relay: Journal relay
@@ -36,17 +32,12 @@ queue: Change queue {
 objects: Object store (chunks) {
   shape: cylinder
 }
-workers: GC and tiering workers
 
 client -> objects: "chunk bytes"
-client -> api: "check, commit, /changes"
+client -> api: "check, commit,\nversions, /changes"
 client -> notify: "open stream"
 api -> cache: "memberships"
-api -> chunkidx: "lookups, new chunks"
 api -> db: "commits, reads"
-db -> workers: "ref changes"
 db -> relay: "journal rows"
-workers -> objects: "logs, delete, tiers"
-workers -> chunkidx: "refs, tiers"
 relay -> queue: "publish"
 notify -> queue: "consume"
