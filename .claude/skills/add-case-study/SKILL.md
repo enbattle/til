@@ -57,8 +57,9 @@ the voice.
 - **Requirements**: what it does (optional features marked), one line on
   what's out of scope, and non-functional targets as numbers (scale, latency
   percentile, availability).
-- **Key numbers**: worked arithmetic, one line per figure, every figure
-  following from a stated requirement or a stated assumption. Round sensibly
+- **Key numbers**: open by saying what the numbers size, lead each figure
+  with the part it sizes, then worked arithmetic, one line per figure, every
+  figure following from a stated requirement or a stated assumption. Round sensibly
   and say so. Recompute every line before moving on.
 - **Decisions**: the three that most shape the design, each with the
   alternative a reader would suggest, why it loses in this design's numbers,

@@ -59,8 +59,12 @@ order: 1
   heading. The body's `##` headings are then exactly, in order:
   - `Requirements`: 4–6 bullets, with the non-functional targets as numbers,
     and one line on what's out of scope.
-  - `Key numbers`: 4–5 figures, each with its one-line derivation from a
-    requirement or a stated assumption.
+  - `Key numbers`: opens with a sentence saying what the numbers size (the
+    requests the servers answer, the data the database holds, the memory a
+    cache needs), so a reader knows where each one lands. Then 4–5 figures,
+    each with a bold lead naming the part it sizes (`**Reads:**`,
+    `**Database:**`) and its one-line derivation from a requirement or a
+    stated assumption.
   - `High-level architecture`: at least one diagram with alt text, such as
     `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page, so
     the reference style counts too), then one paragraph that follows a request

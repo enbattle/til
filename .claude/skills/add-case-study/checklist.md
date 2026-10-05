@@ -25,7 +25,9 @@ The earlier 6,000-word case studies were thorough and hard to remember.
    changes, grep the page and update every use: requirements, key numbers,
    decisions, follow-ups, diagram labels, alt text, summary. State headroom
    explicitly, never sizing at ~100% of capacity. Keep averages separate from
-   peaks, and requests separate from distinct items.
+   peaks, and requests separate from distinct items. Say what each figure
+   sizes (the servers, the database, the cache): a bare "40,000 a second"
+   leaves a reader asking 40,000 of what, hitting which part.
 3. **Decisions.** Each one names the choice, why in this design's numbers, the
    one alternative a reader would suggest and why it loses here, and ends with
    a `**Rule of thumb.**` paragraph stating the general rule. Pick the three

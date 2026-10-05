@@ -383,7 +383,7 @@ near-duplicate check, as the skill does.
 ````markdown
 ---
 title: Design a Pastebin (like Pastebin.com)
-summary: A year of text snippets behind unguessable links, with the text in an object store, expiry enforced twice and IDs too long to guess.
+summary: A year of text snippets behind links too long to guess in practice, with the text in an object store and expiry checked on every read.
 date: 2026-09-28
 order: 17
 ---
@@ -406,21 +406,22 @@ of how any company built theirs.
 - **Latency:** reads under 500 ms at p99 (the time 99% of reads beat), measured
   at our servers. A person opens it by hand, so half a second is fine.
 
-Out of scope: accounts, editing, syntax highlighting and search.
+Out of scope: accounts, editing and search.
 
 ## Key numbers
 
-A day has 86,400 seconds; assume peaks of ten times the average, and 1 KB =
-1,000 bytes.
+These size the app servers, the object store, the database and the cache. A
+day has 86,400 seconds; peaks are ten times the average; 1 KB = 1,000 bytes.
 
 - **Writes:** 1,000,000 ÷ 86,400 ≈ 12 per second on average, about 120 at
   peak.
 - **Reads:** 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
   peak.
-- **Text:** assume an average paste of 10 KB. That's 1,000,000 × 10 KB = 10 GB
-  a day, and since nothing outlives 365 days, 10 GB × 365 ≈ 3.65 TB in all.
-- **Metadata:** about 200 bytes a paste, overhead included, × 365 million live
-  pastes ≈ 73 GB.
+- **Object store:** assume an average paste of 10 KB. That's 1,000,000 × 10 KB
+  = 10 GB a day, and since nothing outlives 365 days, 10 GB × 365 ≈ 3.65 TB in
+  all.
+- **Database:** about 200 bytes of metadata a paste × 365 million live pastes
+  ≈ 73 GB.
 - **Cache:** assume a day's 10 million reads land on 2 million pastes, and the
   most-read 20% draw 80% of reads. Keeping those 0.2 × 2,000,000 = 400,000 in
   memory ([caching](/systems-and-infrastructure/caching)) takes 400,000 ×
@@ -523,15 +524,14 @@ is hopeless; length is cheaper than adding accounts.
   an hour is blocked for the rest of it, so a botnet of 10,000 machines gets a
   million guesses an hour. At one in 2.3 billion, that finds a paste about
   once every three months.
-- **What stops one sender flooding creates?** 10 creates a minute per address,
-  1/720 of the 120-a-second peak.
+- **What stops one sender filling the store?** A cap on bytes: 50 MB of new
+  text per address a day is 0.5% of the 10 GB.
 - **What if the cache node is lost?** Every read takes the miss path until the
   cache refills: slower, but inside 500 ms.
 - **What if the metadata database goes down?** Creates and misses fail; cached
   pastes keep loading, since an entry holds `expires_at` with the text.
 - **What if the cleanup job stops?** Reads still answer `410`, but text piles
-  up. An alert fires if it hasn't finished in 26 hours, and the lifecycle rule
-  still removes text at 366 days.
+  up, and the lifecycle rule still removes it at 366 days.
 ````
 
 Base diagram source (`src/system-design/diagrams/pastebin/architecture.d2`,
@@ -645,15 +645,14 @@ pastes = 1,000,000 a day × 365 days, and 200 B × 365,000,000 = 73 GB;
 400,000 pastes, × 10 KB = 4 GB; (3,650 GB + 73 GB) ÷ 73 GB ≈ 51, "about fifty
 times the data"; the sweep's million rows a day matches the create rate; a
 366-day lifecycle rule against a 365-day maximum never reaches a live paste;
-an alert at 26 hours for a daily job; 62¹⁰ = 839,299,365,868,340,224 ≈ 840
+62¹⁰ = 839,299,365,868,340,224 ≈ 840
 quadrillion; 62¹⁰ ÷ 365,000,000 ≈ 2.3 billion, so a random ID clashes "about
 once in 2.3 billion creates" and a guess finds a paste one time in about 2.3
 billion; at seven characters, 62⁷ = 3,521,614,606,208 and 62⁷ ÷ 365,000,000 ≈
 9,648, "about one ID in 9,600", and a million guesses an hour ÷ 9,648 ≈ 104,
 "about a hundred an hour"; 10,000 machines × 100 guesses = a million an hour,
 and 2.3 billion ÷ 1,000,000 ≈ 2,300 hours ≈ 96 days, "about once every three
-months"; 10 creates a minute is one every 6 seconds, and 120 ÷ (10 ÷ 60) =
-720, "1/720 of the 120-a-second peak"; a miss at tens of milliseconds,
+months"; 50 MB ÷ 10 GB = 0.5%, "0.5% of the 10 GB"; a miss at tens of milliseconds,
 occasionally a couple of hundred, is inside the 500 ms p99 target). IDs are
 ten random characters whose text is written with a conditional put that
 refuses an existing key, before the row, so a clash can't overwrite a live

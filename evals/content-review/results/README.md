@@ -22,6 +22,18 @@ older logs, including the dated files this folder held until 2026-09-29.
 
 ## Latest run: 2026-10-05, five-minute content standard
 
+**Follow-up run, same day: CS-01 to CS-04, 4/4 PASS.** The trigger was the user's
+pilot feedback that Key numbers didn't say where each figure lands. The rule
+went into docs/case-studies.md, the add-case-study checklist and SKILL.md, and
+the CS base gained the opening sentence and part-named leads. Every planted
+problem was caught and ranked first. The CS-03 control drew no false finding.
+Three of the four reviews flagged the same real gap in the base: the
+create-flooding answer limited requests while storage is what shapes the
+design. The base now caps bytes per address, and the summary no longer says
+"unguessable". Those last edits were not re-reviewed.
+
+### First run
+
 Run by: self
 Trigger: branch `docs/digestible-content`. The Writing Standard gained a "Case studies and DSA entries" section (five-minute budget, enough to reason, one rejected alternative per decision, a rule of thumb, a lecturer's voice, comments that carry the why); `docs/content-review.md`'s Stage 3 instruction gained a sentence holding case studies and DSA entries to it; `add-case-study`'s checklist and Stage 3 checklist and `add-dsa-entry`'s Stage 3 checklist changed. Scope: all scenarios, since the Writing Standard and the shared Stage 3 instruction both changed.
 Fixture changes: the CS-* base was rewritten to the five-minute template (three `Decision:` sections, about 1,140 words of prose); CS-02 became "a decision that names no alternative"; CS-04, "a compression overclaim", is new. The DS-* base now carries why-comments in both code files, a counting function, two walkthrough pairs and about 1,000 words of prose. Reviews ran from neutral folder names with the scenario key kept outside them.
