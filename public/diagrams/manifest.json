@@ -32,15 +32,6 @@
       "dark": "f4e94daac90be7df7a7ed23081d88f8d8f11d5995705e7b19f4319d681b25b0b"
     }
   },
-  "ad-click-aggregator/count-once-sequence.d2": {
-    "sha256": "aba7dca4f437fd6189da789a8555268f1c991541d51e97ffcb11baab6425ce2e",
-    "width": 870,
-    "height": 1429,
-    "svgs": {
-      "light": "0d90ce14863f4e060bb5bdd4a204ab1cf4e013b72953cb3ecef4b8b72bcd4b5f",
-      "dark": "46a3ce274aab986df7087a7e2706167b0f274fd01957287a24636270a7935eda"
-    }
-  },
   "ecommerce-checkout/architecture.d2": {
     "sha256": "4838adca226ada22bf054d17fbd6aa5244a222f8d97024b809d79757907a7185",
     "width": 958,
@@ -84,15 +75,6 @@
     "svgs": {
       "light": "f4f2b13b26ea846fc2a651e9add96d4ff9832adfe2944acf9946b8946db1879d",
       "dark": "6f4f121a61caeb52fe2be5d4e94aa461d1226bba0327897ce482743de6132d67"
-    }
-  },
-  "maps/traffic-sequence.d2": {
-    "sha256": "9dd66c57c1679827131faf493cc5b8249926d52239659ee7e53e0085362fce8a",
-    "width": 849,
-    "height": 1101,
-    "svgs": {
-      "light": "bfa086f872b457a9c570543aeec45a7cea77414bf050d1ff1f54e1df7fc47a14",
-      "dark": "8fbb2a9c2f7eaf3576bb8b2f9ee64dd9389e906ff66e0808e4faf936cae4f1ab"
     }
   },
   "messaging/architecture.d2": {
@@ -204,21 +186,12 @@
     }
   },
   "ticket-booking/architecture.d2": {
-    "sha256": "5c62d545b6e3154bff93c77c7f9d9167b4b979aa15f9a5223bb6dca909f7af75",
-    "width": 845,
-    "height": 1539,
+    "sha256": "6f73a4ed7c15dca56961fe664b43462e69e739cbcf11e5a9575082dab9e3a179",
+    "width": 914,
+    "height": 1599,
     "svgs": {
-      "light": "26cccd0136a62637475015e011b7b4f3b180fef3200ec3deaffcced2448c5dbd",
-      "dark": "607b2485b1209f7918d4a314b9ef34f4e668f876479f87907895f7414bc7233d"
-    }
-  },
-  "ticket-booking/shopper-sequence.d2": {
-    "sha256": "5ad2b34b74e80944668ca14d03e313bf0b73265040b5595fb80086a095aed920",
-    "width": 902,
-    "height": 2425,
-    "svgs": {
-      "light": "f555b442deb76a3ae9e4634aa331ea4a765d45da125bfff12a8898eb9594df7d",
-      "dark": "2bbb97a7232dd96facf82ddda446fd8655c5372d559f1028e5b319bdcc10ce5b"
+      "light": "646932f19c4a8ffc58dac78c8fd3b6e106edbb1535e3f632233845901d525e01",
+      "dark": "4613e43b192994250f401795181dd58c73ccdfe9b4df8e3b580b144e99ff915c"
     }
   },
   "url-shortener/architecture.d2": {
