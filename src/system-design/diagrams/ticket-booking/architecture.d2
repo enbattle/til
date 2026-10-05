@@ -30,6 +30,7 @@ client -> cdn: "layout, availability,\nqueue status"
 client -> wr: "join, admit"
 client -> gw: "holds, confirm"
 cdn -> seatmap: "availability\non miss, 1 s TTL"
+cdn -> wr: "queue status\non miss"
 gw -> booking
 booking -> db: "conditional writes"
 booking -> pay: "charge\n(key: hold ID)"
