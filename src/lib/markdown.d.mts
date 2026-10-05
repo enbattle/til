@@ -19,3 +19,4 @@ export function diagramReferences(markdown: string): string[];
 export function extractTopicRefs(body: string): TopicRef[];
 export function extractCaseStudyRefs(body: string): string[];
 export function dsaPrerequisites(markdown: string): string[];
+export function proseWordCount(markdown: string): number;

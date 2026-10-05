@@ -48,9 +48,10 @@ the voice.
 
 - File at `src/system-design/case-studies/<slug>.md`, slug kebab-case.
   Frontmatter: `title` ("Design a <Thing> (like <familiar product>)"),
-  a one-sentence `summary`, `date` (today), and `order` (the next free
+  a one-sentence `summary`, `date` (today), `order` (the next free
   positive integer; `ls src/system-design/case-studies/` and read the
-  existing orders).
+  existing orders) and `template: 2` (the five-minute template; docs/case-studies.md,
+  "Migrating").
 - **Headings**: the `##` heading template, with what each section holds, is
   in [docs/case-studies.md](../../../docs/case-studies.md) ("The template is
   enforced"); `url-shortener.md` shows it.
@@ -65,8 +66,8 @@ the voice.
   alternative a reader would suggest, why it loses in this design's numbers,
   and a closing `**Rule of thumb.**`.
 - **Budget**: draft the decisions first, then fit the rest around them. Run
-  `npx vitest run src/system-design/case-study-structure.test.ts` for the word
-  count rather than estimating it.
+  `npx vitest run src/system-design/case-study-structure.test.ts` rather than
+  estimating: it fails, naming the count, when the prose is over 1,150 words.
 - **Catalog links** go where the prose uses the concept, as
   `[text](/<section>/<slug>)` to a topic that exists
   (`ls src/content/*/`). Don't re-teach a topic's mechanism; say what it buys
@@ -98,9 +99,11 @@ to assume, which three decisions matter most), ask the user rather than guess.
 npm run verify
 ```
 
-`case-study-structure.test.ts` (heading template, three decisions each with
-its rule of thumb, the follow-up count, the word budget, in-page links that
-resolve, a diagram in the architecture section),
+`case-study-structure.test.ts` (the intro paragraph, heading template, list
+counts and bold `**Label:**` leads in Requirements, Key numbers and follow-ups,
+three decisions each with a non-empty rule of thumb, the word budget, in-page
+links that resolve, a diagram in the architecture section; the full list is in
+[docs/case-studies.md](../../../docs/case-studies.md)),
 `system-design.test.ts` (frontmatter, unique `order`,
 dead links), `check:diagrams` (sources rendered, SVGs and tokens current,
 SVGs safe, no color named and no file imported in a `.d2`, every referenced diagram present) and

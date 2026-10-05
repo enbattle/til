@@ -74,7 +74,8 @@ sets the five-minute budget and the voice.
    whether a loop ends (its condition, or the step that moves it forward): a
    loop that never ends hangs the test run instead of failing it.
 3. **Entry.** `src/dsa/entries/<slug>.md`, slug kebab-case. Frontmatter
-   `title`, a one-sentence `summary`, `date` (today) and `kind`. The `##`
+   `title`, a one-sentence `summary`, `date` (today), `kind` and `template: 2`
+   (the current templates; docs/dsa.md, "Migrating"). The `##`
    headings are the kind's template from docs/dsa.md, exactly. Then:
    - **Prerequisites** links only the entries the prose really needs
      (`[Hash map](/dsa/hash-map)`), each with a phrase saying what it's needed
@@ -94,8 +95,8 @@ sets the five-minute budget and the voice.
      positions, the buckets after three inserts) and recompute it before
      moving on.
    - **Budget**: at most 1,150 words of prose, code not counted. Run
-     `npx vitest run src/dsa/dsa-structure.test.ts` for the count rather than
-     estimating it.
+     `npx vitest run src/dsa/dsa-structure.test.ts` rather than estimating:
+     it fails, naming the count, when the prose is over budget.
    - **Complexity** and **Operations and costs** give time and space with the
      reason, not just the answer, and every figure is checked.
    - Link a catalog topic where the prose uses it, as `[text](/<section>/<slug>)`

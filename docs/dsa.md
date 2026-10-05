@@ -14,9 +14,14 @@ the entry's tests run.
 
 **Migrating (2026-10).** The entries are being consolidated (42 to 28; the
 list is under "Scope" below) and rewritten to the templates and budget on
-this page. Until that lands, the published entries and `dsa-structure.test.ts`
-follow the earlier templates, which git history has. The rewrite changes the
-tests, the entries and this note together.
+this page, about five per pull request. An entry opts in with the frontmatter
+line `template: 2`, and `dsa-structure.test.ts` then checks it against the
+templates and budget on this page; one without the line is still checked
+against the earlier templates (git history has them). Any other `template`
+value fails the test, naming the file and the value. Only the structure test
+reads the line; the loader ignores it. Every new or rewritten entry carries
+`template: 2`. The last migration batch removes the earlier templates, the
+line and this note.
 
 Each merge below reads its old entries and code as research notes, deletes
 them and their code folders, and repoints every link to an old slug
@@ -52,8 +57,8 @@ src/dsa/
 
 Like case studies, entries live outside `src/content/`, so they are not a
 catalog section (`registry.ts` has no `dsa` slug). They have their own loader,
-`src/lib/dsa.ts`: frontmatter and prerequisites are eager (the `?meta` and
-`?dsaPrereqs` queries in `vite.config.ts`), and each body is its own lazy chunk
+`src/lib/dsa.ts`: frontmatter, prerequisites and word counts are eager (the
+`?meta`, `?dsaPrereqs` and `?words` queries in `vite.config.ts`), and each body is its own lazy chunk
 through the same `createBodyStore` as topics (`check:bundle` covers
 `src/dsa/entries`). The code files never reach the app bundle; only the
 markdown does.
@@ -66,6 +71,7 @@ title: Binary Search
 summary: One plain-text sentence — the hook shown on the landing page and in search.
 date: YYYY-MM-DD
 kind: algorithm
+template: 2
 ---
 ```
 
@@ -110,7 +116,10 @@ Every kind ends the same way:
   obvious way.
 
 The prose, tables included, is at most 1,150 words; code blocks don't count
-(`dsa-structure.test.ts` counts the words on the rendered page). An intro
+(`dsa-structure.test.ts` counts them with `proseWordCount` in
+`src/lib/markdown.mjs`). The same count, eager through the build-time `?words`
+view, gives the entry page's "N min read" label (230 words a minute,
+`readingMinutes` in `src/lib/reading-time.ts`). An intro
 paragraph before `## Prerequisites` is fine. `hash-map.md`, `two-pointers.md`
 and `binary-search.md` are the reference examples for each kind, rewritten
 first in the migration. The page builds its "On this page" list from these headings with

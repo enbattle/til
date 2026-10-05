@@ -21,6 +21,13 @@ declare module '*.md?dsaPrereqs' {
   export default prereqs;
 }
 
+// The words of prose in a markdown file's body (code blocks excluded), counted
+// by `proseWordCount`, also produced by the `markdownMeta` plugin.
+declare module '*.md?words' {
+  const words: number;
+  export default words;
+}
+
 // Each rendered diagram's intrinsic size, keyed `<case>/<name>`, produced by
 // the `diagramSizes` plugin from `public/diagrams/manifest.json`.
 declare module 'virtual:diagram-sizes' {

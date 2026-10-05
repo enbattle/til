@@ -24,8 +24,12 @@ Case studies live outside `src/content/` on purpose: everything under
 registry entry per folder there. They have their own loader
 (`src/lib/system-design.ts`) and are not registered in `SECTIONS`. Like topics,
 frontmatter is eager (`?meta`) and the body is its own lazy chunk
-(`loadCaseStudyBody`, through the same `createBodyStore`). Frontmatter is the
-usual flat `key: value`, plus one more required field:
+(`loadCaseStudyBody`, through the same `createBodyStore`); the prose word count
+is eager too (the build-time `?words` view, `proseWordCount` in
+`src/lib/markdown.mjs`), so the page's "N min read" label (230 words a minute,
+`readingMinutes` in `src/lib/reading-time.ts`) shows before the body loads.
+Frontmatter is the usual flat `key: value`, with one more required field,
+`order`, and, during the migration below, the optional `template: 2`:
 
 ```md
 ---
@@ -33,6 +37,7 @@ title: Design a URL Shortener (like TinyURL)
 summary: One plain-text sentence — the hook shown on the landing page and in search.
 date: YYYY-MM-DD
 order: 1
+template: 2
 ---
 ```
 
@@ -43,10 +48,13 @@ order: 1
 - **Migrating (2026-10).** The case studies are being rewritten from a
   6,000-word template (an `At a glance` summary, estimates, data model, API,
   architecture, deep dives, failure modes, trade-offs) to the five-minute
-  template below. Until that pull request lands, the published case studies
-  and `case-study-structure.test.ts` still follow the old one, and git history
-  has its rules. The rewrite changes the test, the case studies and this note
-  together.
+  template below, about five per pull request. A case study opts in with the
+  frontmatter line `template: 2`, and `case-study-structure.test.ts` then
+  checks it against the template below; one without the line is still checked
+  against the old template. Any other `template` value fails the test, naming
+  the file and the value. Only the structure test reads the line; the loader
+  ignores it. Every new or rewritten case study carries `template: 2`. The last
+  migration batch removes the old template, the line and this note.
 - **A case study is a five-minute read.** The whole page is the summary a
   reader takes into an interview, with enough reasoning under each decision to
   defend it and to guess well at a question it never asked. It meets the
@@ -57,13 +65,14 @@ order: 1
 - **The template is enforced.** An intro of two to four sentences (the
   interview question and what makes it interesting) comes before the first
   heading. The body's `##` headings are then exactly, in order:
-  - `Requirements`: 4–6 bullets, with the non-functional targets as numbers,
-    and one line on what's out of scope.
+  - `Requirements`: one list of 4–6 bullets, with the non-functional targets
+    as numbers, and one sentence on what's out of scope (a sentence, not a
+    second list).
   - `Key numbers`: opens with a sentence saying what the numbers size (the
     requests the servers answer, the data the database holds, the memory a
     cache needs), so a reader knows where each one lands. Then 4–5 figures,
-    each with a bold lead naming the part it sizes (`**Reads:**`,
-    `**Database:**`) and its one-line derivation from a requirement or a
+    each with a bold lead naming the part it sizes, the colon inside the bold
+    (`**Reads:**`, not `**Reads**:`), and its one-line derivation from a requirement or a
     stated assumption.
   - `High-level architecture`: at least one diagram with alt text, such as
     `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page, so
@@ -79,10 +88,18 @@ order: 1
   - `Likely follow-ups`: a list of 4–6 interviewer questions, each in bold,
     with a one- or two-sentence answer.
 
-  `src/system-design/case-study-structure.test.ts` checks the headings, the
-  three decisions and each one's `**Rule of thumb.**` paragraph, the follow-up
-  count, the diagram, and the word budget (prose words on the rendered page,
-  outside code blocks and image alt text). An in-page link,
+  `src/system-design/case-study-structure.test.ts` checks: a paragraph before
+  the first `##`; the headings; `Requirements` as exactly one list of 4–6
+  top-level items; `Key numbers` as a paragraph, then one list of 4–5
+  top-level items each opening with bold text that begins with a label and a
+  colon; each decision ending with a `**Rule of thumb.**` paragraph with text
+  after the label; `Likely follow-ups` as one list of 4–6 items each opening
+  with bold; the diagram; and the word budget (`proseWordCount` in
+  `src/lib/markdown.mjs`: the body's prose, outside code blocks, image alt
+  text, raw HTML and reference definitions). The same count, eager through the
+  build-time `?words` view, gives the page's "N min read" label (230 words a
+  minute, `readingMinutes` in `src/lib/reading-time.ts`), on every case study,
+  old template or new. An in-page link,
   `[text](#heading-id)`, uses the id the heading renders with (`headingId` in
   `src/lib/headings.ts`: "Decision: the read path" is
   `#decision-the-read-path`), and the test fails one that resolves to no `#` or

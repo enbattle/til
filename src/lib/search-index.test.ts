@@ -28,6 +28,7 @@ const CASE_STUDY: CaseStudy = {
   summary: 'Diagnosing temporal hardware.',
   date: '2026-01-03',
   order: 1,
+  words: 1,
 };
 
 const BODY_A = 'The obsidianlattice reconciliation step runs at dawn.\n';

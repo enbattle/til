@@ -27,6 +27,7 @@ const CASE_STUDY: CaseStudy = {
   summary: 'Diagnosing temporal hardware.',
   date: '2026-01-03',
   order: 1,
+  words: 1,
 };
 
 const ENTRY: DsaEntry = {
@@ -35,6 +36,7 @@ const ENTRY: DsaEntry = {
   summary: 'A marsupial priority queue.',
   date: '2026-01-04',
   kind: 'data-structure',
+  words: 1,
 };
 
 const ENTRY_BODY = 'The zirconiumpendulum sift-down runs in logarithmic time.\n';

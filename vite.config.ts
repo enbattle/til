@@ -5,7 +5,11 @@ import tailwindcss from '@tailwindcss/vite';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseFrontmatter, type ParsedMarkdown } from './src/lib/frontmatter.ts';
-import { dsaPrerequisites, extractTopicRefs } from './src/lib/markdown.mjs';
+import {
+  dsaPrerequisites,
+  extractTopicRefs,
+  proseWordCount,
+} from './src/lib/markdown.mjs';
 
 /**
  * Build-time views of a markdown file, so the app can list and cross-link
@@ -25,6 +29,9 @@ import { dsaPrerequisites, extractTopicRefs } from './src/lib/markdown.mjs';
  *   entry links under its `## Prerequisites` heading (`dsaPrerequisites` in
  *   `src/lib/markdown.mjs`), which order the DSA list and fill its
  *   "Before this" links.
+ * - `import words from './case.md?words'` resolves to the number of words a
+ *   reader reads in the body (`proseWordCount` in `src/lib/markdown.mjs`), so
+ *   case-study and DSA pages show "N min read" before their body loads.
  *
  * Each view is one entry below, keyed by its query name; adding a view is
  * adding an entry. Vitest reuses these plugins, so tests see the same modules.
@@ -33,6 +40,7 @@ const MARKDOWN_VIEWS: Record<string, (file: ParsedMarkdown) => unknown> = {
   meta: ({ data }) => data,
   links: ({ content }) => extractTopicRefs(content),
   dsaPrereqs: ({ content }) => dsaPrerequisites(content),
+  words: ({ content }) => proseWordCount(content),
 };
 
 function markdownMeta(): Plugin {

@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PrevNextNav } from '@/components/PrevNextNav';
 import { h2Headings } from '@/lib/headings';
 import { neighbours } from '@/lib/neighbours';
+import { readingMinutes } from '@/lib/reading-time';
 import {
   CASE_STUDIES,
   getCaseStudy,
@@ -27,7 +28,7 @@ export function CaseStudyPage() {
       <PageHeader
         back={{ to: '/system-design', label: 'System Design' }}
         title={caseStudy.title}
-        meta={caseStudy.date}
+        meta={`${caseStudy.date} · ${readingMinutes(caseStudy.words)} min read`}
       />
 
       {/* The body is its own lazily loaded chunk; everything that depends on

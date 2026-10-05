@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TOPICS, getTopic } from './content';
 import { RAW_CASE_STUDIES as RAW, rawCaseStudy as rawFor, without } from '@/test/content';
 import { parseFrontmatter } from './frontmatter';
-import { extractTopicRefs } from './markdown.mjs';
+import { extractTopicRefs, proseWordCount } from './markdown.mjs';
 import {
   CASE_STUDIES,
   caseStudiesForTopic,
@@ -39,7 +39,9 @@ const VALID_FIELDS: Record<string, string> = {
 describe('parseCaseStudy (criterion 3)', () => {
   it('returns slug, title, summary, date and a numeric order, and no body', () => {
     const caseStudy = parseCaseStudy(VALID_PATH, VALID_FIELDS);
-    expect(caseStudy).toEqual({
+    // toMatchObject, not toEqual: the `words` count (five-minute criterion 3)
+    // comes from the build-time view, wherever the loader merges it in.
+    expect(caseStudy).toMatchObject({
       slug: 'my-case',
       title: 'Design a Widget Service (like a widget store)',
       summary: 'A one-line hook.',
@@ -106,7 +108,7 @@ describe('CASE_STUDIES and getCaseStudy (criteria 3 and 4)', () => {
     expect(CASE_STUDIES).toHaveLength(Object.keys(RAW).length);
   });
 
-  it('is metadata only: exactly slug, title, summary, date and order', () => {
+  it('is metadata only: exactly slug, title, summary, date, order and words (five-minute criterion 3)', () => {
     for (const caseStudy of CASE_STUDIES) {
       expect(Object.keys(caseStudy).sort()).toEqual([
         'date',
@@ -114,8 +116,25 @@ describe('CASE_STUDIES and getCaseStudy (criteria 3 and 4)', () => {
         'slug',
         'summary',
         'title',
+        'words',
       ]);
     }
+  });
+
+  it('gives every case study a positive integer words: its body’s prose word count (five-minute criterion 3)', () => {
+    for (const caseStudy of CASE_STUDIES) {
+      expect(Number.isInteger(caseStudy.words), caseStudy.slug).toBe(true);
+      expect(caseStudy.words, caseStudy.slug).toBeGreaterThan(0);
+      expect(caseStudy.words, caseStudy.slug).toBe(
+        proseWordCount(parseFrontmatter(rawFor(caseStudy.slug)).content),
+      );
+    }
+  });
+
+  it('ignores a template line in the frontmatter (five-minute design: the loaders ignore it)', () => {
+    expect(parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, template: '2' })).toEqual(
+      parseCaseStudy(VALID_PATH, VALID_FIELDS),
+    );
   });
 
   it('matches each file’s frontmatter', () => {
@@ -236,6 +255,7 @@ describe('topicsForCaseStudy (criterion 6)', () => {
         summary: 'Stub.',
         date: '2026-09-28',
         order: 999,
+        words: 1,
       }),
     ).toEqual([]);
   });
