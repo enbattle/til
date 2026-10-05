@@ -35,15 +35,17 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-04 | add-dsa-entry step 2: the randomized-test convention                 | 2    | 0    | 0         | SR-17 and SR-18; SR-17 prompt refreshed again.               |
 | 2026-10-04 | /feature Stage 1 UI-criteria bullet; Stage 6 severity-first retro    | 4    | 0    | 0         | Scoped run: SR-01, SR-05, SR-07, SR-17.                      |
 | 2026-10-04 | /feature: where a guard's planted cases live (test split)            | 1    | 0    | 0         | SR-01 only; the edit can't change routing.                   |
+| 2026-10-04 | /feature Stage 1 guard edits (#63, #64); docs-audit gate fixes       | 2    | 0    | 0         | SR-01 and SR-18; logs #64's unlogged SR-01 pass too.         |
 
-## Latest run: 2026-10-04, where a guard's planted cases live
+## Latest run: 2026-10-04, /feature Stage 1 guard edits and docs-audit gate fixes
 
 Run by: self
-Trigger: `docs/specs/parallel-guard-tests.md` split `scripts/checks.test.mjs` into per-guard test files. `/feature`'s body (three places) now says a guard's planted-violation cases go in `scripts/<guard>.test.mjs`, and that NON_NEGOTIABLES #6's allowlist vector tables stay in `scripts/checks.test.mjs`. No description, routing rule or stage changed.
-Scope: the edit only says where test cases go inside a run already routed to `/feature`, so no scenario's Expected answer depends on it. SR-01 was run as a single `/feature` smoke check.
+Trigger: `/feature` Stage 1's guard bullet gained the AST rule (#63, d54ae2d) and the "every way code can reach the sink" clause (#64, 88c5042); #64's pipeline-log row says SR-01 passed, but no row here recorded either edit. The 2026-10-04 docs audit then added `--deny-warnings` to the oxlint step in `/feature`'s Stage 2 gate and `add-dsa-entry`'s batch mode, and corrected Stage 2's wording on where vector tables live. No description, routing rule or stage changed.
+Scope: SR-01 (`/feature`) and SR-18 (`add-dsa-entry`), the scenarios whose Expected answer depends on the two edited skills.
 
-| ID    | Routing decision | Reasoning (1 line)                                                                        | Grade |
-| ----- | ---------------- | ----------------------------------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`       | A search-dialog behavior change needing design choices and new tests; not a one-line fix. | PASS  |
+| ID    | Routing decision | Reasoning (1 line)                                                                                    | Grade |
+| ----- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`       | UI and behavior change in `SearchDialog.tsx` and `search.ts` with open design and keyboard questions. | PASS  |
+| SR-18 | `add-dsa-entry`  | A new DSA entry with prose and tested Python and TypeScript code; no LRU entry exists yet.            | PASS  |
 
 Notes: none.

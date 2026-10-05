@@ -34,6 +34,6 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install -r requirements-dev.txt
       # The one definition of the check chain (package.json "verify"), shared with
-      # the deploy workflow and every skill's final gate, so CI can never drift
+      # the deploy workflow and the final gate of every skill that changes the repo, so CI can never drift
       # from it.
       - run: npm run verify

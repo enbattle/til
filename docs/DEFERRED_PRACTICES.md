@@ -45,7 +45,7 @@ of security, which is worse than no hook. A narrower version (gating
 only the fast checks — `format:check` + `lint`) avoids the timeout risk
 but only protects commits made through this exact hook config on this
 exact machine; it's trivially bypassed and duplicates gate logic that
-the skills already own (every skill's final gate runs `npm run verify`).
+the skills already own (the final gate of every skill that changes the repo runs `npm run verify`).
 The mechanism that
 actually matches "don't let a bad change get merged" is GitHub branch
 protection requiring the existing CI check to pass — server-side,

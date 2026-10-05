@@ -29,9 +29,24 @@ per-script skip list; `ROOT` and `escapeRegExp` live there too.
 (minus tests), and `check:colors` scans `.ts`, `.tsx`, `.mjs` and `.css`;
 `.mjs` counts because `src/lib/markdown.mjs` ships to the browser.
 `check:raw-html` parses each file with `oxc-parser` and matches sinks in the
-syntax tree, not the text, so a file that doesn't parse fails the check; its
-header lists the forms it still can't see (aliasing, `Object.assign`,
-variable keys).
+syntax tree, not the text, so a file that doesn't parse fails the check. It
+rejects more sinks than NON_NEGOTIABLES #6 names (`srcdoc` and the other
+HTML-parsing methods in its `HTML_PROPS` and `HTML_METHODS`), and its header
+lists the forms it still can't see (e.g. aliasing, `Object.assign`, variable
+keys). `scripts/check-raw-html.test.mjs` reads #6's text: every inline-code
+span in #6 must be classified in its `SPAN_TABLE`, so adding or removing a
+backticked name in #6 fails `test:run` until the table matches.
+`scripts/check-pipeline-log.test.mjs` reads `docs/pipeline-log.md`'s header the
+same way.
+
+`check:tokens` proves `docs/DESIGN.md`'s token table matches the `--color-*`
+tokens in `src/index.css`, in both directions and by value; `check:contrast`
+proves text clears WCAG AA (4.5:1) on the surfaces it sits on, in both themes;
+`check:npm-refs` proves every `npm run <name>` a markdown file names is a
+script in `package.json`; `check:pipeline-log` proves every row of
+`docs/pipeline-log.md` has its header's eight columns in their format, and that
+a run with gate failures or findings doesn't close with a bare "nothing to
+change" retro.
 
 `src/lib/text-encoding.test.ts` (part of `test:run`) fails on any tracked text
 file holding double-encoded UTF-8. That happens when a UTF-8 file is read as
