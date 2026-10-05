@@ -113,8 +113,9 @@ shape), ask the user rather than guess.
 npm run verify
 ```
 
-`dsa-structure.test.ts` (the heading template, pairs where they belong, a
-paragraph after each walkthrough pair), `dsa-code-chunks.test.ts` (the chunks
+`dsa-structure.test.ts` (the template, and the word budget on a
+`template: 2` entry, as [docs/dsa.md](../../../docs/dsa.md) lists them),
+`dsa-code-chunks.test.ts` (the chunks
 equal the code files), `dsa.test.ts` (frontmatter, prerequisites that exist
 and form no cycle), the entry's own vitest and pytest files, and
 `check:bundle` (the body stays out of the main chunk) catch the structural

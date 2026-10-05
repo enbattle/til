@@ -85,10 +85,8 @@ the voice.
   Reference each as an inline image,
   `![Alt text describing what the diagram shows](/diagrams/<slug>/<name>.svg)`;
   the alt text says what the diagram shows, since a screen-reader user gets
-  only that. The architecture diagram must be written this inline way: the
-  structure test only counts an inline image in `High-level architecture`.
-  Other diagrams may use reference-style images, which `check:diagrams` also
-  resolves.
+  only that. Reference-style images work too: the structure test and
+  `check:diagrams` both resolve them.
 
 If scope or angle is genuinely ambiguous (which product to model, what scale
 to assume, which three decisions matter most), ask the user rather than guess.
@@ -99,11 +97,9 @@ to assume, which three decisions matter most), ask the user rather than guess.
 npm run verify
 ```
 
-`case-study-structure.test.ts` (the intro paragraph, heading template, list
-counts and bold `**Label:**` leads in Requirements, Key numbers and follow-ups,
-three decisions each with a non-empty rule of thumb, the word budget, in-page
-links that resolve, a diagram in the architecture section; the full list is in
-[docs/case-studies.md](../../../docs/case-studies.md)),
+`case-study-structure.test.ts` (the template, and the word budget on a
+`template: 2` case study, as
+[docs/case-studies.md](../../../docs/case-studies.md) lists them),
 `system-design.test.ts` (frontmatter, unique `order`,
 dead links), `check:diagrams` (sources rendered, SVGs and tokens current,
 SVGs safe, no color named and no file imported in a `.d2`, every referenced diagram present) and
