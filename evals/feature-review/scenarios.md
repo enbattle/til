@@ -115,7 +115,7 @@ way if a check ever starts catching unnamed buttons.
 ```diff
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
-@@ -68,6 +68,13 @@ export function TopicPage() {
+@@ -72,6 +72,13 @@ export function TopicPage() {
                prev={prev && { to: `/${section.slug}/${prev.slug}`, title: prev.title }}
                next={next && { to: `/${section.slug}/${next.slug}`, title: next.title }}
              />

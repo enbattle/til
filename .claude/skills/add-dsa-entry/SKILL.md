@@ -137,7 +137,7 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **Batch mode**: several entries can be added at once. A drafter's
   Stage 2 is `npm run typecheck`, `npm run test:py`,
   `npx vitest run src/dsa/code/<slug> src/dsa/dsa-structure.test.ts src/dsa/dsa-code-chunks.test.ts src/lib/dsa.test.ts`,
-  and Prettier and oxlint on its files. A drafter whose entry needs another
+  and Prettier and `oxlint --deny-warnings` on its files. A drafter whose entry needs another
   entry from the same batch gets that entry's slug and title and links to it;
   `dsa.test.ts` then fails on the unknown prerequisite until integration,
   which is expected and the only failure it may leave. Prerequisites can't form a cycle (`dsa.test.ts` checks), so plan

@@ -77,8 +77,15 @@ notebook than a product. The UI follows that:
   (its number, hidden from screen readers since the `<ol>` already conveys
   order, then its title, wrapping rather than truncating), with the same bold
   plus accent-border current signal and `aria-current="page"`. There is
-  nothing to expand: each case study page (and each DSA entry and catalog
-  topic) carries its own **On this page** list (`OnThisPage`): the body's
+  nothing to expand: each case study page carries its own **On this page**
+  list (below). The way back from a catalog topic is the
+  "Used in these case studies:" list a topic page shows for the case studies
+  that link to it. On desktop all three navs stay mounted and the inactive ones sit
+  in a `hidden`, `display: contents` wrapper (out of the accessibility tree
+  at every width), so a section group the user opened survives a round trip
+  between the tabs.
+- **On this page**: each case study page, DSA entry and catalog topic carries
+  its own **On this page** list (`OnThisPage`): the body's
   `##` sections as in-page anchors, from `h2Headings`, in two copies of which
   exactly one shows at any width. From `xl` it's a
   `<nav aria-label="On this page">` portalled into the shell's right column (a plain `<div>` slot
@@ -132,12 +139,7 @@ notebook than a product. The UI follows that:
   least 1.5 seconds and until `document.fonts.ready`, never past 5 seconds. It
   stops at once on the reader's first wheel, touch, key or pointer press, and
   on any scroll it didn't cause itself (a scrollbar drag, find-in-page,
-  assistive technology), so it never fights the reader). The way back from a catalog topic is the
-  "Used in these case studies:" list a topic page shows for the case studies
-  that link to it. On desktop all three navs stay mounted and the inactive ones sit
-  in a `hidden`, `display: contents` wrapper (out of the accessibility tree
-  at every width), so a section group the user opened survives a round trip
-  between the tabs.
+  assistive technology), so it never fights the reader).
 - **DSA navigation**: on `/dsa` and `/dsa/*` the sidebar and `MobileNav` show
   `DsaNav`, built on `OrderedNav` like `CaseStudyNav` but grouped: under the
   "DSA" label, one `<p>` label per kind ("Data structures", "Patterns",
@@ -191,8 +193,9 @@ notebook than a product. The UI follows that:
   sideways", so a keyboard user can Tab to it and scroll with the arrow keys;
   a table that fits adds no tab stop and no region. The table itself is
   unchanged.
-- **Thin, on-theme scrollbar**: both nav scroll containers (the desktop
-  sidebar wrapper in `App.tsx` and `MobileNav`'s panel), and the
+- **Thin, on-theme scrollbar**: the nav scroll containers (`SIDE_COLUMN` in
+  `App.tsx`, shared by the left sidebar and the right "On this page" column;
+  `MobileNav`'s panel; the On this page bar's panel), and the
   sideways-scrolling box of a diagram or table, use a
   `.scrollbar-thin` utility (`src/index.css`) built from the standard
   `scrollbar-width: thin` / `scrollbar-color` properties, colored from the

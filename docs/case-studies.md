@@ -103,7 +103,7 @@ order: 1
   such as `"Issue #123"`, or in a comment is fine. A `.d2` can't import another file (`...@x`,
   `x: @../y`): the imported file would escape the source hash and the color
   guard, so both `check:diagrams` and `npm run diagrams` reject it. Changing a `--color-*` token the
-  diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 5: nodes, participants and width, which `check:diagrams` enforces) and lay it out to fit the ~720px
+  diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 5: nodes, participants and width; `check:diagrams` enforces only the width) and lay it out to fit the ~720px
   content column (`direction: down` usually fits better than `right`), use
   `shape: sequence_diagram` for a request flow, and look at the rendered SVG
   in both themes before committing. Commit the source, both SVGs and

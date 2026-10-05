@@ -101,8 +101,8 @@ this instruction, close to verbatim:
 > create or edit test files (any `*.test.*` or `*.spec.*` JS or TS file, such as
 > `*.test.ts`, `*.test.tsx` or `*.test.mjs`: what `check:test-lock` locks; a
 > guard script's planted-violation cases go in its own `scripts/<guard>.test.mjs`,
-> split further if large; NON_NEGOTIABLES #6's vector tables stay in
-> `scripts/checks.test.mjs`), a
+> split further if large; allowlist vector tables stay in
+> `scripts/checks.test.mjs`, NON_NEGOTIABLES #6), a
 > new `test*` script in `package.json` and its `npm run` step in `verify` if
 > the tests need one, any locked script the spec assigns to you, and test fixture
 > content under `src/content/`, `src/system-design/` or `src/dsa/` only if the spec
@@ -119,7 +119,7 @@ this instruction, close to verbatim:
 git status --porcelain -uall    # every changed path is a test file, a fixture, package.json's test* scripts and verify steps, or a script the spec assigned
 npm run test:run                # the new or edited tests for the new behavior must actually fail
 npm run typecheck               # every error is a name the spec introduces but nothing implements yet; any other error fails the gate
-npx prettier --check <changed test and fixture files> && npx oxlint <changed test files>   # no later stage may fix a locked file
+npx prettier --check <changed test and fixture files> && npx oxlint --deny-warnings <changed test files>   # no later stage may fix a locked file
 ```
 
 If an implementation file changed, or a new test passes immediately or is red
