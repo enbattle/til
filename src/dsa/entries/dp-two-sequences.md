@@ -17,7 +17,7 @@ shrinks the second one's table to a single row.
 
 ## Prerequisites
 
-- [Dynamic Programming: One Dimension](/dsa/dp-one-dimensional): the
+- [Dynamic Programming: Memoization and Tabulation](/dsa/dynamic-programming): the
   vocabulary is reused without re-teaching it. A **subproblem** is a smaller
   version of the question, a **recurrence** is the rule that builds a
   subproblem's answer from smaller ones, and **tabulation** fills a table of

@@ -14,7 +14,7 @@ you sweep along that row.
 
 ## Prerequisites
 
-- [Dynamic Programming: One Dimension](/dsa/dp-one-dimensional): this entry
+- [Dynamic Programming: Memoization and Tabulation](/dsa/dynamic-programming): this entry
   relies on its ideas without re-teaching them: a subproblem, a recurrence that
   builds a bigger answer from smaller ones, filling a table from the bottom up,
   and shrinking a table to the part you still need.

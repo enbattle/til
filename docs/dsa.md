@@ -35,7 +35,7 @@ rewritten in place.
 | Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque`                                                                              |
 | Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers`                                                                    |
 | Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps`                                                                     |
-| DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional`                                                                                    |
+| DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional` (done, batch 1)                                                                    |
 | DP: common shapes (`dynamic-programming-shapes`)       | pattern        | `dp-grids`, `dp-knapsack`, `dp-two-sequences`; a sentence each from `dp-intervals`, `dp-state-machines` |
 | Sorting (`sorting`)                                    | algorithm      | `merge-sort`, `quicksort-quickselect`, `bucket-counting-sort` (counting sort as prose, no code)         |
 | Breadth-first search (`breadth-first-search`)          | algorithm      | `graph-bfs`, `tree-bfs`                                                                                 |
@@ -120,9 +120,10 @@ The prose, tables included, is at most 1,150 words; code blocks don't count
 `src/lib/markdown.mjs`). The same count, eager through the build-time `?words`
 view, gives the entry page's "N min read" label (230 words a minute,
 `readingMinutes` in `src/lib/reading-time.ts`). An intro
-paragraph before `## Prerequisites` is fine. `hash-map.md`, `two-pointers.md`
-and `binary-search.md` are the reference examples for each kind, rewritten
-first in the migration. The page builds its "On this page" list from these headings with
+paragraph before `## Prerequisites` is fine. `dynamic-programming.md` is the
+reference example on the new template; until each kind has one of its own,
+copy its voice, length and comment style and take the headings from the
+template above. The page builds its "On this page" list from these headings with
 `h2Headings`, as a case study does.
 
 ## Code pairs and the code files

@@ -19,7 +19,7 @@ the input.
 
 ## Prerequisites
 
-- [Dynamic Programming: One Dimension](/dsa/dp-one-dimensional): the vocabulary
+- [Dynamic Programming: Memoization and Tabulation](/dsa/dynamic-programming): the vocabulary
   used throughout (subproblem, recurrence, base case, table) and the idea that
   a bottom-up table has to be filled in an order where every entry's inputs are
   already written. Here the table has two indices instead of one, and getting
@@ -170,7 +170,7 @@ bracket an expression or to merge a row of piles one pair at a time.
 
 The signal is that the subproblem is a pair of positions, not one, and that
 the pieces are contiguous. If the subproblem is "the first `i` items", that is
-[one-dimensional DP](/dsa/dp-one-dimensional). If the input has no useful
+[one-dimensional DP](/dsa/dynamic-programming). If the input has no useful
 contiguous structure, or the answer can be built by one greedy pass, interval
 DP is more machinery than the problem needs. The cost is also a signal: a
 table over all ranges is n² cells, and trying every split makes it n³, so this

@@ -19,7 +19,7 @@ trades.
 
 ## Prerequisites
 
-- [Dynamic Programming: One Dimension](/dsa/dp-one-dimensional): the idea of a
+- [Dynamic Programming: Memoization and Tabulation](/dsa/dynamic-programming): the idea of a
   recurrence (an answer built from answers to smaller versions) and of keeping
   only a few variables instead of a whole table. House robber there is already
   a two-state machine: `best` is the best total so far (which may include the

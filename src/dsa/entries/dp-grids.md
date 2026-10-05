@@ -15,7 +15,7 @@ filling in a table.
 
 ## Prerequisites
 
-- [Dynamic Programming: One Dimension](/dsa/dp-one-dimensional): this entry
+- [Dynamic Programming: Memoization and Tabulation](/dsa/dynamic-programming): this entry
   reuses its vocabulary without re-teaching it. A **subproblem** is a smaller
   version of the question, a **recurrence** is the rule that builds a
   subproblem's answer from smaller ones, and **tabulation** fills a table of

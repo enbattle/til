@@ -46,9 +46,9 @@ Python tests never ran.
 
 ## Stage 1 — Draft the code, its tests, then the entry
 
-Write it yourself, directly, as `add-topic` does. Read the reference entry for
-the kind first (docs/dsa.md's "Templates" names one per kind), with its code
-files: they set the length, the voice and how comments carry the reasons.
+Write it yourself, directly, as `add-topic` does. Read the reference entry
+first (docs/dsa.md's "Templates" names it), with its code files: it sets the
+length, the voice and how comments carry the reasons.
 Read the Writing Standard's "Case studies and DSA entries" section too: it
 sets the five-minute budget and the voice.
 

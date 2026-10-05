@@ -105,7 +105,7 @@ with a rule that rejects some combinations of them. If the rule lets you throw
 a partial answer away early, as the target does in combination sum, the search
 gets much smaller than the full tree. If the question asks only for the best
 answer, or for a count, and overlapping parts of the search repeat the same
-work, a [dynamic programming](/dsa/dp-one-dimensional) table usually does
+work, a [dynamic programming](/dsa/dynamic-programming) table usually does
 better. Backtracking is the choice when the answers themselves are wanted.
 
 ## Walkthrough
