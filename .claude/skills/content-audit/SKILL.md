@@ -1,6 +1,6 @@
 ---
 name: content-audit
-description: Sweep published topic(s) under src/content/**/*.md, System Design case studies under src/system-design/case-studies/*.md, and DSA entries under src/dsa/entries/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic, case study and DSA entry (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic, case study or DSA entry. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics, case studies or DSA entries "sound AI-written," or a quality check or revision of one specific already-published topic, case study or DSA entry (not a brand-new topic being drafted — that's add-topic's job — not a brand-new case study — that's add-case-study's job — not a brand-new DSA entry — that's add-dsa-entry's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
+description: Sweep published topic(s) under src/content/**/*.md, System Design case studies under src/system-design/case-studies/*.md, and DSA entries under src/dsa/entries/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic, case study and DSA entry (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic, case study or DSA entry. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics, case studies or DSA entries "sound AI-written," or a quality check or revision of one specific already-published topic, case study or DSA entry (not a brand-new topic being drafted — that's add-topic's job — not a brand-new case study — that's add-case-study's job — not a brand-new DSA entry — that's add-dsa-entry's job — not a rewrite of a case study or DSA entry to the current five-minute template, or a merge of DSA entries, which add-case-study and add-dsa-entry own — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
 ---
 
 # Content audit
@@ -49,8 +49,9 @@ call — by section is the natural split (mirrors how this repo's own
 first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
 section is unusually large. The case studies get batches of their
-own, split so each agent can read its share in full (each is 5,000–8,000
-words, so about three per agent); check 4 below applies to them. The DSA
+own, split so each agent can read its share in full (about five per agent,
+with their `.d2` sources; a case study still on the old 6,000-word template
+needs about three per agent); check 4 below applies to them. The DSA
 entries get batches of their own too, about five entries per agent, since each
 comes with four code and test files under `src/dsa/code/<slug>/`; check 6
 below applies to them.
@@ -102,14 +103,20 @@ and this instruction, close to verbatim:
 > passage that walks through how a topic works instead of saying what the
 > choice buys and costs in this design, then linking. Recompute every
 > estimate line by line and flag arithmetic that's wrong or doesn't follow
-> from the stated requirements; flag a deep dive that picks an option without
-> comparing at least one alternative and its cost; flag a diagram (read the
-> `.d2` source under `src/system-design/diagrams/`) that disagrees with the
-> prose; and flag any claim about how a specific named company builds its
-> system. Check the `At a glance` section against the body: every figure in
-> it must match, each decision and follow-up must be what the body argues,
-> and each in-page link must point to the section that covers it. Read the
-> linked topic when deciding.
+> from the stated requirements; flag a decision that picks an option without
+> saying why the alternative a reader would suggest loses here; flag a diagram
+> (read the `.d2` source under `src/system-design/diagrams/`) that disagrees
+> with the prose; and flag any claim about how a specific named company builds
+> its system. Check each follow-up answer against the decisions and numbers
+> above it. Read the linked topic when deciding.
+>
+> **4b. Case studies and DSA entries — are they digestible?** Hold each to
+> docs/writing-standard.md's "Case studies and DSA entries" section. Flag a
+> passage that reads as a lecture to sit through rather than someone talking
+> to the reader, an edge case or exception that spends words without changing
+> a decision, a claim compression made false (an absolute "never" or "always"
+> the design doesn't deliver), and a page a reader would finish unable to
+> defend its main choice.
 >
 > **5. Systems topics only (skip for other sections and case studies) —
 > is the closing `## Where you'll meet this` section general and true?**
@@ -126,7 +133,9 @@ and this instruction, close to verbatim:
 > every claim the prose makes about that code (what it returns, its edge
 > cases, its complexity) against the code files and their tests, not only
 > the chunk quoted in the markdown, and recompute every worked example.
-> Flag a walkthrough that narrates what a line does without saying why.
+> Flag a walkthrough or code comment that narrates what a line does without
+> saying why, and a tricky line (a boundary, a loop direction) with no
+> comment giving its reason.
 >
 > Your batch: <Stage 1's file list for this batch>
 

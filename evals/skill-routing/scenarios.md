@@ -272,13 +272,15 @@ wrong estimate or a one-sided deep dive.
 
 **Expected:** `content-audit` scoped to that one file
 **Why:** The case study already exists, and `add-case-study`'s description
-says it is not for editing an existing case study's prose quality (that's
-`content-audit`). An independent read of one published file against the
+says it is not for checking an existing case study's prose quality (that's
+`content-audit`); tightening the writing keeps the page's shape, so it isn't
+a rewrite to the current template (SR-19). An independent read of one published file against the
 Writing Standard, including whether its claims hold, is `content-audit`'s
 single-file scope. The prompt names no specific fix and asks for claims to be
 checked, so the direct-edit carve-out does not apply.
 **Fails if:** rewritten directly in the same session (as SR-11), routed through `add-case-study` (that skill drafts a new file
-and its diagrams; it has no path for revising a published one) or `/feature`
+and its diagrams, or redrafts one to a new template; it has no path for
+polishing a published one in place) or `/feature`
 (no app behavior involved).
 
 ---
@@ -320,3 +322,37 @@ tests that reach the edge cases, a walkthrough that explains why).
 that skill's review never looks at code or tests), routed to `/feature` (no
 app code changes, so a spec and locked tests would be ceremony), or written
 directly with no independent review of the code and its tests.
+
+---
+
+### SR-19 — rewriting a case study to the current template (trap)
+
+> Rewrite the ride-sharing case study so it fits the new five-minute format.
+
+**Expected:** `add-case-study`
+**Why:** A rewrite to the current template is a new draft of the whole page
+(new headings, three decisions, the word budget), which `add-case-study`'s
+description and Stage 0 name as its job, with the case-study checklist and an
+independent review. `content-audit`'s description hands template rewrites to
+the add skills; it checks the quality of a page that keeps its shape.
+**Fails if:** routed to `content-audit` (its review has no template or
+budget check and no drafting stage), to `/feature` (the template's test
+changes in a separate run; this request is content), or rewritten directly
+with no independent review.
+
+---
+
+### SR-20 — merging DSA entries (trap)
+
+> Merge the six dynamic programming entries in DSA into the two the docs plan
+> for.
+
+**Expected:** `add-dsa-entry`
+**Why:** `add-dsa-entry`'s description and Stage 0 cover merging entries:
+the new entries are drafted with their code and tests, the old entries and
+code folders are deleted, links are repointed, and a fresh reviewer checks
+the result. docs/dsa.md's migration table names the two entries and what they
+absorb.
+**Fails if:** routed to `content-audit` (it doesn't draft code or tests),
+to `/feature` (no change to the DSA pages or loader), or done directly with no
+independent review of the new code.

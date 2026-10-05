@@ -357,15 +357,22 @@ following the lockfile, or a bug fix shipping as a patch, an error).
 ## Case-study scenarios (`add-case-study`)
 
 These test `add-case-study`'s Stage 3 review instead of `add-topic`'s. They
-share one fabricated base draft, a small Pastebin case study written to the
-case-study template, so that each scenario differs from the clean control by
-exactly the planted problem. Build a scenario's draft by taking the base draft
-below and applying that scenario's replacement verbatim; give the reviewer the
+share one fabricated base draft, a Pastebin case study written to the
+five-minute case-study template (docs/case-studies.md, "The template is
+enforced"), so that each scenario differs from the clean control by exactly
+the planted problem. Build a scenario's draft by taking the base draft below
+and applying that scenario's replacement verbatim; give the reviewer the
 result, plus the base diagram source, exactly as `add-case-study` Stage 3
 would give a real draft and its `.d2` files. These are fixtures for this eval
-only: never write them into `src/system-design/`. The base is deliberately
-shorter than a real case study (compare `url-shortener.md`); a reviewer
-noting that it's thin is a true finding, recorded in notes and not graded.
+only: never write them into `src/system-design/`.
+
+The base is a full-length case study for the template: about 1,130 words of
+prose against the 1,150-word budget (words outside code blocks and image alt
+text, frontmatter excluded), with three decisions of about 135–145 words each.
+Each replacement changes one decision or one bullet, so every scenario stays
+inside the budget. A reviewer's true observations about what a five-minute
+page leaves out on purpose (a sequence diagram, database failover detail) go
+in the run's notes and aren't graded.
 
 There's no **Section** here: give the reviewer the titles and slugs of the
 real case studies in `src/system-design/case-studies/` for its
@@ -373,308 +380,159 @@ near-duplicate check, as the skill does.
 
 ### Base draft (the CS-03 control, verbatim)
 
-```markdown
+````markdown
 ---
 title: Design a Pastebin (like Pastebin.com)
-summary: Keeping a year of text snippets behind short links, and why the text itself belongs somewhere other than the database.
+summary: A year of text snippets behind links too long to guess in practice, with the text in an object store and expiry checked on every read.
 date: 2026-09-28
 order: 17
 ---
 
-A pastebin lets someone paste a block of text, such as a log excerpt or a
-config file, and get back a link they can share. Opening the link shows the
-text. This is one plausible design for a service like Pastebin.com, not a
-description of how any company built theirs.
-
-## At a glance
-
-**Requirements.**
-
-- Create a paste of up to 512 KB and get back a link that's hard to guess.
-- Read a paste by opening its link; there are no accounts.
-- Expiry of 1 to 365 days (default 365), with expired text deleted within a
-  day.
-- 1 million new pastes a day, 10 reads for each, and reads under 500 ms at
-  p99.
-
-**Key numbers.**
-
-- About 120 creates/s at peak (1,000,000 ÷ 86,400 ≈ 12, 10× for peak).
-- About 3.65 TB of text (1,000,000 × 10 KB = 10 GB a day, × 365).
-- 4 GB of cache for the most-read 20% of a day's 2 million pastes.
-- About 73 GB of metadata (200 bytes × 365 million pastes).
-- 62⁷ ≈ 3.5 trillion IDs, so about 1 guess in 9,600 finds a paste.
-
-**Key decisions.**
-
-- Contents in an object store: the database holds 73 GB of metadata instead
-  of 3.65 TB of text ([contents](#deep-dive-where-paste-contents-live)).
-- Expiry checked on every read and swept daily: exact expiry, with storage
-  reclaimed within a day ([expiry](#deep-dive-expiring-pastes)).
-- IDs from a counter and a keyed encryption step: never reused, and random to
-  anyone without the key ([data model](#data-model)).
-
-**Likely follow-ups.**
-
-- What removes an object whose row insert failed? A lifecycle rule deleting
-  anything older than 366 days ([contents](#deep-dive-where-paste-contents-live)).
-- Why delete the object before the row? A failure in between leaves an
-  expired row the next run finds again ([expiry](#deep-dive-expiring-pastes)).
-- What if the cache node is lost? Reads slow down but still beat 500 ms, at
-  around 200 ms for a slow miss ([failure modes](#failure-modes-and-bottlenecks)).
-- How is guessing held back? An address with 100 `404`s in an hour is blocked
-  for the rest of it, about one paste found every four days; only a longer ID
-  slows a botnet ([failure modes](#failure-modes-and-bottlenecks)).
-
-The components are drawn under
-[High-level architecture](#high-level-architecture).
+You paste a log excerpt and get back a link like `https://paste.example/aZ3kQ9xT2m`.
+It looks like a URL shortener with bigger values, and the interest is in what
+bigger values cost: terabytes of text the database never queries, an expiry
+that has to actually delete things, and a link that is the paste's only lock.
+This is one plausible design for a service like Pastebin.com, not a description
+of how any company built theirs.
 
 ## Requirements
 
-- **Create a paste** from up to 512 KB of text, and get back a link such as
-  `https://paste.example/aZ3kQ9x`.
-- **Read a paste** by opening its link. There are no accounts, so the link is
-  the only thing keeping a paste from strangers, and it must be hard to guess.
-- **Expiry:** the creator picks how many days a paste lasts, from 1 to 365;
-  the default, and the maximum, is 365. After that it can't be read, and its
-  text is deleted within a day.
+- **Create** a paste of up to 512 KB of text and get back a link.
+- **Read** a paste by opening its link. There are no accounts, so the link must
+  be hard to guess.
+- **Expiry** of 1 to 365 days (default 365). After that the paste can't be
+  read, and its text is deleted by the next daily cleanup.
+- **Scale:** 1 million new pastes a day, and 10 reads for each one.
+- **Latency:** reads under 500 ms at p99 (the time 99% of reads beat), measured
+  at our servers. A person opens it by hand, so half a second is fine.
 
-Out of scope: accounts, editing a paste, syntax highlighting and search.
+Out of scope: accounts, editing and search.
 
-Non-functional: 1 million new pastes a day, 10 reads for every paste
-created, and reads answered in under 500 ms at the 99th percentile (p99: the
-time 99% of reads beat), measured at our servers. A paste is a page someone opens
-by hand, not an API called in a loop, so half a second is acceptable.
+## Key numbers
 
-## Back-of-the-envelope estimates
+These size the app servers, the object store, the database and the cache. A
+day has 86,400 seconds; peaks are ten times the average; 1 KB = 1,000 bytes.
 
-A day has 86,400 seconds, and a peak of ten times the average is a common
-planning assumption. Sizes are decimal: 1 KB is 1,000 bytes.
-
-- Writes: 1,000,000 ÷ 86,400 ≈ 12 per second on average, about 120 at peak.
-- Reads: 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
+- **Writes:** 1,000,000 ÷ 86,400 ≈ 12 per second on average, about 120 at
   peak.
-- Storage: assume an average paste of 10 KB, far below the 512 KB limit
-  since most pastes are a screen or two of text. 1,000,000 × 10 KB = 10 GB a
-  day. No paste outlives 365 days, so storage levels off at about
-  10 GB × 365 ≈ 3.65 TB, and less if many pastes expire sooner.
-- Cache: assume a day's 10 million reads land on about 2 million distinct
-  pastes, five reads each on average, and that they're skewed the familiar
-  80/20 way. A paste linked from a busy forum thread is read thousands of
-  times while most are read once or twice, so the most-read 20% of pastes
-  draw about 80% of reads. Caching everything read in a day would take
-  2,000,000 × 10 KB = 20 GB. Caching the most-read 20% takes
-  0.2 × 2,000,000 = 400,000 pastes, and at 10 KB each, 4 GB, which fits in
-  one server's memory.
+- **Reads:** 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
+  peak.
+- **Object store:** assume an average paste of 10 KB. That's 1,000,000 × 10 KB
+  = 10 GB a day, and since nothing outlives 365 days, 10 GB × 365 ≈ 3.65 TB in
+  all.
+- **Database:** about 200 bytes of metadata a paste × 365 million live pastes
+  ≈ 73 GB.
+- **Cache:** assume a day's 10 million reads land on 2 million pastes, and the
+  most-read 20% draw 80% of reads. Keeping those 0.2 × 2,000,000 = 400,000 in
+  memory ([caching](/systems-and-infrastructure/caching)) takes 400,000 ×
+  10 KB = 4 GB.
 
-Writes and reads are both modest. The number that shapes the design is
-storage: terabytes of text.
-
-## Data model
-
-Two kinds of data with different shapes. **Metadata** is small and
-structured: the paste's ID, creation time and `expires_at`, about 200 bytes a
-paste once the database's per-row overhead and indexes are counted.
-**Contents** are the text itself: large, opaque, and only ever read whole.
-Metadata goes in a relational database (one that keeps rows in tables and is
-queried with SQL), in a table whose **primary key** is the paste ID. The
-primary key is the column that identifies each row: the database refuses two
-rows with the same one, and keeps an
-[index](/systems-and-infrastructure/database-indexing) on it, a lookup
-structure that finds a row without reading the others. A second index, on
-`expires_at`, finds expired rows the same way. Contents go in an **object
-store**, a service that keeps each blob of bytes under a key, hands it back by
-that key, and charges per gigabyte stored and per request (the first deep dive compares this with
-keeping them in the table).
-
-A paste ID is seven base62 characters (the digits and the lower- and
-upper-case letters), so there are 62⁷ ≈ 3.5 trillion possible IDs. They come
-from the scheme the [URL shortener](/system-design/url-shortener) works
-through. A counter, kept as one row in the metadata database, hands out
-blocks of 10,000 numbers to each app server, which uses them from memory.
-Each number then goes through an encryption step over the range 0 to
-62⁷ − 1, keyed with a secret that only the app servers hold, and is written
-as seven characters, padded with leading zeros. The counter never repeats a
-number and the encryption is one-to-one, so an ID is never reused, and 3.5
-trillion IDs last over 9,000 years at 365 million a year. Without the key the
-IDs look random, so guessing one is no better than picking at random: with at
-most 365 million live pastes, 365,000,000 ÷ 62⁷ ≈ 0.01%, about 1 guess in
-9,600, finds a paste. The failure modes cover how fast one address may guess.
-
-## API design
-
-- `POST /pastes` with `{ "content": "...", "expires_in_days": 7 }` returns
-  `201 Created` and
-  `{ "id": "aZ3kQ9x", "url": "https://paste.example/aZ3kQ9x" }`. Leaving out
-  `expires_in_days` means 365. It returns `400 Bad Request` if
-  `expires_in_days` isn't 1 to 365, `413 Content Too Large` over 512 KB, and
-  `429 Too Many Requests` over the per-address limit in the failure modes.
-- `GET /aZ3kQ9x`, the shared link itself, returns `200 OK` with the text,
-  `404 Not Found` for an unknown ID, or `410 Gone` for a paste that has
-  expired but that the daily cleanup job hasn't deleted yet. After the job
-  deletes it, at most a day after expiry, nothing of the paste is kept and its
-  ID answers `404`; either way, the client learns the paste is gone.
+Traffic is small; the 3.65 TB of text is what shapes the design.
 
 ## High-level architecture
 
 ![A client calls a load balancer, which forwards to app servers. To read a paste, the app servers check a cache first; on a miss they read the metadata database and the object store and fill the cache. To create one, they store its contents in the object store and its metadata in the metadata database. A daily cleanup job deletes expired pastes' contents from the object store and their rows from the metadata database.](/diagrams/pastebin/architecture.svg)
 
-- The **load balancer** receives every request and spreads them across the
-  app servers.
-- The **app servers** run the service's code. They keep nothing between
-  requests, so any of them can handle any request, and adding one adds
-  capacity.
-- The **cache** holds recently read pastes in memory, keyed by ID, the
-  pattern [caching](/systems-and-infrastructure/caching) covers. Memory
-  answers in well under a millisecond, so a read the cache can answer (a
-  **hit**) skips the database and the object store. It's capped at the
-  estimate's 4 GB, and when full it evicts the least recently used entry
-  (**LRU**), which keeps roughly the most-read pastes, since a popular paste
-  is read again before it reaches the back. The share of reads that hit is
-  the **hit rate**; the 80/20 assumption puts it at about 80%, a little less
-  in practice, since a paste's first read always misses and LRU only
-  approximates the most-read 20%.
-- The **metadata database** and **object store** are the two stores from the
-  data model, and the **daily cleanup job** is in the expiry deep dive.
+Follow a reader opening `aZ3kQ9xT2m`. The **load balancer** spreads requests
+across interchangeable **app servers**, and one asks the **cache**: 4 GB of
+memory that evicts the least recently used entry (LRU) when full. A hit answers in a
+few milliseconds, after checking `expires_at`. On a miss, the app server reads
+the row from the **metadata database**, fetches the text from the **object
+store** (a service that stores blobs of bytes by key), and fills the cache with
+a TTL (time to live) of a day, cut short at `expires_at`. That costs tens of
+milliseconds, occasionally a couple of hundred, still inside 500 ms. A create
+writes the text to the object store first, then the row, so a live row never
+points at missing text.
 
-A read goes to the load balancer, then an app server, which asks the cache
-for the paste. A cache entry holds the contents and `expires_at`, and on a
-hit the app server checks `expires_at` before answering. On a miss it reads
-the metadata row (answering `404` if there's none and `410` if it has
-expired), fetches the contents from the object store, and puts both in the
-cache with a **TTL** (time to live: how long the cache keeps the entry) of
-one day, cut short to `expires_at` if that comes sooner. Without the cap,
-those entries would add up to everything read in a day, about 20 GB. A create
-writes the contents to the object store first, then inserts the metadata
-row, so a live row never points at contents that don't exist.
+## API and data model
 
-**Checking the latency target.** A hit takes a few milliseconds. A miss adds
-a lookup by primary key in the database, a few milliseconds more, and an
-object-store fetch, which for a small object typically takes tens of
-milliseconds and can reach a couple of hundred. With about one read in five
-missing, the slowest 1% of reads are all misses, so the 500 ms target holds
-if 95 in 100 misses beat it (1% of reads is 5% of the misses). At around
-200 ms for a slow miss, they do, with room to spare.
+- `POST /pastes` with `{ "content": "...", "expires_in_days": 7 }` returns
+  `201` and `{ "id": "aZ3kQ9xT2m", "url": "https://paste.example/aZ3kQ9xT2m" }`; `400`
+  for an expiry outside 1 to 365, `413` over 512 KB, `429` over the per-address
+  [rate limit](/systems-and-infrastructure/rate-limiting).
+- `GET /aZ3kQ9xT2m` returns `200` with the text, `410 Gone` once it has expired,
+  and `404` for an unknown ID, including one already swept.
 
-## Deep dive: where paste contents live
-
-**In the database row.** One write, one read, and a single system to back
-up. The cost is that the database carries up to 3.65 TB of text that it never
-queries, which makes its backups, copies and restores slow and its disks
-expensive, since database storage costs far more per gigabyte than object
-storage.
-
-**In an object store.** Storage is cheap per gigabyte and grows without
-limit, though each upload is billed as a request too: at list prices, a
-million creates a day costs more in requests than 3.65 TB costs to store. The
-database stays small, at 200 bytes × 365 million pastes (a year's worth) ≈
-73 GB. The cost is a second system on every create, an extra network
-request on every cache miss, and two writes that can half-succeed: contents
-stored but the row insert failed, which leaves an orphaned object that no row
-points at. Finding those by comparing the store's keys with the table would
-mean listing about 365 million keys, 365,000 list calls a day at 1,000 keys a
-call, and it would race creates in flight, whose object exists a moment
-before their row. Instead, a **lifecycle rule** on the object store, a
-setting that deletes every object older than a given age, removes anything
-older than 366 days. No paste lives longer than 365 days, so the rule never
-touches a live one, and an orphan costs at most a year of storage.
-
-The object store wins here because of what the text would do to the database:
-3.65 TB that nothing queries, in every backup, copy and restore. The two
-object-store bills are small either way. The cache hides the extra request for
-popular pastes, and the latency check above already counts it for the rest.
-
-## Deep dive: expiring pastes
-
-Every paste has an `expires_at`, so expiry has two jobs: stop serving a paste
-once that time passes, and delete it so storage stays at a year's worth.
-
-**Check on read.** The app server compares `expires_at` with the current time
-on every read, hit or miss, and answers `410` if it has passed; a cache
-entry's TTL, capped at `expires_at`, also drops it from memory at that
-moment. It's exact and costs one comparison, but on its own it deletes
-nothing: expired text would pile up past the 3.65 TB estimate, and the
-requirement that it's deleted would go unmet.
-
-**A background sweep.** A daily job uses the index to find rows whose
-`expires_at` has passed, and for each one deletes the object and then the
-row. Once the service has run for a year, that's about a million pastes a
-day, the same rate they're created. It reclaims storage, but on its own
-leaves up to a day in which an expired paste could still be served.
-
-Doing both gives exact expiry on read and storage reclaimed within a day.
-Deleting the object before the row means a failure between the two leaves an
-expired row with no object. Reads of it answer `410` from the row without
-fetching anything, and the next run finds the row again, deletes the
-already-missing object, which is harmless, and removes the row. The other
-order would leave an object that no row points at, which only the 366-day
-lifecycle rule would ever remove.
-
-## Failure modes and bottlenecks
-
-**The cache node is lost.** Every read misses until the cache refills: about
-1,160 reads a second at peak, each a primary-key lookup in the database and a
-fetch from the object store. That load is well within what one relational
-database and an object store serve, and at around 200 ms a slow miss still
-beats the 500 ms target, so reads get slower but keep working while popular
-pastes fill the cache again. The per-address counts in the abuse limits
-below, kept in the cache, start over.
-
-**The metadata database is unavailable.** Creates fail, since there's nowhere
-to insert the row, and so do cache misses. Cache hits still work, because an
-entry holds the contents and `expires_at`, so about four reads in five keep
-being answered. A standby copy of the database, kept up to date and promoted
-when the main one fails, keeps that window short.
-
-**The cleanup job stops running.** Reads still answer `410` on time, so
-nothing looks wrong, but expired text is no longer deleted within a day, as
-the requirements promise; rows pile up, and the lifecycle rule removes the
-contents only at 366 days. The job records when it last finished, and an
-alert fires if that was more than 26 hours ago.
-
-**The object store is slow.** Cached pastes still load and uncached ones slow
-down. The latency check assumed a slow miss takes around 200 ms and about one
-read in five misses, so watch both numbers: the object store's fetch latency,
-and the hit rate, since a lower hit rate puts more reads on the slow path.
-
-**Abuse.** Anyone can create pastes, so creation is limited per address with
-[rate limiting](/systems-and-infrastructure/rate-limiting), counted in the
-cache that every app server shares: 10 creates a minute per address. For
-IPv6, an address means a /56 prefix (the first 56 bits), the block an
-internet provider commonly gives one home, so a household can't rotate
-through its own addresses to dodge the limit. An address at the limit makes one
-create every 6 seconds, 1/720 of the 120-a-second peak, so no single sender
-can flood the service. The cost falls
-on people who share one address, such as an office or school behind one
-router that translates many devices to a single public address (NAT): they
-share the limit too and see `429` sooner. Reads get a limit aimed at
-guessing: an address that gets 100 `404`s in an hour is blocked for the rest
-of that hour, which holds it to about 100 × 0.01% ≈ 0.01 pastes found an
-hour, one every four days. A botnet (many machines an attacker controls)
-guessing from 10,000 addresses gets that
-rate from each, about 100 pastes an hour, and no per-address limit stops it;
-only a longer ID does. An eighth character would make a guess about 1 in
-600,000 (62⁸ ÷ 365,000,000), at the cost of a longer link. This design keeps
-seven, since a paste link is meant to be easy to share, and a creator who
-needs privacy shouldn't rely on an unlisted link.
-
-## Trade-offs
-
-- **Object storage for contents.** It keeps 3.65 TB of text out of the
-  database and is cheap per gigabyte; the price is a second system on every
-  create and a lifecycle rule to catch orphans.
-- **Expiry enforced twice**, by the check on read and by the daily sweep.
-  That's one more job to run and alert on, and it's what gives both exact
-  expiry and storage that stops growing at a year of pastes.
-- **Keyed encryption for IDs** rather than a scramble anyone could undo,
-  which puts a secret key on the app servers; an undoable scramble would
-  let anyone list the IDs actually issued. Seven characters rather than six
-  make every link one character longer, and in return a guess finds a paste
-  about once in 9,600 tries instead of once in 156.
-- **`404` after deletion.** A deleted paste's ID answers `404`, not `410`. An exact answer would
-  mean keeping a record of every expired ID, and here nothing of an expired
-  paste is kept.
+```sql
+CREATE TABLE pastes (
+  id          CHAR(10)  PRIMARY KEY,  -- also the object's key in the store
+  created_at  TIMESTAMP NOT NULL,
+  expires_at  TIMESTAMP NOT NULL
+);
+CREATE INDEX pastes_by_expiry ON pastes (expires_at);
 ```
+
+What matters is what the row leaves out: the text. The paste ID is the
+**primary key**, the column the database keeps unique and
+[indexed](/systems-and-infrastructure/database-indexing), and the object's key
+too. The index on `expires_at` lets the cleanup job find expired rows without a
+scan. So why not keep the text in the row?
+
+## Decision: where paste contents live
+
+The text goes in the object store. The row is the obvious alternative, and
+simpler: one write, one read, one system to back up. Here it loses on size. The
+database would carry 3.65 TB of text it never queries beside 73 GB of
+metadata, so every backup, copy and restore moves about fifty times the data,
+on pricier storage.
+
+The price is a second write on every create, and two writes can half-succeed:
+the text lands, the row insert fails, and no row points at the object. A
+**lifecycle rule**, a store setting that deletes objects past an age, removes
+anything older than 366 days, an age no live paste reaches.
+
+**Rule of thumb.** Large blobs that are only ever read whole belong in an
+object store; the database keeps the small rows you query.
+
+## Decision: expiring pastes
+
+Expiry has two jobs: stop serving a paste on time, and delete it. The app
+server does the first, comparing `expires_at` with the clock on every read,
+hit or miss. The **daily cleanup job** does the second: it walks the
+`expires_at` index, about a million rows a day, deleting each object, then its
+row.
+
+Why not let the sweep do both? It runs daily, so an expired paste could be
+served for up to a day longer; the read check closes that gap for one
+comparison. And deleting the object first means a crash in between leaves an
+expired row, which reads answer `410` from and the next run finds again.
+
+**Rule of thumb.** When serving must stop on time but deletion can lag, enforce
+the deadline on read and reclaim storage in the background.
+
+## Decision: paste IDs
+
+An ID is ten random base62 characters (digits and both cases of letters):
+62¹⁰ ≈ 840 quadrillion. The app server draws one and writes the text only if
+that key is absent from the store (a conditional put), then inserts the row.
+With 365 million live pastes, a clash comes about once in 2.3 billion creates
+and just means drawing again.
+
+Why not reuse the [URL shortener](/system-design/url-shortener)'s seven
+characters? There, short codes are the point. Here the link is the only lock,
+and at seven characters 365 million live pastes fill about one ID in 9,600: a
+botnet making a million guesses an hour would find about a hundred private
+pastes an hour. Nobody types a paste link, so three more characters cost
+nothing and push a guess to about one in 2.3 billion.
+
+**Rule of thumb.** When a link is the only lock, size the ID space so guessing
+is hopeless; length is cheaper than adding accounts.
+
+## Likely follow-ups
+
+- **How do you stop someone guessing links?** An address with 100 `404`s in
+  an hour is blocked for the rest of it, so a botnet of 10,000 machines gets a
+  million guesses an hour. At one in 2.3 billion, that finds a paste about
+  once every three months.
+- **What stops one sender filling the store?** A cap on bytes: 50 MB of new
+  text per address a day is 0.5% of the 10 GB.
+- **What if the cache node is lost?** Every read takes the miss path until the
+  cache refills: slower, but inside 500 ms.
+- **What if the metadata database goes down?** Creates and misses fail; cached
+  pastes keep loading, since an entry holds `expires_at` with the text.
+- **What if the cleanup job stops?** Reads still answer `410`, but text piles
+  up, and the lifecycle rule still removes it at 366 days.
+````
 
 Base diagram source (`src/system-design/diagrams/pastebin/architecture.d2`,
 for every scenario):
@@ -706,13 +564,20 @@ cleanup -> db: "then delete expired rows"
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
 **Planted violation (the only one):** the average read rate is off by ten:
 10,000,000 ÷ 86,400 is about 116, not 1,160, and the peak derived from it is
-ten times too high as well. The base draft's `At a glance` section leaves
-the read rate out of its key numbers on purpose, so this error appears only in
-the estimates and the scenario stays as hard as before the section existed.
-**Replacement in the base draft:** replace the "Reads" bullet with:
+ten times too high as well. The base draft states the read rate only in this
+bullet, so the wrong figures appear nowhere else and nothing else on the page
+changes.
+**Replacement in the base draft:** in `## Key numbers`, replace the bullet
 
 ```markdown
-- Reads: 10,000,000 ÷ 86,400 ≈ 1,160 per second on average, about 11,600
+- **Reads:** 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
+  peak.
+```
+
+with:
+
+```markdown
+- **Reads:** 10,000,000 ÷ 86,400 ≈ 1,160 per second on average, about 11,600
   at peak.
 ```
 
@@ -725,77 +590,128 @@ while accepting the numbers.
 
 ---
 
-### CS-02 — a deep dive that picks without comparing
+### CS-02 — a decision that names no alternative
 
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
-**Planted violation (the only one):** the first deep dive states the choice
-(object storage) and how to use it, but never compares it with keeping the
-contents in the database or says what the choice costs.
+**Planted violation (the only one):** `## Decision: where paste contents live`
+keeps the choice (the object store), how it's used (text first, then the row;
+the lifecycle rule for orphans) and its rule of thumb, but never names the
+alternative a reader would suggest (keeping the text in the database row) or
+says why it loses here (3.65 TB the database never queries, in every backup,
+copy and restore, on pricier storage). The other two decisions are unchanged.
 **Replacement in the base draft:** replace everything between
-`## Deep dive: where paste contents live` and `## Deep dive: expiring pastes`
+`## Decision: where paste contents live` and `## Decision: expiring pastes`
 (keeping both headings) with:
 
 ```markdown
-Paste contents go in an object store. On a create, the app server uploads the
-text under the paste's ID, then inserts the metadata row. On a cache miss, it
-reads the row, then fetches the object, and puts both in the cache. The cache
-keeps popular pastes in memory, so most reads never reach the object store. A
-**lifecycle rule** on the object store, a setting that deletes every object
-older than a given age, removes anything older than 366 days.
+The text goes in the object store, under the paste's ID. A create uploads the
+text first and then inserts the row; a cache miss reads the row, then fetches
+the object, and puts both in the cache. That leaves the object store holding
+the 3.65 TB of text and the database holding 73 GB of metadata.
+
+Two writes can half-succeed: the text lands, the row insert fails, and no row
+points at the object. A **lifecycle rule**, a store setting that deletes
+objects past an age, removes anything older than 366 days, an age no live
+paste reaches.
+
+**Rule of thumb.** Large blobs that are only ever read whole belong in an
+object store; the database keeps the small rows you query.
 ```
 
-**Expected finding:** flags that this deep dive picks object storage without
-comparing any alternative (keeping contents in the database row is the
-obvious one) and without saying what the choice costs (a second system, an
-extra request on a cache miss, two writes that can half-succeed), contrary to
-the checklist's "each deep dive compares at least two options." A reviewer may
-also note that the data model promises a comparison this deep dive doesn't
-make, or that Trade-offs and the expiry deep dive name costs (a second system,
-orphaned objects the lifecycle rule catches) the body never argues, or that
-the `At a glance` decision linking to this deep dive gives a reason the deep
-dive no longer argues; all are the same planted gap.
-**Fails if:** the review doesn't flag the missing comparison, or flags only
-the other deep dive.
+**Expected finding:** flags that this decision just announces its choice: it
+names no alternative (keeping the text in the row is the obvious one) and
+gives no reason in this design's numbers why that alternative would lose,
+contrary to the checklist's "each one names the choice, why in this design's
+numbers, the one alternative a reader would suggest and why it loses here." A
+reviewer may also note that the API and data model section ends by asking
+"So why not keep the text in the row?" and the decision never answers it, or
+that the rule of thumb no longer follows from an argument on the page; both
+are the same planted gap.
+**Fails if:** the review doesn't flag the missing alternative in this
+decision, or flags only one of the other two decisions.
 
 ---
 
 ### CS-03 — clean case study (false-positive control)
 
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
-**Planted violation:** none. The base draft, verbatim. Its estimates are
+**Planted violation:** none. The base draft, verbatim. Its figures are
 correct and each follows from a stated requirement or assumption
-(1,000,000 ÷ 86,400 ≈ 11.6; 10,000,000 ÷ 86,400 ≈ 115.7; 1,000,000 × 10 KB =
-10 GB; 10 GB × 365 = 3,650 GB; 10,000,000 ÷ 2,000,000 = 5 reads a paste;
-2,000,000 × 10 KB = 20 GB; 0.2 × 2,000,000 × 10 KB = 4 GB; 1% of reads ÷ 20%
-missing = 5% of misses; 200 B × 365,000,000 = 73 GB; 62⁷ = 3,521,614,606,208,
-which at 365,000,000 a year is about 9,648 years; 365,000,000 ÷ 62⁷ ≈ 0.0104%,
-1 in about 9,648, against 62⁶ ÷ 365,000,000 ≈ 156 for six characters;
-365,000,000 keys ÷ 1,000 a list call = 365,000 calls; 120 ÷ (10 ÷ 60) = 720;
-100 guesses × 0.0104% ≈ 0.0104 pastes an hour, one every 96 hours). IDs come
-from the URL shortener's counter-plus-keyed-encryption scheme, with the
-counter in the metadata database and the key on the app servers, and the
-guess odds are stated and rate-limited (per IPv4 address or IPv6 /56; a
-botnet's 100 finds an hour from 10,000 addresses and 62⁸ ÷ 365,000,000 ≈
-598,000 are stated, and the design says why it keeps seven characters). Retention is one rule (every paste
-expires within 365 days) that the check on read and the daily sweep enforce,
-with a 366-day lifecycle rule as the backstop for orphans; the sweep deletes
-the object before the row, so a failure leaves an expired row the next run
-finds again; expiry is checked on cache hits as well as misses; the cache is
-capped at 4 GB with LRU eviction; the API says when `410` gives way to `404`;
-the latency target is checked against the miss path; the failure modes cover
-the cache, the database, the cleanup job and the object store; both deep
-dives compare two options with their costs; and the diagram shows exactly the
-components the prose names (the counter is a row in the metadata database and
-the lifecycle rule a setting of the object store, not components); and the
-`At a glance` section has the four lead-ins in order, every figure in it
-matches the body, and every in-page link resolves to a heading id.
-**Expected finding:** no finding that is false of the draft. Real gaps, such
-as its thinness next to the reference case study or a missing sequence
-diagram, are acceptable and go in the run's notes.
+(1,000,000 ÷ 86,400 ≈ 11.6, about 12, and × 10 ≈ 116, "about 120" at peak;
+10,000,000 ÷ 86,400 ≈ 115.7, about 116, and × 10 ≈ 1,157, "about 1,160";
+1,000,000 × 10 KB = 10 GB a day; 10 GB × 365 = 3,650 GB; 365 million live
+pastes = 1,000,000 a day × 365 days, and 200 B × 365,000,000 = 73 GB;
+10,000,000 reads ÷ 2,000,000 pastes = 5 reads a paste; 0.2 × 2,000,000 =
+400,000 pastes, × 10 KB = 4 GB; (3,650 GB + 73 GB) ÷ 73 GB ≈ 51, "about fifty
+times the data"; the sweep's million rows a day matches the create rate; a
+366-day lifecycle rule against a 365-day maximum never reaches a live paste;
+62¹⁰ = 839,299,365,868,340,224 ≈ 840
+quadrillion; 62¹⁰ ÷ 365,000,000 ≈ 2.3 billion, so a random ID clashes "about
+once in 2.3 billion creates" and a guess finds a paste one time in about 2.3
+billion; at seven characters, 62⁷ = 3,521,614,606,208 and 62⁷ ÷ 365,000,000 ≈
+9,648, "about one ID in 9,600", and a million guesses an hour ÷ 9,648 ≈ 104,
+"about a hundred an hour"; 10,000 machines × 100 guesses = a million an hour,
+and 2.3 billion ÷ 1,000,000 ≈ 2,300 hours ≈ 96 days, "about once every three
+months"; 50 MB ÷ 10 GB = 0.5%, "0.5% of the 10 GB"; a miss at tens of milliseconds,
+occasionally a couple of hundred, is inside the 500 ms p99 target). IDs are
+ten random characters whose text is written with a conditional put that
+refuses an existing key, before the row, so a clash can't overwrite a live
+paste and no two pastes share an ID; the follow-ups say the per-address limit
+caps a 10,000-machine botnet at a million guesses an hour (10,000 × 100), and
+length makes those find a paste about once every three months. Each of the three
+decisions names its choice, the alternative a reader would suggest (the text
+in the row; the sweep alone; the URL shortener's seven characters) and why it loses in this
+design's numbers, and ends with a `**Rule of thumb.**` paragraph that follows
+from it. Expiry is checked on cache hits as well as misses; the sweep deletes
+the object before the row, so a crash leaves an expired row the next run
+finds again; the API says when `410` gives way to `404`; the cache is capped
+at 4 GB with LRU eviction and a TTL cut short at `expires_at`. Every term is
+defined at first use (p99, LRU, TTL, object store, primary key, lifecycle
+rule, base62); every catalog link (`caching`, `rate-limiting`,
+`database-indexing`, and the `url-shortener` case study) points to a page
+that exists and sits where its concept is used; the absolute claims hold ("no
+two pastes share an ID" follows from the conditional put, "never points at missing text" from writing the object before the row,
+"an age no live paste reaches" from the 365-day maximum); and the diagram
+shows exactly the components the prose names (the lifecycle rule is a setting
+of the object store, not a component), with the cleanup job's two deletes in
+the order the expiry decision gives.
+**Expected finding:** no finding that is false of the draft. Real gaps that
+a five-minute page leaves out on purpose, such as a sequence diagram or
+database failover detail, are acceptable and go in the run's notes.
 **Fails if:** the review reports a defect that isn't true of the draft: an
-arithmetic "error" in a correct line, a deep dive called one-sided when it
-compares two options, a diagram/prose mismatch that isn't there, or a correct
-technical statement called wrong.
+arithmetic "error" in a correct line, a decision called one-sided when it
+names its alternative and why it loses, a diagram/prose mismatch that isn't
+there, an absolute claim called unsupported when the page supports it, or a
+correct technical statement called wrong.
+
+---
+
+### CS-04 — a compression overclaim (trap for "compression overclaims")
+
+**Reviewed with:** `add-case-study`'s Stage 3 instruction.
+**Planted violation (the only one):** a follow-up answer claims that nobody
+can ever guess a link and that no limit is needed, while
+`## Decision: paste IDs` states that a guess finds a live paste about one time
+in 2.3 billion. Long random IDs make guessing very unlikely, not impossible,
+and the per-address limit the base draft's answer described is the second
+layer the planted answer drops.
+**Replacement in the base draft:** in `## Likely follow-ups`, replace the
+first bullet (`**How do you stop someone guessing links?**`, four lines) with:
+
+```markdown
+- **How do you stop someone guessing links?** You don't have to: the IDs are
+  ten random characters, so nobody can ever guess a valid link, and no limit
+  on reads is needed.
+```
+
+**Expected finding:** flags "nobody can ever guess a valid link" as an
+absolute claim the design doesn't deliver, against the page's own odds of
+about one in 2.3 billion a guess (a botnet making a million guesses an hour
+would still find one every few months), and that dropping the read limit
+removes the layer that caps a single address. Either half names the planted
+problem.
+**Fails if:** the review doesn't flag the absolute claim, or accepts it as
+supported by the ID length.
 
 ---
 
@@ -803,12 +719,15 @@ technical statement called wrong.
 
 These test `add-dsa-entry`'s Stage 3 review. Like the case-study scenarios, they
 share one fabricated base: a short Prefix Sums entry (a pattern) and its four
-code files, written to the template in `docs/dsa.md`. Build a scenario's
-files by taking the base and applying that scenario's replacements verbatim,
-then give the reviewer the entry and all four code files, exactly as
-`add-dsa-entry` Stage 3 would. These are fixtures for this eval only: never
-write them into `src/dsa/`. The base code and tests were run as written (4
-pytest and 3 vitest tests pass, and Prettier accepts the `.ts` files).
+code files, written to the template in `docs/dsa.md`, with the code's comments
+carrying the reasons and the walkthrough paragraphs connecting each step to
+the next. Build a scenario's files by taking the base and applying that
+scenario's replacements verbatim, then give the reviewer the entry and all
+four code files, exactly as `add-dsa-entry` Stage 3 would. These are fixtures
+for this eval only: never write them into `src/dsa/`. The base code and tests
+were run as written (6 pytest and 6 vitest tests pass, and Prettier accepts
+the `.ts` files), and the entry's prose, outside code fences and frontmatter,
+is 962 words.
 
 There's no **Section**: give the reviewer the titles and slugs of the real
 entries in `src/dsa/entries/` for its near-duplicate check, as the skill does.
@@ -827,178 +746,323 @@ kind: pattern
 
 ## Prerequisites
 
-None. This assumes you know what an array is and that its positions are
-numbered from 0.
+[Hash map](/dsa/hash-map), for the counting version at the end, which stores
+running totals and looks each one up in constant time on average. Otherwise
+you need only arrays, with positions numbered from 0.
 
 ## The idea
 
-Suppose you have an array of numbers and need the sum of many different
-stretches of it: positions 1 through 3, then 0 through 4, then 2 through 2.
+Say you have `nums = [3, 1, 4, 1, 5]` and someone keeps asking for the sum of
+a stretch of it: positions 1 through 3, then 0 through 4, then 2 through 2.
 Adding each stretch up from scratch costs one step per element in it, so a
-thousand questions about a long array repeat a lot of the same additions.
+thousand questions about a long array repeat the same additions over and over.
+Can you do the additions once?
 
-A **prefix sum** is the total of an array's first few elements. Build a second
-array, `prefix`, where `prefix[i]` is the sum of the first `i` elements, so
-`prefix[0]` is 0 (nothing added yet). For `nums = [3, 1, 4, 1, 5]`:
+You can. A **prefix sum** is the total of an array's first few elements. Build
+a second array, `prefix`, where `prefix[i]` is the sum of the first `i`
+elements, so `prefix[0]` is 0, the sum of nothing:
 
 | i         | 0   | 1   | 2   | 3   | 4   | 5   |
 | --------- | --- | --- | --- | --- | --- | --- |
 | prefix[i] | 0   | 3   | 4   | 8   | 9   | 14  |
 
-The sum of positions 1 through 3 is everything up to and including position 3,
-minus everything before position 1: `prefix[4] - prefix[1] = 9 - 3 = 6`, which
-is 1 + 4 + 1.
+Now any stretch is one subtraction. The sum of positions 1 through 3 is
+everything through position 3, minus everything before position 1:
+`prefix[4] - prefix[1] = 9 - 3 = 6`, which is 1 + 4 + 1.
+
+The same table answers a harder question: how many stretches add up to exactly
+`k`? The stretch from position `j` up to just before position `i` sums to
+`prefix[i] - prefix[j]`, so it sums to `k` when some earlier total equals
+`prefix[i] - k`. Walk the array once, keep a count of every total seen so far,
+and at each new total ask how many earlier ones sit exactly `k` below it. For
+`k = 5`, the totals 8, 9 and 14 find 3, 4 and 9 behind them: three stretches,
+`[1, 4]`, `[4, 1]` and `[5]`.
+
+Why not a sliding window, the usual tool for subarrays? A window grows to
+raise its sum and shrinks to lower it, which only works when every value is
+positive. Put a -2 in the array and growing the window can lower the sum, so
+the window no longer knows which way to move. Prefix totals don't care about
+signs. The rule: when you need sums over ranges, store the total up to each
+point, and every range becomes the difference of two of them.
 
 ## When to use it
 
-Use it when the array doesn't change and you need many range sums from it. If
-the array changes between questions, every running total after the changed
-position goes stale, and a different structure, one built to handle updates,
-fits better. The same trick works for anything you can undo by subtraction,
-such as counts. It doesn't work for the largest value in a range, because a
-maximum can't be subtracted away.
+Reach for prefix sums when a problem statement says something like:
+
+- "the sum of the elements from `i` to `j`", asked many times over an array
+  that doesn't change;
+- "count the subarrays whose sum is `k`", especially when values can be
+  negative, which rules out a sliding window;
+- "how many of something are in positions `l` to `r`": vowels in a string,
+  ones in a bit array, anything you can add up and undo by subtraction (XOR
+  works too, since it undoes itself).
+
+Two signals point away. If the array changes between questions, every total
+after the changed position goes stale, and a structure built for updates fits
+better. And a range maximum can't be subtracted away, so running totals can't
+answer it.
 
 ## Walkthrough
 
 ```python
+from collections import Counter
+
+
 def build_prefix(nums: list[int]) -> list[int]:
+    # One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
+    # range that starts at 0 still has something to subtract.
     prefix = [0] * (len(nums) + 1)
-```
-
-```typescript
-export function buildPrefix(nums: number[]): number[] {
-  const prefix = new Array<number>(nums.length + 1).fill(0);
-```
-
-The array is one longer than the input. The extra slot at the front,
-`prefix[0] = 0`, stands for "the sum of no elements". Without it, a range that
-starts at position 0 would need its own special case, since there would be
-nothing before it to subtract.
-
-```python
     for i, value in enumerate(nums):
+        # Slot i + 1, not i: prefix[i] is the total before nums[i], which this reads.
         prefix[i + 1] = prefix[i] + value
     return prefix
 ```
 
 ```typescript
+export function buildPrefix(nums: number[]): number[] {
+  // One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
+  // range that starts at 0 still has something to subtract.
+  const prefix = new Array<number>(nums.length + 1).fill(0);
   for (let i = 0; i < nums.length; i++) {
+    // Slot i + 1, not i: prefix[i] is the total before nums[i], which this reads.
     prefix[i + 1] = prefix[i] + nums[i];
   }
   return prefix;
 }
 ```
 
-Each total is the previous total plus one element, so one pass builds the whole
-array instead of re-adding from the start for every slot. The write goes to
-`i + 1` because element `i` is the `(i + 1)`th element, so it belongs in the
-total of the first `i + 1` elements. Writing `prefix[i] = prefix[i] + value`
-instead would read the slot it's about to fill, which is still 0, so each slot
-would hold a single element rather than a running total. (In Python,
+One pass, each total built from the one before it, and the example's table
+`[0, 3, 4, 8, 9, 14]` is done. (Python's
 `list(itertools.accumulate(nums, initial=0))` builds the same list in one
-call; the loop is spelled out here to show the step it repeats.)
+call, and `Counter` is for the counting function below.) With the table built,
+a range question costs almost nothing.
 
 ```python
 def range_sum(prefix: list[int], left: int, right: int) -> int:
+    # right is inside the range: prefix[right] would stop just before it.
     return prefix[right + 1] - prefix[left]
 ```
 
 ```typescript
 export function rangeSum(prefix: number[], left: number, right: number): number {
+  // right is inside the range: prefix[right] would stop just before it.
   return prefix[right + 1] - prefix[left];
 }
 ```
 
-Both `left` and `right` are inside the range. `prefix[right + 1]` is the sum of
-everything up to and including position `right`, and `prefix[left]` is the sum
-of everything before position `left`, so their difference is exactly the
-range. Using `prefix[right]` would leave out the element at `right`: for the
-example, `prefix[3] - prefix[1]` is 5, missing the 1 at position 3.
+That's two reads and a subtraction however long the range is, and
+`range_sum(prefix, 1, 3)` reads 9 and 3 to return 6. Counting runs the other
+way: you know the sum you want and need the ranges that make it, so the totals
+go into a hash map instead of an array, looked up by value.
+
+```python
+def count_subarrays_with_sum(nums: list[int], k: int) -> int:
+    # The empty prefix: without it, a subarray that starts at 0 is never counted.
+    seen = Counter({0: 1})
+    total = 0
+    count = 0
+    for value in nums:
+        total += value
+        # Look up before recording total, or total pairs with itself: an empty
+        # subarray, counted once per element when k is 0.
+        count += seen[total - k]
+        seen[total] += 1
+    return count
+```
+
+```typescript
+export function countSubarraysWithSum(nums: number[], k: number): number {
+  // The empty prefix: without it, a subarray that starts at 0 is never counted.
+  const seen = new Map<number, number>([[0, 1]]);
+  let total = 0;
+  let count = 0;
+  for (const value of nums) {
+    total += value;
+    // Look up before recording total, or total pairs with itself: an empty
+    // subarray, counted once per element when k is 0.
+    count += seen.get(total - k) ?? 0;
+    seen.set(total, (seen.get(total) ?? 0) + 1);
+  }
+  return count;
+}
+```
+
+On the example with `k = 5`, the totals arrive as 3, 4, 8, 9 and 14, and each
+of the last three finds its partner (3, 4 or 9) already in `seen`, so the
+function returns 3. The table is never stored here, only the running `total`,
+and each element costs one lookup and one update, which is where the next
+section's numbers come from.
 
 ## Complexity
 
 Big-O notation describes how a cost grows with the size of the input, n.
 Building `prefix` takes O(n) time, one addition per element, and O(n) extra
-space for the n + 1 totals. Each range sum is then O(1): two array reads and a
-subtraction, however long the range. Answering q questions costs O(n + q) in
-total, against O(n × q) in the worst case when every range is added up from
-scratch.
+space for the n + 1 totals. Each range sum is then O(1): two reads and a
+subtraction. Answering q questions costs O(n + q) in total, against O(n × q)
+in the worst case when every range is added up from scratch.
+
+Counting takes O(n) time on average: one pass, with a hash-map lookup and
+update per element, each O(1) on average. The map holds at most n + 1 distinct
+totals, so it takes O(n) space. Checking every pair of start and end instead
+is O(n²), even when the table makes each pair's sum O(1).
 
 ## Pitfalls
 
-- **Off by one at the right end.** The range includes `right`, so the formula
-  reads `prefix[right + 1]`. Mixing that up with a range that stops just before
-  `right` is the most common bug; pick one convention and keep it.
-- **Overflow with fixed-width integers.** Python's integers grow as needed, and
-  the TypeScript version's numbers are 64-bit floating point, exact for every
-  integer up to 2⁵³ in size; past that, totals silently round instead of
-  overflowing. In a language with 32-bit integers, the totals of a long array
-  of large values can overflow even when every element fits.
+- **Off by one at the right end.** `range_sum` reads `prefix[right + 1]`
+  because the range includes `right`. Write `prefix[right]` and the example's
+  range 1 through 3 comes out as `prefix[3] - prefix[1] = 5`, missing the 1
+  at position 3. Pick one convention for whether `right` is inside the range
+  and keep it everywhere.
+- **No seed in the count map.** Start `seen` empty and every stretch that
+  begins at position 0 is lost. With `k = 8`, `[3, 1, 4]` reaches a total of
+  8 and needs a 0 behind it, so the function returns 0 instead of 1.
+- **Recording before looking up.** Swap the last two lines of the loop and
+  each total finds itself. With `k = 0` the example returns 5, one per
+  element, when no stretch of positive numbers sums to 0.
+- **Overflow with fixed-width integers.** `prefix[i + 1] = prefix[i] + value`
+  is safe here: Python's integers grow as needed, and TypeScript's numbers are
+  64-bit floating point, exact for every integer up to 2⁵³ in size, past which
+  totals silently round. In a language with 32-bit integers, the totals of a
+  long array of large values can overflow even when every element fits.
 ````
 
 `src/dsa/code/prefix-sums/prefix_sums.py`:
 
 ```python
+from collections import Counter
+
+
 def build_prefix(nums: list[int]) -> list[int]:
+    # One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
+    # range that starts at 0 still has something to subtract.
     prefix = [0] * (len(nums) + 1)
     for i, value in enumerate(nums):
+        # Slot i + 1, not i: prefix[i] is the total before nums[i], which this reads.
         prefix[i + 1] = prefix[i] + value
     return prefix
 
 
 def range_sum(prefix: list[int], left: int, right: int) -> int:
+    # right is inside the range: prefix[right] would stop just before it.
     return prefix[right + 1] - prefix[left]
+
+
+def count_subarrays_with_sum(nums: list[int], k: int) -> int:
+    # The empty prefix: without it, a subarray that starts at 0 is never counted.
+    seen = Counter({0: 1})
+    total = 0
+    count = 0
+    for value in nums:
+        total += value
+        # Look up before recording total, or total pairs with itself: an empty
+        # subarray, counted once per element when k is 0.
+        count += seen[total - k]
+        seen[total] += 1
+    return count
 ```
 
 `src/dsa/code/prefix-sums/test_prefix_sums.py`:
 
 ```python
 import random
+from itertools import accumulate
 
-from prefix_sums import build_prefix, range_sum
+from prefix_sums import build_prefix, count_subarrays_with_sum, range_sum
+
+SEED = 7
 
 
-def test_empty_input_has_one_zero():
+def brute_count(nums, k):
+    n = len(nums)
+    return sum(sum(nums[i:j]) == k for i in range(n) for j in range(i + 1, n + 1))
+
+
+def test_empty_input():
     assert build_prefix([]) == [0]
+    assert count_subarrays_with_sum([], 0) == 0
+
+
+def test_one_element():
+    prefix = build_prefix([5])
+    assert prefix == [0, 5]
+    assert range_sum(prefix, 0, 0) == 5
+    assert count_subarrays_with_sum([5], 5) == 1
+    assert count_subarrays_with_sum([5], 0) == 0
 
 
 def test_worked_example():
-    prefix = build_prefix([3, 1, 4, 1, 5])
-    assert prefix == [0, 3, 4, 8, 9, 14]
-    assert range_sum(prefix, 1, 3) == 6
-
-
-def test_single_elements_and_the_whole_array():
     nums = [3, 1, 4, 1, 5]
     prefix = build_prefix(nums)
-    for i, value in enumerate(nums):
-        assert range_sum(prefix, i, i) == value
-    assert range_sum(prefix, 0, len(nums) - 1) == sum(nums)
+    assert prefix == [0, 3, 4, 8, 9, 14]
+    assert range_sum(prefix, 1, 3) == 6
+    assert range_sum(prefix, 0, 4) == 14
+    assert range_sum(prefix, 4, 4) == 5
+    assert count_subarrays_with_sum(nums, 5) == 3
 
 
-def test_matches_brute_force_on_random_ranges():
-    rng = random.Random(7)
-    for _ in range(500):
-        nums = [rng.randint(-50, 50) for _ in range(rng.randint(1, 30))]
+def test_counts_zeros_and_negatives():
+    assert count_subarrays_with_sum([0, 0, 0], 0) == 6
+    assert count_subarrays_with_sum([1, -1, 1], 0) == 2
+    assert count_subarrays_with_sum([1, 2, 3], 7) == 0
+
+
+def test_range_sums_match_brute_force():
+    rng = random.Random(SEED)
+    for trial in range(50):
+        nums = [rng.randint(-50, 50) for _ in range(rng.randint(1, 20))]
         prefix = build_prefix(nums)
-        left = rng.randrange(len(nums))
-        right = rng.randrange(left, len(nums))
-        assert range_sum(prefix, left, right) == sum(nums[left : right + 1])
+        context = f"seed {SEED}, trial {trial}, nums {nums}"
+        assert prefix == list(accumulate(nums, initial=0)), context
+        for left in range(len(nums)):
+            for right in range(left, len(nums)):
+                expected = sum(nums[left : right + 1])
+                assert range_sum(prefix, left, right) == expected, (
+                    f"{context}, range [{left}, {right}]"
+                )
+
+
+def test_counts_match_brute_force():
+    rng = random.Random(SEED)
+    for trial in range(50):
+        nums = [rng.randint(-3, 3) for _ in range(rng.randint(1, 15))]
+        k = rng.randint(-3, 3)
+        assert count_subarrays_with_sum(nums, k) == brute_count(nums, k), (
+            f"seed {SEED}, trial {trial}, nums {nums}, k {k}"
+        )
 ```
 
 `src/dsa/code/prefix-sums/prefix-sums.ts`:
 
 ```typescript
 export function buildPrefix(nums: number[]): number[] {
+  // One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
+  // range that starts at 0 still has something to subtract.
   const prefix = new Array<number>(nums.length + 1).fill(0);
   for (let i = 0; i < nums.length; i++) {
+    // Slot i + 1, not i: prefix[i] is the total before nums[i], which this reads.
     prefix[i + 1] = prefix[i] + nums[i];
   }
   return prefix;
 }
 
 export function rangeSum(prefix: number[], left: number, right: number): number {
+  // right is inside the range: prefix[right] would stop just before it.
   return prefix[right + 1] - prefix[left];
+}
+
+export function countSubarraysWithSum(nums: number[], k: number): number {
+  // The empty prefix: without it, a subarray that starts at 0 is never counted.
+  const seen = new Map<number, number>([[0, 1]]);
+  let total = 0;
+  let count = 0;
+  for (const value of nums) {
+    total += value;
+    // Look up before recording total, or total pairs with itself: an empty
+    // subarray, counted once per element when k is 0.
+    count += seen.get(total - k) ?? 0;
+    seen.set(total, (seen.get(total) ?? 0) + 1);
+  }
+  return count;
 }
 ```
 
@@ -1006,32 +1070,98 @@ export function rangeSum(prefix: number[], left: number, right: number): number 
 
 ```typescript
 import { describe, expect, it } from 'vitest';
-import { buildPrefix, rangeSum } from './prefix-sums';
+import { buildPrefix, countSubarraysWithSum, rangeSum } from './prefix-sums';
+
+const SEED = 7;
+
+/** A small seeded generator (mulberry32), so a failing case can be replayed. */
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** A whole number from lo to hi, both included. */
+const between = (next: () => number, lo: number, hi: number) =>
+  lo + Math.floor(next() * (hi - lo + 1));
+
+const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+
+function bruteCount(nums: number[], k: number): number {
+  let count = 0;
+  for (let i = 0; i < nums.length; i++) {
+    for (let j = i + 1; j <= nums.length; j++) {
+      if (sum(nums.slice(i, j)) === k) count++;
+    }
+  }
+  return count;
+}
 
 describe('prefix sums', () => {
-  it('gives an empty input one zero', () => {
+  it('handles empty input', () => {
     expect(buildPrefix([])).toEqual([0]);
+    expect(countSubarraysWithSum([], 0)).toBe(0);
+  });
+
+  it('handles one element', () => {
+    const prefix = buildPrefix([5]);
+    expect(prefix).toEqual([0, 5]);
+    expect(rangeSum(prefix, 0, 0)).toBe(5);
+    expect(countSubarraysWithSum([5], 5)).toBe(1);
+    expect(countSubarraysWithSum([5], 0)).toBe(0);
   });
 
   it('matches the worked example', () => {
-    const prefix = buildPrefix([3, 1, 4, 1, 5]);
+    const nums = [3, 1, 4, 1, 5];
+    const prefix = buildPrefix(nums);
     expect(prefix).toEqual([0, 3, 4, 8, 9, 14]);
     expect(rangeSum(prefix, 1, 3)).toBe(6);
+    expect(rangeSum(prefix, 0, 4)).toBe(14);
+    expect(rangeSum(prefix, 4, 4)).toBe(5);
+    expect(countSubarraysWithSum(nums, 5)).toBe(3);
   });
 
-  it('matches a brute-force sum on random ranges', () => {
-    let seed = 7;
-    const next = (n: number) => {
-      seed = (seed * 48271) % 2147483647;
-      return seed % n;
-    };
-    for (let round = 0; round < 500; round++) {
-      const nums = Array.from({ length: 1 + next(30) }, () => next(101) - 50);
+  it('counts with zeros and negatives', () => {
+    expect(countSubarraysWithSum([0, 0, 0], 0)).toBe(6);
+    expect(countSubarraysWithSum([1, -1, 1], 0)).toBe(2);
+    expect(countSubarraysWithSum([1, 2, 3], 7)).toBe(0);
+  });
+
+  it('matches a brute-force sum on every range of random arrays', () => {
+    const next = rng(SEED);
+    for (let trial = 0; trial < 50; trial++) {
+      const nums = Array.from({ length: between(next, 1, 20) }, () =>
+        between(next, -50, 50),
+      );
       const prefix = buildPrefix(nums);
-      const left = next(nums.length);
-      const right = left + next(nums.length - left);
-      const expected = nums.slice(left, right + 1).reduce((a, b) => a + b, 0);
-      expect(rangeSum(prefix, left, right)).toBe(expected);
+      const where = `seed ${SEED}, trial ${trial}, nums [${nums}]`;
+      for (let left = 0; left < nums.length; left++) {
+        for (let right = left; right < nums.length; right++) {
+          const context = `${where}, range [${left}, ${right}]`;
+          expect(rangeSum(prefix, left, right), context).toBe(
+            sum(nums.slice(left, right + 1)),
+          );
+        }
+      }
+    }
+  });
+
+  it('matches a brute-force count on random arrays', () => {
+    const next = rng(SEED);
+    for (let trial = 0; trial < 50; trial++) {
+      const nums = Array.from({ length: between(next, 1, 15) }, () =>
+        between(next, -3, 3),
+      );
+      const k = between(next, -3, 3);
+      expect(
+        countSubarraysWithSum(nums, k),
+        `seed ${SEED}, trial ${trial}, nums [${nums}], k ${k}`,
+      ).toBe(bruteCount(nums, k));
     }
   });
 });
@@ -1042,13 +1172,17 @@ describe('prefix sums', () => {
 ### DS-01 — a TypeScript bug the tests don't reach (trap for "the code is correct" and "the tests reach the edge cases")
 
 **Reviewed with:** `add-dsa-entry`'s Stage 3 instruction.
-**Planted violation (the only one):** the TypeScript loop stops one element
-early, so `prefix[n]` stays 0 and every range that ends at the last element is
-wrong (`rangeSum(buildPrefix([3, 1, 4, 1, 5]), 0, 4)` returns 0, not 14). The
-weakened TypeScript test still passes, since `rangeSum(prefix, 1, 3)` is 6 with
-or without the bug. The Python code and tests are unchanged and correct.
-**Replacements in the base:** in both `prefix-sums.ts` and the entry's second
-typescript fence, replace `for (let i = 0; i < nums.length; i++) {` with:
+**Planted violation (the only one):** the TypeScript loop in `buildPrefix`
+stops one element early, so `prefix[n]` stays 0 and every range that ends at
+the last element is wrong (`rangeSum(buildPrefix([3, 1, 4, 1, 5]), 0, 4)`
+returns 0, not 14). The weakened TypeScript tests still pass (3 of 3, run
+against the bugged file), since `rangeSum(prefix, 1, 3)` is 6 with or without
+the bug and `countSubarraysWithSum` doesn't use `buildPrefix`. The Python code
+and tests are unchanged and correct, and the comments in both files are
+unchanged, so the TypeScript comment on the loop body still describes the
+correct code.
+**Replacements in the base:** in both `prefix-sums.ts` and the entry's first
+typescript fence, replace `  for (let i = 0; i < nums.length; i++) {` with:
 
 ```typescript
   for (let i = 0; i < nums.length - 1; i++) {
@@ -1058,53 +1192,65 @@ and replace `prefix-sums.test.ts` with:
 
 ```typescript
 import { describe, expect, it } from 'vitest';
-import { buildPrefix, rangeSum } from './prefix-sums';
+import { buildPrefix, countSubarraysWithSum, rangeSum } from './prefix-sums';
 
 describe('prefix sums', () => {
-  it('gives an empty input one zero', () => {
+  it('handles empty input', () => {
     expect(buildPrefix([])).toEqual([0]);
+    expect(countSubarraysWithSum([], 0)).toBe(0);
   });
 
   it('sums the middle of the worked example', () => {
     expect(rangeSum(buildPrefix([3, 1, 4, 1, 5]), 1, 3)).toBe(6);
   });
+
+  it('counts subarrays with a given sum', () => {
+    expect(countSubarraysWithSum([3, 1, 4, 1, 5], 5)).toBe(3);
+    expect(countSubarraysWithSum([0, 0, 0], 0)).toBe(6);
+    expect(countSubarraysWithSum([1, -1, 1], 0)).toBe(2);
+  });
 });
 ```
 
-**Expected finding:** flags the TypeScript loop bound: the last element is
-never added, so `prefix` ends in 0 and any range ending at the last position is
-wrong, unlike the Python version; and notes that the TypeScript tests never
-check a range that reaches the end (or the whole `prefix` array, or random
-ranges), which is why they pass.
+**Expected finding:** flags the TypeScript loop bound in `buildPrefix`: the
+last element is never added, so `prefix` ends in 0 and any range ending at the
+last position is wrong, unlike the Python version; and notes that the
+TypeScript tests never check a range that reaches the end (or the whole
+`prefix` array, or random ranges), which is why they pass.
 **Fails if:** the review doesn't flag the loop bound, or flags only the thin
 tests without finding the bug they miss.
 
 ---
 
-### DS-02 — a walkthrough paragraph that narrates (trap for "explains why, not what")
+### DS-02 — a walkthrough paragraph that narrates (trap for "connects the step, doesn't narrate it")
 
 **Reviewed with:** `add-dsa-entry`'s Stage 3 instruction.
-**Planted violation (the only one):** the paragraph after the third pair says
-what `range_sum` does, line by line, but never why it reads `prefix[right + 1]`
-rather than `prefix[right]`, or what the subtraction removes. The Pitfalls
-section still names the off-by-one, so the entry as a whole isn't wrong; this
-paragraph just doesn't do a walkthrough paragraph's job.
-**Replacement in the base:** replace the paragraph that starts "Both `left`
-and `right` are inside the range." with:
+**Planted violation (the only one):** the paragraph after the second pair
+narrates what `range_sum` does, step by step, in words the code already says:
+it takes the arguments, reads two slots, subtracts, returns. It adds no reason
+(the comment already carries why it reads `prefix[right + 1]`, so the
+paragraph shouldn't repeat that either), no check against the example, and no
+link to the next step: nothing says why the counting function that follows
+switches from an array to a hash map. The code, its comments and the Pitfalls
+are unchanged, so the entry isn't wrong; this paragraph just doesn't do a
+walkthrough paragraph's job.
+**Replacement in the base:** replace the paragraph that starts "That's two
+reads and a subtraction however long the range is," with:
 
 ```markdown
-This function takes the prefix array and the two positions. It looks up the
-value at `right + 1` and the value at `left`, subtracts the second from the
-first, and returns the result, which is the sum of the range.
+The `range_sum` function takes the prefix array, a left position and a right
+position. It reads `prefix[right + 1]`, then reads `prefix[left]`, subtracts
+the second value from the first, and returns the difference.
 ```
 
-**Expected finding:** flags this paragraph as narration that restates the
-code without explaining why it's written that way (why `right + 1`, what
-`prefix[left]` subtracts, what goes wrong with `prefix[right]`), against the
-checklist's "explains why its lines are written that way, not only what they
-do."
+**Expected finding:** flags this paragraph as narration: it restates the two
+lines of code above it in prose, adds nothing the code and its comment don't
+already say, and doesn't connect the pair to the next step (the counting
+function and why its totals go into a hash map), against the skill's rule that
+a walkthrough paragraph connects its pair to the next step and the checklist's
+"flag a comment or paragraph that just narrates what a line does."
 **Fails if:** the review doesn't flag the paragraph, or flags only the other
-walkthrough paragraphs.
+walkthrough paragraphs or the comments.
 
 ---
 
@@ -1112,16 +1258,33 @@ walkthrough paragraphs.
 
 **Reviewed with:** `add-dsa-entry`'s Stage 3 instruction.
 **Planted violation:** none. The base, verbatim. The code is correct in both
-languages and every line of each file appears once in the walkthrough, in
-order. The worked example holds (prefix `[0, 3, 4, 8, 9, 14]`;
+languages, every line where the obvious alternative breaks (the n + 1 slots,
+writing slot `i + 1`, `prefix[right + 1]`, seeding the count with the empty
+prefix, looking up before recording) has a comment giving the reason, the same
+in both files, and every non-blank line of each file appears once in the
+walkthrough, in order. Each walkthrough paragraph checks its pair against the
+example and hands off to the next step without repeating the comments. The
+worked example holds (prefix `[0, 3, 4, 8, 9, 14]`;
 `prefix[4] - prefix[1] = 6`; `prefix[3] - prefix[1] = 5`, missing the 1 at
-position 3), the tests cover empty input, single elements, the whole array and
-500 random ranges against a brute-force sum, the complexity claims hold, 2⁵³
-is the limit of exact integers in a 64-bit float (larger ones round), and
-`itertools.accumulate` takes `initial=` from Python 3.8.
-**Expected finding:** no finding that is false of the entry. Real gaps, such
-as its brevity next to the reference entries or no TypeScript test for single
-elements, are acceptable and go in the run's notes.
+position 3; with `k = 5`, totals 8, 9 and 14 pair with 3, 4 and 9 for three
+subarrays `[1, 4]`, `[4, 1]`, `[5]`; with no seed and `k = 8`, `[3, 1, 4]` is
+missed and the result is 0, not 1; with the two loop lines swapped and
+`k = 0`, the result is 5, not 0). The tests cover empty input, one element,
+the worked example including ranges that reach both ends, zeros, negatives and
+a sum that never occurs, every range of 50 seeded random arrays against a
+brute-force sum and `itertools.accumulate`, and 50 seeded random counts against
+a brute-force count, with the seed and trial in each assertion's message. The
+complexity claims hold, a sliding window does fail once negative values are
+allowed, 2⁵³ is the limit of exact integers in a 64-bit float (larger ones
+round), `itertools.accumulate` takes `initial=` from Python 3.8, a `Counter`
+returns 0 for a missing key without inserting it, prefix XOR works because XOR
+undoes itself, and `/dsa/hash-map` exists.
+**Expected finding:** no finding that is false of the entry. Real gaps are
+acceptable and go in the run's notes: the code is shorter than docs/dsa.md's
+30–60 line guide (about 20 lines of Python without comments), there's no test
+with duplicate values for `range_sum`, or the `Counter` import shows up in the
+first pair, before the function that uses it.
 **Fails if:** the review reports a defect that isn't true of the entry: a
-"bug" in correct code, a wrong figure that's right, a narrating paragraph that
-does explain why, or a correct technical statement called wrong.
+"bug" in correct code, a wrong figure that's right, a comment or paragraph
+called narration that does give a reason or connect a step, a missing
+comment at a line that has one, or a correct technical statement called wrong.

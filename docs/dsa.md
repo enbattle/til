@@ -6,10 +6,38 @@ tested. Read this before adding or changing an entry;
 it.
 
 The header's third tab, **DSA** (`/dsa`), teaches data structures,
-problem-solving patterns and algorithms at interview depth. Each entry
-explains its subject from zero background and walks through a real
-implementation a few lines at a time, in both Python and TypeScript, and that
-code is the same code the entry's tests run.
+problem-solving patterns and algorithms at interview depth. Each entry is
+about a five-minute read (the Writing Standard's "Case studies and DSA
+entries" section) and walks through one real, commented implementation a few
+lines at a time, in both Python and TypeScript, and that code is the same code
+the entry's tests run.
+
+**Migrating (2026-10).** The entries are being consolidated (42 to 28; the
+list is under "Scope" below) and rewritten to the templates and budget on
+this page. Until that lands, the published entries and `dsa-structure.test.ts`
+follow the earlier templates, which git history has. The rewrite changes the
+tests, the entries and this note together.
+
+Each merge below reads its old entries and code as research notes, deletes
+them and their code folders, and repoints every link to an old slug
+(`git grep -n "/dsa/<old-slug>"`). The new slugs are checked against Python's
+standard-library module names. Every entry not listed keeps its slug and is
+rewritten in place.
+
+| New entry (slug)                                       | Kind           | Absorbs                                                                                                 |
+| ------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------- |
+| Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings`                                                                              |
+| Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque`                                                                              |
+| Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers`                                                                    |
+| Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps`                                                                     |
+| DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional`                                                                                    |
+| DP: common shapes (`dynamic-programming-shapes`)       | pattern        | `dp-grids`, `dp-knapsack`, `dp-two-sequences`; a sentence each from `dp-intervals`, `dp-state-machines` |
+| Sorting (`sorting`)                                    | algorithm      | `merge-sort`, `quicksort-quickselect`, `bucket-counting-sort` (counting sort as prose, no code)         |
+| Breadth-first search (`breadth-first-search`)          | algorithm      | `graph-bfs`, `tree-bfs`                                                                                 |
+| Depth-first search (`depth-first-search`)              | algorithm      | `graph-dfs`, `tree-dfs`                                                                                 |
+| Shortest paths (`shortest-paths`)                      | algorithm      | `dijkstra`, `bellman-ford`                                                                              |
+
+`prim-kruskal` keeps its slug under the title "Minimum Spanning Trees".
 
 ```
 src/dsa/
@@ -41,7 +69,19 @@ kind: algorithm
 ---
 ```
 
-`kind` is `data-structure`, `pattern` or `algorithm`. `parseDsaEntry` throws
+`kind` is `data-structure`, `pattern` or `algorithm`:
+
+- A **data structure** is a way of storing data, defined by what its
+  operations cost (a hash map, a heap).
+- An **algorithm** is a fixed procedure that solves a named problem, with a
+  known result and cost (binary search, breadth-first search, Dijkstra's
+  shortest paths). You run it as written.
+- A **pattern** is a technique you adapt to a family of problems, where the
+  work is recognizing the family and shaping the solution (two pointers, a
+  sliding window, dynamic programming, backtracking).
+
+When an entry could be either, ask whether its code changes from problem to
+problem: an algorithm's doesn't, a pattern's does. `parseDsaEntry` throws
 at load time, naming the file and field, if a field is missing or empty, if
 `kind` is anything else, or if the file isn't `src/dsa/entries/<slug>.md` with
 a lowercase kebab-case slug.
@@ -51,20 +91,29 @@ a lowercase kebab-case slug.
 The body's `##` headings are exactly, in order
 (`src/dsa/dsa-structure.test.ts` checks the rendered page):
 
-- **Data structure:** `Prerequisites`, `What it is`, `Operations and costs`,
-  `Implementation`, `Invariants`, `Tricky lines`, `When to use it`.
+- **Data structure:** `Prerequisites`, `What it is`, `When to use it`,
+  `Operations and costs`, `Implementation`, `Pitfalls`.
   `Operations and costs` holds a table (average and worst case per operation,
   plus space). `Implementation` holds at least one code pair.
-  `Tricky lines` names specific lines of the code in prose and says what goes
-  wrong if they're written the obvious way.
 - **Pattern** and **algorithm:** `Prerequisites`, `The idea`,
   `When to use it`, `Walkthrough`, `Complexity`, `Pitfalls`. `Walkthrough`
-  holds at least three code pairs, and each pair is followed directly by a
-  paragraph that explains why those lines are written the way they are.
+  holds at least two code pairs, each followed directly by a short paragraph
+  (one to three sentences) that connects it to the next step.
 
-An intro paragraph before `## Prerequisites` is fine. `hash-map.md`,
-`two-pointers.md` and `binary-search.md` are the reference examples for each
-kind. The page builds its "On this page" list from these headings with
+Every kind ends the same way:
+
+- `When to use it` is the part that transfers to a problem the entry never
+  shows: the signals in a problem statement that point to this entry, as a
+  short list.
+- `Pitfalls` names the two to four mistakes people actually make, each tied
+  to a specific line of the code and what goes wrong if it's written the
+  obvious way.
+
+The prose, tables included, is at most 1,150 words; code blocks don't count
+(`dsa-structure.test.ts` counts the words on the rendered page). An intro
+paragraph before `## Prerequisites` is fine. `hash-map.md`, `two-pointers.md`
+and `binary-search.md` are the reference examples for each kind, rewritten
+first in the migration. The page builds its "On this page" list from these headings with
 `h2Headings`, as a case study does.
 
 ## Code pairs and the code files
@@ -93,6 +142,15 @@ The code files:
   with type hints. `<slug>.ts`: no imports, exported functions or classes.
   Both idiomatic for their language rather than a transliteration of each
   other; the APIs match in shape (`lower_bound` / `lowerBound`).
+- One core implementation per entry, about 30–60 lines per language not
+  counting comments. An entry that covers several shapes (the DP shapes, the
+  heap patterns) gives each its own short function; a variant that changes
+  one line is a sentence in the prose, not more code.
+- Comments explain why, at the line where the obvious alternative would
+  break, so the entry's prose doesn't have to
+  (`lo = mid + 1  # mid was already checked; keeping it can loop forever`).
+  They don't narrate what a line does. Both files carry the same reasons, in
+  each language's comment style, since a reader sees only one tab.
 - The slug's underscored form must not be a Python standard-library module
   name (`py -c "import sys; print('queue' in sys.stdlib_module_names)"`).
   pytest puts each code folder first on the import path, so a `queue.py` or
@@ -171,8 +229,9 @@ sits among its kind by title unless a prerequisite holds it back; one of a
 later kind holds it until every entry of its own kind that's ready has gone,
 which puts it at or near the end of its group. That prerequisite comes after
 its dependent; today the only one is
-`binary-search-tree` -> `binary-search`, and its **Before this** link still
-works. `dsa.test.ts` pins that list, so a new backwards cross-group link fails
+`binary-search-tree` -> `binary-search`, and after the migration also
+`backtracking` -> `depth-first-search` (a pattern that builds on an
+algorithm). Their **Before this** links still work. `dsa.test.ts` pins that list, so a new backwards cross-group link fails
 the test until someone extends the list on purpose (ask the user first).
 
 A prerequisite cycle, a link to an entry that doesn't exist, or an entry
@@ -188,7 +247,19 @@ Catalog topics and case studies don't link back.
 ## Scope
 
 The tab covers data structures, patterns and algorithms at interview depth;
-`src/dsa/entries/` and each file's `kind` are the list. Segment trees and
-Fenwick trees are deliberately left out. Adding an entry is a scope decision
-for the user, not a gap; a new entry still goes through the `add-dsa-entry`
-skill.
+`src/dsa/entries/` and each file's `kind` are the list. Fewer, broader entries
+beat many narrow ones: a variant someone would learn in the same sitting
+(fast and slow pointers, Bellman-Ford beside Dijkstra) is a section of the
+entry it varies, not an entry of its own. The migration's target list, 28
+entries:
+
+| Kind           | Entries                                                                                                                                                                                                                                                              |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data structure | arrays and strings, hash map, linked list, stacks and queues, binary tree, binary search tree, heap, graph, trie, union-find                                                                                                                                         |
+| Pattern        | two pointers (with fast and slow), sliding window, prefix sums, monotonic stack, intervals, greedy, backtracking, bit manipulation, heap patterns (top-k, k-way merge, two heaps), DP: memoization and tabulation, DP: common shapes (grid, knapsack, two sequences) |
+| Algorithm      | binary search, sorting (merge sort, quicksort and quickselect, counting sort), breadth-first search and depth-first search (trees and graphs), topological sort, shortest paths (Dijkstra, Bellman-Ford), minimum spanning trees                                     |
+
+Interval DP and state-machine DP get a sentence each in "DP: common shapes",
+not entries. Segment trees and Fenwick trees are deliberately left out.
+Adding an entry is a scope decision for the user, not a gap; a new entry still
+goes through the `add-dsa-entry` skill.

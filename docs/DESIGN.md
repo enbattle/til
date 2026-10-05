@@ -130,7 +130,7 @@ notebook than a product. The UI follows that:
   heading an "On this page" link jumps to, or a focused element Tab or
   Shift+Tab scrolls to. The headings carry no `scroll-margin-top`: it would
   add to the padding and land every jump too low. The same goes for in-body links: a markdown link whose href
-  starts with `#` (the "At a glance" section's links to headings) renders as
+  starts with `#` (a case study's links to its own headings) renders as
   a plain same-tab anchor, a `/…` link is a router `Link`, and an external
   link opens in a new tab with `rel="noreferrer"`. Opening a topic or case study at a `#<heading-id>` URL works too:
   the body loads after the browser's own jump, so `LazyBody` scrolls the
