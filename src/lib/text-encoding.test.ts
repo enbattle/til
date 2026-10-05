@@ -28,7 +28,7 @@ const MOJIBAKE = new RegExp(
 );
 
 const ROOT = process.cwd();
-const TEXT = /\.(md|mdx|ts|tsx|mts|mjs|js|json|d2|css|html|ya?ml)$/;
+const TEXT = /\.(md|mdx|ts|tsx|mts|mjs|js|json|d2|css|html|ya?ml|py|txt|toml|ini)$/;
 
 /** Every git-tracked text file, plus untracked ones git doesn't ignore, so a
  * new file is checked before its first commit. `public/` is skipped: its SVGs

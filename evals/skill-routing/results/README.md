@@ -36,16 +36,17 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-04 | /feature Stage 1 UI-criteria bullet; Stage 6 severity-first retro    | 4    | 0    | 0         | Scoped run: SR-01, SR-05, SR-07, SR-17.                      |
 | 2026-10-04 | /feature: where a guard's planted cases live (test split)            | 1    | 0    | 0         | SR-01 only; the edit can't change routing.                   |
 | 2026-10-04 | /feature Stage 1 guard edits (#63, #64); docs-audit gate fixes       | 2    | 0    | 0         | SR-01 and SR-18; logs #64's unlogged SR-01 pass too.         |
+| 2026-10-04 | Friction follow-ups: /feature Stages 1, 4, 6; docs-audit; the hook   | 2    | 0    | 0         | SR-01 and SR-09.                                             |
 
-## Latest run: 2026-10-04, /feature Stage 1 guard edits and docs-audit gate fixes
+## Latest run: 2026-10-04, friction follow-ups
 
 Run by: self
-Trigger: `/feature` Stage 1's guard bullet gained the AST rule (#63, d54ae2d) and the "every way code can reach the sink" clause (#64, 88c5042); #64's pipeline-log row says SR-01 passed, but no row here recorded either edit. The 2026-10-04 docs audit then added `--deny-warnings` to the oxlint step in `/feature`'s Stage 2 gate and `add-dsa-entry`'s batch mode, and corrected Stage 2's wording on where vector tables live. No description, routing rule or stage changed.
-Scope: SR-01 (`/feature`) and SR-18 (`add-dsa-entry`), the scenarios whose Expected answer depends on the two edited skills.
+Trigger: the 2026-10-04 friction aggregation's follow-ups. `/feature`: Stage 4 tries every way past a new guard and reports the misses as one finding; Stage 1's sink-route list became a sentence pointing at `check-raw-html.mjs`'s header, and specs are formatted after every edit; Stage 6 writes the pipeline-log row once the user decides; two copies of where a guard's tests go point at Stage 2. `docs-audit`'s intro and `nudge-precommit.js` now say when an audit is due (10 merged pull requests). `feature-review-eval`'s body no longer hard-codes the scenario range. No skill description changed.
+Scope: SR-01 (`/feature`) and SR-09 (`docs-audit`), the scenarios whose Expected answer depends on the edited skills and hook. `feature-review-eval`'s edit is to its body only, so SR-14 wasn't run.
 
-| ID    | Routing decision | Reasoning (1 line)                                                                                    | Grade |
-| ----- | ---------------- | ----------------------------------------------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`       | UI and behavior change in `SearchDialog.tsx` and `search.ts` with open design and keyboard questions. | PASS  |
-| SR-18 | `add-dsa-entry`  | A new DSA entry with prose and tested Python and TypeScript code; no LRU entry exists yet.            | PASS  |
+| ID    | Routing decision | Reasoning (1 line)                                                                             | Grade |
+| ----- | ---------------- | ---------------------------------------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`       | A nontrivial UI change with new state, keyboard and accessibility handling and tests.          | PASS  |
+| SR-09 | `docs-audit`     | Its description covers checking docs, skills and evals for staleness after a batch of changes. | PASS  |
 
 Notes: none.
