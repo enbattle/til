@@ -184,8 +184,11 @@ measured numbers.
 
 The main chunk carries no content bodies: each topic, case-study and DSA entry body is
 its own chunk, loaded on demand, and `npm run size` prints the main chunk's
-current size against its limit. Adding content doesn't touch it; a case study's topic links reach it as a small build-time list (the
-`?links` query), not as text. What still grows it is app code.
+current size against its limit. Adding content barely touches it: what reaches
+it is small build-time data, not text: a case study's topic links (the
+`?links` query), a DSA entry's prerequisite list (`?dsaPrereqs`), and one word
+count per case study and DSA entry (`?words`, for the "N min read" label).
+What still grows it is app code.
 `npm run check:bundle` guards the split itself: after a build it fails if a
 topic's, case study's or DSA entry's body text is in the main chunk, or in no
 chunk at all. The markdown chunk's entry points at `MarkdownRenderer-*.js`

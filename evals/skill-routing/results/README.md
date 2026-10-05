@@ -38,6 +38,7 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-04 | /feature Stage 1 guard edits (#63, #64); docs-audit gate fixes       | 2    | 0    | 0         | SR-01 and SR-18; logs #64's unlogged SR-01 pass too.         |
 | 2026-10-04 | Friction follow-ups: /feature Stages 1, 4, 6; docs-audit; the hook   | 2    | 0    | 0         | SR-01 and SR-09.                                             |
 | 2026-10-05 | Five-minute content: add-case-study, add-dsa-entry, content-audit    | 8    | 0    | 0         | SR-19 and SR-20 added; SR-16's reasoning refreshed.          |
+| 2026-10-05 | five-minute-templates retro: both skills' Stage 2 point to the docs  | 2    | 0    | 0         | SR-15 and SR-18; bodies only, descriptions unchanged.        |
 
 ## Latest run: 2026-10-05, five-minute content
 

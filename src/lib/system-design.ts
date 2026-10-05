@@ -2,16 +2,22 @@ import type { CaseStudy, Topic } from '@/types';
 import { createCollection, getTopic } from './content';
 import type { TopicRef } from './markdown.mjs';
 
-// Frontmatter and topic links only, eagerly: enough for the landing page, the
-// sidebar, search titles, "Go deeper" and the topic pages' back-links, without
-// shipping any case-study body in the main bundle. Both queries are served by
-// the `markdownMeta` plugin in `vite.config.ts`.
+// Frontmatter, topic links and word counts only, eagerly: enough for the
+// landing page, the sidebar, search titles, "Go deeper", the topic pages'
+// back-links and the read-time label, without shipping any case-study body in
+// the main bundle. The queries are served by the `markdownMeta` plugin in
+// `vite.config.ts`.
 const metaFiles = import.meta.glob<Record<string, string>>(
   '/src/system-design/case-studies/*.md',
   { query: '?meta', import: 'default', eager: true },
 );
 const linkFiles = import.meta.glob<TopicRef[]>('/src/system-design/case-studies/*.md', {
   query: '?links',
+  import: 'default',
+  eager: true,
+});
+const wordFiles = import.meta.glob<number>('/src/system-design/case-studies/*.md', {
+  query: '?words',
   import: 'default',
   eager: true,
 });
@@ -25,14 +31,15 @@ const bodyFiles = import.meta.glob<string>('/src/system-design/case-studies/*.md
 const PATH_PATTERN = /^\/src\/system-design\/case-studies\/([^/]+)\.md$/;
 
 /**
- * Turns one case-study file's path and parsed frontmatter into a `CaseStudy`.
+ * Turns one case-study file's path and parsed frontmatter into a `CaseStudy`,
+ * less the body's `words` (the loader adds those from the `?words` view).
  * Exported so the frontmatter contract, including `order`, can be unit-tested
  * against fixtures instead of only the real files.
  */
 export function parseCaseStudy(
   filePath: string,
   data: Record<string, string>,
-): CaseStudy {
+): Omit<CaseStudy, 'words'> {
   const match = PATH_PATTERN.exec(filePath);
   if (!match) {
     throw new Error(
@@ -69,7 +76,10 @@ function slugOf(filePath: string): string | undefined {
 const caseStudies = createCollection({
   meta: metaFiles,
   bodies: bodyFiles,
-  parse: parseCaseStudy,
+  parse: (filePath, data): CaseStudy => ({
+    ...parseCaseStudy(filePath, data),
+    words: wordFiles[filePath],
+  }),
   key: slugOf,
 });
 

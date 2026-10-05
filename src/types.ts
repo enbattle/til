@@ -33,6 +33,9 @@ export interface CaseStudy {
   date: string;
   /** Position in the case-study list; a positive integer, unique across case studies. */
   order: number;
+  /** Words a reader reads in the body (`proseWordCount`), counted at build
+   * time; drives the "N min read" label. */
+  words: number;
 }
 
 /** What a DSA entry teaches; it picks the entry's heading template
@@ -53,6 +56,9 @@ export interface DsaEntry {
   /** ISO date (`YYYY-MM-DD`) the entry was written. */
   date: string;
   kind: DsaKind;
+  /** Words a reader reads in the body (`proseWordCount`), counted at build
+   * time; drives the "N min read" label. */
+  words: number;
 }
 
 /** One kind's entries, as the DSA nav and landing page group them

@@ -66,6 +66,7 @@ vi.mock('@/lib/system-design', async () => {
     summary: 'A demo.',
     date: '2026-09-28',
     order: 999,
+    words: 1,
   };
   return {
     ...actual,

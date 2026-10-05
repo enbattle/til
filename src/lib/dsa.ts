@@ -1,10 +1,10 @@
 import type { DsaEntry, DsaGroup, DsaKind } from '@/types';
 import { createCollection } from './content';
 
-// Frontmatter and prerequisite links only, eagerly: enough for the landing
-// page, the sidebar, search titles and "Before this", without shipping any
-// entry body in the main bundle. Both queries are served by the
-// `markdownMeta` plugin in `vite.config.ts`.
+// Frontmatter, prerequisite links and word counts only, eagerly: enough for
+// the landing page, the sidebar, search titles, "Before this" and the
+// read-time label, without shipping any entry body in the main bundle. The
+// queries are served by the `markdownMeta` plugin in `vite.config.ts`.
 const metaFiles = import.meta.glob<Record<string, string>>('/src/dsa/entries/*.md', {
   query: '?meta',
   import: 'default',
@@ -12,6 +12,11 @@ const metaFiles = import.meta.glob<Record<string, string>>('/src/dsa/entries/*.m
 });
 const prereqFiles = import.meta.glob<string[]>('/src/dsa/entries/*.md', {
   query: '?dsaPrereqs',
+  import: 'default',
+  eager: true,
+});
+const wordFiles = import.meta.glob<number>('/src/dsa/entries/*.md', {
+  query: '?words',
   import: 'default',
   eager: true,
 });
@@ -50,11 +55,15 @@ function isKind(value: string): value is DsaKind {
 }
 
 /**
- * Turns one entry file's path and parsed frontmatter into a `DsaEntry`.
+ * Turns one entry file's path and parsed frontmatter into a `DsaEntry`, less
+ * the body's `words` (the loader adds those from the `?words` view).
  * Exported so the frontmatter contract can be unit-tested against fixtures
  * instead of only the real files.
  */
-export function parseDsaEntry(filePath: string, data: Record<string, string>): DsaEntry {
+export function parseDsaEntry(
+  filePath: string,
+  data: Record<string, string>,
+): Omit<DsaEntry, 'words'> {
   const match = PATH_PATTERN.exec(filePath);
   if (!match) {
     throw new Error(
@@ -184,7 +193,10 @@ const PREREQS: Record<string, string[]> = Object.fromEntries(
 const entries = createCollection({
   meta: metaFiles,
   bodies: bodyFiles,
-  parse: parseDsaEntry,
+  parse: (filePath, data): DsaEntry => ({
+    ...parseDsaEntry(filePath, data),
+    words: wordFiles[filePath],
+  }),
   key: slugOf,
 });
 

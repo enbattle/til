@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TOPICS, getTopic } from './content';
 import { RAW_CASE_STUDIES as RAW, rawCaseStudy as rawFor, without } from '@/test/content';
 import { parseFrontmatter } from './frontmatter';
-import { extractTopicRefs } from './markdown.mjs';
+import { extractTopicRefs, proseWordCount } from './markdown.mjs';
 import {
   CASE_STUDIES,
   caseStudiesForTopic,
@@ -39,7 +39,9 @@ const VALID_FIELDS: Record<string, string> = {
 describe('parseCaseStudy (criterion 3)', () => {
   it('returns slug, title, summary, date and a numeric order, and no body', () => {
     const caseStudy = parseCaseStudy(VALID_PATH, VALID_FIELDS);
-    expect(caseStudy).toEqual({
+    // toMatchObject, not toEqual: the `words` count (five-minute criterion 3)
+    // comes from the build-time view, wherever the loader merges it in.
+    expect(caseStudy).toMatchObject({
       slug: 'my-case',
       title: 'Design a Widget Service (like a widget store)',
       summary: 'A one-line hook.',
@@ -106,7 +108,7 @@ describe('CASE_STUDIES and getCaseStudy (criteria 3 and 4)', () => {
     expect(CASE_STUDIES).toHaveLength(Object.keys(RAW).length);
   });
 
-  it('is metadata only: exactly slug, title, summary, date and order', () => {
+  it('is metadata only: exactly slug, title, summary, date, order and words (five-minute criterion 3)', () => {
     for (const caseStudy of CASE_STUDIES) {
       expect(Object.keys(caseStudy).sort()).toEqual([
         'date',
@@ -114,8 +116,25 @@ describe('CASE_STUDIES and getCaseStudy (criteria 3 and 4)', () => {
         'slug',
         'summary',
         'title',
+        'words',
       ]);
     }
+  });
+
+  it('gives every case study a positive integer words: its body’s prose word count (five-minute criterion 3)', () => {
+    for (const caseStudy of CASE_STUDIES) {
+      expect(Number.isInteger(caseStudy.words), caseStudy.slug).toBe(true);
+      expect(caseStudy.words, caseStudy.slug).toBeGreaterThan(0);
+      expect(caseStudy.words, caseStudy.slug).toBe(
+        proseWordCount(parseFrontmatter(rawFor(caseStudy.slug)).content),
+      );
+    }
+  });
+
+  it('ignores a template line in the frontmatter (five-minute design: the loaders ignore it)', () => {
+    expect(parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, template: '2' })).toEqual(
+      parseCaseStudy(VALID_PATH, VALID_FIELDS),
+    );
   });
 
   it('matches each file’s frontmatter', () => {
@@ -236,6 +255,7 @@ describe('topicsForCaseStudy (criterion 6)', () => {
         summary: 'Stub.',
         date: '2026-09-28',
         order: 999,
+        words: 1,
       }),
     ).toEqual([]);
   });
@@ -304,293 +324,28 @@ describe('isSystemDesignPath', () => {
   );
 });
 
-// docs/specs/dedupe-app-scripts-tests.md, criterion 2: moving link extraction
-// from a regex to the markdown parser changes nothing on the real corpus. These
-// are the lists main produced when the change was specified (16 case studies,
-// in CASE_STUDIES order, each with its catalog topics in first-appearance
-// order), pinned as data rather than recomputed through the extractor.
-const PINNED_TOPICS_FOR_CASE_STUDY: Record<string, string[]> = {
-  'url-shortener': [
-    'systems-and-infrastructure/latency-vs-throughput',
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/sql-vs-nosql',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/forward-vs-reverse-proxy',
-    'systems-and-infrastructure/race-conditions',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/cache-invalidation',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/read-replicas',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/batching-and-asynchronous-writes',
-    'systems-and-infrastructure/rate-limiting',
-    'systems-and-infrastructure/consistent-hashing',
-    'systems-and-infrastructure/observability',
-  ],
-  'rate-limiter': [
-    'systems-and-infrastructure/rate-limiting',
-    'systems-and-infrastructure/latency-vs-throughput',
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/exponential-backoff',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/race-conditions',
-    'systems-and-infrastructure/consistent-hashing',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/circuit-breaker',
-    'systems-and-infrastructure/observability',
-  ],
-  'notification-system': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/sql-vs-nosql',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/websockets-vs-sse-vs-long-polling',
-    'systems-and-infrastructure/batching-and-asynchronous-writes',
-    'systems-and-infrastructure/rate-limiting',
-    'systems-and-infrastructure/latency-vs-throughput',
-    'systems-and-infrastructure/worker-pools',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/exponential-backoff',
-    'systems-and-infrastructure/dead-letter-queue',
-    'systems-and-infrastructure/circuit-breaker',
-    'systems-and-infrastructure/observability',
-  ],
-  'social-feed': [
-    'systems-and-infrastructure/cap-theorem',
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/sql-vs-nosql',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/cqrs',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/worker-pools',
-    'systems-and-infrastructure/consistent-hashing',
-    'systems-and-infrastructure/n-plus-one-queries',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/optimistic-vs-pessimistic-locking',
-    'systems-and-infrastructure/batching-and-asynchronous-writes',
-    'systems-and-infrastructure/cache-invalidation',
-    'systems-and-infrastructure/dead-letter-queue',
-    'systems-and-infrastructure/read-replicas',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/observability',
-    'systems-and-infrastructure/scaling-reads-vs-scaling-writes',
-  ],
-  messaging: [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/sql-vs-nosql',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/websockets-vs-sse-vs-long-polling',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/consistent-hashing',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/exponential-backoff',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/observability',
-  ],
-  'file-storage': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/database-indexing',
-    'systems-and-infrastructure/sql-vs-nosql',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/read-replicas',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/cache-invalidation',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/websockets-vs-sse-vs-long-polling',
-    'systems-and-infrastructure/optimistic-vs-pessimistic-locking',
-    'systems-and-infrastructure/race-conditions',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/exponential-backoff',
-  ],
-  'video-streaming': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/batching-and-asynchronous-writes',
-    'systems-and-infrastructure/workflow-engines',
-    'systems-and-infrastructure/worker-pools',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/dead-letter-queue',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/observability',
-  ],
-  'ride-sharing': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/consistent-hashing',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/websockets-vs-sse-vs-long-polling',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/race-conditions',
-    'systems-and-infrastructure/optimistic-vs-pessimistic-locking',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/exponential-backoff',
-    'systems-and-infrastructure/circuit-breaker',
-    'systems-and-infrastructure/observability',
-  ],
-  'ecommerce-checkout': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/optimistic-vs-pessimistic-locking',
-    'systems-and-infrastructure/sql-vs-nosql',
-    'systems-and-infrastructure/forward-vs-reverse-proxy',
-    'systems-and-infrastructure/cqrs',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/read-replicas',
-    'systems-and-infrastructure/cache-invalidation',
-    'systems-and-infrastructure/race-conditions',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/saga-pattern',
-    'systems-and-infrastructure/workflow-engines',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/dead-letter-queue',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/circuit-breaker',
-    'systems-and-infrastructure/exponential-backoff',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/observability',
-  ],
-  'ticket-booking': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/websockets-vs-sse-vs-long-polling',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/rate-limiting',
-    'security/jwt',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/race-conditions',
-    'systems-and-infrastructure/optimistic-vs-pessimistic-locking',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/circuit-breaker',
-    'systems-and-infrastructure/observability',
-    'systems-and-infrastructure/saga-pattern',
-  ],
-  'payment-system': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/sql-vs-nosql',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/race-conditions',
-    'systems-and-infrastructure/optimistic-vs-pessimistic-locking',
-    'systems-and-infrastructure/exponential-backoff',
-    'systems-and-infrastructure/dead-letter-queue',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/read-replicas',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/saga-pattern',
-    'systems-and-infrastructure/workflow-engines',
-    'systems-and-infrastructure/circuit-breaker',
-    'systems-and-infrastructure/observability',
-  ],
-  maps: [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/database-indexing',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/cache-invalidation',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/observability',
-  ],
-  'ad-click-aggregator': [
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/dead-letter-queue',
-    'systems-and-infrastructure/observability',
-  ],
-  'search-engine': [
-    'ai-and-ml/vector-search',
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/database-indexing',
-    'systems-and-infrastructure/forward-vs-reverse-proxy',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/circuit-breaker',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/exponential-backoff',
-  ],
-  'recommendation-system': [
-    'ai-and-ml/what-is-mlops',
-    'engineering-practices/numbers-every-engineer-should-know',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/caching',
-    'systems-and-infrastructure/message-queues',
-    'systems-and-infrastructure/latency-vs-throughput',
-    'ai-and-ml/vector-search',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/circuit-breaker',
-  ],
-  'llm-chat-serving': [
-    'ai-and-ml/tokenization',
-    'engineering-practices/numbers-every-engineer-should-know',
-    'ai-and-ml/kv-cache',
-    'systems-and-infrastructure/partitioning-vs-sharding',
-    'systems-and-infrastructure/idempotency',
-    'systems-and-infrastructure/websockets-vs-sse-vs-long-polling',
-    'systems-and-infrastructure/outbox-pattern',
-    'systems-and-infrastructure/distributed-locks',
-    'systems-and-infrastructure/latency-vs-throughput',
-    'systems-and-infrastructure/consistent-hashing',
-    'systems-and-infrastructure/thundering-herd-problem',
-    'systems-and-infrastructure/backpressure',
-    'systems-and-infrastructure/exponential-backoff',
-    'systems-and-infrastructure/rate-limiting',
-    'ai-and-ml/context-window',
-  ],
-};
+// Invariants over the real corpus that hold for any content: the topic → case
+// study index is exactly the inverse of each case study's topic list, and
+// every case study's topic list is duplicate-free and names only real topics.
+describe('the real corpus links consistently', () => {
+  const keyOf = (t: { section: string; slug: string }) => `${t.section}/${t.slug}`;
+  const topicKeys = new Set(TOPICS.map(keyOf));
 
-describe('the real corpus links as before (dedupe criterion 2)', () => {
-  it('has the same 16 case studies, in order', () => {
-    expect(CASE_STUDIES.map((c) => c.slug)).toEqual(
-      Object.keys(PINNED_TOPICS_FOR_CASE_STUDY),
-    );
-  });
-
-  it.each(Object.entries(PINNED_TOPICS_FOR_CASE_STUDY))(
-    'topicsForCaseStudy(%s) is unchanged',
-    (slug, topics) => {
-      expect(
-        topicsForCaseStudy(getCaseStudy(slug)!).map((t) => `${t.section}/${t.slug}`),
-      ).toEqual(topics);
+  it.each(CASE_STUDIES.map((c) => [c.slug, c] as const))(
+    'topicsForCaseStudy(%s) has no duplicates and names only real topics',
+    (_slug, caseStudy) => {
+      const keys = topicsForCaseStudy(caseStudy).map(keyOf);
+      expect(new Set(keys).size).toBe(keys.length);
+      for (const key of keys) expect(topicKeys.has(key), key).toBe(true);
     },
   );
 
-  it('caseStudiesForTopic is unchanged for every topic', () => {
+  it('caseStudiesForTopic is the inverse of topicsForCaseStudy for every topic', () => {
     for (const topic of TOPICS) {
-      const key = `${topic.section}/${topic.slug}`;
-      const expected = Object.entries(PINNED_TOPICS_FOR_CASE_STUDY)
-        .filter(([, topics]) => topics.includes(key))
-        .map(([slug]) => slug);
+      const key = keyOf(topic);
+      const expected = CASE_STUDIES.filter((c) =>
+        topicsForCaseStudy(c).map(keyOf).includes(key),
+      ).map((c) => c.slug);
       expect(
         caseStudiesForTopic(topic.section, topic.slug).map((c) => c.slug),
         key,

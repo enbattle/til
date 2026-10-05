@@ -1,7 +1,7 @@
 // What the site reads out of a markdown body, parsed with the site's own
 // markdown stack: diagram images, catalog and case-study links, DSA
 // prerequisites. Shared by the app (MarkdownRenderer, Diagram, headings.ts),
-// `vite.config.ts` (the build-time `?links` and `?dsaPrereqs` queries) and
+// `vite.config.ts` (the build-time `?links`, `?dsaPrereqs` and `?words` queries) and
 // scripts/check-diagrams.mjs, which runs under plain Node and can't import a
 // `.ts` module, so this is JavaScript with its types in markdown.d.mts.
 import remarkGfm from 'remark-gfm';
@@ -142,4 +142,44 @@ export function dsaPrerequisites(markdown) {
     if (slug && !slugs.includes(slug)) slugs.push(slug);
   }
   return slugs;
+}
+
+// Nodes whose text a reader doesn't read as prose: code blocks, raw HTML,
+// reference definitions, and images (their alt text).
+const UNREAD = new Set(['code', 'html', 'definition', 'image', 'imageReference']);
+// Blocks that hold inline text: each one's words are counted on their own, so
+// two blocks never merge into one token.
+const TEXT_BLOCKS = new Set(['paragraph', 'heading', 'tableCell']);
+
+/** The inline text of `node` as one string: formatting adds no space, so
+ * `foo**bar**` stays one token; a hard line break is a space. */
+function inlineText(node) {
+  if (UNREAD.has(node.type)) return '';
+  if (node.type === 'break') return ' ';
+  if (node.type === 'text' || node.type === 'inlineCode') return node.value;
+  return (node.children ?? []).map(inlineText).join('');
+}
+
+/**
+ * The number of words a reader reads in a markdown body: heading, paragraph,
+ * list, table, blockquote and link text, and inline code. Code blocks (fenced
+ * or indented), image alt text, raw HTML and reference definitions don't
+ * count. A word is a whitespace-separated token with a letter or digit in it.
+ * Drives the read-time label (the build-time `?words` view) and the structure
+ * tests' five-minute budget (docs/specs/five-minute-templates.md).
+ */
+export function proseWordCount(markdown) {
+  let words = 0;
+  const visit = (node) => {
+    if (UNREAD.has(node.type)) return;
+    if (TEXT_BLOCKS.has(node.type)) {
+      words += inlineText(node)
+        .split(/\s+/)
+        .filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
+      return;
+    }
+    node.children?.forEach(visit);
+  };
+  visit(parse(markdown));
+  return words;
 }

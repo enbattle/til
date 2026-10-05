@@ -8,8 +8,66 @@ import {
   extractCaseStudyRefs,
   extractTopicRefs,
   isDiagramSrc,
+  proseWordCount,
   type TopicRef,
 } from './markdown.mjs';
+
+// docs/specs/five-minute-templates.md, criterion 1: the words a reader reads.
+// A word is a whitespace-separated token with a letter or digit in it; code
+// blocks, image alt text, raw HTML and reference definitions don't count;
+// inline formatting doesn't split a word and separate blocks don't join.
+describe('proseWordCount (five-minute criterion 1)', () => {
+  const FIVE = 'The cache holds hot keys.';
+
+  it('is exported from the shared markdown module', () => {
+    expect(typeof ({ ...markdown } as Record<string, unknown>).proseWordCount).toBe(
+      'function',
+    );
+  });
+
+  it.each([
+    ['a paragraph of 5 words', FIVE, 5],
+    [
+      'the same with a fenced code block added',
+      `${FIVE}\n\n\`\`\`python\nfor key in keys:\n    cache[key] = load(key)\n\`\`\``,
+      5,
+    ],
+    [
+      'the same with an image whose alt text has 4 words',
+      `${FIVE}\n\n![four words of alt](/diagrams/demo/flow.svg)`,
+      5,
+    ],
+    ['an inline image inside a paragraph', 'See ![four words of alt](/x.png) here.', 2],
+    ['a link', '[two words](/x)', 2],
+    ['a bold label', '**Reads:** 116 a second', 4],
+    ['bold inside a word', 'foo**bar**', 1],
+    ['emphasis and code inside a word', 'foo*bar* baz`qux`', 2],
+    ['two one-word paragraphs', 'one\n\ntwo', 2],
+    ['a heading then a paragraph', '## Title\nword', 2],
+    ['a tight list', '- alpha\n- beta\n- gamma', 3],
+    [
+      'a table with cells `a b` and `c` under one-word headers',
+      '| First | Second |\n| --- | --- |\n| a b | c |',
+      5,
+    ],
+    ['inline code', '`x7Kp2Qa`', 1],
+    ['inline code with spaces', 'Run `npm run verify` now.', 5],
+    ['punctuation-only tokens', 'one — two = three', 3],
+    ['only punctuation', '— =', 0],
+    ['a blockquote', '> Quoted three words', 3],
+    ['an indented code block', `${FIVE}\n\n    code words in here\n\nAfter.`, 6],
+    ['a raw HTML block', `${FIVE}\n\n<div>\nhidden html words\n</div>`, 5],
+    [
+      'a reference definition',
+      `See [the cache][c].\n\n[c]: /systems-and-infrastructure/caching "A title here"`,
+      3,
+    ],
+    ['an empty body', '', 0],
+    ['tokens with a digit and no letter', 'O(1) and 116 and 10×', 5],
+  ])('counts %s', (_, body, words) => {
+    expect(proseWordCount(body)).toBe(words);
+  });
+});
 
 // The link extractors live in one plain-JS module with the site's markdown
 // parser (no `import.meta.glob`, no `@/` alias), so `vite.config.ts` and the

@@ -13,6 +13,7 @@ import {
 } from '@/lib/dsa';
 import { h2Headings } from '@/lib/headings';
 import { neighbours } from '@/lib/neighbours';
+import { readingMinutes } from '@/lib/reading-time';
 
 export function DsaEntryPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -30,7 +31,8 @@ export function DsaEntryPage() {
         title={entry.title}
         meta={
           <>
-            <span className="font-medium">{dsaKindLabel(entry.kind)}</span> · {entry.date}
+            <span className="font-medium">{dsaKindLabel(entry.kind)}</span> · {entry.date}{' '}
+            · {readingMinutes(entry.words)} min read
           </>
         }
       />

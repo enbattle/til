@@ -3,7 +3,7 @@ import { SECTIONS } from '@/content/registry';
 import type { DsaEntry, DsaKind } from '@/types';
 import { RAW_DSA_ENTRIES as RAW, rawDsaEntry as rawFor, without } from '@/test/content';
 import { parseFrontmatter } from './frontmatter';
-import { dsaPrerequisites } from './markdown.mjs';
+import { dsaPrerequisites, proseWordCount } from './markdown.mjs';
 import {
   DSA_ENTRIES,
   DSA_GROUPS,
@@ -45,7 +45,9 @@ const VALID_FIELDS: Record<string, string> = {
 describe('parseDsaEntry (criterion 1)', () => {
   it('returns slug, title, summary, date and kind, and no body', () => {
     const entry = parseDsaEntry(VALID_PATH, VALID_FIELDS);
-    expect(entry).toEqual({
+    // toMatchObject, not toEqual: the `words` count (five-minute criterion 3)
+    // comes from the build-time view, wherever the loader merges it in.
+    expect(entry).toMatchObject({
       slug: 'my-entry',
       title: 'Binary Search',
       summary: 'Halve a sorted range until one index is left.',
@@ -109,7 +111,7 @@ describe('parseDsaEntry (criterion 1)', () => {
 // --- Criterion 2: orderDsaEntries ---
 
 function entry(slug: string, kind: DsaKind, title: string): DsaEntry {
-  return { slug, title, summary: `${title}.`, date: '2026-09-30', kind };
+  return { slug, title, summary: `${title}.`, date: '2026-09-30', kind, words: 1 };
 }
 
 describe('orderDsaEntries (criterion 2)', () => {
@@ -353,10 +355,33 @@ describe('DSA_ENTRIES and getDsaEntry (criteria 2 and 4)', () => {
     }
   });
 
-  it('is metadata only: exactly slug, title, summary, date and kind', () => {
+  it('is metadata only: exactly slug, title, summary, date, kind and words (five-minute criterion 3)', () => {
     for (const e of DSA_ENTRIES) {
-      expect(Object.keys(e).sort()).toEqual(['date', 'kind', 'slug', 'summary', 'title']);
+      expect(Object.keys(e).sort()).toEqual([
+        'date',
+        'kind',
+        'slug',
+        'summary',
+        'title',
+        'words',
+      ]);
     }
+  });
+
+  it('gives every entry a positive integer words: its body’s prose word count (five-minute criterion 3)', () => {
+    for (const e of DSA_ENTRIES) {
+      expect(Number.isInteger(e.words), e.slug).toBe(true);
+      expect(e.words, e.slug).toBeGreaterThan(0);
+      expect(e.words, e.slug).toBe(
+        proseWordCount(parseFrontmatter(rawFor(e.slug)).content),
+      );
+    }
+  });
+
+  it('ignores a template line in the frontmatter (five-minute design: the loaders ignore it)', () => {
+    expect(parseDsaEntry(VALID_PATH, { ...VALID_FIELDS, template: '2' })).toEqual(
+      parseDsaEntry(VALID_PATH, VALID_FIELDS),
+    );
   });
 
   it('matches each file’s frontmatter', () => {

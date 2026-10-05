@@ -46,9 +46,9 @@ Python tests never ran.
 
 ## Stage 1 — Draft the code, its tests, then the entry
 
-Write it yourself, directly, as `add-topic` does. Read the reference entry for
-the kind first (docs/dsa.md's "Templates" names one per kind), with its code
-files: they set the length, the voice and how comments carry the reasons.
+Write it yourself, directly, as `add-topic` does. Read the reference entry
+first (docs/dsa.md's "Templates" names it), with its code files: it sets the
+length, the voice and how comments carry the reasons.
 Read the Writing Standard's "Case studies and DSA entries" section too: it
 sets the five-minute budget and the voice.
 
@@ -74,7 +74,8 @@ sets the five-minute budget and the voice.
    whether a loop ends (its condition, or the step that moves it forward): a
    loop that never ends hangs the test run instead of failing it.
 3. **Entry.** `src/dsa/entries/<slug>.md`, slug kebab-case. Frontmatter
-   `title`, a one-sentence `summary`, `date` (today) and `kind`. The `##`
+   `title`, a one-sentence `summary`, `date` (today), `kind` and `template: 2`
+   (the current templates; docs/dsa.md, "Migrating"). The `##`
    headings are the kind's template from docs/dsa.md, exactly. Then:
    - **Prerequisites** links only the entries the prose really needs
      (`[Hash map](/dsa/hash-map)`), each with a phrase saying what it's needed
@@ -94,8 +95,8 @@ sets the five-minute budget and the voice.
      positions, the buckets after three inserts) and recompute it before
      moving on.
    - **Budget**: at most 1,150 words of prose, code not counted. Run
-     `npx vitest run src/dsa/dsa-structure.test.ts` for the count rather than
-     estimating it.
+     `npx vitest run src/dsa/dsa-structure.test.ts` rather than estimating:
+     it fails, naming the count, when the prose is over budget.
    - **Complexity** and **Operations and costs** give time and space with the
      reason, not just the answer, and every figure is checked.
    - Link a catalog topic where the prose uses it, as `[text](/<section>/<slug>)`
@@ -112,8 +113,9 @@ shape), ask the user rather than guess.
 npm run verify
 ```
 
-`dsa-structure.test.ts` (the heading template, pairs where they belong, a
-paragraph after each walkthrough pair), `dsa-code-chunks.test.ts` (the chunks
+`dsa-structure.test.ts` (the template, and the word budget on a
+`template: 2` entry, as [docs/dsa.md](../../../docs/dsa.md) lists them),
+`dsa-code-chunks.test.ts` (the chunks
 equal the code files), `dsa.test.ts` (frontmatter, prerequisites that exist
 and form no cycle), the entry's own vitest and pytest files, and
 `check:bundle` (the body stays out of the main chunk) catch the structural
