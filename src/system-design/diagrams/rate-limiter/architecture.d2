@@ -8,7 +8,7 @@ lb: Load balancer
 rules: Rules config {
   shape: stored_data
 }
-gw: "API gateway nodes\n(limiter library, global-limit shares)" {
+gw: "API gateway nodes\n(limiter library)" {
   style.multiple: true
 }
 store: "Counter store\n(Redis shards + replicas)" {
@@ -22,6 +22,6 @@ metrics: Metrics
 client -> lb: "API requests"
 lb -> gw
 rules -> gw: "rules, pushed on change"
-gw -> store: "atomic bucket scripts,\nglobal-share sync"
+gw -> store: "atomic bucket scripts"
 gw -> svc: "allowed requests"
 gw -> metrics: "decisions, 429s"

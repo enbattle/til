@@ -13,7 +13,6 @@ gw: Connection gateways {
 registry: Session registry {
   shape: stored_data
 }
-presence: Presence service
 msg: Message service
 store: Message store {
   shape: cylinder
@@ -28,7 +27,6 @@ clients -> lb: "WebSocket, HTTPS"
 lb -> gw: "WebSocket"
 lb -> msg: "HTTPS: history, groups, resync"
 gw -> registry: "user is here"
-gw <-> presence: "online, typing"
 gw -> msg: "send, sync, receipts"
 msg -> store: "append, read by cursor"
 msg -> queue: "messages, receipts"
