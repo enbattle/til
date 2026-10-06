@@ -20,7 +20,7 @@ pay: Payment service
 events: Order event stream {
   shape: queue
 }
-consumers: "Email, fulfilment"
+consumers: "Email, fulfillment"
 
 client -> gw: "HTTPS API"
 gw -> catalog: "product pages"

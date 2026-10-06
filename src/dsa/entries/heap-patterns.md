@@ -26,7 +26,7 @@ All three shapes keep a heap small, so its smallest item is always the one you n
 
 - The statement says "k largest", "k smallest", "k most frequent" or "k closest", especially over a stream or a collection too big to sort.
 - You merge k sorted lists, files or streams, or find the k-th smallest across them.
-- You need the median of a set that only grows, after every insertion. A sliding window also deletes old values, which two heaps can't do directly: you mark the value dead and discard it when it reaches a root.
+- You need the median of a set that only grows, after every insertion. A sliding window also deletes old values, which two heaps can't do directly.
 - You need one extreme once: scan for it. You need the full order: sort. You need one rank of a fixed array: [quickselect](/dsa/sorting) is O(n) on average.
 - In Python's library, `heapq.nlargest(k, items)` and `Counter.most_common(k)` do top k, and `heapq.merge(*lists)` merges lazily and takes a `key`. Write the heap yourself when asked how it works.
 
@@ -120,7 +120,7 @@ export function topKLargest<T>(items: T[], k: number, less: Less<T>): T[] {
 }
 ```
 
-The heap holds at most k items, and a rejected value costs one comparison with the root. The merge needs the same heap with richer entries.
+The heap holds at most k items, and a rejected value costs one comparison with the root. The merge reuses the same heap with richer entries.
 
 ```python
 def merge_sorted(lists: list[list[int]]) -> list[int]:

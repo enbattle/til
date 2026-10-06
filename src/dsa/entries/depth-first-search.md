@@ -6,7 +6,7 @@ kind: algorithm
 template: 2
 ---
 
-Depth-first search (DFS) explores by committing: step to a neighbor, then to one of its neighbors, and keep going until you are stuck. Then back up to the nearest place with an unexplored option. You'll use it to count the pieces of a graph, find a loop in a directed graph, and answer questions about a tree, which is a graph with a root and no loops.
+Depth-first search (DFS) explores by committing: step to a neighbor, then to one of its neighbors, and keep going until you are stuck. Then back up to the nearest place with an unexplored option. Here it counts the pieces of a graph, finds a loop in a directed graph, and answers questions about a tree, which is a graph with a root and no loops.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ A tree needs no seen set, since each node has one parent, so you just recurse. T
 
 - The statement asks how many groups, whether everything is connected, or whether A can reach B, with no shortest route needed.
 - "Count the islands" or "flood fill" on a grid: each cell is a vertex and its neighbors come from its coordinates.
-- Prerequisites or dependencies where a circular one is an error: a cycle check.
+- Prerequisites or dependencies where a circular one is an error: a cycle check, with [topological sort](/dsa/topological-sort) when you also need an order.
 - A tree answer built from the children (height, size, balanced?) or from the path above (sums, bounds).
 - You need every path or arrangement: that is [backtracking](/dsa/backtracking), DFS plus undoing.
 - The fewest steps between two points: use breadth-first search instead.
@@ -258,7 +258,7 @@ The tree functions take O(n) time and O(h) space for the recursion, where h is t
 
 ## Pitfalls
 
-- **Marking on pop without the skip check in `explore`.** In a triangle 0, 1, 2 started at 0, vertices 1 and 2 are both pushed, and 1 pushes 2 again before 2 is marked, so 2 is popped and scanned twice. `if u in seen: continue` prevents it. Marking on push instead scans once, but visits 0, 3, 2, 1 on a graph where depth-first visits 0, 1, 3, 2.
+- **Marking on pop without the skip check in `explore`.** In a triangle 0, 1, 2 started at 0, vertices 1 and 2 are both pushed, and 1 pushes 2 again before 2 is marked, so 2 is popped and scanned twice. `if u in seen: continue` prevents it. Marking on push instead scans once but is not depth-first. On `[[1, 2, 3], [0, 3], [0], [0, 1]]` from 0, it visits 0, 1, 2, 3 with the reversal and 0, 3, 2, 1 without, where depth-first visits 0, 1, 3, 2.
 - **Treating "seen" as "on the path" in `has_cycle`.** With `state[v] != UNVISITED` as the test, the diamond reports a cycle when vertex 2 reaches the finished 3. Resetting a vertex to unvisited on exit avoids that but re-walks shared subgraphs.
 - **Ending the path sum at `None`.** If `has_path_sum` returned `remaining == 0` for an empty child, `[1, 2]` with target 1 would be `True`: node 1's empty right side hits 0, yet the only real path adds to 3.
 - **Returning the candidate from `diameter`.** Returning `left + right + 2` lets a parent count both sides of a child, and the example gives 9, not 6.

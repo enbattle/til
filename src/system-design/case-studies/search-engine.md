@@ -130,13 +130,11 @@ cheap stage by what it lets through.
 Compressed posting lists are awkward to change. So each replica keeps a base
 index, rebuilt daily and never modified, plus an in-memory **live index** of
 changes since, 3.5% of the shard. A query searches both, and a **deleted set**
-(base pages to skip) hides a changed page's old copy.
+(base pages to skip) hides a changed page's old copy. The crawler commits each new `version` with an [outbox](/systems-and-infrastructure/outbox-pattern) row in the same transaction, so a crash can't lose it, and replicas skip any version they already hold, replacing an older live copy ([idempotency](/systems-and-infrastructure/idempotency)). A change is searchable in seconds, five minutes via the cache.
 
 Why not update the lists in place? A page touches 250 lists, each rewritten
 while queries read it, and inserts break the quality order ranking relies on.
-The live
-index costs a second lookup per query. The crawler commits each new `version` with an [outbox](/systems-and-infrastructure/outbox-pattern) row in the same transaction, so a crash can't lose it, and replicas skip any version they already hold, replacing an older live copy ([idempotency](/systems-and-infrastructure/idempotency)). A
-change is searchable in seconds, five minutes via the cache.
+The live index costs a second lookup per query.
 
 **Rule of thumb.** When a structure is fast because it is immutable, keep a
 small mutable layer beside it and merge on a schedule.

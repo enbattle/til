@@ -146,7 +146,8 @@ describe('connected components', () => {
 
   it('goes deep before backing up', () => {
     // Vertex 1 must be fully explored (reaching 3) before 2 is visited. A queue
-    // gives 0, 1, 2, 3; marking on push gives 0, 3, 2, 1.
+    // gives 0, 1, 2, 3; marking on push gives 0, 1, 2, 3 with the reversal and
+    // 0, 3, 2, 1 without it.
     const seen = new Set<number>();
     explore([[1, 2, 3], [0, 3], [0], [0, 1]], 0, seen);
     expect([...seen]).toEqual([0, 1, 3, 2]);

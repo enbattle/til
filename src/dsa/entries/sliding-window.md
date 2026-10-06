@@ -6,18 +6,18 @@ kind: pattern
 template: 2
 ---
 
-A **window** is a contiguous run of an array, marked by two indexes: `left`, its first position, and `right`, its last. Sliding it means moving those indexes forward while you keep an answer for what's inside, instead of recomputing that answer at every position. You'll use one array, `[2, 1, 5, 1, 3, 2]`, to ask three questions, one fixed-size window and two variable-size ones.
+A **window** is a contiguous run of an array, marked by two indices: `left`, its first position, and `right`, its last. Sliding it means moving those indices forward while you keep an answer for what's inside, instead of recomputing that answer at every position. One array, `[2, 1, 5, 1, 3, 2]`, carries three questions: one fixed-size window and two variable-size ones.
 
 ## Prerequisites
 
-- [Two pointers](/dsa/two-pointers): the window is two indexes that move in the same direction, with a new rule for which one moves.
+- [Two pointers](/dsa/two-pointers): the window is two indices that move in the same direction, with a new rule for which one moves.
 - [Hash map](/dsa/hash-map): the third question keeps a map from each value to how often it appears in the window. Complexity uses big-O notation, defined in [Arrays and strings](/dsa/arrays-and-strings).
 
 ## The idea
 
-Start with a fixed size: what's the largest sum of 3 consecutive values? The slow way adds up every group of three from scratch: 4 groups, 2 additions each. But neighboring groups share all but one value. Slide one step right, subtract the value that leaves, add the one that enters, and you have the new sum in one step, however wide the window is.
+Start with a fixed size: what's the largest sum of 3 consecutive values? The slow way adds up every group of three from scratch: 4 groups, 3 values to add in each. But neighboring groups share all but one value. Slide one step right, subtract the value that leaves, add the one that enters, and you have the new sum in one step, however wide the window is.
 
-| `right` | In  | Out | Window sum | Indexes |
+| `right` | In  | Out | Window sum | Indices |
 | ------- | --- | --- | ---------- | ------- |
 | 2       |     |     | 2+1+5 = 8  | 0..2    |
 | 3       | 1   | 2   | 8+1-2 = 7  | 1..3    |
@@ -194,5 +194,5 @@ Space is O(1) for the two sums, and O(k) for the map, which holds at most k + 1 
 - **Dropping the wrong value from a fixed window.** The leaver is `nums[right - k]`. Writing `right - k + 1` removes a value still inside the window, and the sum drifts by one element per step, with plausible numbers and no error.
 - **`if` instead of `while` when shrinking.** One drop may not repair the window, or may leave it still valid with a shorter answer ahead. On our array the `if` version of `shortest_run_at_least` returns 4, not 3.
 - **Starting `best` or `shortest` at the wrong value.** `best = 0` fails on all-negative sums, and `shortest = 0` wins every `min`. Start from the first window, or from a length no run can reach.
-- **Leaving a count at 0 in the map.** In `longest_with_k_distinct`, a key stuck at 0 still counts toward `len(counts)`, so the window shrinks too far, or the loop runs `left` off the end of the array (in TypeScript it loops forever). Delete the key when its count hits 0.
-- **Using it when the condition isn't one-way.** With negative numbers, "the sum equals a target" can come true, then false, then true again as the window grows, so there's no telling which end to move. "Sum equals a target" is a job for [prefix sums](/dsa/prefix-sums) and a hash map; "shortest run reaching a target" needs prefix sums and a deque, as in [monotonic stack](/dsa/monotonic-stack).
+- **Leaving a count at 0 in the map.** In `longest_with_k_distinct`, a key stuck at 0 still counts toward `len(counts)`, so the loop runs `left` off the end of the array (in TypeScript it loops forever). Delete the key when its count hits 0.
+- **Using it when the condition isn't one-way.** With negative numbers, "the sum equals a target" can come true, then false, then true again as the window grows, so there's no telling which end to move. "Sum equals a target" is a job for [prefix sums](/dsa/prefix-sums) and a hash map; "shortest run reaching a target" needs prefix sums and a deque, as in [stacks and queues](/dsa/stacks-and-queues).

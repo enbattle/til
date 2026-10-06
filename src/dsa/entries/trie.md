@@ -211,7 +211,7 @@ node.
 On the example, `"ap"` is not stored but `starts_with("ap")` is true, and
 `"apples"` fails at the sixth step. Listing the words below a prefix means
 visiting every node under it, so it uses an explicit **stack** (a list where
-the last item pushed is the first popped). Each entry carries the string
+the last item pushed is the first popped; see [stacks and queues](/dsa/stacks-and-queues)). Each entry carries the string
 spelled so far.
 
 ```python

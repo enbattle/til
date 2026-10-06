@@ -217,7 +217,7 @@ export function inorder<T>(root: TreeNode<T> | null): T[] {
     }
     const top = stack.pop()!;
     out.push(top.value);
-    node = top.right; // else the loop re-walks the left spine forever
+    node = top.right; // else every right subtree is dropped
   }
   return out;
 }
@@ -258,6 +258,6 @@ The example gives `[[1], [2, 3], [4, 5, 6], [7]]`, and the number of levels is t
 ## Pitfalls
 
 - **Testing a value for falsiness in `_child`.** Writing `if not value` skips a node holding 0 or an empty string, and the tree silently loses it. Test `is None`.
-- **Recursing on a tree you didn't build.** `height` uses one frame per level, so a chain of about a thousand nodes overflows the stack in Python (default limit 1,000 frames) and a longer one in Node. Use the loop in `inorder`, or a level count.
-- **Forgetting `node = node.right` in `inorder`.** Without it, `node` is still the node just popped, so the inner loop pushes it and its left spine again, and the function never returns. A version that moved right only some of the time would skip 7 or 5 on the example.
+- **Recursing on a tree you didn't build.** `height` uses one frame per level, so a chain of about a thousand nodes overflows the stack in Python (default limit 1,000 frames) and a longer one in Node. Use the loop in `inorder`.
+- **Forgetting `node = node.right` in `inorder`.** In Python, without it, `node` is still the node just popped, so the inner loop pushes it and its left spine again, and the function never returns. In TypeScript `node` is already `null`, so the walk drops every right subtree (4, 2, 1 on the example).
 - **Starting `height` at 0 for the empty tree.** With `return 0` at the base case, a leaf has height 1 and every answer is one too high, which matches the node-counting convention rather than the edge-counting one this entry uses.

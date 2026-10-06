@@ -6,7 +6,7 @@ kind: data-structure
 template: 2
 ---
 
-A binary search tree keeps keys sorted while you add and remove them. You'll build one from the keys `50, 30, 70, 20, 40, 60, 80, 65`, remove from it three ways, and then feed the same keys in a different order to see what breaks it.
+A binary search tree keeps keys sorted while you add and remove them. Build one from the keys `50, 30, 70, 20, 40, 60, 80, 65`, remove from it three ways, and then feed the same keys in a different order to see what breaks it.
 
 ## Prerequisites
 
@@ -46,7 +46,7 @@ Now the catch. Insert the same keys already sorted, `20, 30, 40, 50, 60, 65, 70,
 
 ## Operations and costs
 
-Average means keys arrive in random order, which keeps the tree bushy with height around log n. Worst means sorted order, a chain of height n - 1.
+Average means keys arrive in random order, which keeps the tree bushy with height O(log n). Worst means sorted order, a chain of height n - 1.
 
 | Operation                     | Average  | Worst |
 | ----------------------------- | -------- | ----- |
@@ -197,7 +197,7 @@ export function remove(root: Node | null, key: number): Node | null {
 }
 ```
 
-Two more functions finish the entry. `in_order` yields the keys sorted, the answer to "k-th smallest" and "all keys in a range" once you stop it early. `is_valid` checks the invariant, a common interview question in its own right.
+Two more functions finish the entry. `in_order` is [binary tree's `inorder`](/dsa/binary-tree) loop written as a generator, so a caller can stop early: that answers "k-th smallest" and "all keys in a range". `is_valid` checks the invariant, a common interview question in its own right.
 
 ```python
 def in_order(root: Node | None) -> Iterator[int]:
@@ -264,5 +264,5 @@ Each node carries the open interval its key must fall in: the root allows anythi
 
 - **Checking only parent and child in `is_valid`.** Without the `lo` and `hi` bounds, the tree 50, left child 30, whose right child is 60 passes: each pair is ordered, yet 60 sits left of 50, and a search for 60 goes right at the root and misses it.
 - **Starting `parent` at the original parent in `remove`.** The line `parent, successor = node, node.right` makes the successor's parent the right starting point. Leave `parent` as it was and removing 70, whose successor 80 is its own right child, makes 50 drop its entire right subtree: 60, 65, 70 and 80 vanish.
-- **Recursing where the tree can be deep.** A recursive `in_order` on the 8-key chain is fine, but on a chain of a thousand or more sorted keys it exceeds Python's default recursion limit, and Node.js has a limit too. The explicit `stack` has no such limit.
+- **Recursing where the tree can be deep.** A recursive `in_order` is fine on the 8-key chain but overflows the call stack on a long sorted chain, as [binary tree](/dsa/binary-tree) explains. The explicit `stack` has no such limit.
 - **Letting `insert` add a duplicate.** `find` stops at the existing node, so without the early `return root` the new node is attached to that node's parent and replaces it. Inserting 30 again would cut off 20 and 40 along with it.

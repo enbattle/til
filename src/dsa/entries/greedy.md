@@ -9,8 +9,8 @@ template: 2
 A **greedy** algorithm builds an answer one decision at a time, takes whichever
 option looks best right now, and never goes back. There's nothing to search or
 undo, so the code is short and fast. The catch is that nothing guarantees it's
-right: you have to argue it. You'll see the argument succeed on meeting rooms
-and a jump game, then fail on coins, which is the signal to reach for DP.
+right: you have to argue it. The argument succeeds on meeting rooms
+and a jump game, then fails on coins, which is the signal to reach for DP.
 
 ## Prerequisites
 

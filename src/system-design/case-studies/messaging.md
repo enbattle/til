@@ -26,7 +26,7 @@ regions.
 
 ## Key numbers
 
-First, size the send path, delivery, gateways and store, with peak at ten times average
+Size the send path, delivery, gateways and store, with peak at ten times average
 ([numbers every engineer should know](/engineering-practices/numbers-every-engineer-should-know)):
 
 - **Sends: about 1.2 million messages a second at peak.** 200 million × 50 = 10
@@ -84,8 +84,6 @@ arrived after 5,209?". Several workers write an inbox, so one entry can land
 behind a position already read: the phone reads a few seconds back and drops
 what it has.
 
-Now the three choices inside it.
-
 ## Decision: one owner numbers each conversation
 
 Every member must see the same order, so one message service instance owns each
@@ -131,7 +129,7 @@ channels their clients have open, so each message goes once to each
 subscribed gateway, at most 200, and offline members get one summary push.
 
 Why not fan out on write everywhere, for one path to maintain? One busy
-channel would add 4% to the whole store's daily growth. The cost of not
+channel would add 3% to the whole store's daily growth. The cost of not
 doing it: two delivery paths and a threshold to tune.
 
 **Rule of thumb.** Fan out on write while audiences are small; once an audience

@@ -39,7 +39,7 @@ servers, with peak at ten times average
   chunks per file: 120 billion chunk rows × 100 bytes = 12 TB, plus chunk lists
   at 40 bytes an entry = 4.8 TB.
 - **Notification connections: 10 million.** 20 million clients, half online at
-  peak; at 100,000 each, 100 servers.
+  peak; at an assumed 100,000 each, 100 servers.
 
 ## High-level architecture
 
@@ -96,11 +96,11 @@ not a conflict with itself
 Each chunk is named by its **SHA-256 hash**, a 32-byte fingerprint of its
 bytes, and a version is the ordered list of hashes. Saving uploads only the
 hashes the namespace lacks, so resuming a 50 GB upload (12,500 chunks) and saving an edit are the same question. A `chunks` row is `pending` until its object exists, so a resume re-sends only those. Version 8 shares 497 chunks with version
-7, so 30 days of history add at most 1.8 PB (30 × 60 TB), under 1% of 200 PB.
+7; 30 days of history add at most 1.8 PB (30 × 60 TB), under 1% of 200 PB.
 
 Why not upload each file whole, as a resumable multipart upload? For the
 average 2 MB file that works as well. It loses on big files edited in place: a month of daily saves of the 2 GB database holds 60 GB of history,
-against about 2.4 GB with chunks. Chunks cost a request each and 4.8 TB of
+against about 360 MB with chunks. Chunks cost a request each and 4.8 TB of
 chunk lists, and a compressed `.xlsx` changes throughout on any edit anyway.
 
 **Rule of thumb.** Split large, partly changing blobs into content-addressed
@@ -118,7 +118,7 @@ over a held-open stream
 ([SSE](/systems-and-infrastructure/websockets-vs-sse-vs-long-polling)), so a
 lost one costs a delay; each device also asks every 10 minutes as a backstop.
 
-Why not just poll `/changes` every 30 seconds? It needs no open connections,
+Why not poll `/changes` every 30 seconds? It needs no open connections,
 but it misses the 10-second target and costs 333,000 requests a second from 10
 million online clients, of which at most 9,200 a second return anything (4,600
 commits × 2 devices, in ordinary folders).

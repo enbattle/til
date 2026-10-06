@@ -23,7 +23,7 @@ export function daysUntilWarmer(temps: number[]): number[] {
 /** Area of the biggest rectangle that fits under the bars of a histogram. */
 export function largestRectangle(heights: number[]): number {
   let best = 0;
-  const stack: number[] = []; // indices of bars, heights never decreasing
+  const stack: number[] = []; // indices of bars, heights strictly increasing
   // One extra step with height 0 pops every bar still waiting; without it
   // the bars left on the stack at the end are never measured.
   for (let i = 0; i <= heights.length; i++) {

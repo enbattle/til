@@ -51,13 +51,13 @@ Why not keep a group label per element? Then `find` is one read, but `union` rel
 - You need the number of groups, or the size of one, while merges keep coming.
 - "Does this edge close a cycle?" or "find the redundant connection": an edge whose ends are already together does.
 - Kruskal's minimum spanning tree: take edges cheapest first, skipping any whose ends are already together ([Minimum Spanning Trees](/dsa/prim-kruskal)).
-- It's the wrong tool if groups must split, since a union can't be undone, or if you need the path between two elements, since parents record membership, not edges. If all the edges are known up front and you ask once, one search over the [graph](/dsa/graph) is simpler.
+- It's the wrong tool if groups must split, since a union can't be undone, or if you need the path between two elements, since parents record membership, not edges. If all the edges are known up front and you ask once, one [breadth-first search](/dsa/breadth-first-search) over the [graph](/dsa/graph) is simpler.
 
 Elements that aren't the numbers 0 to n − 1, such as names, get numbers from a [hash map](/dsa/hash-map) first.
 
 ## Operations and costs
 
-With n elements, O(1) means the work doesn't grow with n. **Amortized** means averaged over a long run, where an occasional slow operation is paid for by the cheap ones around it. α is the **inverse Ackermann function**, which grows so slowly that it stays under 5 for any n that fits in a computer.
+With n elements, O(1) means the work doesn't grow with n. [**Amortized**](/dsa/arrays-and-strings) means averaged over a long run. α is the **inverse Ackermann function**, which grows so slowly that it stays under 5 for any n that fits in a computer.
 
 | Operation                 | Amortized | Worst case, one call |
 | ------------------------- | --------- | -------------------- |
@@ -216,4 +216,4 @@ export function hasCycle(n: number, edges: Iterable<[number, number]>): boolean 
 - **Pointing `b` instead of its root.** `self._parent[root_b] = root_a` moves a whole set. Write `self._parent[b] = root_a` and only `b` and what hangs below it move, leaving the rest of its old set behind under the old root, so `connected` gives wrong answers.
 - **Dropping the same-root check.** Without `if root_a == root_b: return False`, a repeated `union(0, 1)` adds the set's size to itself and decrements `count` again, so `size_of` and `count` drift and `has_cycle` never fires.
 - **Overwriting a parent before saving it.** In `find`, `next_x` is read before `self._parent[x] = root`. Swap them and `x` jumps straight to the root after one step, so only the first element on the path gets compressed.
-- **Skipping the range check.** Without it, `find(-1)` in Python returns element n − 1's root, and in TypeScript `connected(10, 11)` on four elements compares `undefined === undefined` and says true.
+- **Comparing parents instead of roots in `connected`.** `self._parent[a] == self._parent[b]` looks one step up, not at the root. After the four unions in the example, 3 and 5 share a set but their parents are 2 and 4, so `connected(3, 5)` returns false.

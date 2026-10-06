@@ -2,8 +2,8 @@
 function stringHash(key: string): number {
   let h = 0;
   for (let i = 0; i < key.length; i++) {
-    // | 0 wraps h to 32 bits each step; without it h passes 2^53
-    // and the double loses its low digits.
+    // imul multiplies as 32-bit ints, as Java does; | 0 wraps the final
+    // sum too, so the result is a signed 32-bit int like Java's.
     h = (Math.imul(31, h) + key.charCodeAt(i)) | 0;
   }
   return h;

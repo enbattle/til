@@ -1,4 +1,4 @@
-/** heap.ts's MinHeap without heapify or empty checks: callers test `size` first. */
+/** heap.ts's MinHeap without heapify, peek or empty checks: callers test `size` first. */
 export class MinHeap<T> {
   private readonly items: T[] = [];
 

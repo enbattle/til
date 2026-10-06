@@ -6,7 +6,7 @@ kind: algorithm
 template: 2
 ---
 
-Four towns, five possible cable links, each with a price: connect every town to every other as cheaply as you can. The cheapest set of links is a **minimum spanning tree** (MST): edges that touch every vertex, contain no cycle and weigh the least, which for `n` vertices means exactly `n - 1` edges. You'll build one two ways, Kruskal's and Prim's.
+Four towns, five possible cable links, each with a price: connect every town to every other as cheaply as you can. The cheapest set of links is a **minimum spanning tree** (MST): edges that touch every vertex, contain no cycle and weigh the least, which for `n` vertices means exactly `n - 1` edges. Kruskal's and Prim's each build one.
 
 ## Prerequisites
 

@@ -57,7 +57,7 @@ export function inorder<T>(root: TreeNode<T> | null): T[] {
     }
     const top = stack.pop()!;
     out.push(top.value);
-    node = top.right; // else the loop re-walks the left spine forever
+    node = top.right; // else every right subtree is dropped
   }
   return out;
 }

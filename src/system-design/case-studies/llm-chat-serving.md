@@ -88,8 +88,7 @@ Nothing is written per token.
 ## Decision: continuous batching with chunked prefill
 
 **Prefill** reads the prompt in one pass. **Decode** then makes one token per
-step, and each step reads all 140 GB of weights, so memory speed limits it. One
-reply alone gets a token every 20 ms. A **batch** of 100 replies shares each
+step, and each step reads all 140 GB of weights, so memory speed limits it. One reply alone gets a token every 20 ms (assumed). A **batch** of 100 replies shares each
 read, and a step takes about 33 ms (assumed): 3,000 tokens a second, sixty
 times the throughput for under twice the step time ([latency vs. throughput](/systems-and-infrastructure/latency-vs-throughput)).
 

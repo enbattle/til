@@ -9,13 +9,13 @@ template: 2
 You're asked to design the rate limiter for a public API. A **rate limiter**
 decides, for each request, whether its sender is still within its allowance
 ("20 requests a second for this API key") and answers `429 Too Many Requests`
-if not. The interview is about counting correctly across dozens of
+if not. The difficulty is counting correctly across dozens of
 servers, adding almost no latency, and surviving the counters breaking. The algorithms are in [rate limiting](/systems-and-infrastructure/rate-limiting).
 
 ## Requirements
 
 - Limit per **API key** (the secret string identifying a customer's
-  application) by plan, free at 60 a minute and Pro at 1,200, and per IP
+  application) by plan, free at 60 a minute and Pro at 20 a second with bursts of 100 (about 1,200 a minute), and per IP
   address where there is no key yet: 10 a minute on `POST /v1/login`.
 - Reject with `429` and `Retry-After`; report the balance.
 - Rules live in config, with a **shadow mode** that logs what a new rule would
@@ -43,8 +43,6 @@ Peak is ten times average
 - **Memory:** about 100 MB. 1 million active keys × 100 bytes of state each.
 - **Latency:** one 0.5 ms round trip to the store within a datacenter, a
   quarter of the 2 ms budget.
-
-The hard part is 580,000 small writes a second.
 
 ## High-level architecture
 
@@ -92,9 +90,7 @@ Take the Pro key `key_3a91`. Its **token bucket** holds up to
 means `429`. In any second it admits at most 120, and in any minute at most
 1,300, a peak the backend can plan for.
 
-Why not a sliding-window counter, which keeps two counts a client? For a
-plain "1,200 a minute" quota it works, and it's the pick when the contract is
-that. But it lets an idle client send all 1,200 in one second, ten times the
+Why not a sliding-window counter, which keeps two counts a client? It lets an idle client send all 1,200 in one second, ten times the
 bucket's peak, and, because it assumes last minute's traffic was spread evenly, a client that sent it all at the end can briefly get nearly twice the limit. The bucket's price: the limit is documented as "20 a
 second, burst of 100", not "1,200 a minute".
 
@@ -145,7 +141,7 @@ availability where a wrong "allow" is cheap, safety where it isn't.
   then" and answer from memory. At a token every 50 ms, the 40 nodes
   make about 40 × 20 = 800 store calls a second for it.
 - **How would you add a global limit, say 20,000 a second on search?** As one
-  store key it would put every search on one shard, past its 50,000 plan.
+  store key it would put every search on one shard, already near its 50,000 plan.
   Give each node a local share instead, 500 a second at 40 nodes.
 - **What should a client do on a `429`?** Wait `Retry-After`, then back off with jitter
   ([exponential backoff](/systems-and-infrastructure/exponential-backoff)).

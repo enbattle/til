@@ -80,7 +80,7 @@ watch_progress  user_id (partition key), video_id, position_s       wide-column 
 ```
 
 Parts go up on **presigned URLs** (addresses the API signs so the store can
-check them), so a dropped connection resends only missing parts
+check them), so a dropped connection resends only what's missing
 ([file storage](/system-design/file-storage)). No file is overwritten, so a cached copy can't go stale. When 1080p finishes, a new
 manifest version, `master-2`, adds it. `status` is `playable` once 240p to 720p
 are packaged, `ready` with 1080p.
@@ -95,7 +95,7 @@ a minute. 240p to 720p queue first.
 
 Why not one encode per rung? For most uploads it works: 720p of a 10-minute clip
 takes 180 seconds. But an hour takes 18 minutes, and any video over about 16
-minutes misses the 5-minute requirement. Splitting costs seams: decoding starts only at a **keyframe** (a frame stored whole), and the phone's original has them at arbitrary points, so each piece is cut from the keyframe before it, and 25 million daily tasks need tracking.
+minutes misses the 5-minute requirement. Splitting costs seams: decoding starts only at a **keyframe** (a frame stored whole), so each piece is cut from the keyframe before it, and 25 million daily tasks need tracking.
 
 **Rule of thumb.** When one worker is too slow for the biggest job and it splits
 into independent pieces, split it and pay for joining and tracking.
@@ -108,7 +108,7 @@ measured speed says the buffer would run dry. Keyframes line up across
 renditions, so a switch is seamless.
 
 Why not 2 seconds? The player reacts sooner: in a tunnel at 1.5 Mbit/s, one 20
-Mbit segment of 1080p takes 13 seconds. But the edges' load doubles to 12.5
+Mbit segment of 1080p takes 13 seconds, which the buffer covers while the player drops a rung. But the edges' load doubles to 12.5
 million requests a second, and every segment starts with a keyframe, far larger
 than the frames between, so the same picture costs more bits. Longer fails
 start-up: a first 6-second 480p segment takes 1.7 of the 2 seconds at 5 Mbit/s,
@@ -125,7 +125,7 @@ edges hit 90% of bytes, 10% of the 135 PB a day, 405 PB a month, comes from the
 store: **$8.1 million**. A **shield** is a few large caches per region. If one
 hits 80% of what reaches it, the store sends 2%: **$1.6 million**.
 
-Why not let edges read the store directly? It's simpler, but the long tail
+Why not let edges read the store directly? The long tail
 hurts: a video watched 20 times a day across 20 cities is fetched by each,
 usually after eviction, while a regional shield fetches it once. The price is an
 extra hop on an edge miss, and the shields.

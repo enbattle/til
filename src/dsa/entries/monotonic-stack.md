@@ -6,7 +6,7 @@ kind: pattern
 template: 2
 ---
 
-A monotonic stack is an ordinary stack with one rule: before you push, pop everything that would break the order you want. "Monotonic" means the stack only ever runs one way. You'll use it on the array `[2, 1, 2, 4, 3]` to find each value's next larger value, then flip the comparison to measure the biggest rectangle in a histogram.
+A monotonic stack is an ordinary stack with one rule: before you push, pop everything that would break the order you want. "Monotonic" means the stack only ever runs one way. Run it on the array `[2, 1, 2, 4, 3]` to find each value's next larger value, then flip the comparison to measure the biggest rectangle in a histogram.
 
 ## Prerequisites
 
@@ -104,7 +104,7 @@ Given bar heights, find the area of the largest rectangle that fits under the ba
 def largest_rectangle(heights: list[int]) -> int:
     """Area of the biggest rectangle that fits under the bars of a histogram."""
     best = 0
-    stack: list[int] = []  # indices of bars, heights never decreasing
+    stack: list[int] = []  # indices of bars, heights strictly increasing
     # One extra step with height 0 pops every bar still waiting; without it
     # the bars left on the stack at the end are never measured.
     for i in range(len(heights) + 1):
@@ -115,7 +115,7 @@ def largest_rectangle(heights: list[int]) -> int:
 /** Area of the biggest rectangle that fits under the bars of a histogram. */
 export function largestRectangle(heights: number[]): number {
   let best = 0;
-  const stack: number[] = []; // indices of bars, heights never decreasing
+  const stack: number[] = []; // indices of bars, heights strictly increasing
   // One extra step with height 0 pops every bar still waiting; without it
   // the bars left on the stack at the end are never measured.
   for (let i = 0; i <= heights.length; i++) {

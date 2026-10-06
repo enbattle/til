@@ -8,13 +8,13 @@ template: 2
 
 A linked list stores a sequence the way a scavenger hunt stores its route: each
 clue tells you where the next one is, and to reach the fifth you follow the
-first four. You'll build a singly linked list with pointers to both ends and
-see why nearly every operation is the same job, rewiring a few pointers in the
+first four. The build below is a singly linked list with pointers to both ends, and it
+shows why nearly every operation is the same job: rewiring a few pointers in the
 right order.
 
 ## Prerequisites
 
-- [Arrays and Strings](/dsa/arrays-and-strings): an array keeps its values side
+- [Arrays and strings](/dsa/arrays-and-strings): an array keeps its values side
   by side in one block of memory, which a linked list gives up, and every cost
   below is explained against that. You also need to know that a variable
   holding an object holds a reference to it, so two variables can point at the
@@ -60,7 +60,8 @@ node, and twice as many to keep correct. Java's `LinkedList` is doubly linked.
   head-or-tail cases.
 - Values come and go at the ends and you never ask for the i-th one. A queue
   is the classic case: push at the back and pop at the front, both O(1), where
-  `pop(0)` on a Python list shifts every remaining value.
+  `pop(0)` on a Python list shifts every remaining value, though a ring buffer
+  in an array usually wins; see [stacks and queues](/dsa/stacks-and-queues).
 - You hold a node and must unlink or move it without searching. A doubly
   linked list plus a [hash map](/dsa/hash-map) from key to node is the standard
   least-recently-used cache: the map finds the node, the back pointer unlinks
@@ -227,8 +228,7 @@ above in three O(1) steps. Taking from the front is the mirror image.
   }
 ```
 
-Popping moves `head` one node along, and the garbage collector frees the old
-first node. Removing from the middle is harder, because the node before it has
+Removing from the middle is harder, because the node before it has
 to skip over it.
 
 ```python
