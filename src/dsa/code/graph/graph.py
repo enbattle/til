@@ -1,105 +1,62 @@
-from collections.abc import Hashable
-from typing import Generic, TypeVar
+from collections.abc import Iterator
 
-V = TypeVar("V", bound=Hashable)
-
-
-class Graph(Generic[V]):
-    """A graph stored as adjacency lists: each vertex maps to a list of neighbours."""
-
-    def __init__(self, directed: bool = False):
-        self.directed = directed
-        self._adj: dict[V, list[V]] = {}
-        self._edge_count = 0
-
-    def add_vertex(self, v: V) -> None:
-        self._adj.setdefault(v, [])
-
-    def vertices(self) -> list[V]:
-        return list(self._adj)
-
-    @property
-    def edge_count(self) -> int:
-        return self._edge_count
-
-    def neighbours(self, v: V) -> list[V]:
-        return list(self._adj[v])
-
-    def degree(self, v: V) -> int:
-        return len(self._adj[v])
-
-    def has_edge(self, u: V, v: V) -> bool:
-        return v in self._adj.get(u, ())
-
-    def add_edge(self, u: V, v: V) -> bool:
-        self.add_vertex(u)
-        self.add_vertex(v)
-        if v in self._adj[u]:
-            return False
-        self._adj[u].append(v)
-        if not self.directed and u != v:
-            self._adj[v].append(u)
-        self._edge_count += 1
-        return True
-
-    def remove_edge(self, u: V, v: V) -> bool:
-        if not self.has_edge(u, v):
-            return False
-        self._adj[u].remove(v)
-        if not self.directed and u != v:
-            self._adj[v].remove(u)
-        self._edge_count -= 1
-        return True
+Edge = tuple[int, int]
 
 
-class AdjacencyMatrix:
-    """A graph on vertices 0 to n - 1 stored as an n-by-n grid of 0s and 1s."""
+def check(n: int, edges: list[Edge]) -> None:
+    # Python reads adj[-1] as the last vertex, so a bad id would not fail.
+    for u, v in edges:
+        if not (0 <= u < n and 0 <= v < n):
+            raise ValueError(f"edge ({u}, {v}) names a vertex outside 0..{n - 1}")
 
-    def __init__(self, n: int, directed: bool = False):
-        if n < 0:
-            raise ValueError("n must be at least 0")
-        self.directed = directed
-        self._rows = [bytearray(n) for _ in range(n)]
-        self._edge_count = 0
 
-    def _check(self, v: int) -> None:
-        if not 0 <= v < len(self._rows):
-            raise IndexError(f"vertex {v} is out of range")
+def build_list(n: int, edges: list[Edge], directed: bool = False) -> list[list[int]]:
+    """Adjacency list: adj[u] holds the neighbors of u."""
+    check(n, edges)
+    # A comprehension makes n separate lists; [[]] * n would share one.
+    adj: list[list[int]] = [[] for _ in range(n)]
+    for u, v in edges:
+        adj[u].append(v)
+        # An undirected edge is stored from both ends, or only one end sees it.
+        # A self-loop (u == v) is one entry, the same as one matrix cell.
+        if not directed and u != v:
+            adj[v].append(u)
+    return adj
 
-    def vertices(self) -> list[int]:
-        return list(range(len(self._rows)))
 
-    @property
-    def edge_count(self) -> int:
-        return self._edge_count
+def build_matrix(n: int, edges: list[Edge], directed: bool = False) -> list[list[int]]:
+    """Adjacency matrix: m[u][v] is 1 when there is an edge from u to v."""
+    check(n, edges)
+    # Every cell exists up front, which is the V * V space cost.
+    m = [[0] * n for _ in range(n)]
+    for u, v in edges:
+        m[u][v] = 1
+        if not directed:
+            m[v][u] = 1
+    return m
 
-    def has_edge(self, u: int, v: int) -> bool:
-        self._check(u)
-        self._check(v)
-        return self._rows[u][v] == 1
 
-    def add_edge(self, u: int, v: int) -> bool:
-        if self.has_edge(u, v):
-            return False
-        self._rows[u][v] = 1
-        if not self.directed:
-            self._rows[v][u] = 1
-        self._edge_count += 1
-        return True
+def has_edge_list(adj: list[list[int]], u: int, v: int) -> bool:
+    return v in adj[u]  # a scan of u's list, so O(deg(u))
 
-    def remove_edge(self, u: int, v: int) -> bool:
-        if not self.has_edge(u, v):
-            return False
-        self._rows[u][v] = 0
-        if not self.directed:
-            self._rows[v][u] = 0
-        self._edge_count -= 1
-        return True
 
-    def neighbours(self, v: int) -> list[int]:
-        self._check(v)
-        return [w for w, cell in enumerate(self._rows[v]) if cell]
+def has_edge_matrix(m: list[list[int]], u: int, v: int) -> bool:
+    return m[u][v] == 1  # one cell read, however many edges there are
 
-    def degree(self, v: int) -> int:
-        self._check(v)
-        return sum(self._rows[v])
+
+def neighbors_matrix(m: list[list[int]], u: int) -> list[int]:
+    # No list to return: the whole row must be read to find the 1s.
+    return [v for v, cell in enumerate(m[u]) if cell]
+
+
+def edges_of_list(adj: list[list[int]]) -> Iterator[Edge]:
+    for u, row in enumerate(adj):
+        for v in row:
+            yield u, v
+
+
+def edges_of_matrix(m: list[list[int]]) -> Iterator[Edge]:
+    for u, row in enumerate(m):
+        for v, cell in enumerate(row):
+            if cell:  # every cell is read, including the zeros
+                yield u, v

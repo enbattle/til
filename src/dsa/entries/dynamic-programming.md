@@ -14,8 +14,7 @@ and bottom-up with a table, then shrink the table to two variables.
 ## Prerequisites
 
 - [Hash map](/dsa/hash-map): the top-down version remembers answers in one,
-  keyed by the subproblem, and Complexity uses the big-O notation that entry
-  explains. You also need recursion: a function that calls itself on a smaller
+  keyed by the subproblem, and Complexity uses big-O notation, defined in [Arrays and strings](/dsa/arrays-and-strings). You also need recursion: a function that calls itself on a smaller
   input.
 
 ## The idea
@@ -90,7 +89,6 @@ matters.
 
 ```python
 from functools import cache
-
 
 def rob_memo(nums: list[int]) -> int:
     """Most money from houses with no two neighbors robbed, top-down."""

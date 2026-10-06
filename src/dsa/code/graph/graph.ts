@@ -1,128 +1,67 @@
-/** Removes the first copy of `item` from `list`, which must contain it. */
-function removeOne<T>(list: T[], item: T): void {
-  list.splice(list.indexOf(item), 1);
-}
+export type Edge = [number, number];
 
-/** A graph stored as adjacency lists: each vertex maps to an array of neighbours. */
-export class Graph<V> {
-  readonly directed: boolean;
-  private readonly adj = new Map<V, V[]>();
-  private edges = 0;
-
-  constructor(directed = false) {
-    this.directed = directed;
-  }
-
-  addVertex(v: V): void {
-    if (!this.adj.has(v)) this.adj.set(v, []);
-  }
-
-  vertices(): V[] {
-    return [...this.adj.keys()];
-  }
-
-  get edgeCount(): number {
-    return this.edges;
-  }
-
-  private listOf(v: V): V[] {
-    const list = this.adj.get(v);
-    if (list === undefined) throw new RangeError(`unknown vertex ${String(v)}`);
-    return list;
-  }
-
-  neighbours(v: V): V[] {
-    return [...this.listOf(v)];
-  }
-
-  degree(v: V): number {
-    return this.listOf(v).length;
-  }
-
-  hasEdge(u: V, v: V): boolean {
-    return this.adj.get(u)?.includes(v) ?? false;
-  }
-
-  addEdge(u: V, v: V): boolean {
-    this.addVertex(u);
-    this.addVertex(v);
-    const out = this.listOf(u);
-    if (out.includes(v)) return false;
-    out.push(v);
-    if (!this.directed && u !== v) this.listOf(v).push(u);
-    this.edges++;
-    return true;
-  }
-
-  removeEdge(u: V, v: V): boolean {
-    if (!this.hasEdge(u, v)) return false;
-    removeOne(this.listOf(u), v);
-    if (!this.directed && u !== v) removeOne(this.listOf(v), u);
-    this.edges--;
-    return true;
+function check(n: number, edges: Edge[]): void {
+  // A bad column on a number[] row would silently grow the row, not fail.
+  for (const [u, v] of edges) {
+    if (!(u >= 0 && u < n && v >= 0 && v < n)) {
+      throw new RangeError(`edge (${u}, ${v}) names a vertex outside 0..${n - 1}`);
+    }
   }
 }
 
-/** A graph on vertices 0 to n - 1 stored as an n-by-n grid of 0s and 1s. */
-export class AdjacencyMatrix {
-  readonly directed: boolean;
-  private readonly rows: Uint8Array[];
-  private edges = 0;
+/** Adjacency list: adj[u] holds the neighbors of u. */
+export function buildList(n: number, edges: Edge[], directed = false): number[][] {
+  check(n, edges);
+  // Array.from calls the function per slot; fill([]) would share one array.
+  const adj: number[][] = Array.from({ length: n }, () => []);
+  for (const [u, v] of edges) {
+    adj[u].push(v);
+    // An undirected edge is stored from both ends, or only one end sees it.
+    // A self-loop (u === v) is one entry, the same as one matrix cell.
+    if (!directed && u !== v) adj[v].push(u);
+  }
+  return adj;
+}
 
-  constructor(n: number, directed = false) {
-    if (!Number.isInteger(n) || n < 0) {
-      throw new RangeError('n must be a non-negative integer');
+/** Adjacency matrix: m[u][v] is 1 when there is an edge from u to v. */
+export function buildMatrix(n: number, edges: Edge[], directed = false): number[][] {
+  check(n, edges);
+  // Every cell exists up front, which is the V * V space cost.
+  const m = Array.from({ length: n }, () => new Array<number>(n).fill(0));
+  for (const [u, v] of edges) {
+    m[u][v] = 1;
+    if (!directed) m[v][u] = 1;
+  }
+  return m;
+}
+
+export function hasEdgeList(adj: number[][], u: number, v: number): boolean {
+  return adj[u].includes(v); // a scan of u's list, so O(deg(u))
+}
+
+export function hasEdgeMatrix(m: number[][], u: number, v: number): boolean {
+  return m[u][v] === 1; // one cell read, however many edges there are
+}
+
+export function neighborsMatrix(m: number[][], u: number): number[] {
+  // No list to return: the whole row must be read to find the 1s.
+  const out: number[] = [];
+  m[u].forEach((cell, v) => {
+    if (cell) out.push(v);
+  });
+  return out;
+}
+
+export function* edgesOfList(adj: number[][]): Generator<Edge> {
+  for (const [u, row] of adj.entries()) {
+    for (const v of row) yield [u, v];
+  }
+}
+
+export function* edgesOfMatrix(m: number[][]): Generator<Edge> {
+  for (const [u, row] of m.entries()) {
+    for (const [v, cell] of row.entries()) {
+      if (cell) yield [u, v]; // every cell is read, including the zeros
     }
-    this.directed = directed;
-    this.rows = Array.from({ length: n }, () => new Uint8Array(n));
-  }
-
-  private check(v: number): void {
-    if (!Number.isInteger(v) || v < 0 || v >= this.rows.length) {
-      throw new RangeError(`vertex ${v} is out of range`);
-    }
-  }
-
-  vertices(): number[] {
-    return this.rows.map((_, i) => i);
-  }
-
-  get edgeCount(): number {
-    return this.edges;
-  }
-
-  hasEdge(u: number, v: number): boolean {
-    this.check(u);
-    this.check(v);
-    return this.rows[u][v] === 1;
-  }
-
-  addEdge(u: number, v: number): boolean {
-    if (this.hasEdge(u, v)) return false;
-    this.rows[u][v] = 1;
-    if (!this.directed) this.rows[v][u] = 1;
-    this.edges++;
-    return true;
-  }
-
-  removeEdge(u: number, v: number): boolean {
-    if (!this.hasEdge(u, v)) return false;
-    this.rows[u][v] = 0;
-    if (!this.directed) this.rows[v][u] = 0;
-    this.edges--;
-    return true;
-  }
-
-  neighbours(v: number): number[] {
-    this.check(v);
-    const out: number[] = [];
-    this.rows[v].forEach((cell, w) => {
-      if (cell === 1) out.push(w);
-    });
-    return out;
-  }
-
-  degree(v: number): number {
-    return this.neighbours(v).length;
   }
 }

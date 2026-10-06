@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Trie } from './trie';
 
-// The trie entry's TypeScript code, compared against a plain Set of words.
-// API: `new Trie()` with `insert` and `delete` (each returns whether the set
-// changed), `has` for exact words, `startsWith`, `wordsWithPrefix` (sorted by
-// code point) and `size`.
+// The trie entry's TypeScript code. API: `new Trie()` with `insert(word)`,
+// `has(word)`, `startsWith(prefix)`, `wordsWithPrefix(prefix)` (every stored
+// word, in no fixed order) and `delete(word)` (true when the word was stored).
 
-/** A small seeded random number generator (mulberry32), returning [0, 1). */
-function seeded(seed: number): () => number {
+/** A small seeded generator (mulberry32), so a failing case can be replayed. */
+function rng(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -18,243 +17,230 @@ function seeded(seed: number): () => number {
   };
 }
 
-interface NodeShape {
-  children: Map<string, NodeShape>;
+interface Node {
+  children: Map<string, Node>;
+  isWord: boolean;
 }
+const rootOf = (t: Trie) => (t as unknown as { root: Node }).root;
 
-function countNodes(trie: Trie): number {
+const WORDS = ['app', 'apple', 'apt', 'bat'];
+const build = (words: string[]) => {
+  const t = new Trie();
+  for (const w of words) t.insert(w);
+  return t;
+};
+const sorted = (xs: string[]) => [...xs].sort();
+
+/** Nodes below the root. */
+function countNodes(t: Trie): number {
   let total = 0;
-  const stack = [(trie as unknown as { root: NodeShape }).root];
-  for (let node = stack.pop(); node !== undefined; node = stack.pop()) {
-    total++;
-    stack.push(...node.children.values());
+  const stack = [rootOf(t)];
+  for (let n = stack.pop(); n !== undefined; n = stack.pop()) {
+    total += n.children.size;
+    stack.push(...n.children.values());
   }
   return total;
 }
 
-/** Compares strings code point by code point, as Python's sort does. */
-function byCodePoint(a: string, b: string): number {
-  const x = Array.from(a, (c) => c.codePointAt(0) ?? 0);
-  const y = Array.from(b, (c) => c.codePointAt(0) ?? 0);
-  for (let i = 0; i < Math.min(x.length, y.length); i++) {
-    if (x[i] !== y[i]) return x[i] - y[i];
+const prefixes = (words: string[]) =>
+  new Set(words.flatMap((w) => [...Array(w.length)].map((_, i) => w.slice(0, i + 1))));
+
+/** Counts every lookup with get on every node's children map. */
+function instrument(t: Trie): { gets: number } {
+  const counter = { gets: 0 };
+  const stack = [rootOf(t)];
+  for (let n = stack.pop(); n !== undefined; n = stack.pop()) {
+    const kids = n.children;
+    const original = kids.get.bind(kids);
+    kids.get = (k: string) => {
+      counter.gets++;
+      return original(k);
+    };
+    stack.push(...kids.values());
   }
-  return x.length - y.length;
+  return counter;
 }
 
-/** Every prefix (in code points) of every word, plus '' for the root. */
-function prefixesOf(words: Set<string>): Set<string> {
-  const out = new Set<string>(['']);
-  for (const w of words) {
-    const chars = Array.from(w);
-    for (let i = 1; i <= chars.length; i++) out.add(chars.slice(0, i).join(''));
-  }
-  return out;
-}
-
-function make(...words: string[]): Trie {
-  const trie = new Trie();
-  for (const w of words) trie.insert(w);
-  return trie;
+function randomWords(r: () => number): string[] {
+  const count = Math.floor(r() * 13);
+  return Array.from({ length: count }, () =>
+    Array.from({ length: Math.floor(r() * 6) }, () => 'abc'[Math.floor(r() * 3)]).join(
+      '',
+    ),
+  );
 }
 
 describe('Trie (TypeScript)', () => {
-  it('starts empty', () => {
-    const trie = new Trie();
-    expect(trie.size).toBe(0);
-    expect(trie.has('')).toBe(false);
-    expect(trie.has('a')).toBe(false);
-    expect(trie.startsWith('')).toBe(false);
-    expect(trie.startsWith('a')).toBe(false);
-    expect(trie.wordsWithPrefix('')).toEqual([]);
-    expect(trie.delete('a')).toBe(false);
-    expect(trie.delete('')).toBe(false);
+  it('handles an empty trie', () => {
+    const t = new Trie();
+    expect(t.has('')).toBe(false);
+    expect(t.has('a')).toBe(false);
+    expect(t.startsWith('')).toBe(false);
+    expect(t.startsWith('a')).toBe(false);
+    expect(t.wordsWithPrefix('')).toEqual([]);
+    expect(t.delete('a')).toBe(false);
   });
 
-  it('inserts words and finds exactly those words', () => {
-    const trie = make('app', 'apple', 'apt', 'bat');
-    expect(trie.size).toBe(4);
-    for (const w of ['app', 'apple', 'apt', 'bat']) expect(trie.has(w)).toBe(true);
-    for (const w of ['a', 'ap', 'appl', 'ba', 'apples', 'b', 'cat']) {
-      expect(trie.has(w)).toBe(false);
-    }
-    expect(countNodes(trie)).toBe(10);
+  it('handles a single word', () => {
+    const t = build(['a']);
+    expect(t.has('a')).toBe(true);
+    expect(t.has('b')).toBe(false);
+    expect(t.startsWith('')).toBe(true);
+    expect(t.wordsWithPrefix('a')).toEqual(['a']);
   });
 
-  it('reports whether an insert added a new word', () => {
-    const trie = new Trie();
-    expect(trie.insert('app')).toBe(true);
-    expect(trie.insert('app')).toBe(false);
-    expect(trie.size).toBe(1);
+  it('answers the running example', () => {
+    const t = build(WORDS);
+    for (const w of WORDS) expect(t.has(w)).toBe(true);
+    for (const w of ['ap', 'appl', 'apples']) expect(t.has(w)).toBe(false);
+    expect(t.startsWith('ap')).toBe(true);
+    expect(t.startsWith('apple')).toBe(true);
+    expect(t.startsWith('apples')).toBe(false);
+    expect(t.startsWith('c')).toBe(false);
+    expect(sorted(t.wordsWithPrefix('ap'))).toEqual(['app', 'apple', 'apt']);
+    expect(sorted(t.wordsWithPrefix(''))).toEqual(sorted(WORDS));
+    expect(t.wordsWithPrefix('appl')).toEqual(['apple']);
+    expect(t.wordsWithPrefix('x')).toEqual([]);
   });
 
-  it('treats a prefix of a word as absent until it is inserted', () => {
-    const trie = make('apple');
-    expect(trie.has('app')).toBe(false);
-    expect(trie.startsWith('app')).toBe(true);
-    const nodes = countNodes(trie);
-    expect(trie.insert('app')).toBe(true);
-    expect(trie.has('app')).toBe(true);
-    expect(countNodes(trie)).toBe(nodes);
+  it('does not store a word that is only a prefix', () => {
+    const t = build(['apple']);
+    expect(t.has('app')).toBe(false);
+    expect(t.startsWith('app')).toBe(true);
   });
 
-  it('answers startsWith', () => {
-    const trie = make('app', 'apple', 'bat');
-    for (const p of ['', 'a', 'ap', 'app', 'appl', 'apple', 'b', 'bat']) {
-      expect(trie.startsWith(p)).toBe(true);
-    }
-    for (const p of ['apples', 'c', 'bb', 'bat ']) {
-      expect(trie.startsWith(p)).toBe(false);
-    }
+  it('adds no nodes when a prefix is inserted after the longer word', () => {
+    const t = build(['apple']);
+    const before = countNodes(t);
+    t.insert('app');
+    expect(countNodes(t)).toBe(before);
+    expect(t.has('app')).toBe(true);
   });
 
-  it('lists the words with a prefix in sorted order', () => {
-    const trie = make('bat', 'apt', 'apple', 'app', 'b');
-    expect(trie.wordsWithPrefix('ap')).toEqual(['app', 'apple', 'apt']);
-    expect(trie.wordsWithPrefix('')).toEqual(['app', 'apple', 'apt', 'b', 'bat']);
-    expect(trie.wordsWithPrefix('apple')).toEqual(['apple']);
-    expect(trie.wordsWithPrefix('appl')).toEqual(['apple']);
-    expect(trie.wordsWithPrefix('c')).toEqual([]);
-    expect(trie.wordsWithPrefix('apples')).toEqual([]);
+  it('ignores a duplicate insert', () => {
+    const t = build(WORDS);
+    t.insert(['ap', 'ple'].join(''));
+    expect(countNodes(t)).toBe(9);
+    expect(sorted(t.wordsWithPrefix(''))).toEqual(sorted(WORDS));
   });
 
   it('stores the empty string as a word', () => {
-    const trie = new Trie();
-    expect(trie.insert('')).toBe(true);
-    expect(trie.has('')).toBe(true);
-    expect(trie.size).toBe(1);
-    expect(trie.startsWith('')).toBe(true);
-    expect(trie.startsWith('a')).toBe(false);
-    trie.insert('a');
-    expect(trie.wordsWithPrefix('')).toEqual(['', 'a']);
-    expect(trie.delete('')).toBe(true);
-    expect(trie.has('')).toBe(false);
-    expect(trie.has('a')).toBe(true);
-    expect(trie.delete('')).toBe(false);
-    expect(trie.wordsWithPrefix('')).toEqual(['a']);
+    const t = build(['']);
+    expect(t.has('')).toBe(true);
+    expect(t.wordsWithPrefix('')).toEqual(['']);
+    expect(t.delete('')).toBe(true);
+    expect(t.has('')).toBe(false);
   });
 
-  it('deletes a word that is a prefix of another without removing nodes', () => {
-    const trie = make('app', 'apple');
-    const nodes = countNodes(trie);
-    expect(trie.delete('app')).toBe(true);
-    expect(trie.has('app')).toBe(false);
-    expect(trie.has('apple')).toBe(true);
-    expect(trie.startsWith('app')).toBe(true);
-    expect(countNodes(trie)).toBe(nodes);
-    expect(trie.size).toBe(1);
+  it('steps by code point', () => {
+    const t = build(['hé', '\u{1f600}x', '\u{1f600}y']);
+    expect(t.has('hé')).toBe(true);
+    expect(t.startsWith('\u{1f600}')).toBe(true);
+    expect(t.startsWith('\ud83d')).toBe(false);
+    expect(sorted(t.wordsWithPrefix('\u{1f600}'))).toEqual(['\u{1f600}x', '\u{1f600}y']);
+    expect(rootOf(t).children.size).toBe(2);
   });
 
-  it('deletes a word that has another as a prefix, pruning back to it', () => {
-    const trie = make('app', 'apple');
-    expect(trie.delete('apple')).toBe(true);
-    expect(trie.has('apple')).toBe(false);
-    expect(trie.has('app')).toBe(true);
-    expect(trie.startsWith('appl')).toBe(false);
-    expect(countNodes(trie)).toBe(4);
-    expect(trie.wordsWithPrefix('')).toEqual(['app']);
+  it('handles a very long word without recursion', () => {
+    const word = 'a'.repeat(50000);
+    const t = build([word]);
+    expect(t.has(word)).toBe(true);
+    expect(t.wordsWithPrefix('')).toEqual([word]);
+    expect(t.delete(word)).toBe(true);
+    expect(countNodes(t)).toBe(0);
   });
 
-  it('prunes only the branch no other word uses', () => {
-    const trie = make('apple', 'apt');
-    expect(trie.delete('apple')).toBe(true);
-    expect(countNodes(trie)).toBe(4);
-    expect(trie.wordsWithPrefix('a')).toEqual(['apt']);
-    expect(trie.delete('apt')).toBe(true);
-    expect(countNodes(trie)).toBe(1);
-    expect(trie.size).toBe(0);
-    expect(trie.startsWith('')).toBe(false);
+  it('deleting the longer word keeps the shorter one', () => {
+    const t = build(WORDS);
+    expect(t.delete('apple')).toBe(true);
+    expect(t.has('apple')).toBe(false);
+    expect(t.has('app')).toBe(true);
+    expect(t.startsWith('appl')).toBe(false);
+    expect(countNodes(t)).toBe(7);
   });
 
-  it.each(['ap', 'apples', 'b', '', 'app'])(
-    'changes nothing when deleting the absent word %j',
-    (absent) => {
-      const trie = make('apple');
-      if (absent === 'app') {
-        trie.insert('app');
-        trie.delete('app');
-      }
-      const nodes = countNodes(trie);
-      expect(trie.delete(absent)).toBe(false);
-      expect(trie.size).toBe(1);
-      expect(trie.has('apple')).toBe(true);
-      expect(countNodes(trie)).toBe(nodes);
-    },
-  );
-
-  it('can insert a word again after deleting it', () => {
-    const trie = make('apple');
-    trie.delete('apple');
-    expect(trie.insert('apple')).toBe(true);
-    expect(trie.has('apple')).toBe(true);
-    expect(countNodes(trie)).toBe(6);
+  it('deleting the shorter word keeps the longer one', () => {
+    const t = build(WORDS);
+    expect(t.delete('app')).toBe(true);
+    expect(t.has('app')).toBe(false);
+    expect(t.has('apple')).toBe(true);
+    expect(countNodes(t)).toBe(9);
   });
 
-  it('takes one step per code point for non-ASCII and astral characters', () => {
-    const trie = make('café', 'caf', '😀', '😀b', 'a😀');
-    expect(countNodes(trie)).toBe(1 + 4 + 2 + 2);
-    expect(trie.has('café')).toBe(true);
-    expect(trie.has('cafe')).toBe(false);
-    expect(trie.has('\ud83d')).toBe(false);
-    expect(trie.startsWith('\ud83d')).toBe(false);
-    expect(trie.startsWith('😀')).toBe(true);
-    expect(trie.wordsWithPrefix('😀')).toEqual(['😀', '😀b']);
-    expect(trie.delete('😀b')).toBe(true);
-    expect(trie.wordsWithPrefix('😀')).toEqual(['😀']);
-    expect(countNodes(trie)).toBe(1 + 4 + 1 + 2);
+  it('refuses to delete a word that is not stored', () => {
+    const t = build(WORDS);
+    for (const w of ['ap', 'apples', 'zzz']) expect(t.delete(w)).toBe(false);
+    expect(countNodes(t)).toBe(9);
+    expect(sorted(t.wordsWithPrefix(''))).toEqual(sorted(WORDS));
   });
 
-  it('sorts by code point across the U+FFFF boundary, not by UTF-16 unit', () => {
-    // U+FF5E sorts before U+1F600 by code point, after it by UTF-16 unit.
-    const trie = make('\u{1f600}', '～', 'z');
-    expect(trie.wordsWithPrefix('')).toEqual(['z', '～', '\u{1f600}']);
+  it('leaves only the root after deleting everything', () => {
+    const t = build(WORDS);
+    for (const w of WORDS) expect(t.delete(w)).toBe(true);
+    expect(countNodes(t)).toBe(0);
+    expect(t.startsWith('')).toBe(false);
+    expect(t.delete('app')).toBe(false);
   });
 
-  it('handles a word thousands of characters long', () => {
-    const word = 'ab'.repeat(3000);
-    const trie = make(word, word.slice(0, 4000));
-    expect(trie.has(word)).toBe(true);
-    expect(trie.wordsWithPrefix(word.slice(0, 5000))).toEqual([word]);
-    expect(trie.wordsWithPrefix('ab')).toEqual([word.slice(0, 4000), word]);
-    expect(trie.delete(word)).toBe(true);
-    expect(countNodes(trie)).toBe(4001);
+  it('shares nodes between words with a common prefix', () => {
+    // 14 characters, 9 nodes; one chain per word would make 14.
+    const t = build(WORDS);
+    expect(countNodes(t)).toBe(9);
+    expect(countNodes(t)).toBe(prefixes(WORDS).size);
+    expect([...rootOf(t).children.keys()].sort()).toEqual(['a', 'b']);
   });
 
-  it('matches a Set of words on seeded random operation sequences', () => {
-    const alphabet = ['a', 'b', 'é', '～', '\u{1f600}'];
+  it('takes one step per character whatever the size', () => {
+    const r = rng(7);
+    const big = new Set<string>();
+    while (big.size < 500) {
+      big.add(Array.from({ length: 8 }, () => 'abcdefgh'[Math.floor(r() * 8)]).join(''));
+    }
+    for (const words of [['apple'], [...big, 'apple']]) {
+      const t = build(words);
+      const counter = instrument(t);
+      expect(t.has('apple'), `${words.length} words`).toBe(true);
+      expect(counter.gets, `${words.length} words`).toBe(5);
+      counter.gets = 0;
+      expect(t.startsWith('app'), `${words.length} words`).toBe(true);
+      expect(counter.gets, `${words.length} words`).toBe(3);
+    }
+  });
+
+  it('matches a set on random words', () => {
     for (let seed = 0; seed < 50; seed++) {
-      const rand = seeded(seed);
-      const randomWord = () => {
-        const length = Math.floor(rand() * 5);
-        let w = '';
-        for (let i = 0; i < length; i++)
-          w += alphabet[Math.floor(rand() * alphabet.length)];
-        return w;
-      };
-      const trie = new Trie();
-      const words = new Set<string>();
-      for (let step = 0; step < 60; step++) {
-        const w = randomWord();
-        const at = `seed ${seed}, step ${step}, word ${JSON.stringify(w)}`;
-        const op = rand();
-        if (op < 0.45) {
-          expect(trie.insert(w), at).toBe(!words.has(w));
-          words.add(w);
-        } else if (op < 0.75) {
-          expect(trie.delete(w), at).toBe(words.has(w));
-          words.delete(w);
-        } else {
-          const matching = [...words].filter((x) => x.startsWith(w)).sort(byCodePoint);
-          expect(trie.has(w), at).toBe(words.has(w));
-          expect(trie.startsWith(w), at).toBe(matching.length > 0);
-          expect(trie.wordsWithPrefix(w), at).toEqual(matching);
-        }
-        expect(trie.size, at).toBe(words.size);
-        expect(countNodes(trie), at).toBe(prefixesOf(words).size);
+      const words = randomWords(rng(seed));
+      const t = build(words);
+      const stored = new Set(words);
+      expect(countNodes(t), `seed ${seed}`).toBe(prefixes(words).size);
+      for (const probe of [...prefixes(words), '', 'abcab', 'ccccc']) {
+        const want = sorted([...stored].filter((w) => w.startsWith(probe)));
+        expect(t.has(probe), `seed ${seed} ${probe}`).toBe(stored.has(probe));
+        expect(sorted(t.wordsWithPrefix(probe)), `seed ${seed} prefix ${probe}`).toEqual(
+          want,
+        );
+        expect(t.startsWith(probe), `seed ${seed} ${probe}`).toBe(want.length > 0);
       }
-      expect(trie.wordsWithPrefix(''), `seed ${seed}`).toEqual(
-        [...words].sort(byCodePoint),
-      );
+    }
+  });
+
+  it('matches a set and prunes after random deletes', () => {
+    for (let seed = 0; seed < 50; seed++) {
+      const r = rng(seed);
+      const words = randomWords(r);
+      const t = build(words);
+      const stored = new Set(words);
+      const pool = [...words, 'abc', 'cab'];
+      for (let step = 0; step < 12; step++) {
+        const word = pool[Math.floor(r() * pool.length)];
+        expect(t.delete(word), `seed ${seed} step ${step}`).toBe(stored.has(word));
+        stored.delete(word);
+        expect(t.has(word), `seed ${seed} step ${step}`).toBe(false);
+        expect(countNodes(t), `seed ${seed} step ${step}`).toBe(
+          prefixes([...stored]).size,
+        );
+      }
+      expect(sorted(t.wordsWithPrefix('')), `seed ${seed}`).toEqual(sorted([...stored]));
     }
   });
 });

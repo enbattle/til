@@ -1,533 +1,234 @@
-﻿---
+---
 title: Graph
-summary: Points joined by connections, stored either as a list of neighbours per point or as a grid with a cell for every possible connection, and how to pick between the two.
-date: 2026-10-01
+summary: Things joined by connections, stored as a list of neighbors per vertex or as a grid with a cell for every possible connection, and why the list is the default.
+date: 2026-10-05
 kind: data-structure
+template: 2
 ---
 
-A graph is the structure for anything made of things and the connections
-between them: intersections joined by roads, people joined by friendships, web
-pages joined by links, software packages joined by "depends on". Most graph
-problems are about walking those connections, and how fast a walk can go
-depends on how the graph is stored. This entry covers the storing: the two
-standard layouts, what each operation costs in each, and how to choose. Walking
-a graph, breadth-first and depth-first, comes in later entries that build on
-this one.
+A graph models things and the connections between them: intersections and roads, people and friendships, courses and prerequisites. Nearly every graph problem comes down to walking those connections, and how fast you can walk depends on how you store them. You'll store one four-vertex graph both standard ways and price every operation.
 
 ## Prerequisites
 
-- [Hash Map](/dsa/hash-map), for the adjacency list: it maps each vertex to
-  its list of neighbours, so finding a vertex's list is O(1) on average.
-- [Arrays and strings](/dsa/arrays-and-strings), for the neighbour lists
-  themselves (appending is amortized O(1), removing from the middle shifts the
-  items after it) and for the rows of the adjacency matrix.
+- [Arrays and strings](/dsa/arrays-and-strings): both layouts are arrays inside arrays, and the list's costs rest on amortized O(1) appends; that entry defines amortized and big-O.
+- [Hash map](/dsa/hash-map): for labeled vertices and a set per vertex answering "is v here?" in O(1) on average.
 
 ## What it is
 
-A **graph** is a set of **vertices** (also called nodes) and a set of
-**edges**, where each edge connects two vertices. Two vertices joined by an
-edge are **neighbours**, or **adjacent**. A vertex can be anything that can
-serve as a key: a number, a city name, a user ID. Two letters carry most of
-the arithmetic below: **V** is the number of vertices and **E** the number of
-edges.
+A **graph** is a set of **vertices** (nodes) and a set of **edges**, each joining two vertices. Two vertices joined by an edge are **neighbors**. **V** is the number of vertices and **E** the number of edges. An edge is **undirected** when it works both ways, like a friendship, and **directed** when it goes one way, like "course A requires course B". A vertex's **degree**, written deg(v), is its number of neighbors. Weighted edges, which carry a distance or a cost, come at the end of this section.
 
-Edges come in a few flavours:
-
-- An **undirected** edge goes both ways. If Ada is friends with Bob, Bob is
-  friends with Ada.
-- A **directed** edge, often called an arc, goes one way: u → v. Following
-  someone on a social network, a one-way street and "package A depends on
-  package B" are directed. A graph is either directed or undirected as a whole.
-- A **weighted** edge carries a number, such as a road's length in kilometres
-  or a link's latency in milliseconds. An unweighted edge is just there or not.
-- A **self-loop** connects a vertex to itself. Most graphs don't have them,
-  but a state machine where a state can stay put does.
-
-The **degree** of a vertex is its number of neighbours. In a directed graph
-that splits into the **out-degree** (edges leaving it) and the **in-degree**
-(edges arriving); this entry's `degree` is the out-degree.
-
-There are two standard ways to store one. Take this undirected graph of four
-vertices and four edges, 0–1, 0–2, 1–2 and 2–3:
+Take vertices 0 to 3 with undirected edges 0-1, 0-2, 1-2 and 2-3:
 
 ```text
 0 --- 1
  \   /
-  \ /
    2 --- 3
 ```
 
-An **adjacency list** gives each vertex a list of its neighbours. An undirected
-edge u–v is stored twice, as v in u's list and u in v's:
+An **adjacency list** gives each vertex a list of its neighbors. An undirected edge goes in both lists, because from vertex 1 you must be able to see 0:
 
 ```text
-0: [1, 2]
-1: [0, 2]
-2: [0, 1, 3]
-3: [2]
+0: [1, 2]    1: [0, 2]    2: [0, 1, 3]    3: [2]
 ```
 
-That is 8 entries for 4 edges: 2E, which is also the sum of the degrees,
-2 + 2 + 3 + 1 = 8. An **adjacency matrix** is a V × V grid where the cell in
-row u, column v is 1 if there's an edge from u to v and 0 if not:
+That's 8 entries for 4 edges, which is 2E, and also the sum of the degrees: 2 + 2 + 3 + 1. An **adjacency matrix** is a V by V grid whose cell in row u and column v is 1 when there's an edge from u to v:
 
 ```text
-     0  1  2  3
-0 [  0  1  1  0 ]
-1 [  1  0  1  0 ]
-2 [  1  1  0  1 ]
-3 [  0  0  1  0 ]
+      0  1  2  3
+  0 [ 0  1  1  0 ]
+  1 [ 1  0  1  0 ]
+  2 [ 1  1  0  1 ]
+  3 [ 0  0  1  0 ]
 ```
 
-Sixteen cells, eight of them 1. An undirected graph's matrix is symmetric
-across the diagonal from top left to bottom right, because every edge sets two
-cells. If the same four edges were directed (0 → 1, 0 → 2, 1 → 2, 2 → 3),
-each would be stored once: the lists become `0: [1, 2]`, `1: [2]`, `2: [3]`,
-`3: []`, 4 entries for 4 edges, and the matrix loses its symmetry.
+Sixteen cells, eight of them 1, symmetric across the diagonal because each edge sets two cells. Make the same four edges directed (0 to 1, 0 to 2, 1 to 2, 2 to 3) and the lists hold 4 entries, the matrix has four 1s, and the symmetry is gone.
 
-For a weighted graph, each list entry becomes a pair, `(neighbour, weight)`,
-and each matrix cell holds the weight. The matrix then needs a separate marker
-for "no edge", such as infinity or `None`, because 0 can be a real weight: a
-free transfer between two bus lines still exists.
-
-How many edges a graph has compared with how many it could have decides which
-layout wins. An undirected graph without self-loops has at most
-V(V − 1) / 2 edges: 499,500 for 1,000 vertices. A graph with close to that
-many is **dense**; one whose E is closer to V than to V² is **sparse**. Road
-maps and social networks are sparse: an intersection meets a handful of roads,
-however many intersections the country has.
-
-## Operations and costs
-
-The costs use big-O notation: O(1) means the work doesn't grow with the size
-of the graph, and O(V) means it grows in proportion to the number of vertices.
-deg(v) is the degree of v. The list's average figures assume the hash map
-finds a vertex in O(1); its worst case, every vertex colliding in one bucket,
-adds O(V) to each lookup. The matrix does no lookups, so its average and worst
-cases are the same.
-
-| Operation           | List, average      | List, worst | Matrix         |
-| ------------------- | ------------------ | ----------- | -------------- |
-| `add_vertex(v)`     | O(1) amortized     | O(V)        | rebuild: O(V²) |
-| `add_edge(u, v)`    | O(deg(u))          | O(V)        | O(1)           |
-| `remove_edge(u, v)` | O(deg(u) + deg(v)) | O(V)        | O(1)           |
-| `has_edge(u, v)`    | O(deg(u))          | O(V)        | O(1)           |
-| `neighbours(v)`     | O(deg(v))          | O(V)        | O(V)           |
-| `degree(v)`         | O(1)               | O(V)        | O(V)           |
-| Visit every edge    | O(V + E)           | O(V + E)    | O(V²)          |
-| Space               | O(V + E)           | O(V + E)    | O(V²)          |
-
-The list pays for an edge check by scanning one neighbour list, which is short
-when the graph is sparse. The matrix answers it with one cell read, but pays
-for every other question by scanning a whole row, since a row has V cells
-whether the vertex has two neighbours or none. "Visit every edge" is what a
-breadth-first or depth-first search does, so this row is the one that usually
-decides.
-
-Put numbers on it. A sparse graph of 1,000,000 vertices where each has about
-10 neighbours has E = 5,000,000 undirected edges, so its adjacency lists hold
-2E = 10,000,000 entries. With vertices numbered and stored as 4-byte integers
-that is 40 MB, plus a little per vertex for the list itself. The matrix has
-V² = 10¹² cells: a terabyte at one byte per cell, as in the code below, and
-still 125 GB packed at one bit per cell. Visiting every edge takes about
-V + 2E = 11 million steps with lists and 10¹² cell reads with the matrix.
-
-Now a dense graph: 1,000 vertices and 400,000 of the 499,500 possible edges.
-The lists hold 800,000 entries, 3.2 MB at 4 bytes each. The matrix has 10⁶
-cells, 1 MB at a byte each, and answers every edge check in one step. Once a
-graph is dense, the matrix is smaller as well as faster.
-
-## Implementation
-
-Both languages have two classes with the same methods. `Graph` is the
-adjacency list: a hash map (`dict`, `Map`) from each vertex to a dynamic array
-of its neighbours, accepting any vertex value. `AdjacencyMatrix` takes a fixed
-number of vertices, numbered 0 to n − 1, because a grid can't grow without
-being rebuilt. `add_edge` and `remove_edge` return whether they changed
-anything, the same as `delete` in [Hash Map](/dsa/hash-map). Duplicate edges
-are ignored, so each pair of vertices has at most one edge, and both classes
-accept self-loops. The code stores no weights; a weighted version stores pairs
-or numbers where these store vertices or 1s.
-
-```python
-from collections.abc import Hashable
-from typing import Generic, TypeVar
-
-V = TypeVar("V", bound=Hashable)
-
-
-class Graph(Generic[V]):
-    """A graph stored as adjacency lists: each vertex maps to a list of neighbours."""
-
-    def __init__(self, directed: bool = False):
-        self.directed = directed
-        self._adj: dict[V, list[V]] = {}
-        self._edge_count = 0
-
-    def add_vertex(self, v: V) -> None:
-        self._adj.setdefault(v, [])
-
-    def vertices(self) -> list[V]:
-        return list(self._adj)
-
-    @property
-    def edge_count(self) -> int:
-        return self._edge_count
-```
-
-```typescript
-/** Removes the first copy of `item` from `list`, which must contain it. */
-function removeOne<T>(list: T[], item: T): void {
-  list.splice(list.indexOf(item), 1);
-}
-
-/** A graph stored as adjacency lists: each vertex maps to an array of neighbours. */
-export class Graph<V> {
-  readonly directed: boolean;
-  private readonly adj = new Map<V, V[]>();
-  private edges = 0;
-
-  constructor(directed = false) {
-    this.directed = directed;
-  }
-
-  addVertex(v: V): void {
-    if (!this.adj.has(v)) this.adj.set(v, []);
-  }
-
-  vertices(): V[] {
-    return [...this.adj.keys()];
-  }
-
-  get edgeCount(): number {
-    return this.edges;
-  }
-```
-
-Whether the graph is directed is fixed when it's created, since every edge
-method depends on it. `setdefault` inserts an empty list only if the vertex is
-new, so adding a vertex twice leaves its edges alone; a plain
-`self._adj[v] = []` would wipe them. The edge count is kept in its own field
-because working it out means summing every list (and halving it, for an
-undirected graph, except for self-loops). Python's `dict` and JavaScript's
-`Map` both iterate in insertion order, so `vertices()` lists vertices in the
-order they were added. JavaScript has no `list.remove`, so the TypeScript file
-starts with a small `removeOne` helper.
-
-```python
-    def neighbours(self, v: V) -> list[V]:
-        return list(self._adj[v])
-
-    def degree(self, v: V) -> int:
-        return len(self._adj[v])
-
-    def has_edge(self, u: V, v: V) -> bool:
-        return v in self._adj.get(u, ())
-```
-
-```typescript
-  private listOf(v: V): V[] {
-    const list = this.adj.get(v);
-    if (list === undefined) throw new RangeError(`unknown vertex ${String(v)}`);
-    return list;
-  }
-
-  neighbours(v: V): V[] {
-    return [...this.listOf(v)];
-  }
-
-  degree(v: V): number {
-    return this.listOf(v).length;
-  }
-
-  hasEdge(u: V, v: V): boolean {
-    return this.adj.get(u)?.includes(v) ?? false;
-  }
-```
-
-Asking for the neighbours or degree of a vertex the graph doesn't have is an
-error: Python's `dict` raises `KeyError`, and `listOf` throws a `RangeError`.
-Returning an empty list instead would hide a misspelt vertex name. `has_edge`
-is the exception: "is there an edge from an unknown vertex?" has a true
-answer, no, so it uses `get` with an empty default rather than raising. The
-check `v in` the list is a linear scan, which is where the O(deg(u)) cost in
-the table comes from.
-
-```python
-    def add_edge(self, u: V, v: V) -> bool:
-        self.add_vertex(u)
-        self.add_vertex(v)
-        if v in self._adj[u]:
-            return False
-        self._adj[u].append(v)
-        if not self.directed and u != v:
-            self._adj[v].append(u)
-        self._edge_count += 1
-        return True
-
-    def remove_edge(self, u: V, v: V) -> bool:
-        if not self.has_edge(u, v):
-            return False
-        self._adj[u].remove(v)
-        if not self.directed and u != v:
-            self._adj[v].remove(u)
-        self._edge_count -= 1
-        return True
-```
-
-```typescript
-  addEdge(u: V, v: V): boolean {
-    this.addVertex(u);
-    this.addVertex(v);
-    const out = this.listOf(u);
-    if (out.includes(v)) return false;
-    out.push(v);
-    if (!this.directed && u !== v) this.listOf(v).push(u);
-    this.edges++;
-    return true;
-  }
-
-  removeEdge(u: V, v: V): boolean {
-    if (!this.hasEdge(u, v)) return false;
-    removeOne(this.listOf(u), v);
-    if (!this.directed && u !== v) removeOne(this.listOf(v), u);
-    this.edges--;
-    return true;
-  }
-}
-```
-
-`add_edge` creates both endpoints if they're missing, which is how most graphs
-get built: from a list of edges, with no separate list of vertices. It then
-checks for the edge before appending, and in an undirected graph one check is
-enough, because the two lists always agree. Removal finds the neighbour with a
-scan and then shifts the later entries left, as removing from the middle of a
-dynamic array does; that keeps the other neighbours in the order they were
-added. For an undirected edge both copies go, or the graph would claim a
-one-way edge it was never given.
-
-```python
-class AdjacencyMatrix:
-    """A graph on vertices 0 to n - 1 stored as an n-by-n grid of 0s and 1s."""
-
-    def __init__(self, n: int, directed: bool = False):
-        if n < 0:
-            raise ValueError("n must be at least 0")
-        self.directed = directed
-        self._rows = [bytearray(n) for _ in range(n)]
-        self._edge_count = 0
-
-    def _check(self, v: int) -> None:
-        if not 0 <= v < len(self._rows):
-            raise IndexError(f"vertex {v} is out of range")
-
-    def vertices(self) -> list[int]:
-        return list(range(len(self._rows)))
-
-    @property
-    def edge_count(self) -> int:
-        return self._edge_count
-```
-
-```typescript
-/** A graph on vertices 0 to n - 1 stored as an n-by-n grid of 0s and 1s. */
-export class AdjacencyMatrix {
-  readonly directed: boolean;
-  private readonly rows: Uint8Array[];
-  private edges = 0;
-
-  constructor(n: number, directed = false) {
-    if (!Number.isInteger(n) || n < 0) {
-      throw new RangeError('n must be a non-negative integer');
-    }
-    this.directed = directed;
-    this.rows = Array.from({ length: n }, () => new Uint8Array(n));
-  }
-
-  private check(v: number): void {
-    if (!Number.isInteger(v) || v < 0 || v >= this.rows.length) {
-      throw new RangeError(`vertex ${v} is out of range`);
-    }
-  }
-
-  vertices(): number[] {
-    return this.rows.map((_, i) => i);
-  }
-
-  get edgeCount(): number {
-    return this.edges;
-  }
-```
-
-Each row is a `bytearray` in Python and a `Uint8Array` in TypeScript: fixed
-size, one byte per cell, and every cell starts at 0. A Python list of `True`
-and `False` would also work, but each slot would hold an 8-byte reference
-instead of a byte. All the space goes in at construction: a matrix for n
-vertices costs n² bytes before the first edge is added. Every method checks its
-vertices against the range 0 to n − 1, and the Tricky lines below say why
-Python needs that check most.
-
-```python
-    def has_edge(self, u: int, v: int) -> bool:
-        self._check(u)
-        self._check(v)
-        return self._rows[u][v] == 1
-
-    def add_edge(self, u: int, v: int) -> bool:
-        if self.has_edge(u, v):
-            return False
-        self._rows[u][v] = 1
-        if not self.directed:
-            self._rows[v][u] = 1
-        self._edge_count += 1
-        return True
-
-    def remove_edge(self, u: int, v: int) -> bool:
-        if not self.has_edge(u, v):
-            return False
-        self._rows[u][v] = 0
-        if not self.directed:
-            self._rows[v][u] = 0
-        self._edge_count -= 1
-        return True
-
-    def neighbours(self, v: int) -> list[int]:
-        self._check(v)
-        return [w for w, cell in enumerate(self._rows[v]) if cell]
-
-    def degree(self, v: int) -> int:
-        self._check(v)
-        return sum(self._rows[v])
-```
-
-```typescript
-  hasEdge(u: number, v: number): boolean {
-    this.check(u);
-    this.check(v);
-    return this.rows[u][v] === 1;
-  }
-
-  addEdge(u: number, v: number): boolean {
-    if (this.hasEdge(u, v)) return false;
-    this.rows[u][v] = 1;
-    if (!this.directed) this.rows[v][u] = 1;
-    this.edges++;
-    return true;
-  }
-
-  removeEdge(u: number, v: number): boolean {
-    if (!this.hasEdge(u, v)) return false;
-    this.rows[u][v] = 0;
-    if (!this.directed) this.rows[v][u] = 0;
-    this.edges--;
-    return true;
-  }
-
-  neighbours(v: number): number[] {
-    this.check(v);
-    const out: number[] = [];
-    this.rows[v].forEach((cell, w) => {
-      if (cell === 1) out.push(w);
-    });
-    return out;
-  }
-
-  degree(v: number): number {
-    return this.neighbours(v).length;
-  }
-}
-```
-
-The edge operations are each a cell read and at most two cell writes, with no
-scanning: that's the matrix's whole advantage. The undirected case writes both
-`[u][v]` and `[v][u]`, keeping the grid symmetric. A self-loop needs no special
-case here, because `[u][u]` written twice is still one cell. `neighbours` and
-`degree` read the full row, all n cells, and return neighbours in increasing
-order, where the list returns them in the order their edges were added.
-
-## Invariants
-
-These hold after every call returns:
-
-- **Undirected graphs are symmetric.** In the list, v is in u's list exactly
-  when u is in v's; in the matrix, `[u][v]` equals `[v][u]`. Every edge method
-  writes or removes both sides together.
-- **No list holds a vertex twice.** `add_edge` checks before it appends, so
-  each edge, and each self-loop, appears once in each list it belongs in.
-- **Every neighbour is itself a vertex.** `add_edge` adds both endpoints
-  before linking them, so following a neighbour never leads to a vertex the
-  map doesn't have.
-- **The edge count equals the number of edges**: each directed edge, each
-  undirected edge and each self-loop counts once. It changes only when an edge
-  method returns `True`.
-
-## Tricky lines
-
-- `u != v` in `add_edge` (and `u !== v` in TypeScript). Without it, an
-  undirected self-loop appends u to its own list twice, so `neighbours` lists
-  it twice and `degree` counts 2. Graph theory does count a self-loop twice
-  toward an undirected vertex's degree, but this class defines degree as the
-  number of neighbours, and the list and matrix would disagree. The same guard
-  in `remove_edge` matters more in TypeScript: without it, the second
-  `removeOne` looks for a u that's already gone. `indexOf` returns −1, and
-  `splice(-1, 1)` counts from the end, so it silently deletes the last
-  neighbour in the list. Removing the self-loop from `a: [b, a, c]` leaves
-  `[b]` instead of `[b, c]`. Python's `list.remove` raises `ValueError` for a
-  missing item instead.
-- `if v in self._adj[u]: return False` in `add_edge`. Leave it out and adding
-  the same edge twice stores it twice and counts it twice; one
-  `remove_edge` then removes one copy, `edge_count` drops by one, and
-  `has_edge` still answers yes. Graphs that really need several edges between
-  the same two vertices (two flights between the same cities) are
-  **multigraphs**, and they usually give each edge an ID rather than allowing
-  silent duplicates.
-- `return list(self._adj[v])` in `neighbours`, a copy rather than the stored
-  list. Returning the stored list lets a caller's `append` add a one-way edge
-  to an undirected graph that the count and the other vertex know nothing
-  about. The copy costs O(deg(v)), the same as reading the list.
-- `[bytearray(n) for _ in range(n)]`, not `[bytearray(n)] * n`. The shorter
-  form makes n references to one row, so adding the directed edge 0 → 1 sets
-  column 1 in every row, and every vertex appears to have an edge to 1. The
-  TypeScript `Array.from` with a function creates a new `Uint8Array` per row
-  for the same reason.
-- `_check` in the Python matrix. Python reads a negative index from the end,
-  so without the check `has_edge(0, -1)` would quietly answer for vertex
-  n − 1. TypeScript doesn't wrap, but it fails in two different ways: a bad
-  column index into a `Uint8Array` reads `undefined` and a write to it is
-  silently ignored, while a bad row index makes `this.rows[u]` undefined and
-  the next `[v]` throws a `TypeError`. `check` turns both into the same
-  `RangeError`.
+Weights fit both layouts. The list stores `(neighbor, weight)` pairs; the matrix stores the weight in the cell, and needs a marker such as `None` for "no edge", since 0 can be a real weight.
 
 ## When to use it
 
-Use an adjacency list by default. Almost every graph met in practice is
-sparse (road networks, social graphs, the links between web pages, a
-project's dependency graph), and the list's O(V + E) space and O(deg(v))
-neighbour scan are what the later traversal entries rely on: visiting every
-vertex and edge once is O(V + E) only with lists. Interview problems that hand
-you an edge list, such as "given `n` courses and their prerequisite pairs",
-usually start by building one with a `dict` of lists, or with a list of lists
-when the vertices are already numbered 0 to n − 1.
+- The statement describes pairwise relationships: prerequisites, friends, roads, links, dependencies, "can you get from A to B".
+- The input is `n` plus a list of pairs such as `[[0, 1], [0, 2]]`. Build an adjacency list from it before doing anything else.
+- The vertices are names or ids rather than 0 to n - 1: use a hash map from vertex to list instead of an array of lists.
+- A grid or board (a maze, an island map) is a graph too, but needs neither layout: a cell's neighbors come from its coordinates.
+- Reach for the matrix when V is small (a few thousand at most, since it holds V² cells), when the graph is dense, or when the main question is "is there an edge between u and v?". An algorithm that fills a table of distances between every pair of vertices already needs a V by V table.
 
-Use a matrix when the graph is dense, when V is small (a few thousand
-vertices at most, since the grid is V² bytes), or when the main question is
-"is there an edge between u and v?". Algorithms that fill in the shortest
-distance between every pair of vertices work on a V × V table anyway, so a
-matrix suits them. A grid-shaped problem, such as a maze given as rows of
-characters, is a graph too, but usually needs neither layout: a cell's
-neighbours are the cells above, below, left and right, worked out from its
-coordinates when needed.
+The rule: store only the edges that exist unless the graph is so full that a cell for every possible one costs little extra.
 
-If the graph is sparse but edge checks are frequent, replace each neighbour
-list with a hash set. `has_edge` and `remove_edge` become O(1) on average, at
-the cost of more memory per neighbour. A Python `set` also gives up the
-insertion order (a `dict` with `None` values keeps it); a JavaScript `Set`
-keeps insertion order, as `Map` does.
+## Operations and costs
 
-Some structures in this tab are graphs with extra rules. A
-[binary tree](/dsa/binary-tree) is a connected graph with no cycles where each
-node has at most two children, which is why it's stored as nodes with child
-pointers rather than either layout here. And when the only question is
-whether two vertices are connected while edges keep being added,
-[Union-Find](/dsa/union-find) answers it in close to O(1) amortized per
-operation without storing the edges at all.
+Time is in terms of V, E and deg(v). When two figures are given, the first is the average and the second the worst case; the worst case is a list append that has to resize.
+
+| Operation               | Adjacency list                           | Adjacency matrix |
+| ----------------------- | ---------------------------------------- | ---------------- |
+| `add_edge(u, v)`        | O(1) amortized; O(deg(u) + deg(v)) worst | O(1)             |
+| `remove_edge(u, v)`     | O(deg(u) + deg(v)), scan then shift      | O(1)             |
+| `has_edge(u, v)`        | O(deg(u)), a scan of u's list            | O(1)             |
+| list the neighbors of v | O(deg(v))                                | O(V), whole row  |
+| `degree(v)`             | O(1), the list's length                  | O(V), whole row  |
+| visit every edge        | O(V + E)                                 | O(V²)            |
+| space                   | O(V + E)                                 | O(V²)            |
+
+The list pays for an edge check by scanning one short list; the matrix answers in one cell read but pays for every other question by reading a row of V cells, however few neighbors the vertex has. Visiting every edge is what a search does, so that row usually decides.
+
+Put numbers on it. A road-style graph has 1,000,000 vertices with about 10 neighbors each, so E = 5,000,000 and the lists hold 2E = 10,000,000 entries. Visiting every edge takes about V + 2E = 11 million steps. The matrix has 10¹² cells, a terabyte at one byte each, and visiting every edge reads all of them. Now a dense graph: 1,000 vertices and 400,000 of the 499,500 possible edges. The lists hold 800,000 entries and the matrix 1,000,000 cells, so the matrix costs little more and answers every edge check in one read.
+
+A matrix also has a fixed V: a new vertex means a new row and a new cell in every row, so a growing graph belongs in lists.
+
+## Implementation
+
+Both languages store vertices as numbers 0 to n - 1, and both layouts are built from the same edge list.
+
+```python
+from collections.abc import Iterator
+
+Edge = tuple[int, int]
+
+def check(n: int, edges: list[Edge]) -> None:
+    # Python reads adj[-1] as the last vertex, so a bad id would not fail.
+    for u, v in edges:
+        if not (0 <= u < n and 0 <= v < n):
+            raise ValueError(f"edge ({u}, {v}) names a vertex outside 0..{n - 1}")
+
+def build_list(n: int, edges: list[Edge], directed: bool = False) -> list[list[int]]:
+    """Adjacency list: adj[u] holds the neighbors of u."""
+    check(n, edges)
+    # A comprehension makes n separate lists; [[]] * n would share one.
+    adj: list[list[int]] = [[] for _ in range(n)]
+    for u, v in edges:
+        adj[u].append(v)
+        # An undirected edge is stored from both ends, or only one end sees it.
+        # A self-loop (u == v) is one entry, the same as one matrix cell.
+        if not directed and u != v:
+            adj[v].append(u)
+    return adj
+```
+
+```typescript
+export type Edge = [number, number];
+
+function check(n: number, edges: Edge[]): void {
+  // A bad column on a number[] row would silently grow the row, not fail.
+  for (const [u, v] of edges) {
+    if (!(u >= 0 && u < n && v >= 0 && v < n)) {
+      throw new RangeError(`edge (${u}, ${v}) names a vertex outside 0..${n - 1}`);
+    }
+  }
+}
+
+/** Adjacency list: adj[u] holds the neighbors of u. */
+export function buildList(n: number, edges: Edge[], directed = false): number[][] {
+  check(n, edges);
+  // Array.from calls the function per slot; fill([]) would share one array.
+  const adj: number[][] = Array.from({ length: n }, () => []);
+  for (const [u, v] of edges) {
+    adj[u].push(v);
+    // An undirected edge is stored from both ends, or only one end sees it.
+    // A self-loop (u === v) is one entry, the same as one matrix cell.
+    if (!directed && u !== v) adj[v].push(u);
+  }
+  return adj;
+}
+```
+
+On the running example this returns the lists above, and with `directed` set `[[1, 2], [2], [3], []]`. The matrix builder takes the same arguments but allocates all V² cells before it reads an edge.
+
+```python
+def build_matrix(n: int, edges: list[Edge], directed: bool = False) -> list[list[int]]:
+    """Adjacency matrix: m[u][v] is 1 when there is an edge from u to v."""
+    check(n, edges)
+    # Every cell exists up front, which is the V * V space cost.
+    m = [[0] * n for _ in range(n)]
+    for u, v in edges:
+        m[u][v] = 1
+        if not directed:
+            m[v][u] = 1
+    return m
+```
+
+```typescript
+/** Adjacency matrix: m[u][v] is 1 when there is an edge from u to v. */
+export function buildMatrix(n: number, edges: Edge[], directed = false): number[][] {
+  check(n, edges);
+  // Every cell exists up front, which is the V * V space cost.
+  const m = Array.from({ length: n }, () => new Array<number>(n).fill(0));
+  for (const [u, v] of edges) {
+    m[u][v] = 1;
+    if (!directed) m[v][u] = 1;
+  }
+  return m;
+}
+```
+
+Writing a cell twice is harmless, so the matrix needs no `u != v` guard. The queries show the cost difference directly, and a list needs no `neighbors` function because `adj[v]` is already the answer.
+
+```python
+def has_edge_list(adj: list[list[int]], u: int, v: int) -> bool:
+    return v in adj[u]  # a scan of u's list, so O(deg(u))
+
+def has_edge_matrix(m: list[list[int]], u: int, v: int) -> bool:
+    return m[u][v] == 1  # one cell read, however many edges there are
+
+def neighbors_matrix(m: list[list[int]], u: int) -> list[int]:
+    # No list to return: the whole row must be read to find the 1s.
+    return [v for v, cell in enumerate(m[u]) if cell]
+```
+
+```typescript
+export function hasEdgeList(adj: number[][], u: number, v: number): boolean {
+  return adj[u].includes(v); // a scan of u's list, so O(deg(u))
+}
+
+export function hasEdgeMatrix(m: number[][], u: number, v: number): boolean {
+  return m[u][v] === 1; // one cell read, however many edges there are
+}
+
+export function neighborsMatrix(m: number[][], u: number): number[] {
+  // No list to return: the whole row must be read to find the 1s.
+  const out: number[] = [];
+  m[u].forEach((cell, v) => {
+    if (cell) out.push(v);
+  });
+  return out;
+}
+```
+
+On the example, `has_edge_list(adj, 2, 3)` scans the three entries of `[0, 1, 3]`, and `neighbors_matrix(m, 2)` reads all four cells of row 2 to return `[0, 1, 3]`. Last, visiting every edge, which is what a traversal does. Each undirected edge is yielded once from each end.
+
+```python
+def edges_of_list(adj: list[list[int]]) -> Iterator[Edge]:
+    for u, row in enumerate(adj):
+        for v in row:
+            yield u, v
+
+def edges_of_matrix(m: list[list[int]]) -> Iterator[Edge]:
+    for u, row in enumerate(m):
+        for v, cell in enumerate(row):
+            if cell:  # every cell is read, including the zeros
+                yield u, v
+```
+
+```typescript
+export function* edgesOfList(adj: number[][]): Generator<Edge> {
+  for (const [u, row] of adj.entries()) {
+    for (const v of row) yield [u, v];
+  }
+}
+
+export function* edgesOfMatrix(m: number[][]): Generator<Edge> {
+  for (const [u, row] of m.entries()) {
+    for (const [v, cell] of row.entries()) {
+      if (cell) yield [u, v]; // every cell is read, including the zeros
+    }
+  }
+}
+```
+
+The list version does 8 steps on the example, one per entry. The matrix version reads all 16 cells to find the same 8 edges.
+
+## Pitfalls
+
+- **Storing an undirected edge once.** Without `adj[v].append(u)`, the edge is visible from u and invisible from v, so a search that starts at v never finds u. Also keep the `u != v` guard: without it a self-loop lands in its own list twice, and the list and the matrix disagree about the graph.
+- **Sharing one row.** `[[]] * n` in Python and `new Array(n).fill([])` in TypeScript make n references to one array, so adding 0 to 1 appears to add it to every vertex. The comprehension and `Array.from` in `build_list` make a fresh list per vertex; `build_matrix` needs the same care.
+- **Skipping `check`.** Python reads `adj[-1]` as the last vertex, so a bad id quietly edits the wrong one. In TypeScript, `m[u][v] = 1` with `v` past the end grows the row instead of failing.
+- **Asking the list "is there an edge?" in a loop.** `v in adj[u]` costs O(deg(u)) per call; asked for every pair, a hub vertex with 100,000 neighbors dominates the run. If edge checks are frequent, keep a set per vertex instead of a list, or use the matrix when V is small.

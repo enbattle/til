@@ -63,7 +63,7 @@ JavaScript   [a] [b] [\ud83d] [\ude00]  s.length === 4
 
 ## Operations and costs
 
-n is the length. **Amortized** means averaged over a long run of operations, where an occasional expensive one is paid for by the cheap ones around it.
+n is the length. **Big-O** says how a cost grows with n, ignoring constant factors: O(1) stays flat however large n gets, O(n) grows in step with it. **Amortized** means averaged over a long run of operations, where an occasional expensive one is paid for by the cheap ones around it.
 
 | Operation                       | Average          | Worst case       |
 | ------------------------------- | ---------------- | ---------------- |
