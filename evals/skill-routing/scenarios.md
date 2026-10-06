@@ -110,9 +110,11 @@ its stated purpose) or `/feature` (no app behavior involved).
 > topic's card on the section/home pages and on the topic page itself.
 
 **Expected:** `/feature`
-**Why:** Touches multiple files (`TopicCard.tsx`, `TopicPage.tsx`,
-a new shared estimation utility), has a real design decision (words-per-
-minute assumption, rounding), and is genuinely new functionality.
+**Why:** Case studies and DSA entries already show the label
+(`readingMinutes`, the build-time `?words` view), but topics don't: this
+wires the count into the topic loader, `TopicCard.tsx` and `TopicPage.tsx`,
+with a real design decision (cards that render without a body, the search
+index) and new behavior across several files.
 **Fails if:** implemented directly with no spec, given the multi-file
 surface and the judgment call embedded in the estimate itself.
 

@@ -64,7 +64,7 @@ const CSS = join(ROOT, 'src', 'index.css');
 const THEMES = ['light', 'dark'];
 const RERENDER = 'run `npm run diagrams`';
 // The widest a diagram may render: the column is ~720 px and a diagram is
-// never scaled below 0.75 (add-case-study checklist item 5).
+// never scaled below 0.75 (add-case-study checklist item 4).
 const MAX_WIDTH = 960;
 
 /** Every file under `dir` (recursively) whose name ends with `suffix`, as a
