@@ -3,7 +3,6 @@ title: Design a Ride-Sharing Service (like Uber)
 summary: Driver locations kept only in memory, offers made to one driver at a time with a conditional write, and positions pushed to riders over WebSockets, for 750,000 location updates a second at peak.
 date: 2026-10-05
 order: 8
-template: 2
 ---
 
 You're asked to design a service like Uber. A rider taps "Request ride" and two workloads sit behind that tap. One is a firehose:

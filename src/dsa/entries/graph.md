@@ -3,7 +3,6 @@ title: Graph
 summary: Things joined by connections, stored as a list of neighbors per vertex or as a grid with a cell for every possible connection, and why the list is the default.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 A graph models things and the connections between them: intersections and roads, people and friendships, courses and prerequisites. Nearly every graph problem comes down to walking those connections, and how fast you can walk depends on how you store them. You'll store one four-vertex graph both standard ways and price every operation.

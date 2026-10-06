@@ -256,12 +256,13 @@ Keep the prompt naming a case study that doesn't exist yet.)
 `src/system-design/case-studies/` plus its D2 diagrams, drafted to the
 template, rendered with `npm run diagrams`, then reviewed by a fresh agent
 against the Writing Standard and the case-study checklist (estimate
-arithmetic, compared options in each deep dive, diagrams matching the prose).
+arithmetic, a "why not" and a rule of thumb in each decision, diagrams matching
+the prose).
 **Fails if:** routed to `add-topic` (a case study isn't a catalog topic, and
 that skill's review has none of the case-study checks), routed to `/feature`
 (no app code changes, so spec and TDD would be ceremony), or written directly
 with no independent review, which skips the check most likely to catch a
-wrong estimate or a one-sided deep dive.
+wrong estimate or a one-sided decision.
 
 ---
 
@@ -273,13 +274,12 @@ wrong estimate or a one-sided deep dive.
 **Expected:** `content-audit` scoped to that one file
 **Why:** The case study already exists, and `add-case-study`'s description
 says it is not for checking an existing case study's prose quality (that's
-`content-audit`); tightening the writing keeps the page's shape, so it isn't
-a rewrite to the current template (SR-19). An independent read of one published file against the
+`content-audit`); tightening the writing keeps the page's shape. An independent read of one published file against the
 Writing Standard, including whether its claims hold, is `content-audit`'s
 single-file scope. The prompt names no specific fix and asks for claims to be
 checked, so the direct-edit carve-out does not apply.
 **Fails if:** rewritten directly in the same session (as SR-11), routed through `add-case-study` (that skill drafts a new file
-and its diagrams, or redrafts one to a new template; it has no path for
+and its diagrams; it has no path for
 polishing a published one in place) or `/feature`
 (no app behavior involved).
 
@@ -325,34 +325,28 @@ directly with no independent review of the code and its tests.
 
 ---
 
-### SR-19 — rewriting a case study to the current template (trap)
+### SR-19 — retired
 
-> Rewrite the ride-sharing case study so it fits the new five-minute format.
-
-**Expected:** `add-case-study`
-**Why:** A rewrite to the current template is a new draft of the whole page
-(new headings, three decisions, the word budget), which `add-case-study`'s
-description and Stage 0 name as its job, with the case-study checklist and an
-independent review. `content-audit`'s description hands template rewrites to
-the add skills; it checks the quality of a page that keeps its shape.
-**Fails if:** routed to `content-audit` (its review has no template or
-budget check and no drafting stage), to `/feature` (the template's test
-changes in a separate run; this request is content), or rewritten directly
-with no independent review.
+This scenario routed "rewrite the ride-sharing case study so it fits the new
+five-minute format" to `add-case-study`. Every case study was rewritten to that
+format, and `docs/specs/retire-template-switch.md` dropped template rewrites
+from the skills' descriptions, so the scenario no longer has a right answer.
+The ID is kept so past results under `results/` still line up; don't reuse it.
 
 ---
 
 ### SR-20 — merging DSA entries (trap)
 
-> Merge the six dynamic programming entries in DSA into the two the docs plan
-> for.
+> Merge the binary tree and binary search tree entries in DSA into one.
+
+(The prompt used to name the six dynamic programming entries, merged into two
+in DSA batch 5. Keep the prompt naming entries that still exist.)
 
 **Expected:** `add-dsa-entry`
 **Why:** `add-dsa-entry`'s description and Stage 0 cover merging entries:
 the new entries are drafted with their code and tests, the old entries and
 code folders are deleted, links are repointed, and a fresh reviewer checks
-the result. docs/dsa.md's migration table names the two entries and what they
-absorb.
+the result.
 **Fails if:** routed to `content-audit` (it doesn't draft code or tests),
 to `/feature` (no change to the DSA pages or loader), or done directly with no
 independent review of the new code.

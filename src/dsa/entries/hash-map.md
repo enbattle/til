@@ -3,7 +3,6 @@ title: Hash Map
 summary: A map that finds a value by its key in constant time on average, by hashing the key to one bucket and doubling the table before the buckets get crowded.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 A hash map stores values under keys, the way a contacts list stores numbers

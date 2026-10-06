@@ -3,7 +3,6 @@ title: Design an LLM Chat Service (like ChatGPT or Claude)
 summary: Streaming a language model's replies to 10 million daily users, with batching, cache-aware routing and admission control deciding how many GPUs that takes.
 date: 2026-10-05
 order: 16
-template: 2
 ---
 
 You're asked to design a chat service on a large language model, like ChatGPT

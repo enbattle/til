@@ -3,7 +3,6 @@ title: Linked List
 summary: A chain of nodes that each point to the next, so changing the front costs O(1) but reaching the i-th value means walking from the start.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 A linked list stores a sequence the way a scavenger hunt stores its route: each

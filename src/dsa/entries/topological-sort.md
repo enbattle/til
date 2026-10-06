@@ -3,7 +3,6 @@ title: Topological Sort
 summary: Lining up the vertices of a directed graph so every edge points forward, which is possible exactly when there is no cycle.
 date: 2026-10-05
 kind: algorithm
-template: 2
 ---
 
 Some jobs must happen before others: you take Algebra before Calculus, compile a library before the program that uses it. Draw each "A before B" as an arrow from A to B and you have a directed graph. A **topological order** lines up every vertex so that every arrow points forward. Two methods build one, and both tell you when none exists.

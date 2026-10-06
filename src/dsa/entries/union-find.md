@@ -3,7 +3,6 @@ title: Union-Find
 summary: Tracking which elements belong together as groups merge, by pointing each element at a parent and keeping the trees shallow, so "are these two together?" costs almost constant time.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 Union-find, also called a **disjoint-set union**, keeps elements in groups that never overlap and answers one question fast: are these two in the same group? Groups only merge, never split. That covers whether a new road closes a loop, or how many islands a map has. You'll build it over six elements, watch a plain version go slow, and fix it with two small changes.

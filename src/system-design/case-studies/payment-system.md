@@ -3,7 +3,6 @@ title: Design a Payment System and Wallet (like PayPal)
 summary: A double-entry ledger that never edits a row, idempotency keys down to the card processor, and a saga for transfers between shards, at 5,800 money movements a second at peak.
 date: 2026-10-05
 order: 11
-template: 2
 ---
 
 You're asked to design a wallet like PayPal. Alice pays an online store $25

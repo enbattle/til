@@ -1,6 +1,6 @@
 ---
 name: add-dsa-entry
-description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add an LRU cache entry to DSA", "write up a difference-array entry", "add these three DSA entries"), or to rewrite existing entries to the current five-minute template or merge several into one — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking the writing quality of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
+description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add an LRU cache entry to DSA", "write up a difference-array entry", "add these three DSA entries"), or to merge several existing entries into one — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking the writing quality of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
 ---
 
 # Add a DSA entry
@@ -34,8 +34,8 @@ don't edit another entry except to link to the new one from prose where it
 belongs (a link from an older entry's `## Prerequisites` would make the older
 entry depend on the newer one, so it goes elsewhere in the body).
 
-Rewriting an entry to the current template, or merging several into one
-(docs/dsa.md's "Scope" lists the merges), also follows this skill. A merge
+Merging several entries into one (docs/dsa.md, "Scope") also follows this
+skill. A merge
 deletes the old entries and their code folders in the same change and repoints
 every `/dsa/<old-slug>` link (`git grep -n "/dsa/<old-slug>"`). Treat the old
 text and code as research notes, not a draft to trim.
@@ -74,8 +74,8 @@ sets the five-minute budget and the voice.
    whether a loop ends (its condition, or the step that moves it forward): a
    loop that never ends hangs the test run instead of failing it.
 3. **Entry.** `src/dsa/entries/<slug>.md`, slug kebab-case. Frontmatter
-   `title`, a one-sentence `summary`, `date` (today), `kind` and `template: 2`
-   (the current templates; docs/dsa.md, "Migrating"). The `##`
+   `title`, a one-sentence `summary`, `date` (today), `kind`, and no
+   other key. The `##`
    headings are the kind's template from docs/dsa.md, exactly. Then:
    - **Prerequisites** links only the entries the prose really needs
      (`[Hash map](/dsa/hash-map)`), each with a phrase saying what it's needed
@@ -113,8 +113,7 @@ shape), ask the user rather than guess.
 npm run verify
 ```
 
-`dsa-structure.test.ts` (the template, and the word budget on a
-`template: 2` entry, as [docs/dsa.md](../../../docs/dsa.md) lists them),
+`dsa-structure.test.ts` (the template, and the word budget, as [docs/dsa.md](../../../docs/dsa.md) lists them),
 `dsa-code-chunks.test.ts` (the chunks
 equal the code files), `dsa.test.ts` (frontmatter, prerequisites that exist
 and form no cycle), the entry's own vitest and pytest files, and

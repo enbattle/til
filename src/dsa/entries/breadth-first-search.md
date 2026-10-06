@@ -3,7 +3,6 @@ title: Breadth-First Search
 summary: Exploring a graph or grid in rings outward from one or many starts with a queue, so the first route found to anything uses the fewest steps.
 date: 2026-10-05
 kind: algorithm
-template: 2
 ---
 
 Breadth-first search (BFS) visits everything one step from the start, then everything two steps away, then three, and so on. You'll run it two ways on small examples: on a graph, to find a path with the fewest edges, and on a grid, to find how long a spread from several sources takes. Both are one loop around a queue.

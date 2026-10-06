@@ -3,7 +3,6 @@ title: Design a Video Streaming Service (like YouTube and Netflix)
 summary: Parallel 60-second encodes, 4-second segments a player chooses among as its connection changes, and an origin shield that cuts object-store egress, for 37.5 Tbit/s at peak.
 date: 2026-10-05
 order: 7
-template: 2
 ---
 
 You're asked to design a service like YouTube or Netflix. A creator uploads a

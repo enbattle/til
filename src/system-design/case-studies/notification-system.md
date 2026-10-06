@@ -3,7 +3,6 @@ title: Design a Notification System (like a push, email and SMS service)
 summary: One request fans out into push, email, SMS and inbox sends on queues split by channel and priority, so a 50-million-user campaign never delays a login code.
 date: 2026-10-05
 order: 3
-template: 2
 ---
 
 You're asked to design the service the rest of a company's backend calls when

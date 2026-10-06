@@ -3,7 +3,6 @@ title: Trie
 summary: A tree that stores strings one character per level, so words that share a prefix share nodes and a lookup costs the length of the key, not the number of words.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 Type "ap" into a search box and it offers "app", "apple" and "apt" before you

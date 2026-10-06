@@ -3,7 +3,6 @@ title: Two Pointers
 summary: Moving two positions through a sequence by a rule that retires something at every step, so a search that looks quadratic or memory-hungry becomes one pass in constant space.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 Two pointers scans a sequence with two positions at once instead of one. A

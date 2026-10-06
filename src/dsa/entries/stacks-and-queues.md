@@ -3,7 +3,6 @@ title: Stacks and Queues
 summary: Two ways to hand items back, newest first (a stack) or oldest first (a queue), each in constant time by touching only the ends of an array.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 A stack gives back the newest item first, like a pile of plates. A queue gives back the oldest first, like a line at a counter. You'll build both on arrays, use a stack to check brackets, and use a queue that also pops from the back (a **deque**, pronounced "deck") to find the maximum of every window in a list.

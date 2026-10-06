@@ -3,7 +3,6 @@ title: Greedy
 summary: Taking the locally best choice at every step and never revisiting it, which is correct only when you can argue the choice never costs you the best answer.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 A **greedy** algorithm builds an answer one decision at a time, takes whichever

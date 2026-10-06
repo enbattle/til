@@ -39,22 +39,27 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-04 | Friction follow-ups: /feature Stages 1, 4, 6; docs-audit; the hook   | 2    | 0    | 0         | SR-01 and SR-09.                                             |
 | 2026-10-05 | Five-minute content: add-case-study, add-dsa-entry, content-audit    | 8    | 0    | 0         | SR-19 and SR-20 added; SR-16's reasoning refreshed.          |
 | 2026-10-05 | five-minute-templates retro: both skills' Stage 2 point to the docs  | 2    | 0    | 0         | SR-15 and SR-18; bodies only, descriptions unchanged.        |
+| 2026-10-06 | Retire the template switch: three skill descriptions, SR-19 retired  | 6    | 0    | 0         | SR-06, 11, 15, 16, 18, 20; SR-20 prompt now a BT+BST merge.  |
 
-## Latest run: 2026-10-05, five-minute content
+## Latest run: 2026-10-06, retire the template switch
 
-Run by: self
-Trigger: branch `docs/digestible-content`. `add-case-study` and `add-dsa-entry` now own rewrites to the five-minute template (and, for DSA, merges), and their descriptions say so; `content-audit`'s description hands those to them; the Writing Standard gains a "Case studies and DSA entries" section; the case-study checklist, `docs/case-studies.md` and `docs/dsa.md` change templates and budgets.
-Scope: the scenarios whose Expected answer depends on the three edited descriptions: SR-06 (direct edit to existing content), SR-11 (`content-audit` sweep), SR-15 (new case study), SR-16 (polish an existing case study), SR-18 (new DSA entry), plus the two new traps, SR-19 (rewrite to the template) and SR-20 (merge DSA entries). SR-12 ran afterwards, once `content-review-eval`'s description was updated to name the new planted problems.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
+- **Trigger:** branch chore/retire-template-switch (docs/specs/retire-template-switch.md) edited the descriptions of `add-case-study`, `add-dsa-entry` and `content-audit` to drop the five-minute-rewrite routing.
+  - SR-19 was retired, because its answer depended on that routing.
+  - SR-20's prompt became a merge of two entries that exist.
+  - SR-15's Why and Fails-if lost their deep-dive wording.
+- **Scope:** the scenarios whose answer depends on those three skills.
 
-| ID    | Routing decision           | Reasoning (1 line)                                                                      | Grade |
-| ----- | -------------------------- | --------------------------------------------------------------------------------------- | ----- |
-| SR-06 | Direct                     | A few words added to an existing topic is a small, unambiguous change.                  | PASS  |
-| SR-11 | `content-audit`            | A sweep of everything published for AI tone, over-explained analogies and wrong claims. | PASS  |
-| SR-12 | `content-review-eval`      | Checking that a review still catches a planted violation after its wording changed.     | PASS  |
-| SR-15 | `add-case-study`           | A new case study with diagrams; no collaborative-editor file exists.                    | PASS  |
-| SR-16 | `content-audit` (one file) | A quality pass on a published case study; template rewrites belong to `add-case-study`. | PASS  |
-| SR-18 | `add-dsa-entry`            | A new entry; no LRU entry exists.                                                       | PASS  |
-| SR-19 | `add-case-study`           | Its description covers rewriting a case study to the five-minute template.              | PASS  |
-| SR-20 | `add-dsa-entry`            | Its description covers merges, and docs/dsa.md's migration table names the two entries. | PASS  |
+| ID    | Routing decision           | Reasoning (one line)                                                     | Grade |
+| ----- | -------------------------- | ------------------------------------------------------------------------ | ----- |
+| SR-06 | direct                     | A few words in one existing topic; no new topic, no app code.            | PASS  |
+| SR-11 | `content-audit`            | Corpus-wide sweep of published topics for AI tone and wrong claims.      | PASS  |
+| SR-15 | `add-case-study`           | A new case study with its D2 diagram; no app code.                       | PASS  |
+| SR-16 | `content-audit` (one file) | Tighten and check an existing case study: the single-file mode.          | PASS  |
+| SR-18 | `add-dsa-entry`            | A new DSA entry; the description names this example.                     | PASS  |
+| SR-20 | `add-dsa-entry`            | The description covers merging entries; content-audit's excludes merges. | PASS  |
 
-Notes: SR-16 and SR-19 drew the line between them the intended way (polishing keeps the page's shape; a template rewrite doesn't), each citing the other skill's description.
+**Notes:**
+
+- SR-20's agent cited content-audit's new "not a merge of DSA entries" exclusion. The edited descriptions now do the routing work that the removed migration table used to do.
+- Several agents routed from the skill listing alone, without opening files. That is the cheapest path, and it still reached the right skill.

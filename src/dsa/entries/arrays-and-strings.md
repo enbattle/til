@@ -3,7 +3,6 @@ title: Arrays and Strings
 summary: Items in one block of memory, reachable by position in one step, where growing is cheap on average and a string is the same block that can never be edited.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 An array stores items side by side in memory, and a string is an array of characters that can't be changed once made. Python's `list`, JavaScript's `Array` and Java's `ArrayList` are all dynamic arrays, and most structures in this tab sit on top of one. You'll build one that grows, then learn why a string needs different handling.

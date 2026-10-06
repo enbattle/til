@@ -17,12 +17,12 @@ sections, and the whole thing is deployed as a static site.
   and collapse independently as you move between them (see
   [docs/DESIGN.md](docs/DESIGN.md)).
 - **System Design** — a second tab of worked design case studies ("design a
-  URL shortener"), each taking one product from requirements and
-  back-of-the-envelope estimates through the data model, API and
-  architecture to deep dives, failure modes and trade-offs. Each links into
-  the catalog topics it uses, and each of those topics links back. Diagrams
-  are written in [D2](https://d2lang.com) and rendered at build time to
-  static SVGs in the site's own colors, one per theme.
+  URL shortener"), each a five-minute read: requirements, the key numbers,
+  the architecture, the API and data model, three decisions (each with a
+  "why not" for the rejected alternative and a rule of thumb) and the likely
+  follow-up questions. Each links into the catalog topics it uses, and each
+  of those topics links back. Diagrams are written in [D2](https://d2lang.com)
+  and rendered at build time to static SVGs in the site's own colors, one per theme.
 - **DSA** — a third tab of data structures, patterns and algorithms at
   interview depth, grouped by those three kinds, with each group listed so
   that an entry comes after the ones in it that it builds on. Every code example is shown in Python and TypeScript (one switch sets

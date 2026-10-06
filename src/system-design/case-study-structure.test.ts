@@ -8,27 +8,18 @@ import { parseFrontmatter } from '@/lib/frontmatter';
 import { proseWordCount } from '@/lib/markdown.mjs';
 
 /**
- * Content-structure test for docs/specs/system-design-case-studies.md
- * (criterion 12) and docs/specs/case-study-at-a-glance.md (criteria 1-4); the
- * rules are in docs/case-studies.md. Each case study is rendered with the real
- * `MarkdownRenderer` and checked on the DOM it produces, so a heading, link,
- * list item or id counts exactly when the reader's page has it.
+ * Content-structure test for the System Design case studies; the rules are in
+ * docs/case-studies.md. The template is the five-minute one
+ * (docs/specs/five-minute-templates.md, criteria 8 and 10), and since
+ * docs/specs/retire-template-switch.md (criteria 1, 3, 4, 6 and 7) it is the
+ * only one: nothing in a page's frontmatter picks it. Each case study is
+ * rendered with the real `MarkdownRenderer` and checked on the DOM it
+ * produces, so a heading, link, list item or id counts exactly when the
+ * reader's page has it.
  *
- * docs/specs/five-minute-templates.md (criteria 6-8, 10): a page's frontmatter
- * picks its template. With no `template` line it gets the old checks:
- *
- * - the `h2`s are the template, in order, `At a glance` first, with two or
- *   more `Deep dive: <topic>` sections;
- * - `At a glance` holds the four bold lead-ins in order; every list item (a
- *   nested one, and one in a list inside a blockquote, each on its own) under
- *   `Key decisions` and `Likely follow-ups` holds an in-page link of its own;
- *   and the section's last block is a paragraph linking to
- *   `#high-level-architecture`;
- * - every `href="#id"` link names an id the page has;
- * - `High-level architecture` holds a `/diagrams/` image.
- *
- * With `template: 2` it gets the five-minute template:
- *
+ * - the frontmatter keys are exactly `title`, `summary`, `date` and `order`
+ *   (an allowlist: an extra key, `template` included, or a missing one fails,
+ *   naming the file and the key);
  * - at least one paragraph before the first `h2`;
  * - the `h2`s exactly: `Requirements`, `Key numbers`, `High-level
  *   architecture`, `API and data model`, three `Decision: <topic>`, `Likely
@@ -37,13 +28,12 @@ import { proseWordCount } from '@/lib/markdown.mjs';
  * - `Key numbers`: a paragraph first, then one list of 4-5 top-level items,
  *   each opening with bold text that begins with a label and a colon;
  * - each `Decision:` section ends with a paragraph opening with bold
- *   `Rule of thumb.`;
+ *   `Rule of thumb.`, with a rule after it;
  * - `Likely follow-ups`: one list of 4-6 top-level items, each opening with
  *   bold text;
- * - the diagram and in-page link rules above;
+ * - `High-level architecture` holds a `/diagrams/` image with alt text;
+ * - every `href="#id"` link names an id the page has;
  * - `proseWordCount(body)` is at most 1,150.
- *
- * Any other `template` value fails, naming the file and the value.
  */
 
 const RAW = import.meta.glob('/src/system-design/case-studies/*.md', {
@@ -54,20 +44,7 @@ const RAW = import.meta.glob('/src/system-design/case-studies/*.md', {
 
 const FILES = Object.entries(RAW);
 
-const AT_A_GLANCE = 'At a glance';
-const BEFORE_DEEP_DIVES = [
-  AT_A_GLANCE,
-  'Requirements',
-  'Back-of-the-envelope estimates',
-  'Data model',
-  'API design',
-  'High-level architecture',
-];
-const AFTER_DEEP_DIVES = ['Failure modes and bottlenecks', 'Trade-offs'];
-const DEEP_DIVE = /^Deep dive: \S.*$/;
-const LEAD_INS = ['Requirements', 'Key numbers', 'Key decisions', 'Likely follow-ups'];
-const LINKED_LEAD_INS = ['Key decisions', 'Likely follow-ups'];
-const ARCHITECTURE_ID = 'high-level-architecture';
+const ALLOWED_KEYS = ['title', 'summary', 'date', 'order'];
 const IN_PAGE = 'a[href^="#"]';
 
 function renderBody(body: string): HTMLElement {
@@ -104,68 +81,6 @@ function section(page: HTMLElement, heading: string): Element[] | null {
   return h2 ? blocksAfter(h2) : null;
 }
 
-/** The lead-in label `block` opens with (a paragraph starting with a bold
- * `Label.`), or `undefined`. */
-function leadIn(block: Element): string | undefined {
-  const first = block.tagName === 'P' ? block.firstChild : null;
-  if (!(first instanceof HTMLElement) || first.tagName !== 'STRONG') return undefined;
-  const text = first.textContent?.trim() ?? '';
-  const label = text.replace(/\.$/, '');
-  return text.endsWith('.') && LEAD_INS.includes(label) ? label : undefined;
-}
-
-function templateProblems(page: HTMLElement): string[] {
-  const headings = [...page.querySelectorAll('h2')].map((h) => h.textContent?.trim());
-  const head = headings.slice(0, BEFORE_DEEP_DIVES.length);
-  const middle = headings.slice(BEFORE_DEEP_DIVES.length, -AFTER_DEEP_DIVES.length);
-  const tail = headings.slice(-AFTER_DEEP_DIVES.length);
-  const problems: string[] = [];
-  if (JSON.stringify(head) !== JSON.stringify(BEFORE_DEEP_DIVES)) {
-    problems.push(`opening headings are ${JSON.stringify(head)}`);
-  }
-  if (JSON.stringify(tail) !== JSON.stringify(AFTER_DEEP_DIVES)) {
-    problems.push(`closing headings are ${JSON.stringify(tail)}`);
-  }
-  if (middle.length < 2) problems.push(`${middle.length} deep dive(s), need 2+`);
-  for (const h of middle)
-    if (!DEEP_DIVE.test(h ?? '')) problems.push(`not a deep dive: ${h}`);
-  return problems;
-}
-
-function atAGlanceProblems(page: HTMLElement): string[] {
-  const blocks = section(page, AT_A_GLANCE);
-  if (!blocks) return [`no "${AT_A_GLANCE}" section`];
-  const problems: string[] = [];
-  const parts: { label: string; blocks: Element[] }[] = [];
-  for (const block of blocks) {
-    const label = leadIn(block);
-    if (label) parts.push({ label, blocks: [] });
-    else parts.at(-1)?.blocks.push(block);
-  }
-  const labels = parts.map((p) => p.label);
-  if (JSON.stringify(labels) !== JSON.stringify(LEAD_INS)) {
-    problems.push(
-      `lead-ins are ${JSON.stringify(labels)}, need ${JSON.stringify(LEAD_INS)}`,
-    );
-  }
-  for (const part of parts.filter((p) => LINKED_LEAD_INS.includes(p.label))) {
-    const items = part.blocks.flatMap((b) => [...b.querySelectorAll('li')]);
-    if (items.length === 0) problems.push(`"${part.label}" has no list`);
-    items.forEach((li, i) => {
-      const own = [...li.querySelectorAll(IN_PAGE)].some((a) => a.closest('li') === li);
-      if (!own) problems.push(`"${part.label}" item ${i + 1} has no in-page link`);
-    });
-  }
-  const last = blocks.at(-1);
-  const closes =
-    last?.tagName === 'P' &&
-    !leadIn(last) &&
-    last.querySelector(`a[href="#${ARCHITECTURE_ID}"]`) !== null;
-  if (!closes)
-    problems.push(`does not end with a paragraph linking to #${ARCHITECTURE_ID}`);
-  return problems;
-}
-
 function brokenInPageLinks(page: HTMLElement): string[] {
   const ids = new Set([...page.querySelectorAll('[id]')].map((el) => el.id));
   return [...page.querySelectorAll(IN_PAGE)]
@@ -188,21 +103,8 @@ function diagramProblems(page: HTMLElement): string[] {
     : ['the High-level architecture diagram has no alt text'];
 }
 
-/** Every rule's problems for `body`, rendered once; [] when it's right. */
-function structureProblems(body: string): string[] {
-  const page = renderBody(body);
-  return [
-    ...templateProblems(page),
-    ...atAGlanceProblems(page),
-    ...brokenInPageLinks(page).map((id) => `broken in-page link #${id}`),
-    ...diagramProblems(page),
-  ];
-}
-
-// ---- Template 2 (docs/specs/five-minute-templates.md, criterion 8) --------
-
 const DECISION = /^Decision: \S.*$/;
-const TEMPLATE_2: (string | RegExp)[] = [
+const TEMPLATE: (string | RegExp)[] = [
   'Requirements',
   'Key numbers',
   'High-level architecture',
@@ -236,11 +138,11 @@ function introProblems(page: HTMLElement): string[] {
   return ['no paragraph before the first h2'];
 }
 
-function template2HeadingProblems(page: HTMLElement): string[] {
+function headingProblems(page: HTMLElement): string[] {
   const headings = [...page.querySelectorAll('h2')].map((h) => h.textContent?.trim());
   const matches =
-    headings.length === TEMPLATE_2.length &&
-    TEMPLATE_2.every((want, i) =>
+    headings.length === TEMPLATE.length &&
+    TEMPLATE.every((want, i) =>
       typeof want === 'string' ? headings[i] === want : want.test(headings[i] ?? ''),
     );
   return matches
@@ -319,12 +221,12 @@ function budgetProblems(body: string): string[] {
     : [`${words} words, over the ${WORD_BUDGET}-word budget`];
 }
 
-/** Every template-2 rule's problems for `body`; [] when it's right. */
-function template2Problems(body: string): string[] {
+/** Every structure rule's problems for `body`; [] when it's right. */
+function structureProblems(body: string): string[] {
   const page = renderBody(body);
   return [
     ...introProblems(page),
-    ...template2HeadingProblems(page),
+    ...headingProblems(page),
     ...listProblems(page, 'Requirements', 4, 6),
     ...keyNumbersProblems(page),
     ...decisionProblems(page),
@@ -338,167 +240,41 @@ function template2Problems(body: string): string[] {
   ];
 }
 
-/** The problems with one case-study file (frontmatter included), checked
- * against the template its `template` line picks. */
-function fileProblems(file: string, raw: string): string[] {
-  const { data, content } = parseFrontmatter(raw);
-  if (!Object.hasOwn(data, 'template')) return structureProblems(content);
-  if (data.template === '2') return template2Problems(content);
-  return [`${file}: unknown template ${JSON.stringify(data.template)} (only 2 exists)`];
+/** Problems with `file`'s frontmatter keys: each key not in the allowlist,
+ * and each allowed key that's missing. */
+function frontmatterProblems(file: string, data: Record<string, string>): string[] {
+  const keys = Object.keys(data);
+  return [
+    ...keys
+      .filter((key) => !ALLOWED_KEYS.includes(key))
+      .map((key) => `${file}: unexpected frontmatter key "${key}"`),
+    ...ALLOWED_KEYS.filter((key) => !keys.includes(key)).map(
+      (key) => `${file}: missing frontmatter key "${key}"`,
+    ),
+  ];
 }
 
-describe('case-study structure (criterion 12; at-a-glance criteria 1-4; five-minute criterion 6)', () => {
+/** The problems with one case-study file, frontmatter included. */
+function fileProblems(file: string, raw: string): string[] {
+  const { data, content } = parseFrontmatter(raw);
+  return [...frontmatterProblems(file, data), ...structureProblems(content)];
+}
+
+describe('case-study structure (retire-template-switch criteria 1, 4 and 7)', () => {
   it('has at least one case study to check', () => {
     expect(FILES.length).toBeGreaterThan(0);
   });
 
-  it.each(FILES)('%s follows the template its frontmatter picks', (file, raw) => {
+  it.each(FILES)('%s follows the template', (file, raw) => {
     expect(fileProblems(file, raw)).toEqual([]);
   });
+
+  it.each(FILES)('%s has no template line', (_, raw) => {
+    expect(raw).not.toMatch(/^template:/m);
+  });
 });
 
-describe('the structure check itself', () => {
-  const DECISION = '- Random codes: no coordination ([why](#deep-dive-short-codes)).';
-  const FOLLOW_UP =
-    '- How are reads kept fast? A cache ([more](#deep-dive-the-read-path)).';
-  const CLOSING = 'The full picture is in [the architecture](#high-level-architecture).';
-  const GOOD = [
-    'Intro paragraph.',
-    '## At a glance',
-    '**Requirements.** What it must do:',
-    '- Shorten a URL; 100 million new links a day.',
-    '**Key numbers.** From the estimates:',
-    '- ≈ 115,000 redirects/s at peak (10× average).',
-    '**Key decisions.** The three that shape it:',
-    DECISION,
-    '**Likely follow-ups.** What comes next:',
-    FOLLOW_UP,
-    CLOSING,
-    '## Requirements',
-    '## Back-of-the-envelope estimates',
-    '## Data model',
-    '## API design',
-    '## High-level architecture',
-    '![The architecture](/diagrams/demo/architecture.svg)',
-    '## Deep dive: short codes',
-    '```md\n## Not a heading, inside a fence\n```',
-    '## Deep dive: the read path',
-    '## Failure modes and bottlenecks',
-    '## Trade-offs',
-  ].join('\n\n');
-
-  /** GOOD with `from` (which must occur in it exactly once) replaced by `to`. */
-  function planted(from: string, to: string): string {
-    expect(GOOD.split(from)).toHaveLength(2);
-    return GOOD.replace(from, to);
-  }
-
-  it('passes the GOOD fixture on every rule', () => {
-    expect(structureProblems(GOOD)).toEqual([]);
-  });
-
-  it.each([
-    ['no At a glance heading', '## At a glance', 'Summary:', 'no "At a glance" section'],
-    [
-      'lead-ins out of order',
-      '**Requirements.** What it must do:\n\n- Shorten a URL; 100 million new links a day.\n\n**Key numbers.** From the estimates:',
-      '**Key numbers.** From the estimates:\n\n- Shorten a URL; 100 million new links a day.\n\n**Requirements.** What it must do:',
-      'lead-ins are ["Key numbers","Requirements","Key decisions","Likely follow-ups"]',
-    ],
-    [
-      'a follow-up with no link',
-      FOLLOW_UP,
-      `${FOLLOW_UP}\n- What if the store is down? Serve stale entries.`,
-      '"Likely follow-ups" item 2 has no in-page link',
-    ],
-    [
-      'an unlinked decision nested under a linked one',
-      DECISION,
-      `${DECISION}\n  - A cache in front of the store: fast reads.`,
-      '"Key decisions" item 2 has no in-page link',
-    ],
-    [
-      'an unlinked decision in a blockquoted list',
-      DECISION,
-      `${DECISION}\n\n> - A fourth decision with no link.`,
-      '"Key decisions" item 2 has no in-page link',
-    ],
-    [
-      'a closing sentence folded into the last follow-up',
-      `${FOLLOW_UP}\n\n${CLOSING}`,
-      `${FOLLOW_UP}\n${CLOSING}`,
-      'does not end with a paragraph linking to #high-level-architecture',
-    ],
-    [
-      'a broken in-page link',
-      '(#deep-dive-the-read-path)',
-      '(#deep-dive-read-path)',
-      'broken in-page link #deep-dive-read-path',
-    ],
-    [
-      'a link to a ### heading, which renders with no id',
-      '## Trade-offs',
-      '## Trade-offs\n\n### Hot keys\n\nSee [hot keys](#hot-keys).',
-      'broken in-page link #hot-keys',
-    ],
-    [
-      'no architecture diagram',
-      '![The architecture](/diagrams/demo/architecture.svg)',
-      'A diagram belongs here.',
-      'no /diagrams/ image inside High-level architecture',
-    ],
-    [
-      'an architecture diagram with no alt text',
-      '![The architecture](/diagrams/demo/architecture.svg)',
-      '![](/diagrams/demo/architecture.svg)',
-      'has no alt text',
-    ],
-  ])('fails %s', (_, from, to, problem) => {
-    expect(structureProblems(planted(from, to))).toContainEqual(
-      expect.stringContaining(problem),
-    );
-  });
-
-  // Five-minute criterion 6: with no `template` line, a file gets exactly
-  // these checks, and no word budget.
-  describe('a file with no template line (five-minute criterion 6)', () => {
-    const FILE = '/src/system-design/case-studies/demo.md';
-    const withFrontmatter = (body: string) =>
-      `---\ntitle: Design a Demo\norder: 1\n---\n\n${body}`;
-
-    it('passes the GOOD fixture', () => {
-      expect(fileProblems(FILE, withFrontmatter(GOOD))).toEqual([]);
-    });
-
-    it('fails an old-template rule as before', () => {
-      expect(
-        fileProblems(FILE, withFrontmatter(planted('## At a glance', 'Summary:'))),
-      ).toContainEqual(expect.stringContaining('no "At a glance" section'));
-    });
-
-    it('has no word budget', () => {
-      const long = planted(
-        'Intro paragraph.',
-        `Intro paragraph. ${Array.from({ length: 3000 }, () => 'word').join(' ')}`,
-      );
-      expect(fileProblems(FILE, withFrontmatter(long))).toEqual([]);
-    });
-  });
-
-  // Five-minute criterion 7.
-  it.each(['3', 'two', '1', '02'])(
-    'fails template: %s, naming the file and the value (five-minute criterion 7)',
-    (value) => {
-      const file = '/src/system-design/case-studies/demo.md';
-      const raw = `---\ntitle: Design a Demo\ntemplate: ${value}\n---\n\n${GOOD}`;
-      const problems = fileProblems(file, raw);
-      expect(problems.length).toBeGreaterThan(0);
-      expect(problems.some((p) => p.includes(file) && p.includes(value))).toBe(true);
-    },
-  );
-});
-
-describe('the template-2 structure check itself (five-minute criteria 8 and 10)', () => {
+describe('the structure check itself (five-minute criteria 8 and 10; retire-template-switch criteria 1, 3, 4 and 6)', () => {
   const INTRO = 'A URL shortener turns a long link into a short one.';
   const REQUIREMENTS = [
     '- Shorten a URL to a seven-character code.',
@@ -519,7 +295,7 @@ describe('the template-2 structure check itself (five-minute criteria 8 and 10)'
     '- **Expiry?** A TTL column.',
   ].join('\n');
   const RULE_1 = '**Rule of thumb.** Prefer codes that need no coordination.';
-  const GOOD_2 = [
+  const GOOD = [
     INTRO,
     '## Requirements',
     'What it must do:',
@@ -544,15 +320,15 @@ describe('the template-2 structure check itself (five-minute criteria 8 and 10)'
     FOLLOW_UPS,
   ].join('\n\n');
 
-  /** GOOD_2 with `from` (which must occur in it exactly once) replaced by `to`. */
+  /** GOOD with `from` (which must occur in it exactly once) replaced by `to`. */
   function planted(from: string, to: string): string {
-    expect(GOOD_2.split(from)).toHaveLength(2);
-    return GOOD_2.replace(from, to);
+    expect(GOOD.split(from)).toHaveLength(2);
+    return GOOD.replace(from, to);
   }
 
-  /** GOOD_2 with filler words added to its intro until it has `words`. */
+  /** GOOD with filler words added to its intro until it has `words`. */
   function withWords(words: number): string {
-    const missing = words - proseWordCount(GOOD_2);
+    const missing = words - proseWordCount(GOOD);
     expect(missing).toBeGreaterThan(0);
     const body = planted(
       INTRO,
@@ -562,21 +338,74 @@ describe('the template-2 structure check itself (five-minute criteria 8 and 10)'
     return body;
   }
 
-  it('passes the GOOD_2 fixture on every rule', () => {
-    expect(template2Problems(GOOD_2)).toEqual([]);
+  const FILE = '/src/system-design/case-studies/demo.md';
+  const FRONTMATTER: Record<string, string> = {
+    title: 'Design a Demo',
+    summary: 'A demo case study.',
+    date: '2026-10-06',
+    order: '1',
+  };
+
+  /** `body` behind a frontmatter block of `fields`, one `key: value` each. */
+  function withFrontmatter(body: string, fields = FRONTMATTER): string {
+    const lines = Object.entries(fields).map(([key, value]) => `${key}: ${value}`);
+    return `---\n${lines.join('\n')}\n---\n\n${body}`;
+  }
+
+  it('passes the GOOD fixture on every rule', () => {
+    expect(structureProblems(GOOD)).toEqual([]);
   });
 
-  it('passes GOOD_2 through a file with template: 2', () => {
-    const raw = `---\ntitle: Design a Demo\ntemplate: 2\n---\n\n${GOOD_2}`;
-    expect(fileProblems('/src/system-design/case-studies/demo.md', raw)).toEqual([]);
+  // Criterion 1: a body that passed with `template: 2` passes without it.
+  it('passes GOOD through a file with exactly title, summary, date and order', () => {
+    expect(fileProblems(FILE, withFrontmatter(GOOD))).toEqual([]);
   });
 
-  it('checks a file with template: 2 against template 2, not the old template', () => {
-    const file = '/src/system-design/case-studies/demo.md';
-    expect(fileProblems(file, `---\ntitle: Design a Demo\n---\n\n${GOOD_2}`)).not.toEqual(
-      [],
+  // Criterion 4: the frontmatter keys are an allowlist.
+  it.each([
+    ['template', '2'],
+    ['tags', 'x'],
+  ])('fails an extra %s key, naming the file and the key', (key, value) => {
+    const problems = fileProblems(
+      FILE,
+      withFrontmatter(GOOD, { ...FRONTMATTER, [key]: value }),
     );
-    expect(fileProblems(file, `---\ntemplate: 2\n---\n\n${GOOD_2}`)).toEqual([]);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain(FILE);
+    expect(problems[0]).toContain(`"${key}"`);
+  });
+
+  it('fails a missing order key, naming the file and the key', () => {
+    const { order: _order, ...rest } = FRONTMATTER;
+    const problems = fileProblems(FILE, withFrontmatter(GOOD, rest));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain(FILE);
+    expect(problems[0]).toContain('"order"');
+  });
+
+  // Criterion 3: the old shape (`At a glance` first, `Deep dive:` sections)
+  // is no longer a template; it fails the heading rule.
+  it('fails a body in the old shape on the heading rule', () => {
+    const old = [
+      'Intro paragraph.',
+      '## At a glance',
+      '**Requirements.** What it must do:',
+      '- Shorten a URL ([codes](#deep-dive-short-codes)).',
+      'The full picture is in [the architecture](#high-level-architecture).',
+      '## Requirements',
+      '## Back-of-the-envelope estimates',
+      '## Data model',
+      '## API design',
+      '## High-level architecture',
+      '![The architecture](/diagrams/demo/architecture.svg)',
+      '## Deep dive: short codes',
+      '## Deep dive: the read path',
+      '## Failure modes and bottlenecks',
+      '## Trade-offs',
+    ].join('\n\n');
+    expect(fileProblems(FILE, withFrontmatter(old))).toContainEqual(
+      expect.stringContaining('headings are'),
+    );
   });
 
   it.each([
@@ -738,17 +567,17 @@ describe('the template-2 structure check itself (five-minute criteria 8 and 10)'
       'broken in-page link #decision-codes',
     ],
   ])('fails %s', (_, from, to, problem) => {
-    expect(template2Problems(planted(from, to))).toContainEqual(
+    expect(structureProblems(planted(from, to))).toContainEqual(
       expect.stringContaining(problem),
     );
   });
 
-  it('passes a body of exactly 1,150 words (criterion 10)', () => {
-    expect(template2Problems(withWords(1150))).toEqual([]);
+  it('passes a body of exactly 1,150 words (criterion 6)', () => {
+    expect(structureProblems(withWords(1150))).toEqual([]);
   });
 
-  it('fails a body of 1,151 words, naming the count (criterion 10)', () => {
-    const problems = template2Problems(withWords(1151));
+  it('fails a body of 1,151 words, naming the count (criterion 6)', () => {
+    const problems = structureProblems(withWords(1151));
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain('1151');
   });

@@ -3,7 +3,6 @@ title: Backtracking
 summary: Listing every combination of choices that satisfies a rule by walking the tree of choices depth first, undoing each choice on the way back, and skipping branches that can't succeed.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 Some problems want every answer, not one: all the subsets of a list, all the

@@ -3,7 +3,6 @@ title: Binary Search
 summary: Finding the first point where a yes/no question flips by halving the range that could hold it, so a million candidates take about 20 questions.
 date: 2026-10-05
 kind: algorithm
-template: 2
 ---
 
 Binary search finds where an answer flips from "no" to "yes" by asking about

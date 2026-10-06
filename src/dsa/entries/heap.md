@@ -3,7 +3,6 @@ title: Heap and Priority Queue
 summary: Keeps the smallest item at the front and removes it in logarithmic time, by storing a tree in an array where every parent is no larger than its children.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 A priority queue hands items back by importance rather than arrival, like a scheduler that runs urgent jobs first. Nearly every one is built on a binary heap. You'll build a min-heap from `[7, 6, 5, 4, 3, 2, 1]`, remove its smallest, and add one back.

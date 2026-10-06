@@ -3,7 +3,6 @@ title: Design Cloud File Storage (like Google Drive or Dropbox)
 summary: Hashed 4 MB chunks uploaded straight to object storage, devices told "something changed" and pulling from a change log, and conflicted copies instead of lost edits, for 40 million saves a day.
 date: 2026-10-05
 order: 6
-template: 2
 ---
 
 You're asked to design cloud file storage like Dropbox. Save `inventory.db` on your laptop and a few seconds later the new version is on your desktop. A **sync client**, the program on each device that watches a local folder, uploads and downloads what changed. The hard parts are moving huge files cheaply, telling devices fast, and two devices editing one file.

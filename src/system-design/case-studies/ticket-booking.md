@@ -3,7 +3,6 @@ title: Design a Ticket Booking System (like Ticketmaster)
 summary: Selling 50,000 seats to two million fans in one minute, with a waiting room that meters entry, conditional seat writes, and a payment step that survives retries and crashes.
 date: 2026-10-05
 order: 10
-template: 2
 ---
 
 You're asked to design a service like Ticketmaster. A fan picks seats and has ten minutes to pay. The hard part is the **on-sale**, the moment a popular event

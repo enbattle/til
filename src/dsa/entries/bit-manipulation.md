@@ -3,7 +3,6 @@ title: Bit Manipulation
 summary: Working on an integer's binary digits directly, so that counting bits, spotting powers of two, finding the unpaired value and listing every subset take a few operators.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 Bit manipulation means working on the binary digits of an integer with
