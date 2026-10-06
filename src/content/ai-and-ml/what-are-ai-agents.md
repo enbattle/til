@@ -1,73 +1,49 @@
 ---
-title: What are AI Agents?
-summary: What actually separates an agent from a chatbot — a loop that keeps going on its own — and the kinds of tasks where that loop pays off.
+title: AI Agents
+summary: An agent is a language model run in a loop that picks its own next step from what the last step returned, which pays off for open-ended multi-step tasks and costs more everywhere else.
 date: 2026-09-14
 ---
 
-A chatbot answers one message and stops, waiting for the next thing a
-human types. An **AI agent** is built to keep going on its own: given a
-goal, it reasons about what to do, takes an action — usually by calling a
-tool, like running a search or querying a database — looks at what
-happened, and decides the next step, repeating that cycle until the goal
-is met or it gives up. The defining difference isn't intelligence, it's
-that an agent's loop doesn't require a human to close it after every
-single step.
+Suppose you ask an assistant, "Why did checkout errors spike last night?" A chatbot can only answer from what it already knows, so it offers general reasons that checkouts fail. You wanted the reason in your own system, which means somebody has to open the error logs, find when the spike began, and check what changed around then. An **AI agent** is a language model set up to do that digging itself.
 
-## The loop underneath the label
+## What is the loop?
 
-Strip away the terminology and an agent is a repeating cycle with four
-parts:
+An agent is a language model run inside a loop. You give it a goal and a set of tools. A **tool** is a function the model can ask the surrounding program to run, such as a log search or a file read ([Tool Use and Function Calling](/ai-and-ml/tool-use-function-calling) covers how that request works). Each pass through the loop has the same shape:
 
-1. **Observe** — take in the current state: the original goal, and the
-   result of whatever the last action was.
-2. **Reason** — figure out what the observation means and what it implies
-   about what to do next.
-3. **Plan** — decide on the next concrete action (or, for a multi-step
-   goal, sketch out a sequence of them).
-4. **Act** — actually take that action, usually by calling a tool: run a
-   search, read a file, query a database, call an API.
+1. The model looks at the goal and everything that has happened so far.
+2. It decides on one next action, usually a tool call.
+3. The program runs the tool and appends the result to what the model sees.
+4. Back to step 1, until the model answers instead of calling a tool, or a cap on steps or time stops it.
 
-The cycle then repeats with the new observation from that action, until
-a **stop condition** trips — the goal is judged complete, a maximum
-number of steps is reached, or a human is brought in to review before
-continuing. Say the goal is "find out how a competitor prices their
-product." An agent might reason that it needs to search the web, act by
-issuing that search, observe the results, reason that one link looks like
-the pricing page, act by fetching it, observe the page content, and only
-then decide it has enough to produce a final answer — several
-observe-reason-plan-act cycles chained together, not one.
+For the checkout question, the first pass might search the logs for errors in the last day. The result shows the errors began just after midnight, all from the payment step. The second pass reads the deploy history around midnight and finds a payment-service release at 11:58 pm. The third reads that release's diff and spots a changed timeout. Now the model has an answer. Nobody scripted those three steps in advance, because each one depended on what the previous one returned.
 
-## What makes this more than a bigger prompt
+That dependence is the whole difference from ordinary code. A script runs steps its author wrote before the task existed. An agent chooses the next step at run time, based on what it just learned.
 
-A few capabilities have to be present for that loop to actually work, and
-each maps to something concrete:
+## What does the model need to carry that out?
 
-- **Tool use** — the ability to call something outside the model itself:
-  a search function, a calculator, a database query, an API. Without
-  this, there's nothing for "act" to actually do.
-- **Planning** — breaking a goal too big to do in one step into an
-  ordered sequence of smaller ones, and adjusting that sequence as new
-  information comes in.
-- **Memory** — carrying forward what's already been discovered so far in
-  the loop (and sometimes across separate sessions), so the fifth step
-  doesn't have to re-derive what the first step already learned.
+Three things have to work, and the loop supplies none of them for free.
 
-A system with a model but none of these is a chatbot with better wording,
-not an agent — the loop is what turns those capabilities into repeated,
-self-directed progress toward a goal.
+**Tools** give it something to act with. Without them the loop has nothing to run, and the model can only talk.
 
-## Where the loop pays off, and where it's overkill
+**Planning** is deciding what to do next, and revising when a result surprises it. If the log search had shown errors from three different services, a good agent drops its payment hypothesis and widens the search. Some designs ask the model to write out a plan first; others let it decide one step at a time. Either way it stays the model's judgment, so it can be wrong.
 
-The loop is useful when a task requires multiple steps whose
-outcome can't be known in advance — where step three depends on what step
-two actually returned, so it can't just be scripted as a fixed sequence
-ahead of time. It's a poor fit for the opposite case: a single, direct
-question with one clear answer, a workflow that never actually varies
-(better served by ordinary code that just does the same steps every
-time), or anything latency-critical, since a multi-step loop is
-inherently slower than a single model call. It's also the wrong shape for
-high-stakes, hard-to-reverse actions taken with no human review: an agent
-that's free to act on its own for several steps in a row is also free to
-compound a bad decision across those same steps before anyone notices —
-a risk a single chatbot answer, reviewed by a human before anyone acts on
-it, doesn't carry.
+**Memory** is how earlier results stay visible. Usually that just means the transcript so far, which sits in the model's [context window](/ai-and-ml/context-window), the limited amount of text it can read at once. A long investigation can fill that window, so agents often keep notes outside it or summarize older steps. Anything dropped is something the agent can no longer reason about.
+
+## When does the loop earn its cost?
+
+Every pass is another model call, so an agent is slower and costs more than a single call, and its cost is hard to predict because you don't know how many passes it will take. That price is worth paying when the path to the answer really is unknown in advance: debugging, research across many sources, a task where each result changes what to ask next.
+
+It is a poor fit when the steps are always the same. If every refund request needs the same four lookups in the same order, write those four lookups as code and call the model only where language understanding is needed. That version is faster, cheaper and easier to test. It is also a poor fit where a wrong action can't be undone and nobody reviews it first, since an agent that acts for many steps can build each step on an earlier mistake before anyone looks.
+
+## What goes wrong, and what do you do about it?
+
+Our checkout agent shows the main failures. It might chase the wrong lead for ten passes, call the same tool over and over, or announce an answer its evidence doesn't support. Four habits contain most of this:
+
+- **Cap the loop.** Set a maximum number of passes and a time limit, so a confused agent stops instead of running up a bill.
+- **Limit what it can touch.** Give the log-reading agent read-only tools. If it never needs to restart a service, don't let it.
+- **Keep a human at the irreversible steps.** Let it investigate freely, but if it ever needs to change something, require approval first, given in your app by a person on a summary your code builds from the real arguments, so the model can't approve its own action.
+- **Distrust what tools return.** Log lines and web pages are text that anyone may have written, and the model reads them as part of its input, so planted instructions in a result can steer the next step. Telling the model to be careful is unreliable, so distrust has to mean limiting what it can reach; [Prompt Injection](/ai-and-ml/prompt-injection) covers that attack.
+
+You also can't judge an agent from one good run, because its steps differ from run to run. You measure it across many tasks, which is the job of [evals](/ai-and-ml/what-are-evals).
+
+**Rule of thumb.** Reach for an agent when the next step depends on what the last one returns and a wrong turn is cheap to undo. If the steps are fixed, write code, and give an agent only the tools and approvals its task needs.
