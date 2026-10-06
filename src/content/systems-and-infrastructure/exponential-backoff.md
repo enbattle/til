@@ -1,71 +1,53 @@
 ---
-title: Exponential Backoff & Jitter
-summary: Why retrying a failed request needs both a growing delay and randomness, or the retries themselves become the next outage.
+title: Exponential Backoff and Jitter
+summary: A retry delay that grows after each failure and is randomized per client, so a struggling service gets room to recover instead of a second wave of traffic.
 date: 2026-09-14
 ---
 
-**Exponential backoff** is a retry strategy where the wait between
-retries grows exponentially — roughly `base × 2^attempt` — instead of
-retrying immediately or waiting the same fixed interval every time.
-**Jitter** adds randomness to that wait so retries coming from many
-different clients don't all land at the same instant.
+Say you run a thousand email workers, and they all send through one provider. The provider hits trouble and starts answering every request with an overload error. Each worker has to decide what to do with the message it just failed to send. Dropping it loses mail, so it will retry. The question is when.
 
-## Why retrying instantly makes things worse, not better
+**Exponential backoff** is the answer to "when": wait longer after each consecutive failure, with the wait growing by a constant factor (usually doubling), roughly `base × 2^attempt`. **Jitter** is randomness added to that wait. You need both, and the reasons show up one failure at a time.
 
-Retrying the moment a request fails just recreates the exact condition
-that caused the failure in the first place: if a server is overloaded, a
-client hammering it with instant retries adds to the load that's already
-overwhelming it. Spacing retries out — and making that spacing grow with
-each additional failure — gives a struggling system real room to recover
-instead of getting hit again a millisecond later.
+## Why not retry immediately?
 
-## Why backoff alone still isn't enough
+Because the failure was probably caused by load, and an instant retry is more load. Your thousand workers each fail once, each retry right away, and the provider now sees two requests per message when it could barely handle one. A fixed pause, say one second between tries, is better but still wrong. If the provider needs ten seconds to recover, every worker still arrives once a second, so the provider never gets a quiet moment.
 
-Backoff on its own has a subtle failure mode: if every client computes
-the exact same delay from the exact same formula, they all back off in
-lockstep. A thousand clients that all failed at the same moment will all
-retry again at exactly the same moment too — a synchronized retry storm
-that can knock a recovering service back down just as effectively as no
-backoff at all. Concretely, this can play out as: a server returns an
-overload error to every client at once; each client waits roughly one
-second and retries — all landing on the server again within the same
-few milliseconds; the server, still not recovered, fails all of them
-again, and it repeats. Jitter breaks that synchronization by adding
-randomness to the delay, so retries spread out across the whole window
-instead of arriving in a wave.
+So the delay should grow. The first retry comes quickly, since most failures are brief blips. If that fails too, the problem is probably bigger, so wait longer, and again longer after that. With doubling, a client that keeps failing waits 1 second, then 2, 4, 8, 16, and its traffic to the provider shrinks quickly.
 
-## A concrete formula: full jitter
+## Is growing the delay enough?
 
-One well-known approach, sometimes called "full jitter," picks a
-completely random delay between zero and the exponential cap — rather
-than the exponential value plus a small random offset — which tends to
-spread retries out most evenly:
+No, and this surprises people. Your thousand workers all failed at the same moment, because the provider failed for all of them at once. They all use the same formula, so they all compute the same delay. All thousand wait one second and retry together, and the provider, still struggling, fails all thousand again. Then all thousand wait two seconds and arrive together again. You have turned a steady stream into synchronized spikes, each as large as the original burst. This is a **thundering herd**: many clients acting at the same instant ([the thundering herd problem](/systems-and-infrastructure/thundering-herd-problem) covers the other ways it happens).
+
+Jitter breaks the lockstep. Instead of every worker waiting exactly 4 seconds, each draws its own delay at random, so the thousand retries spread out over the window and the provider sees a smear of requests instead of a wall.
+
+## The usual formula: full jitter
+
+The common version is called **full jitter**. It picks the delay uniformly at random between zero and the exponential value, rather than adding a small random offset to it:
 
 ```python
 import random
 
 def backoff_delay(attempt, base=1.0, cap=30.0):
-    exponential = min(cap, base * (2 ** attempt))
-    return random.uniform(0, exponential)
+    ceiling = min(cap, base * (2 ** attempt))
+    return random.uniform(0, ceiling)
 ```
 
-Each failed attempt increases the _ceiling_ a random delay is drawn
-from, so later retries are, on average, spaced further apart — while
-still never landing at the same predictable moment as another client's
-retry. Backoff protects the failing system from being hit too
-aggressively by any one client; jitter protects it from being hit by
-every client at once. They solve two different halves of the same
-problem and are almost always used together.
+Trace it for the workers, counting `attempt` from 0. After the first failure the ceiling is 1 second, so the thousand retries land anywhere in a one-second window. After the fourth failure the ceiling is 8 seconds, so if all 1,000 are still failing they spread across 8 seconds, about 125 arrivals per second, where a fixed schedule would send all 1,000 in one instant. The `cap` stops the ceiling growing forever: from attempt 5 on it holds at 30 seconds, so no worker goes silent for minutes.
+
+A small offset on top of the exponential value (say, 4 seconds plus or minus 10 percent) also spreads the retries, but only slightly, and the clients stay roughly clustered. Drawing from the whole range from zero up spreads them far more evenly, and it costs one `uniform` call.
+
+## What else a real retry loop needs
+
+The delay is only part of it, and three more rules keep the loop from doing harm:
+
+- **Retry only errors that can succeed later.** An overload (HTTP 503), a rate limit (429) or a timeout is worth retrying. A rejected address or a malformed request fails the same way every time.
+- **Cap the number of attempts.** After, say, eight tries, stop and hand the message to a place where it can be inspected, such as a [dead letter queue](/systems-and-infrastructure/message-queues#dead-letter-queues). Retrying forever hides an outage inside a growing backlog.
+- **Respect the server's hint.** If the provider replies with a `Retry-After` header saying how long to wait, use it instead of your own guess.
+
+A timeout also leaves you unsure whether the first attempt went through. If the retry can send the email twice, backoff alone is unsafe, and you need [idempotency](/systems-and-infrastructure/idempotency) so a duplicate is harmless. Backoff decides when the retry goes out, idempotency decides whether sending it is safe.
+
+**Rule of thumb.** Retry with a delay that doubles up to a cap, draw each delay at random from zero up to that ceiling, and stop after a fixed number of attempts.
 
 ## Where you'll meet this
 
-Many email workers retrying sends against a provider that is throttling or
-briefly down will fall into step without jitter, and a struggling provider
-stays that way for as long as they do. In payments and checkout, a client
-that times out on a charge request will retry it, and can do so safely only
-because [idempotency](/systems-and-infrastructure/idempotency) makes a second
-send harmless: backoff decides when the retry goes out, idempotency decides
-whether sending it is safe. The same reasoning covers HTTP client retries and
-any service-to-service call that can time out, and a chat app whose
-connections all drop at once is the same failure in a different setting; see
-the [thundering herd problem](/systems-and-infrastructure/thundering-herd-problem).
+A notification or email pipeline retries sends against a provider that is throttling or briefly down, and without jitter its workers fall into step and keep the provider down for as long as they stay synchronized. In payments and checkout, a client that times out on a charge request retries it, and does so safely only when the payment is idempotent. In chat and messaging, a server restart drops every connection at once, and clients reconnecting with jittered backoff arrive spread out instead of as one spike.

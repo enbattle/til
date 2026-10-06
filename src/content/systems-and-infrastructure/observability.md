@@ -67,4 +67,4 @@ worth alerting on are things like queue depth and the age of the oldest
 waiting message. When a user says an email never arrived, following that
 one message's ID through the logs shows whether it was never sent,
 retried, or
-[dead-lettered](/systems-and-infrastructure/dead-letter-queue).
+[dead-lettered](/systems-and-infrastructure/message-queues#dead-letter-queues).

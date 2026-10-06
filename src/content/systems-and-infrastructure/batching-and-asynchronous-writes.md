@@ -77,7 +77,7 @@ told yes. A consumer typically retries, and since a retry can replay
 writes that already succeeded, each write has to be
 [idempotent](/systems-and-infrastructure/idempotency). A write that can
 never succeed is set aside in a [dead-letter
-queue](/systems-and-infrastructure/dead-letter-queue) instead of being
+queue](/systems-and-infrastructure/message-queues#dead-letter-queues) instead of being
 retried forever. Validating before acknowledging catches many bad writes
 while the caller can still hear about them.
 
