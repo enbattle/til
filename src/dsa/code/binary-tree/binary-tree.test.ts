@@ -1,21 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import {
-  TreeNode,
-  buildTree,
-  height,
-  inorder,
-  inorderIterative,
-  levelOrder,
-  postorder,
-  preorder,
-  size,
-} from './binary-tree';
+import { TreeNode, buildTree, height, inorder, levelOrder } from './binary-tree';
 
 // The binary-tree entry's TypeScript code. API: `new TreeNode(value, left, right)`;
 // `buildTree(values)` from a level-order array where null marks a missing child
-// (RangeError when a value has no parent); `preorder`, `inorder`, `postorder`,
-// `inorderIterative` (arrays of values), `levelOrder` (an array of levels),
-// `height` (edges, -1 for an empty tree) and `size`.
+// (RangeError when a value has no parent); `height(node)` in edges, -1 for the
+// empty tree; `inorder(root)` an array of values; `levelOrder(root)` an array of
+// levels.
 
 /** A small seeded generator (mulberry32), so a failing tree can be replayed. */
 function seeded(seed: number): () => number {
@@ -29,180 +19,201 @@ function seeded(seed: number): () => number {
   };
 }
 
-type Shape<T> = [T, Shape<T> | null, Shape<T> | null] | null;
+type Shape = [number, Shape, Shape] | null;
+type Plain<T> = [T, Plain<T>, Plain<T>] | null;
 
-/** The tree as nested [value, left, right] arrays, for comparing structure. */
-function shape<T>(node: TreeNode<T> | null): Shape<T> {
+function shape<T>(node: TreeNode<T> | null): Plain<T> {
   return node === null ? null : [node.value, shape(node.left), shape(node.right)];
 }
 
-// The worked example in the entry (see the Python test for a drawing).
-const EXAMPLE = [1, 2, 3, 4, null, 5, 6, null, 7];
+/** A random tree of `size` nodes with distinct values. */
+function randomShape(next: () => number, size: number): Shape {
+  let counter = 0;
+  const make = (n: number): Shape => {
+    if (n === 0) return null;
+    const left = Math.floor(next() * n);
+    const value = counter++;
+    return [value, make(left), make(n - 1 - left)];
+  };
+  return make(size);
+}
 
-describe('binary tree (TypeScript)', () => {
+function toNodes(t: Shape): TreeNode<number> | null {
+  return t === null ? null : new TreeNode(t[0], toNodes(t[1]), toNodes(t[2]));
+}
+
+/** The level-order list for a tree, trailing nulls trimmed. */
+function toLevelList(t: Shape): (number | null)[] {
+  if (t === null) return [];
+  const out: (number | null)[] = [t[0]];
+  let level: [number, Shape, Shape][] = [t];
+  while (level.length > 0) {
+    const nxt: [number, Shape, Shape][] = [];
+    for (const node of level) {
+      for (const c of [node[1], node[2]]) {
+        out.push(c === null ? null : c[0]);
+        if (c !== null) nxt.push(c);
+      }
+    }
+    level = nxt;
+  }
+  while (out.length > 0 && out[out.length - 1] === null) out.pop();
+  return out;
+}
+
+function refInorder(t: Shape): number[] {
+  return t === null ? [] : [...refInorder(t[1]), t[0], ...refInorder(t[2])];
+}
+
+function refHeight(t: Shape): number {
+  return t === null ? -1 : 1 + Math.max(refHeight(t[1]), refHeight(t[2]));
+}
+
+function refLevels(t: Shape): number[][] {
+  const levels: number[][] = [];
+  const walk = (node: Shape, depth: number): void => {
+    if (node === null) return;
+    (levels[depth] ??= []).push(node[0]);
+    walk(node[1], depth + 1);
+    walk(node[2], depth + 1);
+  };
+  walk(t, 0);
+  return levels;
+}
+
+/** A degenerate tree of n nodes leaning left, built without recursion. */
+function chain(n: number): TreeNode<number> | null {
+  let root: TreeNode<number> | null = null;
+  for (let value = 0; value < n; value++) root = new TreeNode(value, root);
+  return root;
+}
+
+const EXAMPLE = [1, 2, 3, 4, null, 5, 6, null, 7];
+const DEEP = 100_000;
+
+describe('the running example', () => {
+  it('has the traversals and heights from the entry', () => {
+    const root = buildTree(EXAMPLE)!;
+    expect(inorder(root)).toEqual([4, 7, 2, 1, 5, 3, 6]);
+    expect(levelOrder(root)).toEqual([[1], [2, 3], [4, 5, 6], [7]]);
+    expect(height(root)).toBe(3);
+    expect(height(root.left)).toBe(2);
+    expect(height(root.right)).toBe(1);
+  });
+});
+
+describe('small trees', () => {
   it('handles the empty tree', () => {
     expect(buildTree([])).toBeNull();
     expect(buildTree([null])).toBeNull();
-    expect(preorder(null)).toEqual([]);
     expect(inorder(null)).toEqual([]);
-    expect(postorder(null)).toEqual([]);
-    expect(inorderIterative(null)).toEqual([]);
     expect(levelOrder(null)).toEqual([]);
     expect(height(null)).toBe(-1);
-    expect(size(null)).toBe(0);
   });
 
-  it('handles one node', () => {
-    const root = buildTree([5]);
-    expect(shape(root)).toEqual([5, null, null]);
-    for (const order of [preorder, inorder, postorder, inorderIterative]) {
-      expect(order(root)).toEqual([5]);
-    }
+  it('handles a single node', () => {
+    const root = buildTree([5])!;
+    expect([root.value, root.left, root.right]).toEqual([5, null, null]);
+    expect(inorder(root)).toEqual([5]);
     expect(levelOrder(root)).toEqual([[5]]);
     expect(height(root)).toBe(0);
-    expect(size(root)).toBe(1);
   });
 
-  it('builds the worked example', () => {
-    expect(shape(buildTree(EXAMPLE))).toEqual([
+  it('keeps gaps and treats a trailing null as optional', () => {
+    expect(shape(buildTree([1, 2]))).toEqual([1, [2, null, null], null]);
+    expect(shape(buildTree([1, 2, null, null, null]))).toEqual([
       1,
-      [2, [4, null, [7, null, null]], null],
-      [3, [5, null, null], [6, null, null]],
-    ]);
-  });
-
-  it('traverses the worked example', () => {
-    const root = buildTree(EXAMPLE);
-    expect(preorder(root)).toEqual([1, 2, 4, 7, 3, 5, 6]);
-    expect(inorder(root)).toEqual([4, 7, 2, 1, 5, 3, 6]);
-    expect(inorderIterative(root)).toEqual([4, 7, 2, 1, 5, 3, 6]);
-    expect(postorder(root)).toEqual([7, 4, 2, 5, 6, 3, 1]);
-    expect(levelOrder(root)).toEqual([[1], [2, 3], [4, 5, 6], [7]]);
-    expect(height(root)).toBe(3);
-    expect(size(root)).toBe(7);
-  });
-
-  it('handles a left-only chain', () => {
-    const root = buildTree([1, 2, null, 3]);
-    expect(shape(root)).toEqual([1, [2, [3, null, null], null], null]);
-    expect(preorder(root)).toEqual([1, 2, 3]);
-    expect(inorder(root)).toEqual([3, 2, 1]);
-    expect(inorderIterative(root)).toEqual([3, 2, 1]);
-    expect(postorder(root)).toEqual([3, 2, 1]);
-    expect(levelOrder(root)).toEqual([[1], [2], [3]]);
-    expect(height(root)).toBe(2);
-  });
-
-  it('handles a right-only chain', () => {
-    const root = buildTree([1, null, 2, null, 3]);
-    expect(shape(root)).toEqual([1, null, [2, null, [3, null, null]]]);
-    expect(preorder(root)).toEqual([1, 2, 3]);
-    expect(inorder(root)).toEqual([1, 2, 3]);
-    expect(inorderIterative(root)).toEqual([1, 2, 3]);
-    expect(postorder(root)).toEqual([3, 2, 1]);
-    expect(levelOrder(root)).toEqual([[1], [2], [3]]);
-    expect(height(root)).toBe(2);
-  });
-
-  it('gives the next pair of values to the next node that exists', () => {
-    expect(shape(buildTree([1, null, 3, 4, 5]))).toEqual([
-      1,
+      [2, null, null],
       null,
-      [3, [4, null, null], [5, null, null]],
     ]);
-    expect(shape(buildTree([1, 2, null]))).toEqual(shape(buildTree([1, 2])));
+    expect(shape(buildTree([1, null, 2]))).toEqual([1, null, [2, null, null]]);
   });
 
-  it('treats falsy values as nodes, not gaps', () => {
-    const root = buildTree<number | string | boolean>([0, '', false]);
-    expect(shape(root)).toEqual([0, ['', null, null], [false, null, null]]);
-    expect(size(root)).toBe(3);
+  it('gives falsy values nodes of their own', () => {
+    expect(levelOrder(buildTree([0, '', 0, null, 0]))).toEqual([[0], ['', 0], [0]]);
   });
 
   it('keeps duplicate values', () => {
-    const root = buildTree([2, 2, 2, null, 2]);
-    expect(preorder(root)).toEqual([2, 2, 2, 2]);
-    expect(size(root)).toBe(4);
-    expect(height(root)).toBe(2);
+    const root = buildTree([1000, 1000, 1000])!;
+    expect(inorder(root)).toEqual([1000, 1000, 1000]);
   });
 
-  it('works on hand-built nodes', () => {
-    const root = new TreeNode('b', new TreeNode('a'), new TreeNode('c'));
-    expect(inorder(root)).toEqual(['a', 'b', 'c']);
-    expect(levelOrder(root)).toEqual([['b'], ['a', 'c']]);
-  });
-
-  it.each([[[1, null, null, 4]], [[null, 1]], [[1, null, null, null]]])(
-    'throws when a value has no parent: %j',
-    (values) => {
-      expect(() => buildTree(values)).toThrow(RangeError);
-    },
-  );
-
-  it('overflows the call stack on a deep tree, unlike the explicit stack', () => {
-    const n = 100_000;
-    const values: (number | null)[] = [0];
-    for (let i = 1; i < n; i++) values.push(i, null);
-    const root = buildTree(values);
-    const expected = Array.from({ length: n }, (_, i) => n - 1 - i);
-    expect(inorderIterative(root)).toEqual(expected);
-    expect(levelOrder(root).length).toBe(n);
-    expect(() => inorder(root)).toThrow(RangeError);
-  });
-
-  // An independent reference: describe each node by its path from the root, a
-  // string of "L" and "R" steps. Every traversal order is then a sort of the paths.
-  it('matches the path reference on 50 seeded random trees', () => {
-    for (let seed = 0; seed < 50; seed++) {
-      const where = `seed ${seed}`;
-      const random = seeded(seed);
-      const n = Math.floor(random() * 40);
-      const tree = new Map<string, number>();
-      if (n > 0) tree.set('', Math.floor(random() * 10));
-      while (tree.size < n) {
-        const paths = [...tree.keys()];
-        const child =
-          paths[Math.floor(random() * paths.length)] + (random() < 0.5 ? 'L' : 'R');
-        if (!tree.has(child)) tree.set(child, Math.floor(random() * 10));
-      }
-
-      const byLevel = [...tree.keys()].sort((a, b) =>
-        a.length !== b.length ? a.length - b.length : a < b ? -1 : 1,
-      );
-      const values: (number | null)[] = n > 0 ? [tree.get('') as number] : [];
-      for (const path of byLevel) {
-        values.push(tree.get(path + 'L') ?? null, tree.get(path + 'R') ?? null);
-      }
-      while (values.length > 0 && values[values.length - 1] === null) values.pop();
-      const root = buildTree(values);
-
-      const found = new Map<string, number>();
-      const stack: [string, TreeNode<number> | null][] = [['', root]];
-      while (stack.length > 0) {
-        const [path, node] = stack.pop() as [string, TreeNode<number> | null];
-        if (node === null) continue;
-        found.set(path, node.value);
-        stack.push([path + 'L', node.left], [path + 'R', node.right]);
-      }
-      expect(found, where).toEqual(tree);
-
-      const sortBy = (l: string, r: string, end: string) => {
-        const key = (p: string) => [...p].map((s) => (s === 'L' ? l : r)).join('') + end;
-        return [...tree.keys()]
-          .sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0))
-          .map((p) => tree.get(p));
-      };
-      expect(preorder(root), where).toEqual(sortBy('0', '1', ''));
-      expect(inorder(root), where).toEqual(sortBy('0', '2', '1'));
-      expect(inorderIterative(root), where).toEqual(inorder(root));
-      expect(postorder(root), where).toEqual(sortBy('0', '1', '2'));
-
-      const deepest = Math.max(-1, ...[...tree.keys()].map((p) => p.length));
-      const levels: number[][] = Array.from({ length: deepest + 1 }, () => []);
-      for (const path of byLevel) levels[path.length].push(tree.get(path) as number);
-      expect(levelOrder(root), where).toEqual(levels);
-      expect(height(root), where).toBe(deepest);
-      expect(size(root), where).toBe(tree.size);
+  it('rejects a value with no parent', () => {
+    for (const bad of [
+      [null, 1],
+      [1, null, null, 4],
+      [1, null, null, null],
+    ]) {
+      expect(() => buildTree(bad)).toThrow(RangeError);
     }
+  });
+});
+
+describe('against references on random trees', () => {
+  it('rebuilds the tree it came from', () => {
+    const seed = 3;
+    const next = seeded(seed);
+    for (let trial = 0; trial < 50; trial++) {
+      const t = randomShape(next, Math.floor(next() * 13));
+      const values = toLevelList(t);
+      expect(shape(buildTree(values)), `seed ${seed}, trial ${trial}: ${values}`).toEqual(
+        t,
+      );
+    }
+  });
+
+  it('matches the recursive references', () => {
+    const seed = 4;
+    const next = seeded(seed);
+    for (let trial = 0; trial < 50; trial++) {
+      const t = randomShape(next, Math.floor(next() * 16));
+      const root = toNodes(t);
+      const where = `seed ${seed}, trial ${trial}: ${toLevelList(t)}`;
+      expect(inorder(root), where).toEqual(refInorder(t));
+      expect(levelOrder(root), where).toEqual(refLevels(t));
+      expect(height(root), where).toBe(refHeight(t));
+    }
+  });
+
+  it('creates one node per value', () => {
+    const seed = 5;
+    const next = seeded(seed);
+    for (let trial = 0; trial < 50; trial++) {
+      const t = randomShape(next, 1 + Math.floor(next() * 15));
+      const values = toLevelList(t);
+      const seen = new Set<TreeNode<number>>();
+      const walk = (node: TreeNode<number> | null): void => {
+        if (node === null) return;
+        seen.add(node);
+        walk(node.left);
+        walk(node.right);
+      };
+      walk(buildTree(values));
+      const want = values.filter((v) => v !== null).length;
+      expect(seen.size, `seed ${seed}, trial ${trial}: ${values}`).toBe(want);
+    }
+  });
+});
+
+describe('deep trees', () => {
+  it('traverses a chain far deeper than the call stack', () => {
+    const root = chain(DEEP);
+    expect(inorder(root)).toEqual(Array.from({ length: DEEP }, (_, i) => i));
+    const levels = levelOrder(root);
+    expect(levels.length).toBe(DEEP);
+    expect(levels[0]).toEqual([DEEP - 1]);
+    expect(levels[DEEP - 1]).toEqual([0]);
+  });
+
+  it('builds a deep chain from its level order', () => {
+    const values: (number | null)[] = [0];
+    for (let v = 1; v < DEEP; v++) values.push(v, null);
+    expect(levelOrder(buildTree(values)).length).toBe(DEEP);
+  });
+
+  it('recurses as deep as the tree is tall in height', () => {
+    expect(height(chain(500))).toBe(499);
+    // Ten times DEEP so the throw holds on any Node version or vitest pool.
+    expect(() => height(chain(DEEP * 10))).toThrow(RangeError);
   });
 });

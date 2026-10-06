@@ -1,17 +1,16 @@
-export const parent = (i: number): number => (i - 1) >> 1;
-export const left = (i: number): number => 2 * i + 1;
-export const right = (i: number): number => 2 * i + 2;
-
-/** A binary min-heap stored in an array: the smallest item is always at index 0. */
+/** A binary min-heap in an array: the node at i has children 2i+1 and 2i+2. */
 export class MinHeap<T> {
   private items: T[];
 
-  /** `less(a, b)` is true when `a` should come out before `b`. */
+  /** `less(a, b)` is true when `a` should come out first; `>` makes a max-heap. */
   constructor(
     private readonly less: (a: T, b: T) => boolean,
     items: Iterable<T> = [],
   ) {
+    // The spread copies, so the caller's array isn't rearranged behind their back.
     this.items = [...items];
+    // Indexes n >> 1 and up are leaves, already one-node heaps. Going backward
+    // means both subtrees of a node are heaps by the time it sifts down.
     for (let i = (this.items.length >> 1) - 1; i >= 0; i--) this.siftDown(i);
   }
 
@@ -20,6 +19,7 @@ export class MinHeap<T> {
   }
 
   peek(): T {
+    // Throw rather than return undefined, which a caller may have pushed.
     if (this.items.length === 0) throw new RangeError('peek at an empty heap');
     return this.items[0];
   }
@@ -31,7 +31,9 @@ export class MinHeap<T> {
 
   pop(): T {
     if (this.items.length === 0) throw new RangeError('pop from an empty heap');
+    // Take the last item, not index 0: deleting the front shifts every item.
     const last = this.items.pop() as T;
+    // With one item, items[0] = last would quietly refill the emptied array.
     if (this.items.length === 0) return last;
     const top = this.items[0];
     this.items[0] = last;
@@ -41,54 +43,26 @@ export class MinHeap<T> {
 
   private siftUp(i: number): void {
     const items = this.items;
-    while (i > 0 && this.less(items[i], items[parent(i)])) {
-      [items[i], items[parent(i)]] = [items[parent(i)], items[i]];
-      i = parent(i);
+    while (i > 0) {
+      const parent = (i - 1) >> 1; // / doesn't round: items[1.5] is undefined
+      // Strict: an equal parent stays. Stopping is safe, since the parent was
+      // already no larger than everything above it.
+      if (!this.less(items[i], items[parent])) return;
+      [items[i], items[parent]] = [items[parent], items[i]];
+      i = parent;
     }
   }
 
   private siftDown(i: number): void {
     const items = this.items;
     const n = items.length;
-    for (;;) {
-      const l = left(i);
-      const r = right(i);
-      let smallest = i;
-      if (l < n && this.less(items[l], items[smallest])) smallest = l;
-      if (r < n && this.less(items[r], items[smallest])) smallest = r;
-      if (smallest === i) return;
-      [items[i], items[smallest]] = [items[smallest], items[i]];
-      i = smallest;
+    for (let child = 2 * i + 1; child < n; child = 2 * i + 1) {
+      // The smaller child, not the first one that beats the item: it moves
+      // up and becomes the other child's parent.
+      if (child + 1 < n && this.less(items[child + 1], items[child])) child++;
+      if (!this.less(items[child], items[i])) return;
+      [items[i], items[child]] = [items[child], items[i]];
+      i = child;
     }
-  }
-}
-
-interface Entry<V> {
-  priority: number;
-  order: number;
-  item: V;
-}
-
-/** Items come out lowest priority first; equal priorities in insertion order. */
-export class PriorityQueue<V> {
-  private readonly heap = new MinHeap<Entry<V>>(
-    (a, b) => a.priority < b.priority || (a.priority === b.priority && a.order < b.order),
-  );
-  private nextOrder = 0;
-
-  get size(): number {
-    return this.heap.size;
-  }
-
-  push(item: V, priority: number): void {
-    this.heap.push({ priority, order: this.nextOrder++, item });
-  }
-
-  peek(): V {
-    return this.heap.peek().item;
-  }
-
-  pop(): V {
-    return this.heap.pop().item;
   }
 }

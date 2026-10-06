@@ -1,220 +1,233 @@
-"""The trie entry's Python code, compared against a plain set of words.
+"""Tests for the trie entry's Python code.
 
-API: ``Trie()`` with ``insert`` and ``delete`` (each returns whether the set
-changed), ``in`` for exact words, ``starts_with``, ``words_with_prefix``
-(sorted by code point) and ``len()``.
+API: ``Trie()`` with ``insert(word)``, ``word in trie``, ``starts_with(prefix)``,
+``words_with_prefix(prefix)`` (every stored word, in no fixed order) and
+``delete(word)`` (True when the word was stored).
 """
 
 import random
 
-import pytest
-
 from trie import Trie, TrieNode
 
+WORDS = ["app", "apple", "apt", "bat"]
 
-def count_nodes(trie: Trie) -> int:
-    total = 0
-    stack: list[TrieNode] = [trie._root]
+
+def build(words):
+    trie = Trie()
+    for word in words:
+        trie.insert(word)
+    return trie
+
+
+def count_nodes(trie):
+    """Nodes below the root."""
+    total, stack = 0, [trie._root]
     while stack:
         node = stack.pop()
-        total += 1
+        total += len(node.children)
         stack.extend(node.children.values())
     return total
 
 
-def prefixes_of(words: set[str]) -> set[str]:
-    """Every prefix of every word, plus "" for the root that always exists."""
-    return {w[:i] for w in words for i in range(len(w) + 1)} | {""}
+def prefixes(words):
+    return {w[:i] for w in words for i in range(1, len(w) + 1)}
 
 
-def make(*words: str) -> Trie:
-    trie = Trie()
-    for w in words:
-        trie.insert(w)
-    return trie
+class CountingDict(dict):
+    """A children map that counts lookups with get."""
+
+    gets = 0
+
+    def get(self, key, default=None):
+        CountingDict.gets += 1
+        return super().get(key, default)
+
+
+def instrument(trie):
+    stack = [trie._root]
+    while stack:
+        node = stack.pop()
+        node.children = CountingDict(node.children)
+        stack.extend(node.children.values())
+
+
+def random_words(rng):
+    return [
+        "".join(rng.choice("abc") for _ in range(rng.randint(0, 5)))
+        for _ in range(rng.randint(0, 12))
+    ]
 
 
 def test_empty_trie():
     trie = Trie()
-    assert len(trie) == 0
     assert "" not in trie
     assert "a" not in trie
     assert not trie.starts_with("")
     assert not trie.starts_with("a")
     assert trie.words_with_prefix("") == []
-    assert trie.delete("a") is False
-    assert trie.delete("") is False
+    assert not trie.delete("a")
 
 
-def test_insert_and_find():
-    trie = make("app", "apple", "apt", "bat")
-    assert len(trie) == 4
-    for w in ["app", "apple", "apt", "bat"]:
-        assert w in trie
-    for w in ["a", "ap", "appl", "ba", "apples", "b", "cat"]:
-        assert w not in trie
-    assert count_nodes(trie) == 10
-
-
-def test_insert_reports_whether_the_word_was_new():
-    trie = Trie()
-    assert trie.insert("app") is True
-    assert trie.insert("app") is False
-    assert len(trie) == 1
-
-
-def test_prefix_of_a_word_is_not_a_word_until_inserted():
-    trie = make("apple")
-    assert "app" not in trie
-    assert trie.starts_with("app")
-    nodes = count_nodes(trie)
-    assert trie.insert("app") is True
-    assert "app" in trie
-    assert count_nodes(trie) == nodes
-
-
-def test_starts_with():
-    trie = make("app", "apple", "bat")
-    for p in ["", "a", "ap", "app", "appl", "apple", "b", "bat"]:
-        assert trie.starts_with(p)
-    for p in ["apples", "c", "bb", "bat "]:
-        assert not trie.starts_with(p)
-
-
-def test_words_with_prefix_in_sorted_order():
-    trie = make("bat", "apt", "apple", "app", "b")
-    assert trie.words_with_prefix("ap") == ["app", "apple", "apt"]
-    assert trie.words_with_prefix("") == ["app", "apple", "apt", "b", "bat"]
-    assert trie.words_with_prefix("apple") == ["apple"]
-    assert trie.words_with_prefix("appl") == ["apple"]
-    assert trie.words_with_prefix("c") == []
-    assert trie.words_with_prefix("apples") == []
-
-
-def test_empty_string_is_a_word():
-    trie = Trie()
-    assert trie.insert("") is True
-    assert "" in trie
-    assert len(trie) == 1
-    assert trie.starts_with("")
-    assert not trie.starts_with("a")
-    trie.insert("a")
-    assert trie.words_with_prefix("") == ["", "a"]
-    assert trie.delete("") is True
-    assert "" not in trie
+def test_single_word():
+    trie = build(["a"])
     assert "a" in trie
-    assert trie.delete("") is False
-    assert trie.words_with_prefix("") == ["a"]
+    assert "b" not in trie
+    assert trie.starts_with("")
+    assert trie.words_with_prefix("a") == ["a"]
 
 
-def test_delete_a_word_that_is_a_prefix_of_another():
-    trie = make("app", "apple")
-    nodes = count_nodes(trie)
-    assert trie.delete("app") is True
+def test_the_running_example():
+    trie = build(WORDS)
+    assert all(word in trie for word in WORDS)
+    assert "ap" not in trie
+    assert "appl" not in trie
+    assert "apples" not in trie
+    assert trie.starts_with("ap")
+    assert trie.starts_with("apple")
+    assert not trie.starts_with("apples")
+    assert not trie.starts_with("c")
+    assert sorted(trie.words_with_prefix("ap")) == ["app", "apple", "apt"]
+    assert sorted(trie.words_with_prefix("")) == sorted(WORDS)
+    assert trie.words_with_prefix("appl") == ["apple"]
+    assert trie.words_with_prefix("x") == []
+
+
+def test_a_word_that_is_only_a_prefix_is_not_stored():
+    trie = build(["apple"])
     assert "app" not in trie
-    assert "apple" in trie
     assert trie.starts_with("app")
-    assert count_nodes(trie) == nodes
-    assert len(trie) == 1
 
 
-def test_delete_a_word_that_has_another_as_a_prefix():
-    trie = make("app", "apple")
-    assert trie.delete("apple") is True
+def test_inserting_a_prefix_after_the_longer_word_adds_no_nodes():
+    trie = build(["apple"])
+    before = count_nodes(trie)
+    trie.insert("app")
+    assert count_nodes(trie) == before
+    assert "app" in trie
+
+
+def test_duplicate_insert_changes_nothing():
+    trie = build(WORDS)
+    trie.insert("".join(["ap", "ple"]))
+    assert count_nodes(trie) == 9
+    assert sorted(trie.words_with_prefix("")) == sorted(WORDS)
+
+
+def test_the_empty_string_as_a_word():
+    trie = build([""])
+    assert "" in trie
+    assert trie.words_with_prefix("") == [""]
+    assert trie.delete("")
+    assert "" not in trie
+
+
+def test_non_ascii_words_step_by_code_point():
+    trie = build(["hé", "\U0001f600x", "\U0001f600y"])
+    assert "hé" in trie
+    assert trie.starts_with("\U0001f600")
+    assert sorted(trie.words_with_prefix("\U0001f600")) == [
+        "\U0001f600x",
+        "\U0001f600y",
+    ]
+    assert len(trie._root.children) == 2
+
+
+def test_a_very_long_word_does_not_overflow_the_stack():
+    word = "a" * 5000
+    trie = build([word])
+    assert word in trie
+    assert trie.words_with_prefix("") == [word]
+    assert trie.delete(word)
+    assert count_nodes(trie) == 0
+
+
+def test_delete_the_longer_word_keeps_the_shorter_one():
+    trie = build(WORDS)
+    assert trie.delete("apple")
     assert "apple" not in trie
     assert "app" in trie
     assert not trie.starts_with("appl")
-    assert count_nodes(trie) == 4
-    assert trie.words_with_prefix("") == ["app"]
+    assert count_nodes(trie) == 7
 
 
-def test_delete_prunes_only_the_unshared_branch():
-    trie = make("apple", "apt")
-    assert trie.delete("apple") is True
-    assert count_nodes(trie) == 4
-    assert trie.words_with_prefix("a") == ["apt"]
-    assert trie.delete("apt") is True
-    assert count_nodes(trie) == 1
-    assert len(trie) == 0
+def test_delete_the_shorter_word_keeps_the_longer_one():
+    trie = build(WORDS)
+    assert trie.delete("app")
+    assert "app" not in trie
+    assert "apple" in trie
+    assert count_nodes(trie) == 9
+
+
+def test_delete_a_word_that_is_not_stored():
+    trie = build(WORDS)
+    assert not trie.delete("ap")
+    assert not trie.delete("apples")
+    assert not trie.delete("zzz")
+    assert count_nodes(trie) == 9
+    assert sorted(trie.words_with_prefix("")) == sorted(WORDS)
+
+
+def test_delete_everything_leaves_only_the_root():
+    trie = build(WORDS)
+    for word in WORDS:
+        assert trie.delete(word)
+    assert count_nodes(trie) == 0
     assert not trie.starts_with("")
+    assert not trie.delete("app")
 
 
-@pytest.mark.parametrize("absent", ["ap", "apples", "b", "", "app"])
-def test_delete_an_absent_word_changes_nothing(absent):
-    trie = make("apple")
-    if absent == "app":
-        trie.insert("app")
-        trie.delete("app")
-    nodes = count_nodes(trie)
-    assert trie.delete(absent) is False
-    assert len(trie) == 1
-    assert "apple" in trie
-    assert count_nodes(trie) == nodes
+def test_shared_prefixes_share_nodes():
+    # 14 characters in four words, but "apple" reuses "app" and "apt" reuses
+    # "ap", so only 9 nodes exist. One chain per word would make 14.
+    trie = build(WORDS)
+    assert count_nodes(trie) == 9
+    assert count_nodes(trie) == len(prefixes(WORDS))
+    assert isinstance(trie._root, TrieNode)
+    assert set(trie._root.children) == {"a", "b"}
 
 
-def test_reinsert_after_delete():
-    trie = make("apple")
-    trie.delete("apple")
-    assert trie.insert("apple") is True
-    assert "apple" in trie
-    assert count_nodes(trie) == 6
+def test_a_lookup_takes_one_step_per_character_whatever_the_size():
+    rng = random.Random(7)
+    big = {"".join(rng.choice("abcdefgh") for _ in range(8)) for _ in range(500)}
+    for words in (["apple"], sorted(big) + ["apple"]):
+        trie = build(words)
+        instrument(trie)
+        CountingDict.gets = 0
+        assert "apple" in trie
+        assert CountingDict.gets == 5, f"{len(words)} words"
+        CountingDict.gets = 0
+        assert trie.starts_with("app")
+        assert CountingDict.gets == 3, f"{len(words)} words"
 
 
-def test_non_ascii_and_astral_characters_are_one_step_each():
-    trie = make("café", "caf", "😀", "😀b", "a😀")
-    assert count_nodes(trie) == 1 + 4 + 2 + 2
-    assert "café" in trie
-    assert "cafe" not in trie
-    assert trie.starts_with("😀")
-    assert trie.words_with_prefix("😀") == ["😀", "😀b"]
-    assert trie.delete("😀b") is True
-    assert trie.words_with_prefix("😀") == ["😀"]
-    assert count_nodes(trie) == 1 + 4 + 1 + 2
-
-
-def test_sorts_by_code_point_across_the_bmp_boundary():
-    # U+FF5E sorts before U+1F600 by code point, after it by UTF-16 unit.
-    trie = make("\U0001f600", "～", "z")
-    assert trie.words_with_prefix("") == ["z", "～", "\U0001f600"]
-
-
-def test_long_word_does_not_hit_the_recursion_limit():
-    word = "ab" * 3000
-    trie = make(word, word[:4000])
-    assert word in trie
-    assert trie.words_with_prefix(word[:5000]) == [word]
-    assert trie.words_with_prefix("ab") == [word[:4000], word]
-    assert trie.delete(word) is True
-    assert count_nodes(trie) == 4001
-
-
-ALPHABET = ["a", "b", "é", "～", "\U0001f600"]
-
-
-def random_word(rng: random.Random) -> str:
-    return "".join(rng.choice(ALPHABET) for _ in range(rng.randint(0, 4)))
-
-
-def test_matches_a_set_on_random_operations():
+def test_matches_a_set_on_random_words():
     for seed in range(50):
         rng = random.Random(seed)
-        trie = Trie()
-        words: set[str] = set()
-        for step in range(60):
-            w = random_word(rng)
-            at = f"seed {seed}, step {step}, word {w!r}"
-            op = rng.random()
-            if op < 0.45:
-                assert trie.insert(w) is (w not in words), at
-                words.add(w)
-            elif op < 0.75:
-                assert trie.delete(w) is (w in words), at
-                words.discard(w)
-            else:
-                assert (w in trie) is (w in words), at
-                assert trie.starts_with(w) is any(x.startswith(w) for x in words), at
-                expected = sorted(x for x in words if x.startswith(w))
-                assert trie.words_with_prefix(w) == expected, at
-            assert len(trie) == len(words), at
-            assert count_nodes(trie) == len(prefixes_of(words)), at
-        assert trie.words_with_prefix("") == sorted(words), f"seed {seed}"
+        words = random_words(rng)
+        trie = build(words)
+        stored = set(words)
+        assert count_nodes(trie) == len(prefixes(words)), f"seed {seed}"
+        for probe in prefixes(words) | {"", "abcab", "ccccc"}:
+            assert (probe in trie) == (probe in stored), f"seed {seed} {probe!r}"
+            want = sorted(w for w in stored if w.startswith(probe))
+            assert sorted(trie.words_with_prefix(probe)) == want, (
+                f"seed {seed} prefix {probe!r}"
+            )
+            assert trie.starts_with(probe) == bool(want), f"seed {seed} {probe!r}"
+
+
+def test_random_deletes_match_a_set_and_prune():
+    for seed in range(50):
+        rng = random.Random(seed)
+        words = random_words(rng)
+        trie = build(words)
+        stored = set(words)
+        for step in range(12):
+            word = rng.choice(words + ["abc", "cab"]) if words else "abc"
+            assert trie.delete(word) == (word in stored), f"seed {seed} step {step}"
+            stored.discard(word)
+            assert word not in trie, f"seed {seed} step {step}"
+            assert count_nodes(trie) == len(prefixes(stored)), (
+                f"seed {seed} step {step}"
+            )
+        assert sorted(trie.words_with_prefix("")) == sorted(stored), f"seed {seed}"

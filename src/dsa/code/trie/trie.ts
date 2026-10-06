@@ -3,24 +3,13 @@ class TrieNode {
   isWord = false;
 }
 
-type Edge = [string, TrieNode];
-
-/** Orders edges by their one-code-point labels, largest first. */
-function byLabelDescending([a]: Edge, [b]: Edge): number {
-  return (b.codePointAt(0) ?? 0) - (a.codePointAt(0) ?? 0);
-}
-
 /** A set of strings stored as a tree with one character per edge. */
 export class Trie {
   private readonly root = new TrieNode();
-  private count = 0;
 
-  get size(): number {
-    return this.count;
-  }
-
-  insert(word: string): boolean {
+  insert(word: string): void {
     let node = this.root;
+    // for...of steps by code point; word[i] would split an emoji in two.
     for (const ch of word) {
       let child = node.children.get(ch);
       if (child === undefined) {
@@ -29,10 +18,8 @@ export class Trie {
       }
       node = child;
     }
-    if (node.isWord) return false;
+    // The node may exist already as a step toward a longer word.
     node.isWord = true;
-    this.count++;
-    return true;
   }
 
   private find(prefix: string): TrieNode | undefined {
@@ -46,26 +33,29 @@ export class Trie {
   }
 
   has(word: string): boolean {
+    // Reaching the node isn't enough: "app" is a step toward "apple".
     return this.find(word)?.isWord ?? false;
   }
 
   startsWith(prefix: string): boolean {
     const node = this.find(prefix);
+    // An unmarked node with no children is only the root of an empty
+    // trie, which has no word to start with "".
     return node !== undefined && (node.isWord || node.children.size > 0);
   }
 
-  /** Every stored word that starts with prefix, in code point order. */
+  /** Every stored word that starts with prefix, in no fixed order. */
   wordsWithPrefix(prefix: string): string[] {
     const start = this.find(prefix);
     if (start === undefined) return [];
     const found: string[] = [];
+    // A stack, not recursion: one frame per character would overflow
+    // on a very long word.
     const stack: [TrieNode, string][] = [[start, prefix]];
     for (let top = stack.pop(); top !== undefined; top = stack.pop()) {
       const [node, word] = top;
       if (node.isWord) found.push(word);
-      for (const [ch, child] of [...node.children].sort(byLabelDescending)) {
-        stack.push([child, word + ch]);
-      }
+      for (const [ch, child] of node.children) stack.push([child, word + ch]);
     }
     return found;
   }
@@ -81,7 +71,7 @@ export class Trie {
     }
     if (!node.isWord) return false;
     node.isWord = false;
-    this.count--;
+    // Stop at a marked node: deleting "apple" must keep "app".
     while (path.length > 0 && !node.isWord && node.children.size === 0) {
       const [parent, ch] = path.pop() as [TrieNode, string];
       parent.children.delete(ch);

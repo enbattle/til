@@ -1,130 +1,92 @@
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
+from math import inf
 
 
 class Node:
-    """One tree node: a key and links to the left and right subtrees."""
-
-    __slots__ = ("key", "left", "right")
-
     def __init__(self, key: int) -> None:
         self.key = key
         self.left: Node | None = None
         self.right: Node | None = None
 
 
-class BinarySearchTree:
-    """An unbalanced binary search tree of distinct integer keys."""
+def find(root: Node | None, key: int) -> tuple[Node | None, Node | None]:
+    """The node holding key (None if absent) and its parent."""
+    # A node can't unlink itself, so the walk carries its parent along.
+    parent, node = None, root
+    while node is not None and node.key != key:
+        parent, node = node, (node.left if key < node.key else node.right)
+    return parent, node
 
-    def __init__(self, keys: Iterable[int] = ()) -> None:
-        self._root: Node | None = None
-        self._size = 0
-        for key in keys:
-            self.insert(key)
 
-    def __len__(self) -> int:
-        return self._size
+def contains(root: Node | None, key: int) -> bool:
+    return find(root, key)[1] is not None
 
-    def __contains__(self, key: int) -> bool:
-        node = self._root
-        while node is not None and node.key != key:
-            node = node.left if key < node.key else node.right
-        return node is not None
 
-    def insert(self, key: int) -> bool:
-        parent: Node | None = None
-        node = self._root
+def insert(root: Node | None, key: int) -> Node:
+    """Returns the root, which is new only when the tree was empty."""
+    parent, node = find(root, key)
+    if node is not None:
+        # A second copy would break the strict smaller/larger rule.
+        return root
+    new = Node(key)
+    if parent is None:
+        return new
+    if key < parent.key:
+        parent.left = new
+    else:
+        parent.right = new
+    return root
+
+
+def remove(root: Node | None, key: int) -> Node | None:
+    """Returns the root, which changes when the root itself was removed."""
+    parent, node = find(root, key)
+    if node is None:
+        return root
+    if node.left is not None and node.right is not None:
+        # The smallest key on the right is the only one that can take this
+        # node's place with every left key still smaller. Start the parent
+        # at node: the successor may be node.right itself.
+        parent, successor = node, node.right
+        while successor.left is not None:
+            parent, successor = successor, successor.left
+        # Copy the key up rather than relink, so node's links stay valid.
+        node.key = successor.key
+        node = successor
+    # Zero or one child now: a successor has no left child by construction.
+    child = node.left if node.left is not None else node.right
+    if parent is None:
+        return child
+    if parent.left is node:
+        parent.left = child
+    else:
+        parent.right = child
+    return root
+
+
+def in_order(root: Node | None) -> Iterator[int]:
+    # An explicit stack: recursion overflows on a long chain of nodes.
+    stack: list[Node] = []
+    node = root
+    while stack or node is not None:
         while node is not None:
-            if key == node.key:
-                return False
-            parent = node
-            node = node.left if key < node.key else node.right
-        new = Node(key)
-        if parent is None:
-            self._root = new
-        elif key < parent.key:
-            parent.left = new
-        else:
-            parent.right = new
-        self._size += 1
-        return True
-
-    def delete(self, key: int) -> bool:
-        parent: Node | None = None
-        node = self._root
-        while node is not None and node.key != key:
-            parent = node
-            node = node.left if key < node.key else node.right
-        if node is None:
-            return False
-        if node.left is not None and node.right is not None:
-            successor_parent, successor = node, node.right
-            while successor.left is not None:
-                successor_parent, successor = successor, successor.left
-            node.key = successor.key
-            parent, node = successor_parent, successor
-        child = node.left if node.left is not None else node.right
-        if parent is None:
-            self._root = child
-        elif parent.left is node:
-            parent.left = child
-        else:
-            parent.right = child
-        self._size -= 1
-        return True
-
-    def min(self) -> int:
-        if self._root is None:
-            raise ValueError("min of an empty tree")
-        node = self._root
-        while node.left is not None:
+            stack.append(node)
             node = node.left
-        return node.key
+        node = stack.pop()
+        yield node.key
+        node = node.right
 
-    def max(self) -> int:
-        if self._root is None:
-            raise ValueError("max of an empty tree")
-        node = self._root
-        while node.right is not None:
-            node = node.right
-        return node.key
 
-    def __iter__(self) -> Iterator[int]:
-        stack: list[Node] = []
-        node = self._root
-        while stack or node is not None:
-            while node is not None:
-                stack.append(node)
-                node = node.left
-            node = stack.pop()
-            yield node.key
-            node = node.right
-
-    def keys_between(self, lo: int, hi: int) -> list[int]:
-        """Every key k with lo <= k <= hi, in ascending order."""
-        result: list[int] = []
-        stack: list[Node] = []
-        node = self._root
-        while stack or node is not None:
-            while node is not None:
-                if node.key < lo:
-                    node = node.right
-                else:
-                    stack.append(node)
-                    node = node.left
-            if not stack:
-                break
-            node = stack.pop()
-            if node.key > hi:
-                break
-            result.append(node.key)
-            node = node.right
-        return result
-
-    def height(self) -> int:
-        """Edges on the longest path down from the root; -1 for an empty tree."""
-        level = [] if self._root is None else [self._root]
-        height = -1
-        while level:
-            height += 1
-            level = [c for n in level for c in (n.left, n.right) if c is not None]
-        return height
+def is_valid(root: Node | None) -> bool:
+    # Bounds come from every ancestor, not just the parent: 50 with left
+    # child 30 and 30's right child 60 passes every parent-child check.
+    stack = [(root, -inf, inf)]
+    while stack:
+        node, lo, hi = stack.pop()
+        if node is None:
+            continue
+        if not lo < node.key < hi:
+            return False
+        stack.append((node.left, lo, node.key))
+        stack.append((node.right, node.key, hi))
+    return True

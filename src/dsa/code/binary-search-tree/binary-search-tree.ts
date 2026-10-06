@@ -1,144 +1,88 @@
-/** One tree node: a key and links to the left and right subtrees. */
-export class TreeNode {
-  key: number;
-  left: TreeNode | null = null;
-  right: TreeNode | null = null;
+export class Node {
+  left: Node | null = null;
+  right: Node | null = null;
+  constructor(public key: number) {}
+}
 
-  constructor(key: number) {
-    this.key = key;
+/** The node holding key (null if absent) and its parent. */
+export function find(root: Node | null, key: number): [Node | null, Node | null] {
+  // A node can't unlink itself, so the walk carries its parent along.
+  let parent: Node | null = null;
+  let node = root;
+  while (node !== null && node.key !== key) {
+    parent = node;
+    node = key < node.key ? node.left : node.right;
+  }
+  return [parent, node];
+}
+
+export function contains(root: Node | null, key: number): boolean {
+  return find(root, key)[1] !== null;
+}
+
+/** Returns the root, which is new only when the tree was empty. */
+export function insert(root: Node | null, key: number): Node {
+  const [parent, node] = find(root, key);
+  // A second copy would break the strict smaller/larger rule.
+  if (node !== null) return root as Node;
+  const added = new Node(key);
+  if (parent === null) return added;
+  if (key < parent.key) parent.left = added;
+  else parent.right = added;
+  return root as Node;
+}
+
+/** Returns the root, which changes when the root itself was removed. */
+export function remove(root: Node | null, key: number): Node | null {
+  let [parent, node] = find(root, key);
+  if (node === null) return root;
+  if (node.left !== null && node.right !== null) {
+    // The smallest key on the right is the only one that can take this
+    // node's place with every left key still smaller. Start the parent
+    // at node: the successor may be node.right itself.
+    parent = node;
+    let successor = node.right;
+    while (successor.left !== null) {
+      parent = successor;
+      successor = successor.left;
+    }
+    // Copy the key up rather than relink, so node's links stay valid.
+    node.key = successor.key;
+    node = successor;
+  }
+  // Zero or one child now: a successor has no left child by construction.
+  const child = node.left ?? node.right;
+  if (parent === null) return child;
+  if (parent.left === node) parent.left = child;
+  else parent.right = child;
+  return root;
+}
+
+export function* inOrder(root: Node | null): Generator<number> {
+  // An explicit stack: recursion overflows on a long chain of nodes.
+  const stack: Node[] = [];
+  let node = root;
+  while (stack.length > 0 || node !== null) {
+    while (node !== null) {
+      stack.push(node);
+      node = node.left;
+    }
+    node = stack.pop() as Node;
+    yield node.key;
+    node = node.right;
   }
 }
 
-/** An unbalanced binary search tree of distinct numeric keys. */
-export class BinarySearchTree implements Iterable<number> {
-  private root: TreeNode | null = null;
-  private count = 0;
-
-  constructor(keys: Iterable<number> = []) {
-    for (const key of keys) this.insert(key);
+export function isValid(root: Node | null): boolean {
+  // Bounds come from every ancestor, not just the parent: 50 with left
+  // child 30 and 30's right child 60 passes every parent-child check.
+  const stack: [Node | null, number, number][] = [[root, -Infinity, Infinity]];
+  while (stack.length > 0) {
+    const [node, lo, hi] = stack.pop() as [Node | null, number, number];
+    if (node === null) continue;
+    if (!(lo < node.key && node.key < hi)) return false;
+    stack.push([node.left, lo, node.key]);
+    stack.push([node.right, node.key, hi]);
   }
-
-  get size(): number {
-    return this.count;
-  }
-
-  has(key: number): boolean {
-    let node = this.root;
-    while (node !== null && node.key !== key) {
-      node = key < node.key ? node.left : node.right;
-    }
-    return node !== null;
-  }
-
-  insert(key: number): boolean {
-    let parent: TreeNode | null = null;
-    let node = this.root;
-    while (node !== null) {
-      if (key === node.key) return false;
-      parent = node;
-      node = key < node.key ? node.left : node.right;
-    }
-    const fresh = new TreeNode(key);
-    if (parent === null) {
-      this.root = fresh;
-    } else if (key < parent.key) {
-      parent.left = fresh;
-    } else {
-      parent.right = fresh;
-    }
-    this.count++;
-    return true;
-  }
-
-  delete(key: number): boolean {
-    let parent: TreeNode | null = null;
-    let node = this.root;
-    while (node !== null && node.key !== key) {
-      parent = node;
-      node = key < node.key ? node.left : node.right;
-    }
-    if (node === null) return false;
-    if (node.left !== null && node.right !== null) {
-      let successorParent = node;
-      let successor = node.right;
-      while (successor.left !== null) {
-        successorParent = successor;
-        successor = successor.left;
-      }
-      node.key = successor.key;
-      parent = successorParent;
-      node = successor;
-    }
-    const child = node.left ?? node.right;
-    if (parent === null) {
-      this.root = child;
-    } else if (parent.left === node) {
-      parent.left = child;
-    } else {
-      parent.right = child;
-    }
-    this.count--;
-    return true;
-  }
-
-  min(): number | undefined {
-    let node = this.root;
-    if (node === null) return undefined;
-    while (node.left !== null) node = node.left;
-    return node.key;
-  }
-
-  max(): number | undefined {
-    let node = this.root;
-    if (node === null) return undefined;
-    while (node.right !== null) node = node.right;
-    return node.key;
-  }
-
-  *[Symbol.iterator](): Iterator<number> {
-    const stack: TreeNode[] = [];
-    let node = this.root;
-    while (stack.length > 0 || node !== null) {
-      while (node !== null) {
-        stack.push(node);
-        node = node.left;
-      }
-      node = stack.pop()!;
-      yield node.key;
-      node = node.right;
-    }
-  }
-
-  /** Every key k with lo <= k <= hi, in ascending order. */
-  keysBetween(lo: number, hi: number): number[] {
-    const result: number[] = [];
-    const stack: TreeNode[] = [];
-    let node = this.root;
-    while (stack.length > 0 || node !== null) {
-      while (node !== null) {
-        if (node.key < lo) {
-          node = node.right;
-        } else {
-          stack.push(node);
-          node = node.left;
-        }
-      }
-      const next = stack.pop();
-      if (next === undefined || next.key > hi) break;
-      result.push(next.key);
-      node = next.right;
-    }
-    return result;
-  }
-
-  /** Edges on the longest path down from the root; -1 for an empty tree. */
-  height(): number {
-    let level = this.root === null ? [] : [this.root];
-    let height = -1;
-    while (level.length > 0) {
-      height++;
-      level = level.flatMap((n) => [n.left, n.right]).filter((c) => c !== null);
-    }
-    return height;
-  }
+  return true;
 }

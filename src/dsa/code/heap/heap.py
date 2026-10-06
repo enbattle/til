@@ -1,5 +1,4 @@
 from collections.abc import Iterable
-from itertools import count
 from typing import Any, Generic, Protocol, TypeVar
 
 
@@ -8,26 +7,16 @@ class SupportsLessThan(Protocol):
 
 
 T = TypeVar("T", bound=SupportsLessThan)
-V = TypeVar("V")
-
-
-def parent(i: int) -> int:
-    return (i - 1) // 2
-
-
-def left(i: int) -> int:
-    return 2 * i + 1
-
-
-def right(i: int) -> int:
-    return 2 * i + 2
 
 
 class MinHeap(Generic[T]):
-    """A binary min-heap stored in a list: the smallest item is always at index 0."""
+    """A binary min-heap in a list: the node at i has children 2i+1 and 2i+2."""
 
     def __init__(self, items: Iterable[T] = ()) -> None:
+        # list() copies, so the caller's list isn't rearranged behind their back.
         self._items: list[T] = list(items)
+        # Indexes n // 2 and up are leaves, already one-node heaps. Going backward
+        # means both subtrees of a node are heaps by the time it sifts down.
         for i in reversed(range(len(self._items) // 2)):
             self._sift_down(i)
 
@@ -35,6 +24,7 @@ class MinHeap(Generic[T]):
         return len(self._items)
 
     def peek(self) -> T:
+        # Raise rather than return None, which a caller may have pushed.
         if not self._items:
             raise IndexError("peek at an empty heap")
         return self._items[0]
@@ -46,7 +36,9 @@ class MinHeap(Generic[T]):
     def pop(self) -> T:
         if not self._items:
             raise IndexError("pop from an empty heap")
+        # Take the last item, not index 0: deleting the front shifts every item.
         last = self._items.pop()
+        # With one item, items[0] = items.pop() would fail: the list is empty.
         if not self._items:
             return last
         top = self._items[0]
@@ -56,40 +48,24 @@ class MinHeap(Generic[T]):
 
     def _sift_up(self, i: int) -> None:
         items = self._items
-        while i > 0 and items[i] < items[parent(i)]:
-            items[i], items[parent(i)] = items[parent(i)], items[i]
-            i = parent(i)
+        while i > 0:
+            parent = (i - 1) // 2  # // rounds down; / would give a float index
+            # Strict <: an equal parent stays. Stopping is safe, since the
+            # parent was already no larger than everything above it.
+            if not items[i] < items[parent]:
+                return
+            items[i], items[parent] = items[parent], items[i]
+            i = parent
 
     def _sift_down(self, i: int) -> None:
         items = self._items
         n = len(items)
-        while True:
-            smallest = i
-            if left(i) < n and items[left(i)] < items[smallest]:
-                smallest = left(i)
-            if right(i) < n and items[right(i)] < items[smallest]:
-                smallest = right(i)
-            if smallest == i:
+        while (child := 2 * i + 1) < n:
+            # The smaller child, not the first one that beats the item: it moves
+            # up and becomes the other child's parent.
+            if child + 1 < n and items[child + 1] < items[child]:
+                child += 1
+            if not items[child] < items[i]:
                 return
-            items[i], items[smallest] = items[smallest], items[i]
-            i = smallest
-
-
-class PriorityQueue(Generic[V]):
-    """Items come out lowest priority first; equal priorities in insertion order."""
-
-    def __init__(self) -> None:
-        self._heap: MinHeap[tuple[float, int, V]] = MinHeap()
-        self._order = count()
-
-    def __len__(self) -> int:
-        return len(self._heap)
-
-    def push(self, item: V, priority: float) -> None:
-        self._heap.push((priority, next(self._order), item))
-
-    def peek(self) -> V:
-        return self._heap.peek()[2]
-
-    def pop(self) -> V:
-        return self._heap.pop()[2]
+            items[i], items[child] = items[child], items[i]
+            i = child

@@ -1,159 +1,78 @@
-﻿---
+---
 title: Union-Find
-summary: Tracking which elements belong together as groups merge, by pointing each element at a parent and keeping the trees flat, so every merge and every "same group?" question costs nearly constant time.
-date: 2026-10-01
+summary: Tracking which elements belong together as groups merge, by pointing each element at a parent and keeping the trees shallow, so "are these two together?" costs almost constant time.
+date: 2026-10-05
 kind: data-structure
+template: 2
 ---
 
-Union-find, also called a **disjoint-set union** (DSU), keeps track of a
-collection of elements split into groups that never overlap, and answers one
-question fast: are these two elements in the same group? Groups only ever
-merge, never split. That fits more problems than it sounds like it would:
-which computers on a network can reach each other as cables are added, which
-pixels belong to the same blob, whether adding a road to a map closes a loop.
-This entry builds one over the elements 0 to n − 1 with the two optimizations
-that make it fast, and shows what goes wrong without each.
+Union-find, also called a **disjoint-set union**, keeps elements in groups that never overlap and answers one question fast: are these two in the same group? Groups only merge, never split. That covers whether a new road closes a loop, or how many islands a map has. You'll build it over six elements, watch a plain version go slow, and fix it with two small changes.
 
 ## Prerequisites
 
-- [Arrays and strings](/dsa/arrays-and-strings): the whole structure is two
-  arrays indexed by element number, and every step relies on reading
-  `parent[i]` in constant time.
+- [Arrays and strings](/dsa/arrays-and-strings): the whole structure is two arrays indexed by element number, and every step reads `parent[i]` in constant time.
 
 ## What it is
 
-The groups are called **sets**, and because no element is in two of them they
-are **disjoint**. The structure supports two operations, which give it its
-name:
+Each group is a **set**, named by one of its own members, its **representative**. Two operations matter. `find(x)` returns the name of the set holding `x`, so two elements are together exactly when their `find` results match. `union(a, b)` merges the two sets holding `a` and `b`.
 
-- **find(x)** returns a name for the set that holds `x`. Two elements are in
-  the same set exactly when `find` returns the same name for both.
-- **union(a, b)** merges the set holding `a` with the set holding `b`.
+The trick is how it stores who belongs where. Every element keeps one pointer, its **parent**, to another element of its set. Following parents always ends at the representative, the **root**, which is its own parent. So each set is a tree, and the whole structure is a forest in one array, `parent[i]`. At the start every element is its own root. `find` walks up to the root; `union` finds both roots and, if they differ, makes one the parent of the other. One write merges two whole sets, however big.
 
-The name of a set is one of its own members, its **representative**. The
-trick is how the structure stores who represents whom. Every element keeps a
-pointer to one other element of its set, its **parent**, and following parent
-pointers always ends at the representative, which is its own parent. So each
-set is a tree with the representative as its **root**, and the whole
-structure is a collection of trees, a **forest**. The forest lives in one
-array: `parent[i]` is the parent of element `i`.
-
-At the start every element is alone in its own set, so `parent[i] = i` for
-every `i`: n trees of one node each. `find(x)` walks up from `x` until it
-reaches an element that is its own parent. `union(a, b)` finds both roots and,
-if they differ, makes one root the parent of the other. That one write merges
-two whole sets, however big they are.
-
-Here is a forest over 6 elements after `union(0, 1)`, `union(2, 3)`,
-`union(4, 5)` and `union(2, 4)`, using the code below:
+Run six elements through `union(0, 1)`, `union(2, 3)`, `union(4, 5)` and `union(2, 4)`:
 
 ```text
-index    0  1  2  3  4  5
-parent   0  0  2  2  2  4
-
-   0         2
-   |        / \
-   1       3   4
-               |
-               5
+index    0  1  2  3  4  5          0       2
+parent   0  0  2  2  2  4          |      / \
+                                   1     3   4
+                                             |
+                                             5
 ```
 
-There are two sets, {0, 1} with root 0 and {2, 3, 4, 5} with root 2.
-`find(5)` walks 5 → 4 → 2 and returns 2. Nothing in the tree's shape means
-anything beyond "these are in one set": which element is the root and how the
-branches hang depend only on the order of the unions.
+Two sets: {0, 1} rooted at 0 and {2, 3, 4, 5} rooted at 2. `find(5)` walks 5, 4, 2.
 
-### Why the plain version is slow
+Why isn't that enough? Link the first root under the second every time, and `union(0, 1)`, `union(1, 2)`, `union(2, 3)` and on up to 1,024 elements builds a single chain `0 → 1 → 2 → … → 1023`. One `find(0)` then walks 1,023 links, and without compression every repeat walks them again. Two changes attack the chain.
 
-Written the obvious way, `union(a, b)` sets `parent[find(a)] = find(b)` and
-`find` just walks. Run `union(0, 1)`, `union(0, 2)`, `union(0, 3)`, and so on:
-each time, 0's root becomes a child of the new element, and the forest grows
-into one long chain:
+**Union by size** decides which root goes under which: the smaller tree hangs under the larger tree's root. An element's depth grows by one only when its tree hangs under one at least as big, so its tree at least doubles each time. A tree can't pass n elements, so no element is more than log₂ n links from its root, 10 for n = 1,024. The same chain of unions now makes a star one link deep.
+
+**Path compression** repairs the paths that are still long. After `find(x)` reaches the root, it points every element it passed straight at it, so the walk you paid for is paid once.
+
+Finish the example with `union(1, 5)`. Element 1's root is 0, and 5 walks 5, 4, 2, so 5 now points directly at 2. The tree under 2 holds 4 elements and the one under 0 holds 2, so 0 goes under 2. A later `find(1)` walks 1, 0, 2 and leaves everything pointing at the root:
 
 ```text
-0 → 1 → 2 → 3 → … → n−1
+after union(1, 5)   parent = [2, 0, 2, 2, 2, 2]
+after find(1)       parent = [2, 2, 2, 2, 2, 2]
 ```
 
-The k-th union has to walk k − 1 links to find 0's root, so n − 1 unions take
-(n − 1)(n − 2) / 2 steps in total: about 50 million for 10,000 elements. A
-single `find(0)` at the end walks all n − 1 links. The two optimizations
-below each attack that chain from a different side.
+Why not keep a group label per element? Then `find` is one read, but `union` relabels every member of a group, O(n). The rule: when merges are as common as lookups, make the merge one pointer write and let lookups do a little work.
 
-**Union by size** decides which root goes under which. Each root records how
-many elements its tree holds, and `union` always hangs the smaller tree under
-the root of the larger one. On the sequence above, every new element joins
-under 0's root, and the forest stays a star of depth 1. In general, an
-element's depth grows by one only when its tree is hung under a tree at least
-as large, so the tree containing it at least doubles every time. A tree can't
-pass n elements, so that happens at most log₂ n times: no element is ever more
-than log₂ n links from its root. With n = 1024, that's at most 10 links.
-(**Union by rank** is the same idea using an upper bound on the tree's height
-instead of its size; either one gives this guarantee.)
+## When to use it
 
-**Path compression** fixes the paths that do get long. After `find(x)` has
-walked up to the root, it goes along the same path a second time and points
-every element on it straight at the root. The walk it just paid for is never
-paid again: the next `find` on any of those elements takes one step.
+- The problem says "connected", "same group", "components", "provinces" or "merge accounts", and the pairs arrive one at a time, mixed with questions.
+- You need the number of groups, or the size of one, while merges keep coming.
+- "Does this edge close a cycle?" or "find the redundant connection": an edge whose ends are already together does.
+- Kruskal's minimum spanning tree: take edges cheapest first, skipping any whose ends are already together ([Minimum Spanning Trees](/dsa/prim-kruskal)).
+- It's the wrong tool if groups must split, since a union can't be undone, or if you need the path between two elements, since parents record membership, not edges. If all the edges are known up front and you ask once, one search over the [graph](/dsa/graph) is simpler.
 
-Continuing the example, `union(1, 5)` finds root 0 for element 1, and for
-element 5 walks 5 → 4 → 2, pointing 5 directly at 2 on the way. The tree under
-2 holds 4 elements and the one under 0 holds 2, so 0 goes under 2:
-
-```text
-index    0  1  2  3  4  5
-parent   2  0  2  2  2  2
-
-        2
-     / | | \
-    0  3 4  5
-    |
-    1
-```
-
-A later `find(1)` walks 1 → 0 → 2 and then points 1 at 2, which leaves every
-element one link from the root: `parent` is `[2, 2, 2, 2, 2, 2]`.
+Elements that aren't the numbers 0 to n − 1, such as names, get numbers from a [hash map](/dsa/hash-map) first.
 
 ## Operations and costs
 
-The costs use big-O notation, with n the number of elements: O(1) means the
-work doesn't grow with n, and O(log n) means it grows with the number of times
-n can be halved. **Amortized** means averaged over a long run of operations,
-where an occasional expensive one is paid for by the many cheap ones around it.
+With n elements, O(1) means the work doesn't grow with n. **Amortized** means averaged over a long run, where an occasional slow operation is paid for by the cheap ones around it. α is the **inverse Ackermann function**, which grows so slowly that it stays under 5 for any n that fits in a computer.
 
-| Operation               | Amortized | Worst case, one call |
-| ----------------------- | --------- | -------------------- |
-| Create (`UnionFind(n)`) | O(n)      | O(n)                 |
-| `find(x)`               | O(α(n))   | O(log n)             |
-| `union(a, b)`           | O(α(n))   | O(log n)             |
-| `connected(a, b)`       | O(α(n))   | O(log n)             |
-| `size_of(x)` / `sizeOf` | O(α(n))   | O(log n)             |
-| `count`                 | O(1)      | O(1)                 |
-| Space                   | O(n)      | O(n)                 |
+| Operation                 | Amortized | Worst case, one call |
+| ------------------------- | --------- | -------------------- |
+| Create (`UnionFind(n)`)   | O(n)      | O(n)                 |
+| `find(x)`                 | O(α(n))   | O(log n)             |
+| `union(a, b)`             | O(α(n))   | O(log n)             |
+| `connected`, `size_of`    | O(α(n))   | O(log n)             |
+| `count` (a stored number) | O(1)      | O(1)                 |
+| Space                     | O(n)      | O(n)                 |
 
-α is the **inverse Ackermann function**. The Ackermann function grows faster
-than towers of exponents, and α(n) counts how far along it you must go to
-reach n, so α grows extremely slowly: it is at most 4 for any n that could be
-stored on a real computer. Robert Tarjan proved in 1975
-that with both union by size (or rank) and path compression, any sequence of m
-operations on n elements takes O(m · α(n)) time in total. That's nearly
-constant per operation, but not constant: α does grow without limit, and later
-work showed that no structure for this problem can do better in the worst
-case. In practice, read it as "a handful of steps".
-
-The bound needs both optimizations. Union by size alone guarantees the
-O(log n) depth from the section above, but repeated finds pay that depth every
-time. Path compression alone, with the roots linked in any order, gives
-O(log n) amortized. The worst-case column holds because path compression only
-ever shortens paths, so the log₂ n depth bound from union by size still
-applies to any single call; it's the amortized cost that drops to α(n).
+With both changes, m operations cost O(m · α(n)) in total (Tarjan, 1975), so read it as a handful of steps. One call is O(log n) at worst because union by size caps the depth and compression only shortens paths. Drop union by size and the amortized cost is still O(log n); drop compression and you pay the full depth every time.
 
 ## Implementation
 
-Both versions store the forest as a parent array and the tree sizes as a
-second array of the same length. `sizes[r]` is meaningful only when `r` is a
-root; for any other element it holds a stale value that nothing reads. The
-TypeScript version uses `Int32Array`, a fixed-length array of 32-bit integers,
-since the length never changes and every entry is a small whole number.
+`sizes[r]` means something only when `r` is a root; elsewhere it's a stale value nothing reads. The TypeScript version uses `Int32Array`, a fixed-length array of 32-bit integers, because the length never changes.
 
 ```python
 from collections.abc import Iterable
@@ -162,17 +81,11 @@ from collections.abc import Iterable
 class UnionFind:
     """Disjoint sets over the elements 0..n-1: union by size, path compression."""
 
-    def __init__(self, n: int):
-        if n < 0:
-            raise ValueError("n must not be negative")
-        self._parent = list(range(n))
-        self._size = [1] * n
-        self._count = n
-
-    @property
-    def count(self) -> int:
-        """The number of separate sets."""
-        return self._count
+    def __init__(self, n: int) -> None:
+        self._parent = list(range(n))  # a root is its own parent
+        self._size = [1] * n  # read only at roots; other entries go stale
+        # Kept up to date, so asking never means calling find on every element.
+        self.count = n
 ```
 
 ```typescript
@@ -180,83 +93,68 @@ class UnionFind:
 export class UnionFind {
   private readonly parent: Int32Array;
   private readonly sizes: Int32Array;
-  private sets: number;
+  count: number;
 
   constructor(n: number) {
-    if (!Number.isInteger(n) || n < 0) {
-      throw new RangeError('n must be a non-negative integer');
-    }
+    // A root is its own parent.
     this.parent = Int32Array.from({ length: n }, (_, i) => i);
-    this.sizes = new Int32Array(n).fill(1);
-    this.sets = n;
-  }
-
-  /** The number of separate sets. */
-  get count(): number {
-    return this.sets;
+    this.sizes = new Int32Array(n).fill(1); // read only at roots; others go stale
+    // Kept up to date, so asking never means calling find on every element.
+    this.count = n;
   }
 ```
 
-Every element starts as its own parent, in a tree of size 1, and there are n
-sets. The number of sets is kept in a counter rather than computed when asked,
-because computing it means calling `find` on every element; the counter only
-changes in one place, when a union actually merges two sets. `n = 0` is
-allowed and gives an empty structure with no elements to ask about.
+Everything starts as its own root in a set of size 1, and `count` starts at n. It changes in one place, when a union merges two sets. `find` comes next.
 
 ```python
     def find(self, x: int) -> int:
+        # Python reads index -1 as the last element, so without this check
+        # find(-1) would quietly return the root of element n - 1.
         if not 0 <= x < len(self._parent):
             raise IndexError(f"element {x} is out of range")
         root = x
         while self._parent[root] != root:
             root = self._parent[root]
+        # A second walk, because the root isn't known until the first ends.
         while x != root:
-            next_x = self._parent[x]
-            self._parent[x] = root
+            next_x = self._parent[x]  # saved first: after the write, x's old
+            self._parent[x] = root  # parent is gone and the walk would stop
             x = next_x
         return root
 ```
 
 ```typescript
   find(x: number): number {
+    // An Int32Array read past its end gives undefined, not an error, and two
+    // of them compare equal: connected(10, 11) would quietly say true.
     if (!Number.isInteger(x) || x < 0 || x >= this.parent.length) {
       throw new RangeError(`element ${x} is out of range`);
     }
     let root = x;
     while (this.parent[root] !== root) root = this.parent[root];
+    // A second walk, because the root isn't known until the first ends.
     let node = x;
     while (node !== root) {
-      const next = this.parent[node];
-      this.parent[node] = root;
+      const next = this.parent[node]; // saved first: after the write, node's old
+      this.parent[node] = root; // parent is gone and the walk would stop
       node = next;
     }
     return root;
   }
 ```
 
-`find` makes two passes. The first walks up to the root without changing
-anything, because until it arrives it doesn't know where to point the path.
-The second walks the same path again and points each element straight at the
-root. It saves the next element up before overwriting the parent pointer;
-overwrite first and the walk jumps to the root after one step, leaving the
-rest of the path uncompressed. Many textbooks write `find` recursively in one
-line, `parent[x] = find(parent[x])`, which does the same thing on the way back
-out of the recursion. With union by size no path is longer than log₂ n links
-(about 30 for a billion elements), so the recursive version is safe here; the
-loops just skip the cost of a call per link. Without union by size a chain can
-grow n long, and recursion would then hit Python's limit (1000 calls by
-default) before compression had a chance to flatten it.
+The first loop climbs; the second walks the same path again and compresses it. `union` builds on it.
 
 ```python
     def union(self, a: int, b: int) -> bool:
         root_a, root_b = self.find(a), self.find(b)
         if root_a == root_b:
-            return False
+            return False  # merging a set with itself would double its size
         if self._size[root_a] < self._size[root_b]:
-            root_a, root_b = root_b, root_a
-        self._parent[root_b] = root_a
+            root_a, root_b = root_b, root_a  # smaller under larger: depth <= log2 n
+        self._parent[root_b] = root_a  # the root, not b: only a root speaks for its set
         self._size[root_a] += self._size[root_b]
-        self._count -= 1
+        self.count -= 1
         return True
 ```
 
@@ -264,21 +162,18 @@ default) before compression had a chance to flatten it.
   union(a: number, b: number): boolean {
     let rootA = this.find(a);
     let rootB = this.find(b);
-    if (rootA === rootB) return false;
-    if (this.sizes[rootA] < this.sizes[rootB]) [rootA, rootB] = [rootB, rootA];
-    this.parent[rootB] = rootA;
+    if (rootA === rootB) return false; // merging a set with itself would double its size
+    if (this.sizes[rootA] < this.sizes[rootB]) {
+      [rootA, rootB] = [rootB, rootA]; // smaller under larger: depth <= log2 n
+    }
+    this.parent[rootB] = rootA; // the root, not b: only a root speaks for its set
     this.sizes[rootA] += this.sizes[rootB];
-    this.sets--;
+    this.count--;
     return true;
   }
 ```
 
-`union` works on roots, never on `a` and `b` themselves. After the swap,
-`root_a` is the root of the larger tree, so the smaller tree always goes
-underneath; on a tie, `a`'s root stays on top. The merged size is stored on
-the root that survives. The return value says whether two separate sets were
-merged, which is how the cycle check further down learns that an edge joined
-two elements that were already connected.
+On the example, `union(1, 5)` finds roots 0 and 2, swaps because 2 holds more, and hangs 0 under 2 with size 6. The return value says whether two sets really merged, which is how a cycle check learns an edge was redundant.
 
 ```python
     def connected(self, a: int, b: int) -> bool:
@@ -286,6 +181,12 @@ two elements that were already connected.
 
     def size_of(self, x: int) -> int:
         return self._size[self.find(x)]
+
+
+def has_cycle(n: int, edges: Iterable[tuple[int, int]]) -> bool:
+    sets = UnionFind(n)
+    # An edge whose ends are already connected is a second way across.
+    return any(not sets.union(a, b) for a, b in edges)
 ```
 
 ```typescript
@@ -297,125 +198,22 @@ two elements that were already connected.
     return this.sizes[this.find(x)];
   }
 }
-```
-
-`connected` is the question the structure exists to answer, and it is two
-finds. `size_of` reads the size at the root, the only place it's kept up to
-date.
-
-### Counting components and finding a cycle
-
-A **graph** is a set of nodes joined by edges; see [Graph](/dsa/graph). In an
-**undirected** graph, where an edge links both ways, a **connected component**
-is a group of nodes that can all reach each other along edges. Union-find
-answers both of the following without building the graph at all: it reads the
-edges one at a time.
-
-```python
-def count_components(n: int, edges: Iterable[tuple[int, int]]) -> int:
-    sets = UnionFind(n)
-    for a, b in edges:
-        sets.union(a, b)
-    return sets.count
-
-
-def has_cycle(n: int, edges: Iterable[tuple[int, int]]) -> bool:
-    sets = UnionFind(n)
-    for a, b in edges:
-        if not sets.union(a, b):
-            return True
-    return False
-```
-
-```typescript
-export function countComponents(n: number, edges: Iterable<[number, number]>): number {
-  const sets = new UnionFind(n);
-  for (const [a, b] of edges) sets.union(a, b);
-  return sets.count;
-}
 
 export function hasCycle(n: number, edges: Iterable<[number, number]>): boolean {
   const sets = new UnionFind(n);
   for (const [a, b] of edges) {
+    // An edge whose ends are already connected is a second way across.
     if (!sets.union(a, b)) return true;
   }
   return false;
 }
 ```
 
-Each edge says its two ends are in the same component, so unioning every edge
-leaves exactly one set per component. With 5 nodes and the edges (0, 1),
-(1, 2) and (3, 4), the sets end as {0, 1, 2} and {3, 4}: 2 components.
+`has_cycle(3, [(0, 1), (1, 2), (2, 0)])` merges on the first two edges, then finds 2 and 0 already together and returns true. A self-loop or a repeated edge counts as a cycle too. Unioning every edge and reading `count` gives the number of connected components.
 
-For the cycle check, an edge whose ends are already connected closes a loop:
-there was already a path between them, and the edge is a second way across.
-`union` returns `False` exactly then. With 4 nodes and the edges (0, 1), (1, 2)
-and (2, 0), the first two unions merge, and the third finds 0 and 2 already in
-one set, so the answer is `True`. An edge from a node to itself, or a second
-copy of an edge, counts as a cycle under this rule, which is what you want if
-the question is "is this a tree?"
+## Pitfalls
 
-## Invariants
-
-These hold after every call returns, and each method relies on them:
-
-- **Following parent pointers from any element ends at its root**, the one
-  element of its set that is its own parent, without going round in a loop.
-  `union` writes a parent pointer only from one root to a different root, and
-  compression only points elements at the root they already reach.
-- **Two elements are in the same set exactly when they have the same root.**
-  Compression changes which pointers lead to the root, never which root they
-  lead to.
-- **`size[r]` is the number of elements in the tree under each root `r`.**
-  `union` adds the absorbed tree's size to the surviving root; compression
-  moves elements within one tree, so no root's count changes.
-- **No element is more than log₂ n links below its root**, because of union
-  by size. Compression only shortens paths.
-- **`count` equals the number of roots**: it starts at n and drops by one
-  exactly when `union` turns a root into a child.
-
-## Tricky lines
-
-- `if root_a == root_b: return False` in `union`. Without it, a union of two
-  elements already in one set would write `parent[r] = r`, which changes
-  nothing, but then add the tree's size to itself and decrement `count`.
-  After `union(0, 1)` twice, `size_of(0)` would say 4, `count` would be one
-  too low, and `has_cycle` would never see a cycle.
-- `self._parent[root_b] = root_a`, not `self._parent[b] = root_a`. Re-pointing
-  `b` itself moves only `b` and whatever hangs below it, and leaves the rest of
-  `b`'s old set behind under its old root. Only a root speaks for its whole
-  set.
-- `next_x = self._parent[x]` before `self._parent[x] = root` in `find`. In the
-  other order, `x` is set to the root after the first step, and only the first
-  element on the path gets compressed.
-- The range check at the top of `find`. In Python, `self._parent[-1]` is the
-  last element, so without the check `find(-1)` with n = 4 quietly returns 3,
-  and element −1 appears to be in 3's set. In TypeScript, an `Int32Array` read
-  past its end returns `undefined` instead of throwing, so an unchecked
-  `find(10)` returns `undefined`, and `connected(10, 11)` compares
-  `undefined === undefined` and answers `true`.
-- `if self._size[root_a] < self._size[root_b]`, comparing sizes of roots. Use
-  `>` instead and the larger tree goes under the smaller one, so the log₂ n
-  depth bound is gone. Every answer stays right, only slower, which is why
-  the tests also measure tree depth.
-
-## When to use it
-
-Reach for union-find when groups only ever merge and the question is "are
-these two together?" or "how many groups are there?", asked over and over as
-the merges arrive. Counting connected components, detecting a cycle as edges
-come in, grouping accounts that share an email address, and **Kruskal's
-algorithm** for the cheapest set of edges connecting a graph (it adds edges
-from cheapest up, skipping any that would close a cycle) are the standard
-uses. Interview problems that say "connected", "groups", "provinces" or
-"redundant connection" over a list of pairs are usually this.
-
-It is the wrong tool when groups need to split, since there's no way to undo a
-union short of rebuilding, or when you need the path between two elements: the
-parent pointers record only who is grouped with whom, not which edges connect
-them. For those, keep the graph itself and search it with breadth-first or
-depth-first search. When all the edges are known up front and you only need
-the components once, a single search over the [graph](/dsa/graph) does the job
-in O(n + m) time for m edges; union-find earns its place when edges and
-questions are interleaved. Elements that aren't already numbered 0 to n − 1, such as names, can be given
-numbers with a [hash map](/dsa/hash-map) first.
+- **Pointing `b` instead of its root.** `self._parent[root_b] = root_a` moves a whole set. Write `self._parent[b] = root_a` and only `b` and what hangs below it move, leaving the rest of its old set behind under the old root, so `connected` gives wrong answers.
+- **Dropping the same-root check.** Without `if root_a == root_b: return False`, a repeated `union(0, 1)` adds the set's size to itself and decrements `count` again, so `size_of` and `count` drift and `has_cycle` never fires.
+- **Overwriting a parent before saving it.** In `find`, `next_x` is read before `self._parent[x] = root`. Swap them and `x` jumps straight to the root after one step, so only the first element on the path gets compressed.
+- **Skipping the range check.** Without it, `find(-1)` in Python returns element n − 1's root, and in TypeScript `connected(10, 11)` on four elements compares `undefined === undefined` and says true.

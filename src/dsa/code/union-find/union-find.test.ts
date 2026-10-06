@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { UnionFind, countComponents, hasCycle } from './union-find';
+import { UnionFind, hasCycle } from './union-find';
 
 // The union-find entry's TypeScript code. API: `new UnionFind(n)` over the
 // elements 0..n-1, with `find` (the set's root), `union` (returns whether two
-// separate sets were joined), `connected`, `sizeOf` and a `count` getter (the
-// number of sets); plus `countComponents(n, edges)` and `hasCycle(n, edges)`.
+// separate sets were joined), `connected`, `sizeOf` and a `count` property (the
+// number of sets); plus `hasCycle(n, edges)`.
 
 /** A small seeded generator (mulberry32), so a failing sequence can be replayed. */
 function seeded(seed: number): () => number {
@@ -34,206 +34,171 @@ function depth(sets: UnionFind, x: number): number {
   return steps;
 }
 
-function componentsBySearch(n: number, edges: [number, number][]): number {
-  const neighbours: number[][] = Array.from({ length: n }, () => []);
-  for (const [a, b] of edges) {
-    neighbours[a].push(b);
-    neighbours[b].push(a);
+const maxDepth = (sets: UnionFind, n: number) =>
+  Math.max(...Array.from({ length: n }, (_, x) => depth(sets, x)));
+
+/** n a power of two: unions that build the deepest tree union by size allows. */
+function binomial(n: number): UnionFind {
+  const sets = new UnionFind(n);
+  for (let step = 1; step < n; step *= 2) {
+    for (let i = 0; i < n; i += 2 * step) sets.union(i, i + step);
   }
-  const seen = new Array<boolean>(n).fill(false);
-  let found = 0;
-  for (let start = 0; start < n; start++) {
-    if (seen[start]) continue;
-    found++;
-    seen[start] = true;
-    const stack = [start];
-    while (stack.length > 0) {
-      for (const next of neighbours[stack.pop()!]) {
-        if (!seen[next]) {
-          seen[next] = true;
-          stack.push(next);
-        }
-      }
-    }
-  }
-  return found;
+  return sets;
 }
 
-describe('UnionFind (TypeScript)', () => {
+/** The slow answer: every element carries a label, a union relabels a set. */
+function bruteLabels(n: number, pairs: [number, number][]): number[] {
+  let label = Array.from({ length: n }, (_, i) => i);
+  for (const [a, b] of pairs) {
+    const [from, to] = [label[b], label[a]];
+    label = label.map((x) => (x === from ? to : x));
+  }
+  return label;
+}
+
+const randomPairs = (rand: () => number, n: number, count: number) =>
+  Array.from({ length: count }, (): [number, number] => [
+    Math.floor(rand() * n),
+    Math.floor(rand() * n),
+  ]);
+
+describe('UnionFind', () => {
   it('handles zero elements', () => {
     const sets = new UnionFind(0);
     expect(sets.count).toBe(0);
     expect(() => sets.find(0)).toThrow(RangeError);
-  });
-
-  it('rejects a negative or fractional n', () => {
-    expect(() => new UnionFind(-1)).toThrow(RangeError);
-    expect(() => new UnionFind(2.5)).toThrow(RangeError);
+    expect(hasCycle(0, [])).toBe(false);
   });
 
   it('handles one element', () => {
     const sets = new UnionFind(1);
-    expect(sets.count).toBe(1);
-    expect(sets.find(0)).toBe(0);
-    expect(sets.sizeOf(0)).toBe(1);
+    expect([sets.count, sets.find(0), sets.sizeOf(0)]).toEqual([1, 0, 1]);
     expect(sets.connected(0, 0)).toBe(true);
+    expect(sets.union(0, 0)).toBe(false);
+    expect([sets.count, sets.sizeOf(0)]).toEqual([1, 1]);
   });
 
-  it('starts with every element in its own set', () => {
-    const sets = new UnionFind(5);
-    expect(sets.count).toBe(5);
-    for (let x = 0; x < 5; x++) {
-      expect(sets.find(x)).toBe(x);
-      expect(sets.sizeOf(x)).toBe(1);
+  it.each([-1, 4, 100, 1.5, NaN])('throws on the out-of-range element %s', (x) => {
+    const sets = new UnionFind(4);
+    expect(() => sets.find(x)).toThrow(RangeError);
+    expect(() => sets.connected(0, x)).toThrow(RangeError);
+    expect(() => sets.union(x, 0)).toThrow(RangeError);
+  });
+
+  it('follows the entry running example', () => {
+    const sets = new UnionFind(6);
+    for (const [a, b] of [
+      [0, 1],
+      [2, 3],
+      [4, 5],
+      [2, 4],
+    ]) {
+      expect(sets.union(a, b)).toBe(true);
     }
-    expect(sets.connected(0, 1)).toBe(false);
+    expect(Array.from(parentOf(sets))).toEqual([0, 0, 2, 2, 2, 4]);
+    expect(sets.count).toBe(2);
+    expect(sets.union(1, 5)).toBe(true);
+    expect(Array.from(parentOf(sets))).toEqual([2, 0, 2, 2, 2, 2]);
+    expect(sets.find(1)).toBe(2);
+    expect(Array.from(parentOf(sets))).toEqual([2, 2, 2, 2, 2, 2]);
+    expect([sets.count, sets.sizeOf(0)]).toEqual([1, 6]);
   });
 
-  it('changes nothing on a union of an element with itself', () => {
-    const sets = new UnionFind(3);
-    expect(sets.union(1, 1)).toBe(false);
-    expect(sets.count).toBe(3);
-    expect(sets.sizeOf(1)).toBe(1);
-  });
-
-  it('joins two sets once', () => {
+  it('leaves everything alone when a union repeats', () => {
     const sets = new UnionFind(4);
     expect(sets.union(0, 1)).toBe(true);
-    expect(sets.connected(0, 1)).toBe(true);
-    expect(sets.count).toBe(3);
-    expect(sets.sizeOf(0)).toBe(2);
-    expect(sets.sizeOf(1)).toBe(2);
     expect(sets.union(1, 0)).toBe(false);
     expect(sets.union(0, 1)).toBe(false);
-    expect(sets.count).toBe(3);
-    expect(sets.sizeOf(0)).toBe(2);
+    expect([sets.count, sets.sizeOf(0), sets.sizeOf(2)]).toEqual([3, 2, 1]);
   });
 
-  it('is transitive', () => {
+  it('joins whole sets, not the two elements', () => {
     const sets = new UnionFind(6);
     sets.union(0, 1);
-    sets.union(2, 3);
-    expect(sets.connected(1, 2)).toBe(false);
-    sets.union(1, 3);
-    expect(sets.connected(0, 2)).toBe(true);
-    expect(sets.sizeOf(3)).toBe(4);
-    expect(sets.union(0, 2)).toBe(false);
-    expect(sets.count).toBe(3);
-  });
-
-  it.each([-1, 4, 100, 1.5, NaN])('throws for the out-of-range element %s', (bad) => {
-    const sets = new UnionFind(4);
-    expect(() => sets.find(bad)).toThrow(RangeError);
-    expect(() => sets.union(0, bad)).toThrow(RangeError);
-    expect(() => sets.connected(bad, 0)).toThrow(RangeError);
-    expect(() => sets.sizeOf(bad)).toThrow(RangeError);
-    expect(sets.count).toBe(4);
-  });
-
-  it("follows the entry's worked example", () => {
-    const sets = new UnionFind(6);
-    sets.union(0, 1);
-    sets.union(2, 3);
-    sets.union(4, 5);
-    sets.union(2, 4);
-    expect([...parentOf(sets)]).toEqual([0, 0, 2, 2, 2, 4]);
-    sets.union(1, 5);
-    expect([...parentOf(sets)]).toEqual([2, 0, 2, 2, 2, 2]);
-    expect(sets.count).toBe(1);
-    expect(sets.find(1)).toBe(2);
-    expect([...parentOf(sets)]).toEqual([2, 2, 2, 2, 2, 2]);
-  });
-
-  it('puts the smaller tree under the larger', () => {
-    const sets = new UnionFind(4);
     sets.union(1, 2);
-    sets.union(1, 3);
-    sets.union(0, 1);
-    expect(sets.find(0)).toBe(1);
-    expect(sets.find(1)).toBe(1);
-    expect(sets.sizeOf(0)).toBe(4);
+    sets.union(3, 4);
+    sets.union(2, 4); // joined through members, neither of them a root
+    for (let x = 0; x < 5; x++) expect(sets.connected(0, x)).toBe(true);
+    expect(sets.connected(0, 5)).toBe(false);
+    expect(sets.sizeOf(3)).toBe(5);
+  });
+
+  it('keeps depth logarithmic with union by size', () => {
+    // Naive linking (first root under second) makes this a chain n - 1 deep.
+    const n = 1024;
+    const sets = new UnionFind(n);
+    const reverse = new UnionFind(n); // the same chain with the big side second
+    for (let i = 0; i < n - 1; i++) {
+      sets.union(i, i + 1);
+      reverse.union(i + 1, i);
+    }
+    for (const chain of [sets, reverse]) {
+      expect(maxDepth(chain, n)).toBeLessThanOrEqual(Math.log2(n));
+    }
+    expect(maxDepth(binomial(n), n)).toBe(10);
+  });
+
+  it('rewrites one pointer on a union, not a whole set', () => {
+    // Two stars of 100: relabeling one of them would change 100 entries.
+    const sets = new UnionFind(200);
+    for (let i = 1; i < 100; i++) {
+      sets.union(0, i);
+      sets.union(100, 100 + i);
+    }
+    const before = Array.from(parentOf(sets));
+    sets.union(37, 163);
+    const changed = before.flatMap((p, i) => (parentOf(sets)[i] !== p ? [i] : []));
+    expect(changed).toEqual([100]);
+    expect(maxDepth(sets, 200)).toBeLessThanOrEqual(2);
   });
 
   it('compresses the whole path on find', () => {
-    const sets = new UnionFind(8);
-    const parent = parentOf(sets);
-    for (let x = 1; x < 8; x++) parent[x] = x - 1;
-    expect(sets.find(7)).toBe(0);
-    expect([...parent]).toEqual(new Array(8).fill(0));
+    const sets = binomial(16);
+    expect(depth(sets, 15)).toBe(4);
+    expect(sets.find(15)).toBe(0);
+    expect([15, 14, 12, 8].map((x) => parentOf(sets)[x])).toEqual([0, 0, 0, 0]);
+    expect(depth(sets, 15)).toBe(1);
   });
 
-  it('keeps trees at most log2(n) deep with union by size', () => {
-    const n = 1024;
-    const sets = new UnionFind(n);
-    for (let width = 1; width < n; width *= 2) {
-      for (let start = 0; start < n; start += 2 * width) {
-        sets.union(start + width, start);
-      }
-    }
-    expect(sets.count).toBe(1);
-    for (let x = 0; x < n; x++) expect(depth(sets, x)).toBeLessThanOrEqual(10);
+  it('gives the same answers after compression', () => {
+    const sets = binomial(64);
+    expect(Array.from({ length: 64 }, (_, x) => sets.find(x))).toEqual(Array(64).fill(0));
+    expect([sets.count, sets.sizeOf(33)]).toEqual([1, 64]);
   });
 
-  it('matches a relabelled label array on seeded random operation sequences', () => {
-    for (let seed = 0; seed < 50; seed++) {
-      const random = seeded(seed);
-      const pick = (k: number) => Math.floor(random() * k);
-      const n = pick(25);
+  it('matches a relabeling brute force on seeded random unions', () => {
+    const rand = seeded(2024);
+    for (let trial = 0; trial < 50; trial++) {
+      const n = 1 + Math.floor(rand() * 30);
+      const pairs = randomPairs(rand, n, Math.floor(rand() * 41));
       const sets = new UnionFind(n);
-      let label = Array.from({ length: n }, (_, i) => i);
-      const steps = 1 + pick(60);
-      for (let step = 0; step < steps && n > 0; step++) {
-        const a = pick(n);
-        const b = pick(n);
-        const op = pick(4);
-        const at = `seed ${seed}, step ${step} (n ${n}, a ${a}, b ${b})`;
-        if (op === 0) {
-          const joined = label[a] !== label[b];
-          expect(sets.union(a, b), at).toBe(joined);
-          const old = label[b];
-          label = label.map((lab) => (lab === old ? label[a] : lab));
-        } else if (op === 1) {
-          expect(sets.connected(a, b), at).toBe(label[a] === label[b]);
-        } else if (op === 2) {
-          const root = sets.find(a);
-          expect(label[root], at).toBe(label[a]);
-          expect(sets.find(root), at).toBe(root);
-        } else {
-          expect(sets.sizeOf(a), at).toBe(label.filter((lab) => lab === label[a]).length);
-        }
-        expect(sets.count, at).toBe(new Set(label).size);
-        for (let x = 0; x < n; x++) {
-          expect(depth(sets, x), at).toBeLessThanOrEqual(Math.log2(n));
+      pairs.forEach(([a, b], step) => {
+        const label = bruteLabels(n, pairs.slice(0, step));
+        const msg = `seed 2024, trial ${trial}, step ${step}, union(${a}, ${b})`;
+        expect(sets.union(a, b), msg).toBe(label[a] !== label[b]);
+      });
+      const label = bruteLabels(n, pairs);
+      const msg = `seed 2024, trial ${trial}, n=${n}, pairs=${JSON.stringify(pairs)}`;
+      expect(sets.count, msg).toBe(new Set(label).size);
+      for (let x = 0; x < n; x++) {
+        expect(sets.sizeOf(x), msg).toBe(label.filter((l) => l === label[x]).length);
+        for (let y = 0; y < n; y++) {
+          expect(sets.connected(x, y), msg).toBe(label[x] === label[y]);
         }
       }
-      expect(sets.count, `seed ${seed}`).toBe(new Set(label).size);
     }
   });
 });
 
-describe('countComponents and hasCycle (TypeScript)', () => {
-  it('count components on small graphs', () => {
-    expect(countComponents(0, [])).toBe(0);
-    expect(countComponents(1, [])).toBe(1);
-    expect(countComponents(5, [])).toBe(5);
+describe('hasCycle', () => {
+  it('handles the fixed cases', () => {
     expect(
-      countComponents(5, [
+      hasCycle(4, [
         [0, 1],
         [1, 2],
-        [3, 4],
+        [2, 0],
       ]),
-    ).toBe(2);
-    expect(
-      countComponents(4, [
-        [0, 1],
-        [1, 0],
-        [2, 2],
-      ]),
-    ).toBe(3);
-  });
-
-  it('detect cycles on small graphs', () => {
-    expect(hasCycle(0, [])).toBe(false);
+    ).toBe(true);
     expect(
       hasCycle(4, [
         [0, 1],
@@ -242,35 +207,23 @@ describe('countComponents and hasCycle (TypeScript)', () => {
       ]),
     ).toBe(false);
     expect(
-      hasCycle(4, [
-        [0, 1],
-        [1, 2],
-        [2, 0],
-      ]),
-    ).toBe(true);
-    expect(hasCycle(3, [[1, 1]])).toBe(true);
-    expect(
       hasCycle(2, [
         [0, 1],
         [1, 0],
       ]),
-    ).toBe(true);
+    ).toBe(true); // the same edge twice
+    expect(hasCycle(1, [[0, 0]])).toBe(true); // a self-loop
+    expect(hasCycle(5, [])).toBe(false);
   });
 
-  it('match a graph search on seeded random graphs', () => {
-    for (let seed = 0; seed < 50; seed++) {
-      const random = seeded(1000 + seed);
-      const pick = (k: number) => Math.floor(random() * k);
-      const n = 1 + pick(14);
-      const edges = Array.from({ length: pick(20) }, (): [number, number] => [
-        pick(n),
-        pick(n),
-      ]);
-      const components = componentsBySearch(n, edges);
-      const at = `seed ${1000 + seed}: ${JSON.stringify({ n, edges })}`;
-      expect(countComponents(n, edges), at).toBe(components);
-      // A forest with n nodes and c trees has exactly n - c edges; more means a cycle.
-      expect(hasCycle(n, edges), at).toBe(edges.length > n - components);
+  it('matches the edges == n - components rule on seeded random graphs', () => {
+    const rand = seeded(7);
+    for (let trial = 0; trial < 50; trial++) {
+      const n = 1 + Math.floor(rand() * 12);
+      const edges = randomPairs(rand, n, Math.floor(rand() * 15));
+      const components = new Set(bruteLabels(n, edges)).size;
+      const msg = `seed 7, trial ${trial}, n=${n}, edges=${JSON.stringify(edges)}`;
+      expect(hasCycle(n, edges), msg).toBe(edges.length > n - components);
     }
   });
 });

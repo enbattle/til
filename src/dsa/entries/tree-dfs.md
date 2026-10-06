@@ -350,7 +350,7 @@ stack size; the figure changes with the engine, its version, its settings and
 how much each call keeps on the stack. The fixes are to raise the limit
 (`sys.setrecursionlimit`, which risks crashing the interpreter if set too
 high) or to rewrite the traversal with an explicit stack, as
-`inorder_iterative` does in the Binary Tree entry.
+`inorder` does in the Binary Tree entry.
 
 ## Complexity
 
