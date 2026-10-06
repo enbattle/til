@@ -1,97 +1,48 @@
 ---
 title: Workflow Engines and Durable Execution
-summary: A system that saves the progress of a multi-step process after every step, so a crash, a deploy or a week-long wait resumes where it left off instead of starting over.
+summary: A workflow engine saves a multi-step process's progress after each step, so a crash, a deploy or a week-long wait resumes where it left off instead of starting over.
 date: 2026-09-21
 ---
 
-Some work is a process rather than a single job: charge a card, reserve
-stock, wait for a warehouse to confirm, email the customer, and if the
-warehouse says no, refund the card. It takes several steps across
-several services, may wait days for an outside event, and has to end in
-a sensible state even if a server dies partway through. A **workflow
-engine** runs processes like this, and the property it provides is
-**durable execution**: after each step, the engine records the progress
-in durable storage, so a crashed process can be picked up by another
-machine at the step it had reached.
+Take one order in an online shop. You charge the card, reserve the stock, wait for the warehouse to confirm, and email the customer. If the warehouse says no, you refund the card. That is several steps across several services, with a wait that could last days, and it has to end in a sensible state even if a server dies after step two.
 
-## What a plain queue leaves you to build
+A **workflow engine** runs processes like this one. The property it provides is **durable execution**: after each step, the engine records the progress in durable storage, so a crashed process can be picked up by another machine at the step it had reached.
 
-A [message queue](/systems-and-infrastructure/message-queues) handles
-one message at a time and remembers nothing about the larger process. To
-run five steps on queues, you would send a message for step one, have its
-consumer send a message for step two, and so on, while keeping a row in a
-database to record how far each order has got. Then you add retry logic
-for each step, a scheduled job to notice orders stuck in the middle, and
-something to fire a timeout if the warehouse never answers. Each piece
-is manageable; together they are a small workflow engine written by
-hand.
+## Why not just use a queue?
 
-A workflow engine supplies that bookkeeping. You describe the steps, as
-code or as a declarative definition depending on the product, and the
-engine keeps the state, runs the steps, and decides what happens next.
+You might reach for a [message queue](/systems-and-infrastructure/message-queues). It handles one message at a time and remembers nothing about the larger process. To run the order on queues, you would send a message for step one, have its consumer send a message for step two, and so on. Beside that, you keep a database row recording how far each order has got.
+
+Then the extras arrive. Each step needs retry logic. A scheduled job has to notice orders stuck in the middle. Something has to fire a timeout if the warehouse never answers. Each piece is manageable, but together they are a small workflow engine written by hand, and you now own its bugs.
 
 ## What the engine does for you
 
-- **Persisted progress.** Each step's result is stored before the next
-  begins. Temporal, for example, does this by keeping a history of what
-  the workflow has done and re-running the workflow code against that
-  history to rebuild its state, which is why that code has to be
-  deterministic (no reading the clock or random numbers directly).
-- **Retries.** A step that fails is retried on a policy, typically with
-  [backoff](/systems-and-infrastructure/exponential-backoff), instead of
-  in a loop you wrote.
-- **Timers and waiting.** A workflow can sleep for three days, or wait
-  for an external signal such as a payment confirmation, without holding
-  a thread or a process open; the engine wakes it when the time comes.
-- **Compensation.** When a later step fails for good, the engine runs the
-  cleanup steps you defined for the earlier ones.
+You describe the order's steps, as code or as a declarative definition depending on the product, and the engine keeps the state, runs the steps and decides what happens next.
+
+- **Persisted progress.** The result of "charge the card" is stored before "reserve stock" begins. Temporal, for example, keeps a history of what the workflow has done and re-runs the workflow code against that history to rebuild its state. That is why such code has to be deterministic: no reading the clock or random numbers directly, because a replay must reach the same decisions.
+- **Retries.** If the stock service is down, the step is retried on a policy, typically with [backoff](/systems-and-infrastructure/exponential-backoff), instead of in a loop you wrote.
+- **Timers and waiting.** The order can sleep for three days, or wait for a signal such as the warehouse's confirmation, without holding a thread or a process open. The engine wakes it when the time comes.
+- **Compensation.** If the warehouse refuses for good, the workflow runs the cleanup steps you defined for the earlier ones, here the card refund.
 
 AWS Step Functions and Temporal are two examples of the category.
 
-## How this relates to a saga
+## How does this relate to a saga?
 
-The [saga pattern](/systems-and-infrastructure/saga-pattern) is a
-design: break a cross-service operation into local steps, each with an
-undo. A workflow engine is infrastructure that can run one. Written by
-hand, an orchestrated saga is a coordinator service you build and
-operate, including its state storage and recovery. In an engine, the
-sequence and the compensations still have to be written by you, and the
-engine's job is to make sure they run, even after a crash. The engine
-doesn't make a compensation correct (a refund is still a new action, not
-an undo), and it doesn't remove the need to think about the intermediate
-states others can observe.
+The [saga pattern](/systems-and-infrastructure/saga-pattern) is a design: split a cross-service operation into local steps, each with an undo. Our order is a saga. A workflow engine is infrastructure that can run one.
 
-## Steps still run more than once
+Written by hand, an orchestrated saga is a coordinator service you build and operate, including its state storage and recovery. With an engine, you still write the sequence and the compensations, and the engine makes sure they run, even after a crash. It doesn't make a compensation correct: a refund is a new action, not an undo, and the customer may have seen the charge appear in the meantime.
 
-Durable execution guarantees that progress is remembered, not that a
-step runs exactly once. If a step charges a card and the worker dies
-before the engine records the result, the step is retried, and the card
-is charged again unless the call is
-[idempotent](/systems-and-infrastructure/idempotency). The
-usual answer is to derive an idempotency key from the workflow and step,
-so a retry reuses it.
+## Does each step run exactly once?
 
-Starting the workflow has the same dual-write shape as publishing an
-event. Saving an order and starting its workflow are writes to two
-systems, so a crash between them can leave an order with no workflow.
-Writing the "start" request through an
-[outbox](/systems-and-infrastructure/outbox-pattern) closes that gap.
+No. Durable execution guarantees that progress is remembered, not that a step runs exactly once. Suppose the worker charges the card and dies before the engine records the result. The engine sees no result, so it retries the step, and the card is charged twice unless the call is [idempotent](/systems-and-infrastructure/idempotency), meaning a repeat has no further effect. The usual answer is an idempotency key derived from the workflow and the step, so a retry sends the same key and the payment service recognizes it.
 
-## When a queue is enough
+Starting the workflow has a similar trap. Saving the order and starting its workflow are writes to two systems, so a crash between them can leave a paid-for order with no workflow. Writing the "start" request through an [outbox](/systems-and-infrastructure/outbox-pattern) closes that gap.
 
-If the work is one step, or independent steps that don't depend on each
-other's outcomes (send this email, resize this image), use a queue and
-[workers](/systems-and-infrastructure/worker-pools). Reach for a
-workflow engine when the process has several dependent steps, waits
-measured in hours or days, or needs undoing on failure, and you would
-otherwise be writing the state machine yourself. An engine is another
-system to run and learn, so it should be earning its place.
+## When is a queue enough?
+
+If the work is one step, or independent steps that don't depend on each other's outcomes (send this email, resize this image), use a queue and [workers](/systems-and-infrastructure/worker-pools). Our order is different: its steps depend on each other, one wait is measured in days, and a failure must be undone. When you would otherwise be writing that state machine yourself, an engine pays for itself. It is another system to run and learn, so it should be earning its place.
+
+**Rule of thumb.** Use a plain queue for one step or for independent steps. Reach for a workflow engine when a process has dependent steps, long waits or undo on failure, and make every step idempotent either way, because steps still run more than once.
 
 ## Where you'll meet this
 
-Payments and checkout is the clearest home: authorize the card, reserve
-stock, ship, and refund if a later step fails, with waits for
-confirmations along the way. A notification pipeline uses one when a
-message is really a sequence, such as a reminder that goes out after
-three days unless the user has already acted. Chat rarely needs one,
-since sending a message is a single step that a queue handles well.
+Payments and checkout is the clearest home: the order above, with each step recorded so a crash resumes at the step it reached instead of losing the order, and an idempotency key on the charge keeping a retry from charging twice. A notification or email pipeline uses one when a message is really a sequence, such as a reminder that goes out after three days unless the user has already acted. Chat rarely needs one, since sending a message is a single step that a queue handles well.
