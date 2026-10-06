@@ -1,77 +1,108 @@
 ---
 title: Context Window
-summary: The shared token budget every model call draws on, why going over it is dangerous in ways that fail silently, and the tradeoffs for staying under it.
+summary: The token budget that your prompt, the conversation so far and the model's reply all share, and how to spend it when the material won't fit or fits badly.
 date: 2026-09-14
 ---
 
-The **context window** is the maximum number of [tokens](/ai-and-ml/tokenization)
-a language model can process in a single call — everything the model can
-"see" at once, from the first instruction to the last word it generates.
-It's a single shared budget, not two separate ones: the system prompt,
-the conversation history, any documents you've pasted in, the user's
-question, and the model's own output all draw from the same pool.
+Say you're building a support assistant for a software company. A customer
+types a question, and the assistant should answer from the company's help
+center: a few hundred pages of articles. The model only knows what you hand it
+in each call, so the first design question is simple: how much can you hand
+it?
+
+That limit is the **context window**: the maximum number of
+[tokens](/ai-and-ml/tokenization) (the chunks of text a model reads and
+writes) it can work with in one call. Current models range from tens of
+thousands of tokens to a million or more, and the number keeps moving, so
+check the one for the model you use.
+
+## One budget, many claimants
+
+The window is a single pool. Everything the model sees goes into it, and so
+does everything it writes back:
 
 ```
-system prompt + conversation history + retrieved documents + question + output
+instructions + conversation so far + help articles + new question + reply
   must all fit inside the context window
 ```
 
+The last item is the one people forget. If the window is 100,000 tokens and
+your prompt is 99,000, the reply has room for about 1,000 tokens, and it may be
+cut off mid-sentence. Many APIs also let you set a separate cap on the reply
+length, which has to fit in the leftover space too.
+
 ## What happens when you go over
 
-Exceeding the limit doesn't degrade gracefully. Depending on the system,
-it either fails outright with an error, or — worse — silently truncates
-something to make room. Silent truncation is especially dangerous when
-the context is built from retrieved documents: the piece that gets cut to
-make room might be the one document that actually answered the question,
-and nothing in the response will tell you that happened. Nothing tells
-you when that budget is blown, so you have to manage it actively.
+You'd hope for a graceful fallback; what you get depends on the system. A raw API call usually rejects an oversized request with an error,
+which is annoying but honest. A chat product or a framework that builds the
+prompt for you may instead drop something to make room, often the oldest
+messages or the middle of a long document, and tell no one.
 
-## Why bigger isn't simply better
+For the support assistant, that second case is the dangerous one. If the
+article that answers the customer's question is the one that gets dropped, the
+model still replies, fluently, from whatever remained. Nothing in the answer
+says that the evidence is missing. So you measure the tokens you're sending
+instead of hoping they fit.
 
-It's tempting to treat a larger context window as a problem-solver on its
-own — just paste in everything the model might need, and let it figure
-out what's relevant. Two things push back on that:
+## Fitting isn't the same as working
 
-- **Cost.** Every token in the context is billed on every call, including
-  tokens that repeat identically across many requests (a long system
-  prompt, a set of few-shot examples). Those repeated tokens are the most
-  worth trimming, since their cost multiplies across every single request
-  that includes them, not just the one where they were written.
-- **Attention isn't free just because the tokens fit.** A model that
-  technically accepts a huge amount of text doesn't necessarily reason
-  equally well about all of it — information buried in the middle of a
-  very long context can get less effective attention than information
-  near the beginning or end. Fitting inside the window and being reasoned
-  about well aren't the same guarantee.
+Suppose the whole help center fits in a million-token window. Why not paste it
+all into every call? Two reasons.
+
+- **Cost and speed.** You're billed per input token, on every call, and
+  processing a long prompt takes longer than a short one. Text that repeats on
+  every request, such as the instructions, is the first place to trim, because
+  the cost multiplies across all your customers' questions. Long contexts also
+  take more memory on the serving side, which is what the
+  [KV cache](/ai-and-ml/kv-cache) is about.
+- **Attention.** A model can accept a long input and still use it unevenly.
+  Studies of long-context models have found that facts buried in the middle of
+  a very long input are often used less reliably than facts near the start or
+  end, and accuracy can fall as the input grows even when the answer is
+  present. How much this matters varies by model, so measure it on your own
+  questions.
+
+A window size tells you what is allowed, not how well the model reasons over it.
 
 ## Three ways to stay under budget
 
-- **Retrieve only what's relevant, instead of pasting in everything.**
-  Rather than stuffing a model's context with an entire knowledge base,
-  fetch just the handful of documents most relevant to the current
-  question and include only those — the technique this enables is called
-  [retrieval-augmented generation](/ai-and-ml/what-is-rag), and it can cut
-  the context needed for a given question by one or two orders of
-  magnitude compared to including everything up front.
-- **Summarize long material before using it**, rather than including it
-  in full. A long document can be compressed into a shorter summary in an
-  earlier pass, and that summary — not the original — is what actually
-  goes into the final prompt.
-- **Trim old conversation history.** In a long-running chat, older turns
-  contribute less and less to answering the current question; keeping
-  only the most recent exchanges (or a running summary of everything
-  before them) keeps the context from growing without bound as a
-  conversation continues.
+Back to the help center. You have more text than you can or should send, so you
+choose what goes in.
 
-## Choosing between a huge context and retrieval
+**Retrieve only what's relevant.** Search the articles for the few that match
+this customer's question and include only those. This is
+[retrieval-augmented generation](/ai-and-ml/what-is-rag), and it can shrink a
+prompt from the whole help center to a few thousand tokens. Its cost is a
+retrieval system that can miss: if the search doesn't find the right article,
+the model never sees it.
 
-For a small, fixed set of documents — small enough that everything
-plausibly relevant fits comfortably inside the budget at once — pasting
-it all in and letting a large context window handle it is the simpler
-design: no retrieval system to build, no risk of the wrong chunk
-being retrieved. Once the underlying knowledge base is too large for that
-to hold — dozens or hundreds of documents rather than a handful — the
-cost and reasoning-quality tradeoffs above start to favor retrieving only
-what's relevant instead. There's no fixed line where one becomes clearly
-right; the honest answer for a case in the middle is usually to benchmark
-both rather than assume.
+**Summarize before you include.** Compress a long document into a short one in
+an earlier call, and send the summary. You trade detail for space, and the
+summary can lose the one sentence that mattered.
+
+**Trim the conversation.** A long chat grows with every turn, because
+each call resends the earlier turns. Keep the recent exchanges verbatim and
+replace older ones with a running summary, or drop them. The customer's first
+message about their account type might matter later, so decide what to pin
+instead of cutting purely by age.
+
+Agents that read files and run tools fill their windows fast, and the same
+tradeoffs apply; [Context Is a Budget](/coding-agents/context-is-a-budget)
+covers that case.
+
+## Big window or retrieval?
+
+If the help center were three articles, you'd paste them in. There's no
+retrieval system to build or tune, and nothing to miss. At a few hundred pages,
+you'd pay for the whole set on every call and lean on the model's uneven
+attention, and retrieval starts to win. There's no sharp line between those
+cases. In the middle, build both and compare them on real customer questions.
+If you do paste the whole help center, it is the same text on every call, and
+some providers can cache the same opening text across calls, which cuts the
+cost of resending it, though not the attention problem. Check whether yours
+does.
+
+**Rule of thumb.** Count your tokens, reserve room for the reply, and send the
+smallest context that still contains the answer. If everything fits easily, send
+it all; if it doesn't, retrieve, summarize or trim, and check that what you cut
+wasn't what the model needed.

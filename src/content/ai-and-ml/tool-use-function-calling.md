@@ -1,98 +1,58 @@
 ---
-title: Tool Use & Function Calling
-summary: The mechanism that turns a model that can only produce text into something that can act, and the design habits that make it actually work well.
+title: Tool Use and Function Calling
+summary: A model only writes text, so tool use has it write a structured request that your code runs, and the quality of that loop depends on tool descriptions, scope and error handling.
 date: 2026-09-15
 ---
 
-A language model can't directly browse the web, query a database, or
-send an email. What it _can_ do is produce a structured request
-describing that it wants to — naming a specific function and the
-arguments to call it with — which application code then actually
-executes on its behalf. That mechanism is called **tool use** (or
-**function calling**), and it's the thing that turns
-[a model that can only produce text into an agent that can act](/ai-and-ml/what-are-ai-agents).
+Suppose you're building a support assistant for an online shop. A customer writes, "Where is my order 4417, and can I get a refund?" A language model on its own can't answer: it has no access to your order database, and it can't move money. All it can do is produce text.
 
-## The actual protocol: describe, decide, execute, return
+**Tool use**, also called **function calling**, closes that gap. A **tool** is a function your application offers to the model. The model never runs it. It writes a structured request ("call this function with these arguments"), your code runs the function, and your code hands the result back. This is the mechanism behind [an agent that acts](/ai-and-ml/what-are-ai-agents), and [MCP](/ai-and-ml/what-is-mcp) is a standard way of packaging tools so they can be shared across applications.
 
-Concretely, the loop looks like this:
+## How does the loop work?
 
-1. The application defines a set of available tools up front — each one
-   a name, a description of what it does, and a schema describing its
-   parameters (illustrated here as a generic shape, not any one
-   provider's exact API):
+There are four steps, and they repeat until the model has what it needs.
+
+1. **Describe.** You send the model a list of tools alongside the conversation. Each tool has a name, a plain-language description and a schema (a formal description of its parameters and their types). The exact format varies by provider; the shape is roughly like this:
 
    ```
-   tool: get_weather
-   description: "Get current weather for a location."
-   parameters: { location: string, unit: "celsius" | "fahrenheit" }
+   tool: lookup_order
+   description: "Find an order by its number. Returns status,
+                 items, total and shipping details."
+   parameters: { order_id: string }
    ```
 
-2. Given a user's request, the model decides whether calling a tool
-   would help, and if so, outputs a structured call — `get_weather({
-location: "Tokyo", unit: "celsius" })` — instead of a prose answer.
-3. Application code reads that structured output, actually executes the
-   corresponding function, and captures its result.
-4. The result is fed back to the model as part of the conversation, and
-   the model continues — either calling another tool, or producing a
-   final answer that incorporates what it learned.
+2. **Decide.** The model reads the customer's message and either answers in prose or emits one or more calls, such as `lookup_order({ order_id: "4417" })`.
+3. **Execute.** Your code sees the call, runs the real function and captures what it returns.
+4. **Return.** You append the result to the conversation and ask the model to continue. It might call another tool, or write the final answer using what it learned.
 
-Nothing about steps 3 and 4 is special to any one model provider: the
-model only ever produces a structured _request_ to call something; it
-never executes code itself. All of the actual capability — reading a
-file, hitting an API, running a query — lives entirely in application
-code the model doesn't control directly.
+Because the model only ever _requests_ a call, everything it can affect is whatever your code agrees to run. That is the lever for most of the design decisions below.
 
-## The description is the interface — write it for the model, not for you
+## What makes the model pick the right tool?
 
-The model decides which tool to call, and with what arguments, based
-on the name, description, and parameter schema supplied for each one —
-it has no other information about what a tool actually does. A vague description
-("does database stuff") gives the model nothing to reliably decide on; a
-specific one ("search the product catalog by name, SKU, or category;
-returns price, stock, and specifications") tells the model exactly when
-this tool applies and what it'll get back. The description isn't
-documentation for a future engineer reading the code — it's the actual
-interface the model uses to decide what to do, and it's worth writing
-with that in mind.
+The description. The model sees only the name, the description and the schema, so before its first call, those three are its whole understanding of what the tool does. A description like "does order stuff" gives it nothing to choose on. "Find an order by its number; returns status, items, total and shipping details" says when the tool applies and what comes back.
 
-## One job per tool
+Write it for the model, not for a future maintainer. Say what the tool is for, what each parameter means, and where it should not be used ("not for searching by customer name"). Constraining a parameter helps too: an `enum` of allowed values (a schema type that lists the only legal choices) is harder to get wrong than a free-text string.
 
-A tool that tries to do several things at once — "search, then
-summarize, then email the result" — gives the model no way to use just
-one piece of that behavior, and makes it much harder to write a
-description precise enough for the model to choose correctly. Separate
-tools (`search_web`, `summarize_text`, `send_email`) let the model
-combine them as needed for a given task, and let each individual
-description stay simple and accurate.
+## How many things should one tool do?
 
-## Treat any irreversible action as guilty until proven safe
+One. If the customer's question needs a lookup, a refund and a confirmation email, offer `lookup_order`, `refund_order` and `send_email` rather than a single `handle_order_issue`. A tool that does several jobs is hard to describe precisely, and the model can't use one part without triggering the rest. Separate tools also let it combine them in orders you didn't plan for, such as looking up an order, finding it already shipped, and replying without refunding anything.
 
-A tool that can take a real, hard-to-undo action — deleting a record,
-sending an email, spending money — deserves a safeguard beyond just
-"the model decided to call it." A common pattern is requiring an
-explicit confirmation step before the irreversible part actually
-happens:
+Keep the set small, too. Every tool's description takes space in the [context window](/ai-and-ml/context-window), and with dozens of similar-sounding tools the model has more chances to pick the wrong one.
 
-```
-delete_record(record_id, confirmed=false)
-  → "Deletion requires confirmed=true. Are you sure?"
-delete_record(record_id, confirmed=true)
-  → proceeds with deletion
-```
+## What if the model asks for something dangerous?
 
-More broadly, an agent should only ever be handed the specific tools a
-given task actually requires, not a large standing set "just in case" —
-the same [principle of least privilege](/ai-and-ml/prompt-injection)
-that limits the damage a successful prompt injection can do also limits
-the damage an agent can do by simply misjudging when to call something
-it shouldn't have.
+`lookup_order` only reads, so a wrong call costs little. `refund_order` moves money, and the model might call it for the wrong order, or because text in the conversation told it to (see [prompt injection](/ai-and-ml/prompt-injection)). So the check can't live in the model's judgment alone; it has to live in your code, where the model can't talk its way past it.
 
-## When a tool call fails
+Three habits cover most of the risk:
 
-A tool call can fail for ordinary reasons — a downstream API times out,
-an input turns out to be invalid — and the failure should be reported
-back to the model as a normal part of the conversation, not treated as a
-special case that crashes the whole interaction. Handed a clear error
-message, a model can often recover on its own: retrying with corrected
-arguments, trying a different tool, or explaining to the user what went
-wrong instead of silently failing.
+- **Least privilege.** Offer only the tools this task needs, and scope each to its caller. A refund tool for a customer-facing assistant should be able to refund that customer's orders, taken from the logged-in session rather than from an argument the model fills in, up to a set amount, not any order.
+- **Confirmation for hard-to-undo actions.** Have the tool return "refund of $59.00 pending, confirm to proceed" and only act once the customer approves it through your app, for example a button the model can't press, with the summary built by your code from the real arguments. A confirmation the model can give itself stops mistakes, not [prompt injection](/ai-and-ml/prompt-injection).
+- **Safe repeats.** The model may call a tool twice, for instance after a timeout. Make `refund_order` [idempotent](/systems-and-infrastructure/idempotency), so a repeated call for the same order doesn't pay out twice.
+
+## What happens when a call fails?
+
+Calls fail for ordinary reasons: a timeout, an order number that doesn't exist, an amount larger than the order. Don't crash the conversation. Return the failure as the tool's result, in words the model can use: "No order found with id 4417. Order ids start with the letters SH." Handed that, the model can ask the customer to recheck the number, retry with a corrected argument, or explain the problem honestly.
+
+A vague error ("failed") leaves it guessing. Also put a cap on retries: a model that keeps repeating the same failing call is a loop that burns time and money until you stop it.
+
+**Rule of thumb.** Treat the model as an untrusted caller of your functions: write each tool's description for it, give each tool one job, offer only what the task needs, put the safety checks in your code rather than in the prompt, and return errors it can act on.
