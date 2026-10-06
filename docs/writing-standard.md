@@ -77,8 +77,7 @@ sitting.
   is allowed and isn't a subtitle.
 
 `topic-structure.test.ts` checks the budget, the title and the rule-of-thumb
-paragraph. Topics not yet rewritten to this standard are on its `PENDING`
-list, which only ever shrinks (docs/content.md has the rollout).
+paragraph on every topic.
 
 ## Case studies and DSA entries
 

@@ -87,7 +87,7 @@ message about their account type might matter later, so decide what to pin
 instead of cutting purely by age.
 
 Agents that read files and run tools fill their windows fast, and the same
-tradeoffs apply; [Context Is a Budget](/coding-agents/context-is-a-budget)
+tradeoffs apply; [Context Budget for an AI Coding Harness](/coding-agents/context-is-a-budget)
 covers that case.
 
 ## Big window or retrieval?

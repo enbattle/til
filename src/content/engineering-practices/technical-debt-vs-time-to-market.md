@@ -1,65 +1,37 @@
 ---
 title: Technical Debt vs. Time to Market
-summary: When shipping a deliberate shortcut is the right call, and how to take on debt without letting it compound silently.
+summary: A shortcut that ships sooner is a loan, worth taking when shipping early teaches or wins you something, and manageable only if you write down what you skipped and when you will repay it.
 date: 2026-09-14
 ---
 
-**Technical debt** is the cost of shortcuts taken now (skipped tests, a
-hacky implementation, missing error handling, copy-pasted code) that make
-future changes slower and riskier. **Time to market** is how fast
-something can actually ship and get in front of real users. Doing it "the
-right way" takes longer; cutting corners ships faster and defers the
-cost. Neither "always do it right" nor "always ship the fastest possible
-thing" is the correct answer on its own: the right balance depends on
-what's actually being learned or won by shipping sooner.
+Say you run a small team building an online store. Your checkout needs shipping costs, and the proper way is a rates service that asks carriers for live prices. That takes two more weeks. Or you could paste a lookup table of flat prices for your four launch regions into the code and ship tomorrow. Which do you pick?
 
-## Debt, taken seriously, compounds like the financial kind
+Two ideas sit behind that choice. **Time to market** is how long it takes to get something in front of real users. **Technical debt** is the future cost of a shortcut you take now: a hardcoded value, a skipped test, copy-pasted code, missing error handling. The shortcut works today, but every later change near it gets slower and riskier. Neither "always do it properly" nor "always ship the fastest thing" is a good policy. The answer depends on what shipping sooner buys you.
 
-Like financial debt, technical debt has interest. Every future
-change to that hacky, undertested part of the codebase is slower and
-riskier than it would have been done properly, until the debt is paid
-down (refactored) or retired (that code stops being used). Left unpaid,
-it compounds: each new feature built on top of a shortcut has to work
-around it, and the shortcut gets more expensive to fix the longer it's
-load-bearing.
+## Why call it debt?
 
-## The distinction that matters: deliberate debt vs. reckless debt
+Because it behaves like a loan. You get something now (the launch, a week earlier) and you pay for it later, with interest. The interest is the extra effort every change near the shortcut costs you. Someone adding a fifth region has to read the table, work out which values are stale, and test by hand because nothing checks them.
 
-Whether debt exists at all matters less than how it got there. Debt taken
-on **deliberately** — a conscious decision to ship the fast version
-first, in order to learn whether a feature is even worth the investment,
-with an explicit plan to revisit it — is a legitimate strategic tool, the
-same way a loan taken on purpose to be repaid later is. Debt taken on
-**recklessly** — not a decision at all, just not knowing better, or
-running out of time and never coming back to it — is the dangerous kind.
-It's invisible until it isn't, and by the time it's visible (velocity has
-quietly ground down, or a "small" change turns out to touch code nobody
-wants to modify) it's expensive to unwind.
+The interest compounds. Features built on top of the table assume it exists. The free-shipping promotion reads from it, and so does the tax calculation. Each one makes the table harder to replace, so the repayment cost grows too. You can end the debt in two ways: **repay** it by replacing the shortcut with the proper version (here, the rates service), or retire it by deleting the feature that depends on it.
 
-Say a team ships a checkout flow with shipping costs hardcoded into a
-lookup table, because building a real rates API would take two more
-weeks and they need to know first whether anyone will actually buy the
-product. If that shortcut gets written down — a comment or ticket saying
-"hardcoded rates for the 4 launch regions; replace with the rates API
-once we validate demand" — it's deliberate debt: cheap to find later,
-because there's already a pointer to it. If it's just quietly done and
-never mentioned, six months and three new regions later, someone gets a
-bug report about wrong shipping costs and has to first rediscover that
-the table exists and is now wrong, before they can even start fixing it.
-Same shortcut, same code — the only difference is whether anyone can find
-it again.
+## When is taking the loan worth it?
 
-## Name the shortcut, or it quietly becomes permanent
+When what you learn or win by shipping early is worth more than the interest. If you don't yet know whether anyone will buy your product, the two weeks you save are two weeks of evidence. If nobody buys, you throw the table away and never pay for the rates service you didn't build. A shortcut that gets thrown away before it hurts was the cheapest option all along. Speed can also pay without teaching you anything: a holiday sale or a contract date that a later launch would miss.
 
-This shows up constantly in startup MVPs and feature deadlines (where
-speed genuinely has outsized value — a feature validated a week sooner
-might not need to exist at all), in sprint planning conversations about
-whether to refactor now or later, and in code review, where flagging a
-shortcut explicitly is what turns reckless debt into deliberate, tracked
-debt.
+It is a bad deal when the code is something you already know you will keep and extend, such as payment handling. There the shortcut doesn't buy learning, only a short delay in a bill you will certainly pay, unless a fixed date is worth more than the interest.
 
-Taking on technical debt is sometimes the right call; taking it on
-unconsciously, without a real plan to pay it back, is the mistake. Name
-the shortcut explicitly — a TODO, a ticket, a comment explaining
-what was skipped and why — so it stays a deliberate decision instead of
-quietly becoming permanent.
+## Recorded debt versus forgotten debt
+
+The size of the shortcut matters less than whether anyone knows about it. **Recorded debt** is a decision someone wrote down: "we hardcode rates for four regions to test demand, and we replace them if it works." **Forgotten debt** is the same code with no record, because nobody stopped to think or because the deadline ate the plan to come back.
+
+Imagine both versions of your table. In the recorded one, there is a comment and a ticket: "hardcoded rates for the 4 launch regions; replace with the rates API before adding a fifth region." Six months later, still at four regions, a customer reports a wrong shipping price. Whoever picks it up reads the ticket and knows where to look.
+
+In the forgotten version, nothing says the table exists. The same person starts at the bug report, has to search for where prices come from, and only then discovers the table is out of date. Same code, same shortcut. The only difference is the cost of finding it, and that difference is invisible until something breaks.
+
+## How do you keep it recorded?
+
+Name the shortcut when you take it. A `TODO` comment that says what was skipped and why, plus a ticket in the tracker, is enough. A code reviewer helps here: asking "is this on purpose?" turns a silent shortcut into a recorded one, and reviewing the diff is the cheapest moment to ask. The same goes for tests. Skipping them on throwaway code is a loan, but skipping them on code that stays means you pay later in bugs (see the [testing pyramid](/engineering-practices/testing-pyramid) for where tests earn their cost).
+
+Recording is only half of it. The ticket needs a trigger for repayment, such as "when we add a fifth region" or "when demand is validated", so you know when to act. A ticket with no trigger is a note nobody reads.
+
+**Rule of thumb.** Take a shortcut only when shipping sooner teaches you something or wins something a later date would lose, and write down what you skipped and when you will revisit it. A shortcut that is written down is debt you manage, and one that isn't tends to become permanent.

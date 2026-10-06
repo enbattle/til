@@ -86,16 +86,12 @@ and its length. If a topic already ends with a section about where it shows
 up, rename that section instead of adding a second. Other sections' topics
 don't need it.
 
-## The catalog standard and its rollout
+## The catalog standard
 
 Every topic is held to the Writing Standard's
 ["Catalog topics"](writing-standard.md#catalog-topics) section, which
-`src/content/topic-structure.test.ts` checks. Topics written before that
-standard are on the test's `PENDING` list and skipped. The list only ever
-shrinks: the test fails on an entry naming no topic, and on an entry whose
-topic already passes every check. A new topic is never added to it. Rewriting
-a topic to the standard (`add-topic`'s rewrite mode) removes its entry in the
-same change, and the last rewrite batch deletes the list and its handling.
+`src/content/topic-structure.test.ts` checks on every topic, with no
+exceptions.
 
 ## Moving, merging or renaming a topic
 
@@ -117,9 +113,7 @@ external link never breaks.
 Never remove a redirect: someone may still hold the old link. The one
 exception is moving a topic back to a path a redirect starts from: delete that
 entry in the same change, since the path is live again and
-`redirects.test.ts` fails a redirect from a live topic. If the moved
-topic is still on `PENDING`, rename its entry to the new path; a merged-away
-topic's entry goes with its file.
+`redirects.test.ts` fails a redirect from a live topic.
 
 ## Adding a new section
 

@@ -43,22 +43,19 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-06 | Dedupe canonical facts: three eval descriptions, content skills, /feature Stage 4 | 9    | 0    | 0         | SR-01, 09, 10, 12, 14, 15, 16, 18, 20.                       |
 | 2026-10-06 | Harness follow-ups: /feature Stages 1 and 5, PowerShell-write hook                | 4    | 0    | 0         | SR-01, 05, 07, 17; run at Stage 5 by the new rule.           |
 | 2026-10-07 | Catalog standard: add-topic rewrite and batch modes, content-audit exclusion      | 5    | 0    | 0         | SR-02, 04, 06, 11, 16 at Stage 5.                            |
+| 2026-10-07 | Catalog batch 9: add-topic loses PENDING steps, batch drafters run all of `src`   | 4    | 0    | 0         | SR-02, 04, 06, 11; SR-06 prompt refreshed.                   |
 
-## Latest run: 2026-10-07, catalog standard
+## Latest run: 2026-10-07, catalog batch 9
 
-- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario, at `/feature` Stage 5 as the spec listed.
-- **Trigger:** branch feat/catalog-standard (docs/specs/catalog-standard.md) changed three things:
-  - `add-topic`'s description and body now include a rewrite mode (rewrite, merge or move topics to the catalog standard) and a batch mode;
-  - `content-audit`'s description now excludes catalog rewrites;
-  - docs/content.md gained the moving and redirect conventions.
-- **Scope:** the scenarios that route to or around these skills.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
+- **Trigger:** branch content/catalog-batch-9 deleted the `PENDING` list. It removed `add-topic`'s steps for it, and its batch-mode drafter self-check is now `npx vitest run src`, not only `src/content`. The skill's description is unchanged. docs/content.md and docs/writing-standard.md lost their rollout sentences.
+- **Scope:** the scenarios that route to or around `add-topic`. SR-06's prompt quoted caching prose that the rewrite changed, so it now quotes the current sentence.
 
-| ID    | Routing decision                                     | Reasoning (one line)                                   | Grade |
-| ----- | ---------------------------------------------------- | ------------------------------------------------------ | ----- |
-| SR-02 | `add-topic`                                          | A new topic in an existing section.                    | PASS  |
-| SR-04 | direct, via docs/content.md's "Adding a new section" | add-topic's description excludes new sections.         | PASS  |
-| SR-06 | direct                                               | A few words in one existing topic.                     | PASS  |
-| SR-11 | `content-audit`                                      | A corpus-wide quality sweep, not a rewrite.            | PASS  |
-| SR-16 | `content-audit` (one file)                           | Tighten an existing case study, not a catalog rewrite. | PASS  |
+| ID    | Routing decision                                                    | Reasoning (one line)                              | Grade |
+| ----- | ------------------------------------------------------------------- | ------------------------------------------------- | ----- |
+| SR-02 | `add-topic`                                                         | A new topic in an existing section.               | PASS  |
+| SR-04 | direct "Adding a new section", then `add-topic` for the first topic | add-topic excludes new sections.                  | PASS  |
+| SR-06 | direct                                                              | A few words in one existing sentence.             | PASS  |
+| SR-11 | `content-audit`                                                     | A sweep of everything published, not one rewrite. | PASS  |
 
-**Note:** the rewrite mode added to add-topic didn't pull SR-06 or SR-11 away from their skills.
+**Note:** SR-04 now names add-topic for the section's first topic, which is consistent with its scope note: the section itself still goes through the direct process.

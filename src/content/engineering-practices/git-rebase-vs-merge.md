@@ -1,47 +1,77 @@
 ---
 title: Git Rebase vs. Merge
-summary: What each actually does to history, which to use on a private branch vs. a shared one, and the rule of thumb for choosing between them.
+summary: Merge, rebase and squash merge each bring a branch's work into another with a different shape of history, and the choice turns on whether anyone else has the branch.
 date: 2026-09-14
 ---
 
-Two different ways to bring one branch's changes into another. **Merge**
-creates a new commit that ties the two histories together, preserving both
-exactly as they happened. **Rebase** replays one branch's commits on top
-of the other, rewriting them with new commit hashes, producing a linear
-history, as if they'd been written on top of the latest code all along.
+You are adding a login form on a branch called `feature`. While you work, a teammate lands a change on `main`. Now your branch is behind, and you have to combine the two lines of work. Git offers three ways to do it, and they leave different histories behind.
 
-## Same change, two different shapes of history
+First, a picture of where you start. Each letter is a commit, and `feature` split off `main` after `B`:
 
-Concretely: `main` has commits `A` and `B`; a `feature` branch splits off
-after `B` and adds commit `C`, while `main` moves on with commit `D`. A
-**merge** of `main` into `feature` produces both histories intact, tied
-together by a new merge commit — every commit stays exactly as it was. A
-**rebase** of `feature` onto `main` instead replays `C` after `D`,
-producing a straight line — `A → B → D → C′` — where `C′` carries the
-same changes as `C` but under a brand-new hash, as if it had been written
-after `D` from the start.
+```
+A --- B --- D        main
+       \
+        C            feature
+```
 
-The choice affects both what your history looks like and how conflicts
-get resolved. Merge preserves exactly what happened, including merge
-commits that can clutter a log with noise. Rebase produces a clean,
-linear, easy-to-read history. But it rewrites commit hashes, which is
-dangerous on any branch other people have already pulled: their local
-history now diverges from the rewritten one, and reconciling the two is
-painful.
+## What does merge do?
 
-## The rule of thumb: rebase what's private, merge what's shared
+**Merge** ties the two lines together with a new commit that has two parents. Run `git switch main` and then `git merge feature`, and you get:
 
-- **Rebase** your own local, not-yet-shared feature branch onto the latest
-  `main` before opening or updating a pull request: clean, linear
-  history, no noise merge commits.
-- **Merge** (never rebase) once a branch is shared or public, or when
-  merging a completed feature branch into `main`: don't rewrite history
-  other people depend on.
+```
+A --- B --- D --- M    main
+       \         /
+        C ------       feature
+```
 
-This is the reasoning behind the rule "never rebase a branch others have
-already based work on," and it's also the source of the difference
-between `git pull` (a merge by default) and `git pull --rebase` — a
-choice most people using git on a team make, knowingly or not, every day.
-The risk of rebase is entirely about rewriting commits other people have
-already built on top of: on your own unshared branch, there's nothing to
-break.
+`M` is the **merge commit**. Every existing commit keeps its hash (the unique ID git computes from a commit's contents and its parent), so the history records exactly what happened, including the fact that two people worked at once. The cost is that a busy repository fills with merge commits, and the log becomes a braid.
+
+## What does rebase do?
+
+**Rebase** takes your commits and replays them on top of another branch. From `feature`, run `git rebase main`:
+
+```
+A --- B --- D        main
+             \
+              C'     feature
+```
+
+`C'` has the same changes as `C` but a different parent, so it gets a new hash. The old `C` is not edited; git makes a copy and abandons the original. The result is a straight line, as if you had started after `D`. If you then run `git switch main` and `git merge feature`, git has nothing to join, so it simply moves `main` forward to `C'` (a fast-forward).
+
+## Why can't I rebase a branch other people use?
+
+Because rebasing creates new commits, and anyone who already has the old ones now disagrees with you. Say a teammate pulled `feature` from the **remote** (the shared copy of the repository, such as one on GitHub) and added a commit on top of `C`. You rebase, and a plain `git push` is now rejected, because your branch no longer contains the remote's `C`. So you **force-push** (`git push --force`), telling the remote to replace its branch with yours, and its `feature` now ends in `C'`. Their copy still contains `C`, and git sees two histories that share only the part before `C`. If they pull with a merge, git joins them and brings back the abandoned `C` next to `C'`, so the same change appears twice.
+
+That is the golden rule: **don't rebase commits that other people may have based work on.** Your own unpushed branch is safe, and so is a pushed branch nobody else uses, as long as you push it with `git push --force-with-lease`. That variant refuses to overwrite the remote if it holds commits you haven't fetched, which a plain `--force` would destroy. Any fetch counts, even one your editor runs in the background, so it protects only unfetched work.
+
+## How do I tidy a branch before review?
+
+Rebase has a second mode that rewrites your own commits. Run `git rebase -i main` and git opens a list of your branch's commits, each preceded by a verb you can change:
+
+```
+pick 1a2b3c4 Add login form
+pick 5d6e7f8 Fix typo
+pick 9a8b7c6 Fix the fix
+```
+
+Change a line to `squash` to fold it into the commit above and combine their messages, `fixup` to fold it in and keep only the message above, `reword` to edit its message, or `drop` to delete it. Here you would mark the last two as `fixup` and finish with one clean "Add login form" commit. Reviewers then read a story instead of your trial and error. This is safe only before others build on the branch, for the same reason as above.
+
+## What is a squash merge?
+
+A third option collapses the whole branch into one commit on `main`. Run `git merge --squash feature` and then `git commit`. History stays linear, and `main` gets one commit per pull request, so reverting a feature means reverting one commit.
+
+The trade-off is that `feature`'s own commits never join `main`'s history, and git doesn't record that the branch was merged. That is fine once you delete the branch, and a source of confusing conflicts if you keep working on it. GitHub offers it as a pull-request button.
+
+## How do conflicts differ?
+
+A **conflict** happens when both sides changed the same lines and git can't choose. With merge, you resolve everything once, in a single merge commit. With rebase, git replays your commits one at a time, so a conflict can appear at each step. After fixing a file you run `git add <file>` and then `git rebase --continue`, and if it goes badly, `git rebase --abort` puts the branch back as it was. A branch with ten commits can mean resolving the same clash several times. A squash merge, like a plain merge, resolves once.
+
+Rebase also swaps the labels git uses in conflict markers. During a rebase, "ours" (and `--ours`) is the branch you are rebasing onto, `main`, and "theirs" (`--theirs`) is your own commit being replayed. That is the reverse of running `git merge main` from `feature`, where "ours" is your branch.
+
+## Which should a team pick?
+
+Teams settle this with a policy more than a case-by-case choice. One common setup combines the tools: developers rebase their private branches onto `main` and clean them up with `git rebase -i`, then the pull request lands through a squash merge. Another team values keeping every commit and uses plain merges. Both work. What fails is mixing styles on one shared branch without anyone knowing the rule.
+
+The everyday command that matters is `git pull`. A plain `git pull` fetches, then merges or rebases as configured: `git config pull.rebase false` merges, which can add a merge commit each time, and `true` rebases. With neither set, current git stops when your branch and the remote's have diverged and asks you to choose. `git pull --rebase` fetches and then replays your unpushed commits on top, keeping the line straight, and it is safe because those commits are yours alone.
+
+**Rule of thumb.** Rebase what is still only yours, merge or squash what is shared, and never rewrite a commit someone else may have pulled.
