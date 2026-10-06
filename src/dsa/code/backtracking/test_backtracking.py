@@ -156,3 +156,69 @@ def test_combination_sum_agrees_with_brute_force_on_random_inputs():
         assert combination_sum(candidates, target) == expected_combination_sum(
             candidates, target
         ), f"seed 13, trial {trial}: {candidates}, target {target}"
+
+
+def test_equal_values_at_different_positions_are_different_choices():
+    assert permutations([1, 1]) == [[1, 1], [1, 1]]
+    assert subsets([1, 1]) == [[], [1], [1, 1], [1]]
+
+
+def test_large_target_built_at_runtime_matches_by_value():
+    assert combination_sum([int("1000")], int("1000")) == [[1000]]
+    assert combination_sum([int("500")], int("1000")) == [[500, 500]]
+
+
+class Counted(int):
+    """An int that counts the comparisons and subtractions made on it."""
+
+    comparisons = 0
+    subtractions = 0
+
+    def __rsub__(self, other):
+        Counted.subtractions += 1
+        return int(other) - int(self)
+
+    def _count(self, other, op):
+        Counted.comparisons += 1
+        return op(int(self), int(other))
+
+    def __gt__(self, other):
+        return self._count(other, int.__gt__)
+
+    def __ge__(self, other):
+        return self._count(other, int.__ge__)
+
+    def __lt__(self, other):
+        return self._count(other, int.__lt__)
+
+    def __le__(self, other):
+        return self._count(other, int.__le__)
+
+    def __eq__(self, other):
+        return self._count(other, int.__eq__)
+
+    __hash__ = int.__hash__
+
+
+def search_cost(candidates, target):
+    """(recursive calls, comparisons on candidates) that combination_sum makes."""
+    Counted.comparisons = 0
+    Counted.subtractions = 0
+    combination_sum([Counted(c) for c in candidates], target)
+    # Every recursive call but the first is made right after one subtraction.
+    return Counted.subtractions + 1, Counted.comparisons
+
+
+def test_combination_sum_walks_only_the_pruned_tree():
+    # [2, 3, 5] with 8 is the entry's 13-call table. Brute force over
+    # combinations subtracts nothing (1 call). Stopping only at remaining < 0
+    # makes more than 13 calls. A `continue` where the entry has `break`
+    # makes the same 13 calls but more comparisons, because it goes on testing
+    # candidates after the first one that is too big.
+    assert search_cost([2, 3, 5], 8) == (13, 22)
+    # With no answer the search still needs 441 calls to find that out.
+    # Comparisons include the few the sort and the positivity check make.
+    assert search_cost([2, 4], 81) == (441, 483)
+    # Doubling the target grows the calls with the square of it, not
+    # exponentially: two candidates give C(D + 2, 2) calls at depth D.
+    assert search_cost([2, 4], 161)[0] == 1681

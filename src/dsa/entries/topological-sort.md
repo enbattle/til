@@ -14,7 +14,7 @@ also notice when none exists.
 
 ## Prerequisites
 
-- [Graph Depth-First Search](/dsa/graph-dfs), for the walk that goes deep
+- [Depth-First Search](/dsa/depth-first-search), for the walk that goes deep
   before backing up, the explicit stack that replaces recursion, and the three
   states (unvisited, on the path, finished) that detect a cycle in a directed
   graph. The DFS method below is that cycle detection with one extra line.

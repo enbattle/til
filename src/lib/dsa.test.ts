@@ -482,14 +482,17 @@ describe('DSA_GROUPS and DSA_ENTRIES over the real entries (dsa-kind-groups crit
 
   // Pinned: a new prerequisite that lands after its dependent fails here and
   // has to be accepted on purpose.
-  it('has exactly one prerequisite after its dependent: binary-search-tree -> binary-search', () => {
+  it('has exactly two prerequisites after their dependents', () => {
     const position = new Map(DSA_ENTRIES.map((e, i) => [e.slug, i]));
     const backwards = Object.entries(realPrereqs()).flatMap(([slug, needs]) =>
       needs
         .filter((prereq) => position.get(prereq)! > position.get(slug)!)
         .map((prereq) => `${slug} -> ${prereq}`),
     );
-    expect(backwards).toEqual(['binary-search-tree -> binary-search']);
+    expect(backwards).toEqual([
+      'binary-search-tree -> binary-search',
+      'backtracking -> depth-first-search',
+    ]);
   });
 });
 

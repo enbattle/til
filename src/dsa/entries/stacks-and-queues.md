@@ -35,8 +35,8 @@ Why not just move a head index forward and never wrap? Because the slots behind 
 ## When to use it
 
 - Something opened must be matched with the most recent thing still open: brackets, tags, nested calls, an undo history. That is a stack.
-- A recursion might go too deep, or you must undo your last move: an explicit stack replaces the call stack, as in [depth-first search](/dsa/graph-dfs).
-- Work must happen in arrival order, or level by level: a queue, as in [breadth-first search](/dsa/graph-bfs).
+- A recursion might go too deep, or you must undo your last move: an explicit stack replaces the call stack, as in [depth-first search](/dsa/depth-first-search).
+- Work must happen in arrival order, or level by level: a queue, as in [breadth-first search](/dsa/breadth-first-search).
 - Items expire at one end while new ones arrive at the other, and you need a running best (a maximum, a minimum): a deque, often with a [sliding window](/dsa/sliding-window).
 - "Next greater element" or "nearest smaller": a stack that keeps its contents ordered, covered in [monotonic stack](/dsa/monotonic-stack).
 

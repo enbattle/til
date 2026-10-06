@@ -232,3 +232,65 @@ describe('combinationSum (TypeScript)', () => {
     }
   });
 });
+
+describe('mechanism (TypeScript)', () => {
+  /** Calls to Array.prototype.push while `run` executes. */
+  function countPushes(run: () => void): number {
+    const original = Array.prototype.push;
+    let count = 0;
+    Array.prototype.push = function (this: unknown[], ...items: unknown[]) {
+      count += 1;
+      return original.apply(this, items);
+    };
+    try {
+      run();
+    } finally {
+      Array.prototype.push = original;
+    }
+    return count;
+  }
+
+  it('treats equal values at different positions as different choices', () => {
+    expect(permutations([1, 1])).toEqual([
+      [1, 1],
+      [1, 1],
+    ]);
+    expect(subsets([1, 1])).toEqual([[], [1], [1, 1], [1]]);
+  });
+
+  it('walks only the pruned tree of combinationSum', () => {
+    // [2, 3, 5] with 8 is the entry's 13-call table: 12 calls come from a
+    // push onto chosen and 3 answers are pushed onto the result, 15 in all.
+    // Brute force over combinations never pushes onto chosen (3 pushes), and
+    // stopping only at remaining < 0 pushes more than 15.
+    expect(countPushes(() => combinationSum([2, 3, 5], 8))).toBe(15);
+    // No answer exists, and the search still makes 440 pushes to find that out.
+    expect(countPushes(() => combinationSum([2, 4], 81))).toBe(440);
+  });
+
+  /** Reads of the candidates' values while combinationSum runs on them. */
+  function countReads(candidates: number[], target: number): number {
+    let reads = 0;
+    const counted = candidates.map((value) => ({
+      valueOf: () => {
+        reads += 1;
+        return value;
+      },
+    }));
+    combinationSum(counted as unknown as number[], target);
+    return reads;
+  }
+
+  it('stops each loop at the first candidate that is too big', () => {
+    // Every <, >, - and <= on a candidate reads it, the sort included. With
+    // `break` the entry makes 36 reads on [2, 3, 5] and 8; a `continue` in its
+    // place makes the same 13 calls (same pushes) but 39 reads, because it
+    // goes on testing candidates after the first one that is too big.
+    expect(countReads([2, 3, 5], 8)).toBe(36);
+  });
+
+  it('walks one node per subset', () => {
+    // 2^5 answers pushed onto the result, and 2^5 - 1 pushes onto chosen.
+    expect(countPushes(() => subsets([1, 2, 3, 4, 5]))).toBe(32 + 31);
+  });
+});
