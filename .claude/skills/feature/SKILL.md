@@ -239,9 +239,10 @@ subagent reports or framing of yours. Instruction, close to verbatim:
 > covers (a doc/code mismatch is itself a finding). Label a finding without
 > one "theoretical". If the spec has a `## Review decisions` list, re-raise a
 > listed decision only with new evidence. If this change adds or edits topic
-> content (a file under `src/content/`, `src/system-design/` or `src/dsa/`), also hold the
-> prose to docs/writing-standard.md: terms defined before use, followable by
-> a reader with zero background, concrete examples. Also check whether
+> content (`src/content/**/*.md`, `src/system-design/case-studies/*.md` or
+> `src/dsa/entries/*.md`), also hold the prose to every bullet of
+> docs/writing-standard.md, including its "Case studies and DSA entries"
+> section; a test fixture planted to break a rule is exempt. Also check whether
 > this diff makes any documentation elsewhere in the repo (CLAUDE.md,
 > README.md, docs/**, other SKILL.md files) inaccurate or incomplete —
 > a convention this change establishes that isn't written down anywhere,

@@ -66,7 +66,7 @@ section's folder with the frontmatter above (`src/lib/content.ts` picks
 up every file under `src/content/**/*.md` automatically via
 `import.meta.glob`, no registry change needed) — but the skill also runs
 an independent review against the [Writing Standard](writing-standard.md) (re-run after
-fixes, at most two rounds) before
+fixes, capped as [content-review.md](content-review.md) says) before
 calling it done, since this is the most frequent change in the repo and
 otherwise the easiest one to skip review on entirely.
 

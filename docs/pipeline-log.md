@@ -9,8 +9,7 @@ makes a retro checkable: a run with failed gates
 or real findings whose retro says "nothing to change" stands out here.
 
 It is a record, not a rule: rows are never rewritten, except to fill in the
-**Escaped defect** cell of an earlier row (and the one-time backfill of
-**Agents** with `—` when that column was added). When a later fix addresses a bug
+**Escaped defect** cell of an earlier row. When a later fix addresses a bug
 that an approved run introduced, add the fixing commit or spec there. An
 escaped defect is the most important signal in this file. It gets a
 retrospective immediately rather than waiting for a pattern.

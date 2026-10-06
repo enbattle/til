@@ -58,7 +58,10 @@ their full depth, and they are where these pages send a reader for more.
 
 - **About five minutes.** At most 1,150 words of prose, about five minutes at
   230 words a minute. Tables count; code blocks, diagrams and frontmatter
-  don't.
+  don't. This is the canonical home for both numbers; in code they are
+  `WORD_BUDGET` in `src/system-design/case-study-structure.test.ts` and
+  `src/dsa/dsa-structure.test.ts`, and `WORDS_PER_MINUTE` in
+  `src/lib/reading-time.ts`.
 - **Enough to reason, not everything.** An interview never covers every
   scenario, and a reader will be asked things no page mentions. Teach the few
   decisions that shape the answer and the reasoning behind each, well enough

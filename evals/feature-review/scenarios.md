@@ -198,66 +198,99 @@ closes the dialog.
 
 ---
 
-### FR-05 — subtle: a count that can never be positive
+### FR-05 — subtle: a disclosure the focus trap skips
 
-**Planted defect:** `searchContent(query)` already caps results at its
-default limit of 8, so `results.length - 8` is never positive and the "+N
-more" line never renders: criterion 2 can't be met. The diff also adds no
-test for criterion 2, which is how it slipped through. Nothing existing
-catches it: every current test still passes, types check, and lint is clean.
-This scenario exists because every planted defect in FR-01..03 was each
-review's top finding (the 2026-09-23 and 2026-09-24 runs), so the eval
-couldn't tell a strong reviewer from a merely adequate one; this defect is
-quiet, spec-level, and sits next to correct-looking code.
+**Planted defect:** the new "Search tips" `<summary>` is never reached by
+Tab, and Tab from it (once a click has focused it) leaves the dialog, so
+criterion 3 can't be met. The cause isn't in the diff, which never mentions
+focus: `SearchDialog` calls `useFocusTrap(true, panelRef)`, whose keydown
+handler finds the dialog's focusable elements with `FOCUSABLE_SELECTOR` in
+`src/hooks/useFocusTrap.ts` (a helper `MobileNav` shares). That selector
+lists `a[href]`, `button`, `input`, `select`, `textarea` and `[tabindex]`,
+but not `summary`, so the trap takes the last result (or, with no results,
+the input) as the last element: Tab from it wraps to the input, skipping the
+summary, and Tab from a focused summary isn't caught at all. That also
+breaks DESIGN.md's keyboard-reachability item, so non-negotiable #1. The
+diff's test covers criteria 1 and 2 only. Nothing existing catches it: every
+current test still passes (`App.test.tsx`'s Tab-trap test only checks that
+focus stays inside the dialog), types check, and lint is clean.
 
-Result so far: on 2026-09-24 all three runs still named it first, one hop
-from the diff (`searchContent`'s default limit). It stays as a regression
-check; the next rotation should put the cause several hops away (a limit
-set in another module, or a default changed in a shared helper) to test
-whether a reviewer follows the call chain.
+History: until 2026-10-06, FR-05 planted a "+N more results" line that could
+never render, because `searchContent(query)` caps at its default limit of 8.
+Every run named it first (2026-09-24), one hop from the diff. Rotated
+2026-10-06, after an edit to Stage 4's reviewer instruction, to put the cause
+two calls away in another module (`SearchDialog` → `useFocusTrap` → its
+keydown handler's `FOCUSABLE_SELECTOR`), which tests whether a reviewer
+follows the call chain rather than reading the diff alone. It was confirmed
+against the code with the diff applied: in a jsdom probe (the test setup
+gives elements an `offsetParent`, so the trap runs), Tab from the input and
+from the last result both landed on the input, and Tab from the focused
+summary left the dialog.
 
 **Spec:**
 
-> When a search matches more topics than the dialog shows, say so.
-> Acceptance criteria: (1) The dialog lists at most 8 results, as today.
-> (2) When more than 8 results match, a line under the list reads "+N more
-> results — refine your search", where N is the number not shown. (3) With 8
-> or fewer matches, no such line appears.
+> The search dialog gets a short "Search tips" note, so readers can learn how
+> matching works without it crowding the dialog. Acceptance criteria: (1)
+> Under the key hints, a "Search tips" disclosure, closed by default, opens to
+> say that a title match counts most, then a summary match, then a body
+> match, and that body text is searched only once it has loaded. (2) It opens
+> and closes with a click, Enter or Space. (3) Like everything else in the
+> dialog, it's reachable with Tab, and Tab never leaves the dialog.
 
 **Diff:**
 
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -61,6 +61,8 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
-   // arrive the same query has to start matching them, and the state change
-   // above is what triggers this re-render. The index is small, so it's cheap.
-   const results = searchContent(query);
-+  const SHOWN = 8;
-+  const hidden = Math.max(0, results.length - SHOWN);
-
-   // Called before the autofocus effect below (hook order = call order), so
-   // it captures whatever had focus before the dialog opened, not the input
-@@ -165,6 +167,11 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
-             );
-           })}
-         </ul>
-+        {hidden > 0 && (
-+          <p className="px-4 pb-2 text-xs text-text-tertiary">
-+            +{hidden} more results — refine your search
+@@ -171,6 +171,17 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+           <kbd className="rounded border border-border bg-bg-secondary px-1">Esc</kbd> to
+           close · searches title, summary, and body text
+         </div>
++        <details className="border-t border-border px-4 py-2 text-xs text-text-tertiary">
++          <summary className="cursor-pointer">Search tips</summary>
++          <p className="mt-1">
++            A match in a title counts most, then one in a summary, then one in the body
++            text.
 +          </p>
-+        )}
-         <div className="border-t border-border px-4 py-2 text-xs text-text-tertiary">
-           <kbd className="rounded border border-border bg-bg-secondary px-1">Enter</kbd>{' '}
-           opens the first result ·{' '}
++          <p className="mt-1">
++            Body text is searched once it has loaded; until then, only titles and
++            summaries are.
++          </p>
++        </details>
+       </div>
+     </div>
+   );
+--- a/src/components/SearchDialog.test.tsx
++++ b/src/components/SearchDialog.test.tsx
+@@ -48,6 +48,16 @@ describe('SearchDialog', () => {
+     expect(screen.getByText('Esc')).toBeInTheDocument();
+   });
+
++  it('keeps the search tips in a disclosure that starts closed', async () => {
++    const user = userEvent.setup();
++    renderDialog();
++    const tips = screen.getByText('Search tips').closest('details')!;
++    expect(tips).not.toHaveAttribute('open');
++    await user.click(screen.getByText('Search tips'));
++    expect(tips).toHaveAttribute('open');
++    expect(tips).toHaveTextContent(/a match in a title counts most/i);
++  });
++
+   it('closes on Escape', async () => {
+     const user = userEvent.setup();
+     const onClose = renderDialog();
 ```
 
-**Expected finding:** criterion 2 can never be met, because `searchContent`
-is called with its default limit of 8, so `results.length` never exceeds 8
-and `hidden` is always 0 (the fix: ask for more results, e.g.
-`searchContent(query, Infinity)`, and slice to 8 for display). Medium
-severity or higher. A finding that only notes the missing test, without
-seeing that the feature can't work, is AMBIGUOUS.
+**Expected finding:** criterion 3 fails: the dialog's focus trap
+(`useFocusTrap`'s `FOCUSABLE_SELECTOR`) doesn't count `summary`, so Tab from
+the last result or the input wraps to the input and never reaches "Search
+tips", and Tab from a focused summary escapes the dialog (the fix: add
+`summary` to the selector, with a test that tabs to it). Either symptom counts
+if traced to the trap. High severity, since keyboard reachability is on
+DESIGN.md's accessibility checklist (non-negotiable #1). A finding that
+circles it without the cause (Tab order is untested, or "check that the focus
+trap handles `<details>`") is AMBIGUOUS, as is one that names the cause but
+only at medium severity or labels it theoretical.
 
 ---
 
@@ -322,62 +355,142 @@ for in-page jumps, without focus, is AMBIGUOUS.
 if it reports nothing worth flagging, or only findings that are true of the
 diff (a real polish point). It fails if it reports a defect that isn't there.
 
+History: until 2026-10-06, FR-04 added `readingMinutes` at 200 words a
+minute to `src/lib/content.ts`. It drifted once `src/lib/reading-time.ts`
+landed with its own `readingMinutes` at 230 (the Writing Standard's reading
+speed): the diff then duplicated a helper with a contradicting constant, and
+both 2026-10-06 runs rightly flagged that as high. This version was checked
+against the current code with the diff applied: `git apply --check`,
+`tsc -b`, `oxlint --deny-warnings`, prettier and the whole vitest suite all
+pass, the home page renders the same text as before, and no doc describes the
+section page's header or lists `content.ts`'s exports.
+
 **Spec:**
 
-> Add `readingMinutes(wordCount: number): number` to `src/lib/content.ts`:
-> whole minutes at 200 words per minute, rounded up, with a minimum of 1.
-> Acceptance criteria: (1) 0 words → 1. (2) 200 words → 1. (3) 201 words
-> → 2. (4) 1000 words → 5.
+> Section pages show how many topics the section has, worded as the home
+> page's section cards word it. Acceptance criteria: (1) Under a section's
+> description, a line reads "<N> topics", or "1 topic" for one. (2) The home
+> page and the section pages word a count the same way, from one helper. (3)
+> It shows for every section, as the home page's cards do, so an empty section
+> would read "0 topics" above "No topics here yet."
 
 **Diff:**
 
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -195,3 +195,10 @@ export function getTopic(section: string, slug: string): Topic | undefined {
+@@ -195,3 +195,8 @@ export function getTopic(section: string, slug: string): Topic | undefined {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
 +
-+const WORDS_PER_MINUTE = 200;
-+
-+/** Whole minutes to read `wordCount` words, rounded up, never less than 1. */
-+export function readingMinutes(wordCount: number): number {
-+  return Math.max(1, Math.ceil(wordCount / WORDS_PER_MINUTE));
++/** "1 topic" or "N topics", as the home and section pages word a count. */
++export function topicCountLabel(count: number): string {
++  return `${count} ${count === 1 ? 'topic' : 'topics'}`;
 +}
 --- a/src/lib/content.test.ts
 +++ b/src/lib/content.test.ts
-@@ -1,4 +1,10 @@
+@@ -1,6 +1,12 @@
  import { describe, expect, it } from 'vitest';
  import { SECTIONS } from '@/content/registry';
 -import { TOPICS, getTopic, recentTopics, topicsBySection } from './content';
 +import {
 +  TOPICS,
 +  getTopic,
-+  readingMinutes,
 +  recentTopics,
++  topicCountLabel,
 +  topicsBySection,
 +} from './content';
  import { neighbours } from './neighbours';
-@@ -68,3 +74,14 @@ describe('content loader', () => {
+
+ describe('content loader', () => {
+@@ -68,3 +74,13 @@ describe('content loader', () => {
      }
    });
  });
 +
-+describe('readingMinutes', () => {
++describe('topicCountLabel', () => {
 +  it.each([
-+    [0, 1],
-+    [200, 1],
-+    [201, 2],
-+    [1000, 5],
-+  ])('%i words take %i minute(s)', (words, minutes) => {
-+    expect(readingMinutes(words)).toBe(minutes);
++    [0, '0 topics'],
++    [1, '1 topic'],
++    [2, '2 topics'],
++  ])('labels %i as "%s"', (count, label) => {
++    expect(topicCountLabel(count)).toBe(label);
 +  });
 +});
+--- a/src/pages/HomePage.tsx
++++ b/src/pages/HomePage.tsx
+@@ -1,6 +1,6 @@
+ import { Link } from 'react-router-dom';
+ import { SECTIONS, getSection } from '@/content/registry';
+-import { TOPICS, recentTopics, topicsBySection } from '@/lib/content';
++import { TOPICS, recentTopics, topicCountLabel, topicsBySection } from '@/lib/content';
+ import { TopicCard } from '@/components/TopicCard';
+ // The site's one-line description; vite.config.ts fills index.html's meta tags
+ // from the same field.
+@@ -20,8 +20,8 @@ export function HomePage() {
+           til
+         </h1>
+         <p className="mt-3 max-w-xl text-text-secondary">
+-          {description} {totalTopics} {totalTopics === 1 ? 'topic' : 'topics'} so far,
+-          grouped into sections below.
++          {description} {topicCountLabel(totalTopics)} so far, grouped into sections
++          below.
+         </p>
+       </section>
+
+@@ -41,7 +41,7 @@ export function HomePage() {
+                     {section.label}
+                   </h3>
+                   <span className="shrink-0 text-xs text-text-tertiary">
+-                    {count} {count === 1 ? 'topic' : 'topics'}
++                    {topicCountLabel(count)}
+                   </span>
+                 </div>
+                 <p className="mt-1 text-sm text-text-secondary">{section.description}</p>
+--- a/src/pages/SectionPage.tsx
++++ b/src/pages/SectionPage.tsx
+@@ -1,6 +1,6 @@
+ import { Navigate, useParams } from 'react-router-dom';
+ import { getSection } from '@/content/registry';
+-import { TOPICS } from '@/lib/content';
++import { TOPICS, topicCountLabel } from '@/lib/content';
+ import { TopicCard } from '@/components/TopicCard';
+
+ export function SectionPage() {
+@@ -18,6 +18,9 @@ export function SectionPage() {
+           {section.label}
+         </h1>
+         <p className="mt-2 max-w-xl text-text-secondary">{section.description}</p>
++        <p className="mt-1 text-sm text-text-tertiary">
++          {topicCountLabel(topics.length)}
++        </p>
+       </div>
+
+       {topics.length === 0 ? (
+--- a/src/App.test.tsx
++++ b/src/App.test.tsx
+@@ -19,6 +19,16 @@ describe('App routing', () => {
+     ).toBeInTheDocument();
+   });
+
++  it("shows a section page's topic count under its description", () => {
++    renderAt('/ai-and-ml');
++    const group = topicsBySection().find(({ section }) => section.slug === 'ai-and-ml');
++    const count = group?.topics.length ?? 0;
++    expect(count).toBeGreaterThan(1);
++    expect(
++      within(screen.getByRole('main')).getByText(`${count} topics`),
++    ).toBeInTheDocument();
++  });
++
+   it('redirects an unknown top-level path to the not-found page', () => {
+     renderAt('/this-does-not-exist');
+     expect(screen.getByRole('heading', { name: /page not found/i })).toBeInTheDocument();
 ```
 
-**Expected finding:** none. A true nit (for example, import placement) is
-acceptable.
+**Expected finding:** none. A true nit (for example, that the empty-section
+case has no rendering test, since no section is empty today) is acceptable.
 
 ---
 

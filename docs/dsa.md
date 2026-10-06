@@ -86,11 +86,11 @@ Every kind ends the same way:
   to a specific line of the code and what goes wrong if it's written the
   obvious way.
 
-The prose, tables included, is at most 1,150 words; code blocks don't count
-(`dsa-structure.test.ts` counts them with `proseWordCount` in
-`src/lib/markdown.mjs`). The same count, eager through the build-time `?words`
-view, gives the entry page's "N min read" label (230 words a minute,
-`readingMinutes` in `src/lib/reading-time.ts`). An intro
+The prose, tables included, stays within the
+[word budget](writing-standard.md#case-studies-and-dsa-entries); code blocks
+don't count (`dsa-structure.test.ts` counts them with `proseWordCount` in
+`src/lib/markdown.mjs`). The same count gives the entry page's "N min read"
+label, as on a case study ([case-studies.md](case-studies.md)). An intro
 paragraph before `## Prerequisites` is fine. The reference examples are
 `heap.md` for a data structure and `dynamic-programming.md` for a pattern or
 algorithm: copy their voice, length and comment style, and take the headings
@@ -155,7 +155,8 @@ The code files:
 
 `npm run test:py` (`scripts/test-python.mjs`, part of `verify`) runs pytest
 over `src/dsa/code` with the first Python 3.11+ it finds (`python3`, `python`,
-then `py -3`, skipping the Windows Store stub). Install pytest with
+then `py -3`, skipping the Windows Store stub; the minimum is `MIN_MINOR` in
+`scripts/test-python.mjs`). Install pytest with
 `python -m pip install -r requirements-dev.txt` (`py -m pip ...` on Windows);
 the pinned version is in `requirements-dev.txt`, and CI and the deploy install
 it the same way. Use `npm run test:py` rather than a plain `python -m pytest`:
@@ -193,8 +194,9 @@ An entry's prerequisites are the `/dsa/<slug>` links inside its
 `## Prerequisites` section, in order (`dsaPrerequisites` in
 `src/lib/markdown.mjs`, run at build time). The page shows them as
 **Before this** under the title. Link an entry there only when the prose
-really needs it; with none, say so in prose (the structure test fails an empty
-section). A `/dsa/` link anywhere else in the body is a "see also" and doesn't
+really needs it, with a phrase saying what it's needed for
+(`[Hash map](/dsa/hash-map)`); with none, say so in prose and name the basics
+assumed (the structure test fails an empty section). A `/dsa/` link anywhere else in the body is a "see also" and doesn't
 count.
 
 `DSA_ENTRIES`, which orders the landing page, the sidebar and prev/next, is
@@ -208,10 +210,8 @@ groups then keep that order, kind by kind (`groupDsaEntries`). So a new entry
 sits among its kind by title unless a prerequisite holds it back; one of a
 later kind holds it until every entry of its own kind that's ready has gone,
 which puts it at or near the end of its group. Such a prerequisite comes after
-its dependent; today there are two:
-`binary-search-tree` -> `binary-search` and
-`backtracking` -> `depth-first-search` (a pattern that builds on an
-algorithm). Their **Before this** links still work. `dsa.test.ts` pins that list, so a new backwards cross-group link fails
+its dependent; the pinned list in `src/lib/dsa.test.ts` names each such
+link. Their **Before this** links still work. Because the list is pinned, a new backwards cross-group link fails
 the test until someone extends the list on purpose (ask the user first).
 
 A prerequisite cycle, a link to an entry that doesn't exist, or an entry
@@ -230,13 +230,7 @@ The tab covers data structures, patterns and algorithms at interview depth;
 `src/dsa/entries/` and each file's `kind` are the list. Fewer, broader entries
 beat many narrow ones: a variant someone would learn in the same sitting
 (fast and slow pointers, Bellman-Ford beside Dijkstra) is a section of the
-entry it varies, not an entry of its own. The 28 entries:
-
-| Kind           | Entries                                                                                                                                                                                                                                                              |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Data structure | arrays and strings, hash map, linked list, stacks and queues, binary tree, binary search tree, heap, graph, trie, union-find                                                                                                                                         |
-| Pattern        | two pointers (with fast and slow), sliding window, prefix sums, monotonic stack, intervals, greedy, backtracking, bit manipulation, heap patterns (top-k, k-way merge, two heaps), DP: memoization and tabulation, DP: common shapes (grid, knapsack, two sequences) |
-| Algorithm      | binary search, sorting (merge sort, quicksort and quickselect, counting sort), breadth-first search and depth-first search (trees and graphs), topological sort, shortest paths (Dijkstra, Bellman-Ford), minimum spanning trees                                     |
+entry it varies, not an entry of its own.
 
 Interval DP and state-machine DP get a sentence each in "DP: common shapes",
 not entries. Segment trees and Fenwick trees are deliberately left out.

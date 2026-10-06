@@ -26,8 +26,10 @@ registry entry per folder there. They have their own loader
 frontmatter is eager (`?meta`) and the body is its own lazy chunk
 (`loadCaseStudyBody`, through the same `createBodyStore`); the prose word count
 is eager too (the build-time `?words` view, `proseWordCount` in
-`src/lib/markdown.mjs`), so the page's "N min read" label (230 words a minute,
-`readingMinutes` in `src/lib/reading-time.ts`) shows before the body loads.
+`src/lib/markdown.mjs`), so the page's "N min read" label (`readingMinutes` in
+`src/lib/reading-time.ts`, at the reading speed in the
+[Writing Standard](writing-standard.md#case-studies-and-dsa-entries)) shows
+before the body loads, on every case study.
 Frontmatter is the usual flat `key: value`, with one more required field,
 `order`:
 
@@ -50,22 +52,24 @@ order: 1
 - **A case study is a five-minute read.** The whole page is the summary a
   reader takes into an interview, with enough reasoning under each decision to
   defend it and to guess well at a question it never asked. It meets the
-  Writing Standard's "Case studies and DSA entries" section: at most 1,150
-  words of prose (diagrams and code don't count), one rejected alternative per
+  Writing Standard's "Case studies and DSA entries" section: within the
+  [word budget](writing-standard.md#case-studies-and-dsa-entries) (diagrams and
+  code don't count), one rejected alternative per
   decision, and the voice of a good lecturer. Depth beyond that lives in the
   catalog topics it links.
 - **The template is enforced.** An intro of two to four sentences (the
   interview question and what makes it interesting) comes before the first
   heading. The body's `##` headings are then exactly, in order:
-  - `Requirements`: one list of 4–6 bullets, with the non-functional targets
-    as numbers, and one sentence on what's out of scope (a sentence, not a
-    second list).
+  - `Requirements`: one list of 4–6 bullets, saying what it does (optional
+    features marked), with the non-functional targets as numbers (scale, a
+    latency percentile, availability), and one sentence on what's out of
+    scope (a sentence, not a second list).
   - `Key numbers`: opens with a sentence saying what the numbers size (the
     requests the servers answer, the data the database holds, the memory a
     cache needs), so a reader knows where each one lands. Then 4–5 figures,
     each with a bold lead naming the part it sizes, the colon inside the bold
     (`**Reads:**`, not `**Reads**:`), and its one-line derivation from a requirement or a
-    stated assumption.
+    stated assumption. Round sensibly and say so.
   - `High-level architecture`: at least one diagram with alt text, such as
     `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page, so
     the reference style counts too), then one paragraph that follows a request
@@ -88,10 +92,7 @@ order: 1
   after the label; `Likely follow-ups` as one list of 4–6 items each opening
   with bold; the diagram; and the word budget (`proseWordCount` in
   `src/lib/markdown.mjs`: the body's prose, outside code blocks, image alt
-  text, raw HTML and reference definitions). The same count, eager through the
-  build-time `?words` view, gives the page's "N min read" label (230 words a
-  minute, `readingMinutes` in `src/lib/reading-time.ts`), on every case study.
-  An in-page link,
+  text, raw HTML and reference definitions). An in-page link,
   `[text](#heading-id)`, uses the id the heading renders with (`headingId` in
   `src/lib/headings.ts`: "Decision: the read path" is
   `#decision-the-read-path`), and the test fails one that resolves to no `#` or
@@ -131,8 +132,12 @@ order: 1
   such as `"Issue #123"`, or in a comment is fine. A `.d2` can't import another file (`...@x`,
   `x: @../y`): the imported file would escape the source hash and the color
   guard, so both `check:diagrams` and `npm run diagrams` reject it. Changing a `--color-*` token the
-  diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 4: nodes, participants and width; `check:diagrams` enforces only the width) and lay it out to fit the ~720px
-  content column (`direction: down` usually fits better than `right`), use
+  diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 4: nodes and participants). The
+  content column is about 720 px and a diagram is never scaled below 0.75, so
+  every rendered SVG stays at or below 960 px wide, target ~950
+  (`check:diagrams` fails a wider width in `manifest.json`; the limit is
+  `MAX_WIDTH` in `scripts/check-diagrams.mjs`). Lay it out to fit the column
+  (`direction: down` usually fits better than `right`), use
   `shape: sequence_diagram` for a request flow, and look at the rendered SVG
   in both themes before committing. Commit the source, both SVGs and
   `manifest.json` together; `npm run check:diagrams` (in `verify`) fails if
