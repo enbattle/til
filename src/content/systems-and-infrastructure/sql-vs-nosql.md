@@ -1,67 +1,25 @@
 ---
 title: SQL vs. NoSQL
-summary: What you're actually choosing between isn't old versus new, but a relational model built for joins and transactions versus a model shaped around one access pattern.
+summary: Pick a relational model when your data is connected and must change together, and a model shaped around one access pattern when you know the question you will ask and need to scale it.
 date: 2026-09-14
 ---
 
-**SQL (relational) databases** store data in tables with a fixed schema
-and enforce relationships between those tables, queried with SQL, and
-typically offering strong consistency along with full transactional
-guarantees. **NoSQL** is an umbrella term for everything that isn't
-that — document stores, key-value stores, wide-column stores, and graph
-databases — generally trading away some of that structure and
-consistency in exchange for flexibility or the ability to scale writes
-across many machines.
+Say you are building an online store. You have customers, and each customer places orders. Where does that data live, and in what shape? That one question splits databases into two broad camps.
 
-## The real tradeoffs, not "old versus new"
+A **relational (SQL) database** keeps data in **tables** with a fixed set of columns, one row per thing. Customers get a table and orders get a table. An order row holds a `customer_id` that points at a row in the customers table, and you read across the two with **SQL**, the query language, using a **join**, which stitches rows from different tables together at query time. **NoSQL** is the label for everything else: **document stores** (one self-contained record per thing, usually JSON), **key-value stores** (a lookup from a key to a blob), **wide-column stores** (rows with flexible sets of columns, spread across machines) and **graph databases** (built around links between things). They differ a lot from each other, so the useful question is what each trades for what.
 
-It's tempting to frame this as legacy technology versus something
-modern, but the two encode genuinely different answers to real design
-questions:
+## One order, modeled twice
 
-- **Schema.** A relational database enforces its schema on every single
-  write, catching malformed data immediately — but that same enforcement
-  means changing the schema later requires a coordinated migration across
-  every row that already exists. Most document-oriented NoSQL stores let
-  each individual record's shape vary, which is flexible during early,
-  fast-changing development, but pushes the burden of checking "does this
-  record actually look right" onto application code instead of the
-  database itself.
-- **Relationships.** SQL is built around joining related data across
-  tables inside a single query. Most NoSQL stores aren't — related data
-  is often deliberately duplicated into a single record specifically to
-  avoid needing a join at read time, trading extra storage and the work
-  of keeping duplicates in sync for faster reads.
-- **Consistency versus horizontal write scale.** This is
-  [CAP theorem](/systems-and-infrastructure/cap-theorem) showing up in a
-  concrete product decision. Traditional relational databases usually
-  favor consistency: a single point of truth for writes, strongly
-  consistent, harder to spread across many machines or regions. Some
-  NoSQL stores, particularly Dynamo-lineage ones, are built the other way
-  around: eventually consistent, but able to accept writes across many
-  nodes at once. Cassandra is a genuinely leaderless example — any
-  replica can coordinate a quorum read or write for a given key.
-  DynamoDB, despite the shared lineage, actually replicates each
-  partition through a single leader replica, closer to leader-based than
-  fully leaderless — though its default reads are still eventually
-  consistent. Others, like MongoDB, still route writes through a single
-  primary per shard and
-  default to strongly consistent reads against it — "NoSQL" describes a
-  break from the relational model, not a single consistency tradeoff
-  every store in the category makes the same way.
-
-## The same data, modeled two different ways
+In the relational version, Alex's name is stored once, in the customers table, and every order points at it:
 
 ```sql
--- SQL: related data stays normalized in separate tables, joined at query time
 SELECT orders.id, orders.total, customers.name
 FROM orders JOIN customers ON customers.id = orders.customer_id;
 ```
 
+In a document store, you would more likely store the order as one record with the customer's details copied inside:
+
 ```json
-// Document store: the related data is duplicated directly into the order —
-// no join needed to read it, but the customer's name now has to be kept in
-// sync everywhere it's been copied to.
 {
   "orderId": "o1",
   "total": 42.0,
@@ -69,34 +27,24 @@ FROM orders JOIN customers ON customers.id = orders.customer_id;
 }
 ```
 
-The SQL version reads related data by joining at the moment it's needed,
-paying that join cost on every read but keeping exactly one copy of the
-customer's name. The document version pays nothing extra at read time,
-but now has to actively manage what happens if that customer's name ever
-changes somewhere else.
+Reading an order is now one lookup with no join. The cost shows up when Alex changes their name. In the relational version you update one row. In the document version, that name is copied into every order Alex ever placed, so you update them all or accept that old orders show the old name. Sometimes accepting that is correct, since an old receipt should show what it said at the time. Sometimes it is a bug you now own.
 
-## What the choice actually turns on
+## Where the two models pull apart
 
-The choice is really about a specific service's access patterns, not a
-single winner. A reporting system doing complex, ad-hoc joins across many
-tables wants a relational database. A system ingesting a huge, bursty
-volume of loosely structured events, where horizontal write scale matters
-more than strict consistency, often wants NoSQL instead. Most real
-systems that live long enough end up using a mix of both, chosen
-per-service or even per data type, rather than committing one database
-technology to the entire application: relationships, transactions, and a
-fixed shape point toward relational; flexible structure and horizontal
-write scale point toward NoSQL.
+**Schema** is the declared shape of the data. A relational database checks every write against it, so a malformed order is rejected on the spot. The price is that changing the shape later, say splitting `name` into first and last, means a migration that touches every existing row. Most document stores let each record differ, which is easy while the product is changing weekly, but now your application code has to check that an order looks right, and has to cope with old orders that look different from new ones.
+
+**Transactions** are the next question. A **transaction** groups several changes so they all happen or none do. When Alex checks out, you want to create the order, reduce stock and charge the payment as one unit. Relational databases are built around this. Many NoSQL stores offer atomic changes only within a single record, or a limited form across records, and some now offer fuller transactions at a cost in speed. When a change has to span stores, you coordinate it yourself, for example with a [saga](/systems-and-infrastructure/saga-pattern).
+
+**Scale** is the third. Your store grows, and one machine can no longer take all the writes. A relational database usually sends writes through one primary machine, which keeps a single source of truth but is hard to spread out. You can add [read replicas](/systems-and-infrastructure/read-replicas) for reads, and you can split the data across machines by hand ([sharding](/systems-and-infrastructure/partitioning-vs-sharding)), but joins and transactions across shards get awkward. Some NoSQL stores were designed around spreading data from the start, and that is [CAP theorem](/systems-and-infrastructure/cap-theorem) turning into a product decision. Each piece of data is kept as several **replicas**, copies on different machines. Cassandra lets any node coordinate a write, and settles for eventual consistency by default, meaning replicas can briefly disagree. DynamoDB gives each slice of the data one leader copy that takes its writes, and its default reads are eventually consistent unless you ask for a strongly consistent one. MongoDB sends writes through one primary per shard and reads from that primary by default. So the NoSQL label does not tell you which consistency tradeoff you get; check the product.
+
+## Do the joins really go away?
+
+No, they move. If your reports ask new questions every week ("which customers who bought X in March also bought Y?"), the relational model lets you ask them without redesigning anything, because joins and [indexes](/systems-and-infrastructure/database-indexing) are available for any column. A document store shaped for "show me this order" has an awkward answer to that report at best, and you end up copying data into a second store built for it, or scanning everything.
+
+The reverse also holds. If your hottest query is "show Alex's ten latest orders," and you know it in advance, you can shape the records to answer that query in one read, and spread them across many machines by customer. You gave up flexibility to get predictable speed and scale.
+
+**Rule of thumb.** Start relational when your data is connected and must change together, because it is the most flexible default and a single well-run database goes a long way. Reach for a NoSQL store when you know the access pattern ahead of time and either your write volume has outgrown one machine or your records won't sit still in fixed columns, and expect to use both in one system.
 
 ## Where you'll meet this
 
-Payments and checkout are relational territory: orders, line items, and
-balances relate to each other and have to change together, which is what joins,
-constraints, and multi-row transactions are for. A news feed often goes the
-other way, because its main query is known in advance (a given reader's latest
-posts), so a store built around that one access pattern, with the data shaped
-and duplicated to match it, can serve it without joins. A URL shortener could
-go either way: a lookup from short code to destination is a key-value read with
-no joins involved, which suits a key-value NoSQL store, though a plain
-relational table works too, and the choice comes down to scale and operations
-more than data model.
+Payments and checkout lean relational: balances and orders must change together, and a half-finished change is worse than a failed one. A news feed or timeline tends to be read through one known query (a given reader's latest posts), which a store with data shaped and spread around that query can serve at high volume. A notification pipeline often logs a large stream of loosely structured events, where write volume matters more than joining them later, so a store built for fast appends suits it. Real systems commonly mix these, one store per job.

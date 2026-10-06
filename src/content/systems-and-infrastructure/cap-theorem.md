@@ -1,85 +1,104 @@
 ---
 title: CAP Theorem
-summary: Why a distributed system can't stay both fully consistent and fully available during a network partition, and what choosing between them actually looks like.
+summary: When the network splits a replicated database in two, it must either refuse some requests or risk stale answers and conflicting writes.
 date: 2026-09-14
 ---
 
-A **distributed system** — one where data lives across more than one
-machine — has to survive a **network partition**: a period where some of
-those machines can't talk to each other, whether from packet loss, a
-crashed node, or a severed link between data centers. The **CAP
-theorem** says that when a partition happens, a system has to choose
-between **Consistency** (every read reflects the latest write) and
-**Availability** (every request gets a response, even a stale one) — it
-can't fully guarantee both at the same time.
+Say you run a shop with one pair of sneakers left in stock. To survive a
+crash, you keep the stock count on two servers, one in an East data center
+and one in a West one. Each server holds a **replica**, a copy of the same
+data, and every write is sent to both. (A [read replica](/systems-and-infrastructure/read-replicas)
+is the same idea in a lopsided form.) A system that keeps data on more than
+one machine like this is a **distributed system**.
 
-## Why partition tolerance isn't actually a choice
+Now the cable between East and West gets cut. Both servers are still up and
+both still have customers, but neither can reach the other. That is a
+**network partition**: a period when some machines can't talk to some
+others, from a severed link, dropped packets or a crashed router. A customer
+in the East buys the last pair, and East records the stock as zero. West
+never hears about it. What should West do when a customer there asks for the
+same pair?
 
-CAP is often summarized as "pick two of Consistency, Availability, and
-Partition tolerance," as if all three combinations were equally live
-options. In practice, only two are: any system spread across more than
-one machine will eventually experience a partition, so refusing to
-tolerate one isn't a real design choice — it's just a system that hasn't
-had its bad day yet. The actual decision is what happens **during** that
-partition: keep answering and risk a stale or conflicting answer
-(**availability-favoring**), or refuse to answer until the system can be
-sure the answer is current (**consistency-favoring**).
+## Two bad options
 
-## What each choice looks like in practice
+West can answer from what it knows: "one left, go ahead." That keeps the
+shop **available**, meaning every request that reaches a working server gets
+a real answer. But the answer may be wrong, and two customers have now
+bought one pair of sneakers.
 
-- **Favoring consistency**: a system built around getting multiple nodes
-  to agree before confirming anything — the kind of coordination service
-  used to manage cluster configuration — would rather return an error
-  than risk handing back an inconsistent read.
-- **Favoring availability**: the internet's DNS system keeps answering
-  requests during a partition, serving whatever answer it already has
-  cached even if it's gone stale, rather than refusing to respond until
-  it can reach the authoritative source.
+Or West can refuse: "I can't confirm the stock right now, try again later."
+That keeps the data **consistent**, meaning a read returns the latest write
+or an error, never an older value. But a customer at a working server got
+nothing, which looks like an outage.
 
-## The tradeoff CAP leaves out: latency vs. consistency, even when nothing's broken
+There is no third option. West can't know what East did without reaching it,
+and reaching it is exactly what the partition prevents. That is the **CAP
+theorem**: during a partition, a replicated system can guarantee
+Consistency or Availability, but not both. The name comes from Consistency,
+Availability and Partition tolerance.
 
-CAP only describes behavior **during** a partition — it's silent about
-the rest of the time, when the network is perfectly healthy. A related
-idea, sometimes called **PACELC**, extends it: _if there's a Partition,
-choose Availability or Consistency (that's CAP) — Else (network healthy),
-choose Latency or Consistency._
+## Why partition tolerance isn't optional
 
-Even with no partition in sight, a system that wants every read to
-reflect the very latest write has to wait for that write to be
-confirmed by multiple copies of the data before telling the client it
-succeeded — and that confirmation step costs time. A system that instead
-confirms a write as soon as it reaches just one copy, and copies it to
-the others in the background, responds faster, but a read against one of
-those other copies immediately afterward can return the older value.
-That's a real, everyday tradeoff, entirely separate from partition
-behavior.
+CAP is often phrased as "pick two of three." That makes it sound like you
+could skip partition tolerance and keep C and A. You can't, for a system that
+spans machines: partitions happen whether you planned for them or not. So the
+decision is only what to do while the partition lasts, and the two answers
+have names.
 
-This is why naming only a system's partition behavior ("it's
-availability-favoring") is an incomplete answer: a system can additionally
-choose to favor low latency over strict consistency the rest of the time
-too, by design, the same way it favors availability during a partition —
-or it can choose consistency in both cases, paying a latency cost
-whether or not anything is actually broken.
+A **CP** system, consistent over available, would have West refuse the sale.
+Systems that need a majority of nodes to agree before they confirm anything
+behave this way, such as a coordination service that stores cluster
+configuration. An
+**AP** system, available over consistent, has West sell the pair anyway and
+sort out the conflict once the link heals, perhaps by apologizing to the
+second customer. DNS works like this: servers keep answering from cached
+records, even stale ones, when they can't reach the source.
 
-## Choosing it deliberately
+The choice is per operation, not per product: a shop can be AP when showing
+a product page and CP when charging a card.
 
-Partitions aren't a rare edge case to plan for later — they happen
-regularly at any real scale, so this decision is best made at design
-time, not discovered mid-incident when a service has already
-started timing out. It shows up directly when picking between a strongly
-consistent [relational database and a more availability-oriented NoSQL
-store](/systems-and-infrastructure/sql-vs-nosql), and in designing any
-service replicated across multiple regions or availability zones.
+## The cost when nothing is broken
+
+CAP says nothing about the rest of the time, when the cable is fine.
+But the same tension shows up there as speed. Suppose West wants every read
+to reflect the very latest write. Then East must wait for West to confirm
+each write before telling the customer it worked, and that wait is a
+cross-country round trip. Alternatively, East confirms as soon as its own
+copy is updated and ships the change to West in the background. Writes
+return faster, but for a short while a read from West can still show the
+old stock.
+
+This extension is called **PACELC**: if there is a Partition, choose
+Availability or Consistency; Else, choose Latency or Consistency. So "we're AP"
+is an incomplete description: two systems can both stay up during a
+partition, and only one pays the latency of agreement on every write.
+[Latency vs. throughput](/systems-and-infrastructure/latency-vs-throughput)
+covers what that waiting costs.
+
+## Choosing the side
+
+So how do you decide for the sneaker count? Ask what a wrong answer costs.
+An oversold pair means an apology and a refund, which many shops absorb
+rather than turn customers away. A bank balance is different: a double-spent withdrawal
+is hard to undo, so refusing is often the lesser harm. When you do take the AP
+side, you need a plan for repair, such as the compensating steps in the
+[saga pattern](/systems-and-infrastructure/saga-pattern). The same trade
+shows up in how any replicated store is configured, relational or
+[NoSQL](/systems-and-infrastructure/sql-vs-nosql): whether a write waits for
+other copies, and whether a read may come from one that lags. Any
+[cache](/systems-and-infrastructure/caching) makes it too, as a deliberately
+possibly-stale copy.
+
+**Rule of thumb.** Decide at design time what each piece of data does during a partition: refuse the request when a stale answer is expensive to undo, answer when the stale answer is cheap and a refusal is not.
 
 ## Where you'll meet this
 
-A news feed or timeline usually sits on the availability side: a post
-that shows up a few seconds late costs a reader almost nothing, while an
-error page is a visible failure. Chat mostly leans the same way for
-delivery, since a message that arrives late beats a send that errors
-out; what it gives up is every device seeing the same messages in the
-same order while the partition lasts. Wherever a stale answer could
-cause something hard to undo, such as approving a purchase against a
-stale balance or stock count, the choice flips toward consistency, and
-most systems end up split by data rather than picking one side
-everywhere.
+In payments and checkout, the sneaker question comes back as a stock count
+or an account balance, and the answer often leans consistent for the
+money itself, with the cheaper surrounding data (a product page, a review
+count) allowed to be stale. A news feed or timeline usually sits on the
+availability side: a post that shows up a few seconds late costs a reader
+almost nothing, while an error page is a visible failure. Chat mostly leans
+the same way for delivery, since a message that arrives late beats a send
+that errors out; what it gives up is every device seeing the same messages
+in the same order while the partition lasts.

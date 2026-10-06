@@ -52,20 +52,14 @@ const PENDING: string[] = [
   'engineering-practices/testing-pyramid',
   'focus-and-attention/why-you-cant-focus-anymore',
   'systems-and-infrastructure/batching-and-asynchronous-writes',
-  'systems-and-infrastructure/cap-theorem',
-  'systems-and-infrastructure/consistent-hashing',
-  'systems-and-infrastructure/cqrs',
   'systems-and-infrastructure/forward-vs-reverse-proxy',
   'systems-and-infrastructure/latency-vs-throughput',
-  'systems-and-infrastructure/monolith-vs-microservices',
   'systems-and-infrastructure/n-plus-one-queries',
   'systems-and-infrastructure/observability',
   'systems-and-infrastructure/scaling-reads-vs-scaling-writes',
   'systems-and-infrastructure/self-healing-systems',
-  'systems-and-infrastructure/sql-vs-nosql',
   'systems-and-infrastructure/thundering-herd-problem',
   'systems-and-infrastructure/websockets-vs-sse-vs-long-polling',
-  'systems-and-infrastructure/workflow-engines',
 ];
 
 const SYSTEMS = 'systems-and-infrastructure';
