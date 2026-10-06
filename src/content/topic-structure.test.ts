@@ -27,13 +27,6 @@ import { CATALOG_WORD_BUDGET } from '@/lib/reading-time';
 /** Every `section/slug` not yet on the catalog standard. Only ever remove
  * entries from this list. */
 const PENDING: string[] = [
-  'ai-and-ml/vector-search',
-  'ai-and-ml/what-are-ai-agents',
-  'ai-and-ml/what-are-evals',
-  'ai-and-ml/what-is-mcp',
-  'ai-and-ml/what-is-mlops',
-  'ai-and-ml/what-is-rag',
-  'ai-and-ml/when-to-finetune',
   'coding-agents/context-is-a-budget',
   'coding-agents/documentation-vs-skill-vs-hook',
   'coding-agents/keeping-ai-native-docs-from-going-stale',

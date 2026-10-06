@@ -1,121 +1,57 @@
 ---
-title: What is MCP?
-summary: The open protocol that lets a tool integration built once work with any compliant AI application, instead of every application rebuilding the same connector.
+title: Model Context Protocol (MCP)
+summary: MCP is an open protocol that lets a tool integration be built once as a server and used by any compliant AI application, which learns what the server offers by asking it.
 date: 2026-09-15
 ---
 
-Before **MCP (Model Context Protocol)**, every AI application that
-wanted to connect a model to an external tool or data source — a
-database, a ticketing system, a file store — had to build its own
-bespoke integration for it: its own way of describing the tool, its own
-authentication handling, its own glue code. Building the same kind of
-connector again for a second AI application meant redoing most of that
-work from scratch, even though the underlying tool hadn't changed at
-all. MCP is an open standard that separates those two concerns: build
-the connection to a tool once, and any application that speaks the
-protocol can use it, without rebuilding the integration itself.
+Suppose your online shop has a chat assistant that answers questions like "Where is my order 4417?" It works through a `lookup_order` function, wired up as described in [tool use and function calling](/ai-and-ml/tool-use-function-calling). Now your support team wants the same order lookup inside their code editor's AI helper, and finance wants it in a reporting assistant. Each of those is a different application with its own way of describing tools and calling them. Do you rewrite the integration three times?
 
-## The architecture: hosts, clients, and servers
+**MCP (Model Context Protocol)** says no. It is an open standard for how an AI application talks to an outside tool or data source. You build the order integration once, as an MCP server, and any application that speaks the protocol can use it.
 
-MCP defines three roles:
+## Who are the parties?
 
-- **Host** — the AI application itself (an assistant, an IDE, any
-  program that wants a model to be able to use outside tools).
-- **Client** — a piece of code living inside the host that speaks the
-  MCP protocol on the host's behalf, handling the actual back-and-forth
-  with a server.
-- **Server** — a separate, standalone piece of software that exposes one
-  specific tool or data source (a database, a filesystem, an internal
-  company system) through the protocol, without knowing or caring which
-  host is talking to it.
+MCP names three roles.
 
-A single host can connect to several servers at once — one exposing
-filesystem access, another exposing a database, another exposing search
-— each running independently, each responsible for exactly one
-integration.
+- A **host** is the AI application the user works in: the chat assistant, the editor helper, the reporting tool.
+- A **client** is code inside the host that talks to exactly one server and speaks the protocol for it. A host that connects to three servers runs three clients.
+- A **server** is a separate program that exposes one tool or data source, such as your order system, and doesn't know or care which host is on the other end.
 
-## What a server actually exposes: tools, resources, and prompts
+So the host never learns how your order database works. It only knows how to ask a server what it offers.
 
-An MCP server can offer three kinds of things through the protocol:
+## What can a server offer?
 
-- **Tools** — functions the model can actually invoke, the same
-  underlying idea as [tool use and function calling](/ai-and-ml/tool-use-function-calling),
-  just discovered dynamically over the protocol instead of being
-  hard-coded into the host ahead of time.
-- **Resources** — data the model can read, like the contents of a file
-  or the rows returned by a query, made available without the model
-  needing to know how to fetch them itself.
-- **Prompts** — reusable, parameterized prompt templates a server can
-  offer, so a well-designed prompt for a specific task can be shared and
-  reused rather than re-written inside every host that needs it.
+Three kinds of things, and the difference between them is mostly about who decides when each is used.
 
-A client discovers what a given server offers by asking it directly,
-rather than the host needing to have that server's capabilities
-hard-coded in advance. Concretely, that discovery exchange looks
-something like this (illustrating the shape of the protocol, not any
-one implementation's exact wire format):
+- **Tools** are functions the model can ask to call. This is the same mechanism as tool use, except the host learns the tool list from the server instead of having it written into the host's code. Tools are meant to be chosen by the model.
+- **Resources** are data to read, such as a file or a ticket, each with an identifier. They are usually picked by the application or the user and placed into the model's context, not requested by the model mid-answer.
+- **Prompts** are reusable, parameterized templates, like a "summarize this order for a status update" prompt that the user can trigger by name.
+
+For the shop, `lookup_order` is a tool, the full text of order 4417 is a resource, and the status-update template is a prompt. Many servers offer only tools, and that is fine; a server offers whichever of the three it has.
+
+## How does a host find out what a server offers?
+
+It asks. The client and server first establish which protocol version and features they both support; older revisions do this in an opening exchange, newer ones by stating it on every request. Then the client sends a list request for each kind of thing the server says it offers, and the server answers. The exchange looks roughly like this (the shape, not the exact wire format):
 
 ```
-Client → Server: what do you offer?
+Client -> Server: what tools do you offer?
 
-Server → Client:
-  tools:
-    - name: "search_tickets"
-      description: "Search support tickets by keyword or status."
-      parameters: { query: string, status?: "open" | "closed" }
-  resources:
-    - name: "ticket://12345"
-      description: "The full contents of ticket #12345."
-  prompts:
-    - name: "summarize_ticket"
-      description: "Summarize a ticket for a status update."
-      parameters: { ticket_id: string }
+Server -> Client:
+  name: "lookup_order"
+  description: "Find an order by its number. Returns status,
+                items, total and shipping details."
+  parameters: { order_id: string }
 ```
 
-The host doesn't need to know in advance what a connected server offers —
-no hardcoded tool list — it asked, and got back everything it needs to
-let the model use what's there. Add a second server exposing a
-completely different tool (still requiring its own config or connection
-entry on the host), and the same discovery step picks up its
-capabilities automatically. That's what makes it possible to add or swap
-out a server without changing how the host talks to it.
+That answer is the same name, description and schema from the tool-use page, and the host passes it to the model the same way. Nothing about order lookup is hard-coded in the host. Add a second server for shipping labels, and the same question discovers its tools too. The host still needs to be told the server exists, usually by a line in its configuration, but it doesn't need new code to use it.
 
-## Why building it once pays off
+Underneath, the messages are JSON-RPC, a small standard format for sending a named request and getting a matching reply. How they travel is the **transport**, and there are two common kinds. With the first, the host starts the server as a local child process and the two exchange messages over standard input and output, which suits a server running on the user's own machine. With the second, the server runs elsewhere and the client reaches it over HTTP, which suits a shared service. Because the message format is identical either way, the same server logic can be offered both ways.
 
-A server built to expose, say, a company's internal ticketing system
-works with _any_ host that speaks MCP, not just the one it was
-originally built for.
-That's the same underlying logic behind most successful protocols — a
-device built to a shared driver standard works with any compliant
-operating system, not one rebuilt per device; a website built to
-standard HTTP works in any compliant browser, not one per site. MCP
-applies that same idea to the specific problem of connecting a model to
-the outside world: the integration work happens once, on the server
-side, and every compliant host benefits from it without paying that cost
-again.
+## What goes wrong, and what should a server do about it?
 
-## Building one well
+A server is a standalone program that other people's applications may plug into, so a few habits matter more than they would inside a single app.
 
-Most of what makes an individual tool good — a clear, single
-responsibility, and a description written for the model rather than for
-a human reading the code later — is exactly the guidance in
-[Tool Use & Function Calling](/ai-and-ml/tool-use-function-calling); MCP
-doesn't change any of that, it just changes how a client discovers and
-calls the tool. A couple of habits matter specifically because an MCP
-server is a standalone, reusable piece of software rather than logic
-living inside one application:
+Everything a server says, including its tool descriptions and returned data, becomes text in the model's context. A server you don't control can therefore try to steer the model, which is the problem described in [prompt injection](/ai-and-ml/prompt-injection). Connect servers from sources you trust, and keep a human confirmation on actions that are hard to undo.
 
-- **Expose the minimum by default.** Since a server might end up
-  plugged into hosts and use cases its author never anticipated, favor
-  read-only access unless a mutating capability is specifically needed
-  and deliberately added.
-- **Assume any tool call might be retried.** A client can retry a call
-  that appeared to fail without knowing whether the server actually
-  processed it — the same reasoning behind
-  [idempotency](/systems-and-infrastructure/idempotency) applied to tool
-  calls specifically, not just network requests.
-- **Return structured, machine-readable data, not pre-formatted prose.**
-  Turning raw data into a readable answer for the end user is the
-  model's job; a server that instead returns its own formatted
-  paragraph is making a presentation decision on the model's behalf,
-  usually a worse one than the model would have made itself.
+As the author, expose the minimum. Your order server might later be plugged into a host you never imagined, so offer read-only tools unless a mutating one is needed, and add it deliberately. Make any tool that changes something [idempotent](/systems-and-infrastructure/idempotency), because a client may retry a call that appeared to time out, and the server can't tell whether it was a duplicate unless you design for that. Finally, return structured data, such as the status and the ship date as separate fields, rather than a finished paragraph. Writing the customer-facing answer is the model's job, and it can do that better with the facts than with your wording.
+
+**Rule of thumb.** Build an integration as an MCP server when more than one application, or more than one team, will want it; a tool used by a single app can stay a plain function. Either way, treat every server as a boundary: request the least access it needs, and connect only servers you trust.

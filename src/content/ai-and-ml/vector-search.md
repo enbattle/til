@@ -1,104 +1,47 @@
 ---
 title: Vector Search
-summary: How finding results by meaning instead of exact match works, and the accuracy-for-speed trade that makes it fast at scale.
+summary: Finding stored items by closeness in meaning rather than exact match, and the accuracy-for-speed trade that keeps it fast at scale.
 date: 2026-09-14
 ---
 
-A normal database index is built for exact lookups: find the row where
-`email` equals precisely this string. **Vector search** solves a
-different problem — given a query, find the stored items that are
-closest to it in _meaning_, even when nothing matches exactly. It's the
-usual retrieval mechanism behind [retrieval-augmented generation](/ai-and-ml/what-is-rag):
-it turns "find documents about this topic" from a keyword match into a
-search by meaning.
+Say you run a support site with a million past tickets, and a customer types "my card keeps getting declined." The ticket that solves their problem is titled "Payment failed at checkout." Those two strings share almost no words, so a keyword lookup misses it. **Vector search** finds stored items that are closest to a query in _meaning_, even when nothing matches exactly. It is the usual retrieval step behind [retrieval-augmented generation](/ai-and-ml/what-is-rag), where a model is handed the best-matching documents before it answers. How do you measure "closest in meaning"?
 
-## Turning meaning into something you can measure
+## Turning meaning into numbers
 
-The trick starts with **embeddings**: a model converts a piece of text
-into a list of numbers (a vector) positioned so that texts with similar
-meaning end up close together in that numerical space, and unrelated
-texts end up far apart. "Cat" and "kitten" land near each other; "cat"
-and "car" don't, despite looking similar as strings. Once every stored
-document has been converted into one of these vectors, "find documents
-similar in meaning to this query" becomes a geometry problem: convert the
-query into a vector the same way, and find the stored vectors closest to
-it.
+An **embedding model** converts a piece of text into a list of numbers, called a **vector**. It is trained so that texts with similar meaning get vectors that sit close together, and unrelated texts get vectors far apart. "Declined card" and "payment failed" land near each other. "Declined card" and "card game rules" don't, even though they share a word.
 
-The vectors are long, typically a few hundred to a few thousand numbers,
-and no single number means anything you could name. Closeness is usually
-measured by **cosine similarity**, which compares the directions two
-vectors point in and ignores their lengths, or by the dot product
-(multiply the two vectors position by position and add up the results),
-which gives the same score once the vectors are scaled to length one, as
-many embedding models do. "The same way" matters: vectors from two
-different embedding models live in unrelated spaces, so comparing them is
-meaningless. Switching models means re-embedding every stored document,
-which for a large collection is a batch job worth planning for.
+Real vectors are long, often hundreds to a few thousand numbers, and no single number means anything you could name. You embed every ticket once, ahead of time, and store the vectors. At query time you embed the customer's sentence with the same model and look for the stored vectors nearest to it. Two models produce vectors in unrelated spaces, so comparing across them is meaningless. Switching models means re-embedding all million tickets.
 
-## Why exact nearest-neighbor search doesn't scale
+"Nearest" needs a distance. The common one is **cosine similarity**, which compares the directions two vectors point in and ignores their lengths. Another is the **dot product**: multiply the two vectors position by position and add the results. If both vectors are scaled to length one, as many embedding models output them, the two give the same ranking.
 
-The straightforward way to find the closest vectors is to compare the
-query against every stored vector and rank them by distance. The cost
-grows directly with how many vectors you have: a million stored vectors
-means a million comparisons on every query. Modern hardware gets through a
-million in tens to a few hundred milliseconds, depending on vector length
-and hardware, which is often fine. At tens of millions
-of vectors, or thousands of queries a second, it stops being practical.
+## Why not compare against everything?
+
+The simplest search compares the query vector to all million stored vectors and keeps the top few. That is exact, and for a million tickets it is often fine. Each vector is, say, 768 numbers, so one query is about 768 million multiply-and-add steps, which a modern processor can do in tens to hundreds of milliseconds, depending on hardware and how well the code is tuned. Storing the vectors takes about 3 GB (768 numbers at 4 bytes each, times a million).
+
+The cost grows in a straight line with the collection. At a hundred million tickets, or thousands of queries a second, scanning everything stops being practical. So what can you give up to go faster?
 
 ## Trading a little accuracy for a lot of speed
 
-Vector search at scale almost always uses **approximate nearest
-neighbor (ANN)** search instead of an exact comparison against everything.
-The idea is to pre-build an index — a data structure organized so a query
-can skip the vast majority of stored vectors and still reliably find
-results very close to the true best matches, in a small fraction of the
-time an exhaustive comparison would take. A common style of index
-organizes vectors into a layered graph: start at a sparse top layer,
-navigate greedily toward the query, then drop down into progressively
-denser layers to refine the answer, similar to how a highway system lets
-you get broadly close to a destination fast before switching to local
-roads for the last stretch. The result trades a small, tunable amount of
-recall (occasionally missing a result that was technically closer) for
-a search that stays fast even as the number of stored vectors grows into
-the hundreds of millions.
+You give up a guarantee. **Approximate nearest neighbor (ANN)** search builds an **index** ahead of time: a data structure arranged so a query can skip almost all stored vectors and still land on results very close to the true best ones. Occasionally it misses a vector that was truly nearer. The fraction of the true best results it finds is its **recall**, and most indexes let you tune it against speed.
 
-## Real queries need more than pure similarity
+One popular style links each vector to some of its neighbors in a layered graph. A query starts in a sparse top layer, hops greedily toward the query, then drops into denser layers to refine. It works like a highway before local roads: you cover most of the distance fast, then search carefully only near the destination. Another style splits the space into clusters and searches only the few nearest the query. Either way you check a small fraction of the vectors.
 
-A support-ticket search usually wants the closest matches by meaning, but
-only among open tickets from this quarter: similarity plus a structured
-condition. Combining the two can be done a few ways: filter the
-candidates down first and search only within that smaller set, run
-the similarity search over everything and discard mismatches afterward,
-or build filtering directly into how the index is traversed. Which works
-best depends on how selective the filter is. If it matches very few items,
-searching first and filtering afterward can leave almost nothing; if it
-matches most of them, filtering first throws away the index's speed.
+## Search plus conditions
 
-## Keeping an index useful as the underlying data changes
+Your customer only wants tickets that are open, from this quarter, in their language. That is similarity plus a structured condition, and there are three ways to combine them:
 
-Adding vectors one at a time works, but costs more than an insert into a
-normal database index. Deletes and updates are the harder part: deleted
-entries are usually just marked dead and left in the graph, so searches
-waste time on them and quality slowly degrades until the index is cleaned
-up or rebuilt. Systems with heavy churn handle this by batching
-changes: rebuilding the index periodically, queuing updates and merging
-them in on a schedule, or keeping a small, fast index for very recent
-changes alongside a larger, more static one for everything older, merging
-the two periodically. Which strategy makes sense depends on how fresh the
-results need to be versus how much update volume the system has to absorb.
+- Filter first, then search only within the survivors.
+- Search the whole index, then drop results that fail the condition.
+- Check the condition during the index traversal itself.
 
-## Where the vectors live
+Which one wins depends on how selective the filter is. If it keeps only a handful of tickets, search-then-filter may return almost nothing, because the top results were all discarded. If the filter keeps most tickets, filter-first throws away the index's speed for little gain.
 
-A **vector database** is a database built around this kind of index: it
-stores each vector alongside its source text and metadata (a category, a
-date, an author), keeps the ANN index up to date, and handles the
-filtering described above. It isn't the
-only option. Many general-purpose databases now offer vector columns and
-ANN indexes, built in or as an extension (pgvector for Postgres is a common
-one). That keeps vectors next to the rest of your data, so a vector is saved
-or rolled back together with the row it describes. In-memory libraries such
-as FAISS build and search an index inside your own process with no server
-at all, leaving storage of the text and metadata to you. A reasonable
-default is the database you already run, if it supports vectors well,
-until the vector count or query load outgrows it. A dedicated system is
-worth its extra moving part at that point, not before.
+## When tickets change
+
+New tickets arrive constantly and old ones get edited or deleted. Adding a vector costs more than inserting into an ordinary database index. Deletes are worse: many indexes just mark a deleted entry dead and leave it in place, so searches waste time on it and quality slowly slips until the index is rebuilt. Systems with heavy churn batch the work. They rebuild periodically, or keep a small index for recent changes beside a large stable one and merge them on a schedule. The trade is freshness against how much update volume you can absorb.
+
+## Where to keep the vectors
+
+A **vector database** stores each vector with its source text and metadata (status, date, language), keeps the ANN index current, and handles the filtering above. It isn't the only option. Many general-purpose databases can store vectors and build ANN indexes, either built in or through an extension. That keeps a ticket's vector in the same transaction as the ticket row. A library inside your own process can build and search an index with no server at all.
+
+**Rule of thumb.** Start with exact search while the collection is small, and with the database you already run if it handles vectors well. Move to an ANN index when scans get too slow, and to a dedicated system only when scale or query load outgrows what you have. Whatever you pick, change the embedding model only if you are ready to re-embed everything.
