@@ -1,94 +1,52 @@
 ---
 title: Cache Invalidation
-summary: Storing a value in a cache is easy — the strategies for keeping it from silently going stale once the real data changes are the actual hard part.
+summary: A cache keeps serving its old copy until something tells it the data changed, and delete-on-write, write-through and TTLs each bound that staleness differently.
 date: 2026-09-14
 ---
 
-A [**cache**](/systems-and-infrastructure/caching) is a copy of data kept
-somewhere faster to read from than its original source, so a system
-doesn't have to redo expensive work (hit a slow database, recompute a
-result) every single time the same data is needed again. **Cache
-invalidation** is the set of techniques for making sure that copy gets
-updated or thrown away once the real, underlying data changes — without
-it, a cache just serves an increasingly wrong answer, quickly and
-confidently.
+Say you run a shop, and the page for a mug shows its price, $20. Reading that price from the database on every page view is wasteful, so you keep a copy in a [cache](/systems-and-infrastructure/caching): a fast store that holds recently read values. Then you cut the price to $18. The database knows. The cache doesn't, and it will keep answering "$20", quickly and confidently, until something removes or replaces that copy.
 
-There's a well-known line about why this is harder than it sounds: "there
-are only two hard things in computer science: cache invalidation and
-naming things." Storing a value and returning it next time is the easy
-part. Noticing, correctly and every time, that the value is no longer
-current is the hard part — and getting it wrong means silently
-serving stale data, which is a worse failure than having no cache at all,
-because nothing about the response signals that anything is wrong.
+**Cache invalidation** is the set of techniques for making that happen. It has a reputation for being hard, and the reason is that nothing in the system complains when it goes wrong. A stale answer looks exactly like a fresh one. So how do you decide when the copy is out of date? There are three common answers, and real systems usually combine them.
 
-## Cache-aside: read through the cache, delete (don't update) on write
+## Delete the entry when the data changes
 
-In the **cache-aside** pattern, application code reads through the cache
-directly: check the cache first, and only fall back to the real source on
-a miss, storing the result in the cache before returning it.
+The usual starting point is **cache-aside**: the application code manages the cache itself. A read checks the cache first, and on a miss (the key isn't there) it reads the database and stores the result. A write changes the database and then deletes the cached entry.
 
 ```python
-def get_user(user_id):
-    cached = cache.get(f"user:{user_id}")
-    if cached is not None:
-        return cached
-    user = db.query("SELECT * FROM users WHERE id = ?", user_id)
-    cache.set(f"user:{user_id}", user, ttl=300)
-    return user
+def get_price(mug_id):
+    price = cache.get(f"price:{mug_id}")
+    if price is None:
+        price = db.query("SELECT price FROM mugs WHERE id = ?", mug_id)
+        cache.set(f"price:{mug_id}", price, ttl=300)
+    return price
 
-def update_user(user_id, changes):
-    db.update("users", user_id, changes)
-    cache.delete(f"user:{user_id}")  # not cache.set(...) — see below
+def set_price(mug_id, new_price):
+    db.update("mugs", mug_id, price=new_price)
+    cache.delete(f"price:{mug_id}")  # delete, don't cache.set(new_price)
 ```
 
-The write side is the part worth paying attention to: after writing to
-the real data source, the code **deletes** the cache entry rather than
-writing the new value into the cache directly. That's deliberate — if two
-writes to the same key happen close together and finish out of order, a
-direct cache update from each write risks the _older_ write's result
-landing in the cache last, where it would then sit as the served value
-indefinitely. Deleting the entry instead just means the next read
-recomputes it fresh, which is slower for that one read but can't leave a
-stale value parked in the cache.
+Why delete instead of writing $18 straight into the cache? Because two price changes can arrive close together, and their cache writes can land in the opposite order from their database writes. If $18 reaches the database first and $15 second, but the cache sees $15 first and $18 second, the cache now holds $18 while the database holds $15, and it stays that way. A delete carries no value, so it can't leave a wrong one behind. The next read fetches whatever the database holds at that moment.
 
-## Write-through: keep the cache current the instant a write happens
+Delete-on-write is not airtight, though. Suppose a reader misses and reads $20 from the database. Before it stores that value, your write sets $18 and deletes the key. The slow reader then stores $20. The window is narrow, since the reader has to be slower than a write and a delete, but it is real, and the stale $20 now sits in the cache with a 300-second TTL, so it can be served for up to 5 minutes.
 
-**Write-through** takes a different approach: every write goes to the
-cache and the real data source together, as a single path, so the cache
-is never more than an instant out of date. The cost is added latency on
-every write, since it now has to update two places instead of one — and
-a cold cache still needs some fallback for keys that have never been
-written since the cache started up, since write-through only updates the
-cache for writes that actually happen through it.
+## Update the cache on every write
 
-## A TTL as a safety net, even with either strategy above
+**Write-through** sends every write to the database and the cache together, in the same request. The cache then holds the new value immediately, and the first read after the price change is already a hit. You pay for it on the write path, which now touches two systems, and two concurrent writes can still reach them in different orders unless writes to one key are made to take turns. It also fills the cache with every value written, including ones nobody reads again, yet only on writes: a mug whose price hasn't changed since the cache started, or whose entry was evicted, still needs the miss path from cache-aside. And a value changed by any path that skips the write-through code, such as a manual fix to the database, is never refreshed.
 
-Even with cache-aside or write-through in place, giving every cached
-value a short **TTL** (time-to-live, after which it expires automatically)
-is worth keeping as a backstop. Neither strategy is immune to a bug — a
-write path that bypasses the normal update-and-invalidate logic, for
-instance — and a TTL puts a hard ceiling on how long any such missed
-invalidation can stay silently wrong, even in the worst case.
+## Let the entry expire
 
-## The actual design question
+The third answer is the **TTL** (time to live), a timer after which the cache drops the entry on its own. You saw it in the code above: `ttl=300`. A TTL doesn't depend on anyone remembering to invalidate, so it catches the cases the other two miss: the racing reader above, the manual database fix, the code path someone forgot. It puts a ceiling on how wrong an entry can be. A 300-second TTL means a mug can show the old price for at most 5 minutes after the last time that entry was stored.
 
-No single strategy eliminates staleness completely — every one of them
-just bounds it differently. The design question is how much staleness a
-specific piece of data can tolerate, and for how long, and which strategy
-(or combination) keeps the actual staleness inside that bound. This
-applies anywhere a cache sits in front of a slower source of
-truth: an in-memory cache in front of a database, HTTP caching in a
-browser, or a content-delivery layer sitting in front of an origin
-server.
+The cost of a short TTL is more misses, and each miss is a database read. With 1,000 reads a second on one mug, a 300-second TTL means about one database read per 300 seconds for that entry instead of 300,000. A 5-second TTL means one per 5 seconds, which is still a large saving and much fresher. When a heavily read entry expires, many requests can miss at once and all hit the database; that failure is called a [cache stampede](/systems-and-infrastructure/thundering-herd-problem).
+
+## Choosing between them
+
+No strategy removes staleness. Each one decides how long a wrong answer can live. So the design question is how long this particular piece of data can be wrong. A mug's price on a browsing page can lag by a few seconds without harm. The same price at the moment of payment cannot, and that is a different read from a different place, not a tighter cache.
+
+In practice you combine them: delete on write to make the common case fresh, and a TTL on every entry to bound the cases the delete missed.
+
+**Rule of thumb.** Delete the cached entry when you write, give every entry a TTL as a backstop, and set that TTL to the longest staleness the data can tolerate.
 
 ## Where you'll meet this
 
-Checkout is where a cache has to be kept away from the money: a cached
-price or stock count is fine for browsing, but the amount charged
-and the stock reserved should come from the source of truth, not the
-cache. A news feed can usually tolerate cached timelines
-and like counts running a few seconds behind, so a short TTL alone is
-often enough. A URL shortener is read-dominated, and a short code's
-destination rarely changes, so a long TTL costs little, until someone
-disables a link or edits its target; then the TTL (or an explicit
-delete) decides how long the old redirect keeps working.
+At checkout, a cached price is fine for the page that shows it, but the charge reads the source of truth, so the charge is right even if the page lagged. In a news feed, cached timelines and counters can run seconds behind without anyone noticing, so a short TTL alone is often enough and no invalidation code is needed. A URL shortener caches redirects for a long time because destinations rarely change, which makes the rare disabled link the case that needs an explicit delete, since waiting for the TTL would keep serving it.

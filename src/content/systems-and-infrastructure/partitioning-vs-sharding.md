@@ -1,118 +1,118 @@
 ---
 title: Partitioning vs. Sharding
-summary: Splitting a table for manageability on one machine vs. spreading it across many machines for scale — two words often used interchangeably that mean different things.
+summary: Partitioning splits a table into pieces, often on one machine, to keep it manageable; sharding puts those pieces on different machines to get more capacity.
 date: 2026-09-15
 ---
 
-Both **partitioning** and **sharding** split a large dataset into
-smaller pieces, but at a different scope. **Partitioning** is the
-general term: dividing data into pieces by some rule (range, list,
-hash), which can happen entirely within _one_ database instance.
-**Sharding** is specifically partitioning _across multiple_ machines —
-every shard is a partition, but not every partition is a shard.
+Your online shop has an `orders` table, and it is getting big: 10 million new
+rows a month, so about 600 million after five years. Queries slow down, and
+deleting old rows takes hours. You have two ways to split the table, and the
+words for them get used interchangeably even though they solve different
+problems.
 
-## Partitioning: splitting a table without adding a machine
+**Partitioning** means dividing one logical table into smaller physical pieces
+by a rule, so queries still see a single table. **Sharding** is partitioning
+where the pieces live on different database servers, and usually the
+application has to route each query to the right one. Every shard is a
+partition, but a partition is a shard only if it sits on a different server
+from the others.
 
-Most relational databases support this natively — splitting one logical
-table into several physical ones on the _same_ server, transparent to
-the queries that read it:
+## What does partitioning fix?
+
+Start with the cheaper option. Most relational databases can split a table
+inside one server and hide the split from queries. Here `orders` is split by
+month:
 
 ```sql
-CREATE TABLE events (
+CREATE TABLE orders (
   id bigint,
-  created_at timestamp,
-  payload jsonb
+  customer_id bigint,
+  created_at timestamp
 ) PARTITION BY RANGE (created_at);
 
-CREATE TABLE events_2026_01 PARTITION OF events
-  FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');
+CREATE TABLE orders_2026_06 PARTITION OF orders
+  FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
 ```
 
-The database can then **prune** partitions a query doesn't need: a
-query filtered to `2026-01` never touches any other month's data at
-all. This improves both query performance and maintenance (dropping an
-entire old partition is close to instant; deleting the same rows one at
-a time isn't) — without adding a single extra server, or any of the
-distributed-systems complexity sharding brings.
+After five years there are 60 monthly partitions of about 10 million rows each.
+A query for June's orders gets **pruned**: the database sees from the filter
+that only `orders_2026_06` can match and never reads the other 59. And
+retiring a five-year-old month means dropping one partition, which takes
+moments, instead of deleting 10 million rows one by one.
 
-## Sharding: partitioning across machines
+What partitioning does not do by itself is add capacity. All 60 partitions share the same
+CPU, memory and disk, so if the one server is out of room or throughput, you
+have reorganized the problem without solving it.
 
-Sharding takes the same splitting idea and distributes the pieces
-across multiple database _instances_, specifically to scale beyond what
-one machine's storage or throughput can handle. The central design
-decision becomes the **shard key** — which column(s) determine which
-shard a given row lives on — since that single choice determines both
-how evenly data spreads and which queries stay fast:
+## When do you need sharding?
 
-- **Range-based** — shard by a value's range (e.g. user IDs 1–1M on
-  shard A, 1M–2M on shard B). Simple, and a range query stays on one
-  shard. But traffic and data are rarely uniform across ranges, which
-  creates hot shards — every new signup, for instance, landing on the
-  single newest shard.
-- **Hash-based** — hash the shard key and spread by the result (ideally
-  via [consistent hashing](/systems-and-infrastructure/consistent-hashing),
-  to avoid a full reshuffle when the shard count changes). Spreads load
-  evenly, but a range query ("all orders from June") now has to fan out
-  to every shard instead of staying on one.
-- **Directory-based** — a separate lookup service maps each key to its
-  shard explicitly, which is the most flexible of the three since
-  individual keys can be rebalanced one at a time rather than reshuffled
-  in bulk. That flexibility isn't free: the directory itself is now a
-  critical, must-scale dependency, and every query pays for an extra hop
-  through it.
+When one machine is the limit: the data will not fit on its disk, or
+the write rate is more than it can sustain. Then you move pieces onto separate
+servers, each called a **shard**, and every row has to be sent to the right
+one. The rule that decides is the **shard key**, a column whose value picks the
+shard. For `orders` the candidate is `customer_id`. There are three common
+ways to turn a key into a shard:
 
-The right key is whatever the majority of real queries actually filter
-by: sharding by `user_id` is a good fit when nearly every query is
-already scoped to one user (most SaaS applications); it's the wrong
-choice if a common query needs to join across users (e.g. "all orders in
-a region"), since that becomes an expensive fan-out or cross-shard join
-instead of a single-shard lookup. There's rarely a shard key that's
-optimal for every access pattern — choosing one is really choosing which
-queries you're willing to make expensive in exchange for keeping the
-common ones cheap.
+- **Range.** Customers 1 to 1,000,000 on shard A, the next million on shard B.
+  Range queries stay on one shard, but new customers all have the highest IDs,
+  so one shard takes every new signup.
+- **Hash.** Run the key through a hash function and use the result to choose a
+  shard. Load spreads evenly, but a query over a range of keys must ask every
+  shard.
+- **Directory.** A lookup table records which shard holds each key. You can
+  move one customer at a time, but the table is now a service that must stay
+  up and fast, and each query pays an extra lookup.
 
-## Hot shards and resharding
+Say you hash `customer_id` across 4 shards. A customer's orders now live
+together, so "show me my orders" asks one shard. But "all orders from June"
+has no customer in it, so it goes to all 4 shards and the results are merged.
+A shard key makes the queries that filter by it cheap and the rest expensive,
+and no key serves every query. Pick the one your most common queries already
+filter by.
 
-Any strategy can still concentrate load on one shard if the key
-distribution turns out to be skewed in practice: a single account with
-far more activity than typical, a viral product, a burst of sequential
-IDs all created in the same short window. Common mitigations include
-adding entropy to a write-heavy key (`user_id` plus a random suffix),
-splitting an overloaded shard further, or simply caching in front of the
-hot shard rather than resharding the whole dataset for one outlier.
+## What gets harder once you shard?
 
-Changing the number of shards later is expensive under naive
-hash-modulo sharding, for the same reason the naive `hash(key) % n`
-approach breaks down for any hashed system: nearly every key has to
-move. This is exactly the problem consistent hashing solves, which is
-why systems built for elastic scaling generally reach for it instead of
-a raw modulo from the start.
+Three things, and each is a cost partitioning never charged you.
 
-## Why the distinction matters
+**Joins and transactions that span shards.** Placing an order that decrements
+a product's stock touches the customer's shard and wherever the product
+lives. A single database would make that atomic for free. Across shards you
+need extra machinery, such as two-phase commit (every shard promises it can commit, then all
+commit together) or a design that
+avoids the situation.
 
-The two terms get used interchangeably in casual conversation, but
-conflating them hides the actual design decision being made: partitioning
-alone doesn't add capacity — every partition still lives on the same
-machine, sharing its CPU, memory, and disk. It only improves
-organization and query efficiency _within_ that existing capacity.
-Sharding is what actually adds capacity, at the cost of making
-cross-shard queries, joins, and transactions harder or impossible
-without extra machinery.
+**Hot shards.** Hashing evens out keys, not traffic. If one customer is a
+reseller placing a thousand times more orders than average, their shard is
+busy however well the others are balanced. You can add a random suffix to
+that customer's key so their rows spread out (at the price of reading all the
+suffixes back), move them to a shard of their own, or cache their reads.
 
-If a database is struggling with query performance or table maintenance
-but isn't actually running out of capacity, partitioning alone might be
-the entire fix — reaching straight for sharding's operational complexity
-when partitioning would have solved it is a common, expensive
-overcorrection.
+**Changing the shard count.** With a plain `hash(key) % 4`, going to 5 shards
+changes the answer for most keys. A key keeps its shard only when the hash
+gives the same remainder for 4 and for 5, which is true for 1 hash value in
+5, so about 80% of rows have to move. [Consistent
+hashing](/systems-and-infrastructure/consistent-hashing) is built to avoid
+this: adding a shard moves only about 1/5 of the keys, the ones the new shard
+takes over.
+
+## Do you have to choose?
+
+No, and large systems usually do both. Each of the 4 shards can hold its own
+`orders` table partitioned by month, so each shard prunes queries and drops old
+months quickly, and the shards provide the capacity.
+
+**Rule of thumb.** Partition first: it keeps a big table fast and easy to
+maintain on one server. Shard when a single machine's storage or write
+throughput is the limit, because it adds capacity and also adds cross-shard
+queries and transactions.
 
 ## Where you'll meet this
 
-A notification pipeline's delivery log grows without bound unless trimmed,
-so it is a good table to partition by date on a single database: old months can
-be dropped as whole partitions instead of deleted row by row. A URL shortener
-shards well by hashing the short code, because the core redirect lookup is for
-one key and never needs a range or a join across shards. Payments and checkout
-show the price of sharding: sharded by customer, one customer's orders stay on
-a single shard, but an order that also decrements a shared product's stock, or
-a transfer between two customers' accounts, touches more than one shard and
-becomes a cross-shard problem.
+A notification or email pipeline keeps a delivery log that is written
+constantly and kept only for a while, which suits date partitions on one
+database long before it needs more machines: old months are dropped whole. A
+URL shortener's hot path is a lookup by one short code, so hashing that code
+across shards costs that lookup nothing. Payments and
+checkout are where sharding hurts: a transfer between two accounts held on
+different shards is the cross-shard transaction that a single database
+handles with an ordinary transaction.
