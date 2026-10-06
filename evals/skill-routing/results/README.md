@@ -41,29 +41,25 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-05 | five-minute-templates retro: both skills' Stage 2 point to the docs               | 2    | 0    | 0         | SR-15 and SR-18; bodies only, descriptions unchanged.        |
 | 2026-10-06 | Retire the template switch: three skill descriptions, SR-19 retired               | 6    | 0    | 0         | SR-06, 11, 15, 16, 18, 20; SR-20 prompt now a BT+BST merge.  |
 | 2026-10-06 | Dedupe canonical facts: three eval descriptions, content skills, /feature Stage 4 | 9    | 0    | 0         | SR-01, 09, 10, 12, 14, 15, 16, 18, 20.                       |
+| 2026-10-06 | Harness follow-ups: /feature Stages 1 and 5, PowerShell-write hook                | 4    | 0    | 0         | SR-01, 05, 07, 17; run at Stage 5 by the new rule.           |
 
-## Latest run: 2026-10-06, dedupe canonical facts
+## Latest run: 2026-10-06, harness follow-ups
 
-- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
-- **Trigger:** branch docs/dedupe-canonical-facts gave each hand-copied fact one canonical home. It edited three kinds of routing input:
-  - the descriptions of `content-review-eval`, `feature-review-eval` and `skill-routing-eval`, whose triggers now point at evals/README.md's table;
-  - the bodies of `add-case-study`, `add-dsa-entry` and `feature` (Stage 4's Writing Standard clause, the cap pointers);
-  - docs/SDLC.md.
-- **Scope:** the scenarios whose answer depends on those skills.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario, at `/feature` Stage 5 as the spec listed.
+- **Trigger:** branch chore/harness-follow-ups (docs/specs/harness-follow-ups.md):
+  - edited `/feature` Stage 1 (each acceptance criterion names who proves it; the spec lists the evals its edits call for);
+  - edited Stage 5 (the orchestrator runs those evals before the handoff);
+  - added the `.claude/hooks/block-powershell-writes.js` hook.
+- **Scope:** the scenarios whose answer depends on `/feature`.
 
-| ID    | Routing decision           | Reasoning (one line)                                            | Grade |
-| ----- | -------------------------- | --------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`                 | Nontrivial UI change with a pagination design decision.         | PASS  |
-| SR-09 | `docs-audit`               | Staleness of meta-docs after a batch of changes.                | PASS  |
-| SR-10 | `skill-routing-eval`       | The user names the eval; SKILL.md edits are its trigger.        | PASS  |
-| SR-12 | `content-review-eval`      | Whether the review catches a planted violation, not routing.    | PASS  |
-| SR-14 | `feature-review-eval`      | Stage 4 reviewer edited; checks planted defects in a diff.      | PASS  |
-| SR-15 | `add-case-study`           | A new case study with its D2 diagrams.                          | PASS  |
-| SR-16 | `content-audit` (one file) | Tighten and check claims in an existing case study.             | PASS  |
-| SR-18 | `add-dsa-entry`            | A new DSA entry; the description names this example.            | PASS  |
-| SR-20 | `add-dsa-entry`            | The description covers merging entries; merges aren't app code. | PASS  |
+| ID    | Routing decision                      | Reasoning (one line)                                             | Grade |
+| ----- | ------------------------------------- | ---------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`                            | A nontrivial UI change to the search dialog.                     | PASS  |
+| SR-05 | triage first, then route by the cause | Reproduce read-only; direct fix with a regression test if local. | PASS  |
+| SR-07 | `/feature`                            | Reading time on topic cards and pages touches UI, lib and tests. | PASS  |
+| SR-17 | `/feature`                            | A UI button plus a new diagram-check rule.                       | PASS  |
 
 **Notes:**
 
-- The three eval descriptions still route on their own main trigger after their full trigger lists moved to evals/README.md's table. SR-12 and SR-14 named the trigger from the shortened description alone.
-- Most agents decided from the skill listing without opening files.
+- The Stage 1 and Stage 5 rewording didn't change routing.
+- The new hook doesn't touch routing.

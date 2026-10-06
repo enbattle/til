@@ -59,7 +59,8 @@ outcome for the user.
 
 Append a row for this run to [docs/pipeline-log.md](pipeline-log.md): its
 header defines the columns; Run is `<skill> <path>`, Retro is `n/a` (these
-skills have no retrospective), Gate failures counts failed `verify` runs, and
+skills have no retrospective) or, when the first round had findings, their
+kinds from the header's list (`kinds: tone, wrong-claim`), Gate failures counts failed `verify` runs, and
 Agents counts every agent you started, a batch drafter included. Then run
 `npx prettier --write docs/pipeline-log.md` and `npm run check:pipeline-log`.
 The row goes in the content's commit, with the files the skill lists. Ask

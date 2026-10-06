@@ -48,6 +48,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-powershell-writes.js\"",
+            "timeout": 10
+          }
+        ]
       }
     ]
   }

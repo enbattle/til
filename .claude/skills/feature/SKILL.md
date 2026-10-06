@@ -74,8 +74,10 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   parts as `added` at Stage 3's gate; the spec can pre-approve exactly those,
   and the orchestrator then confirms with the previous script that nothing
   already locked changed, and re-takes the snapshot.
-- Scope in and out; files/modules touched; whether there's a user-facing UI
-  surface (decides Stage 4's browser check).
+- Scope in and out; files/modules touched; which stage or role proves each
+  acceptance criterion; the evals `evals/README.md`'s table names for any file
+  it edits; whether there's a user-facing UI surface (decides Stage 4's
+  browser check).
 - A UI change: criteria cover content shorter than the screen, 375px and the
   widest layout, and every item of DESIGN.md's accessibility checklist it
   touches. A component that opens, closes or moves focus also names its
@@ -148,6 +150,7 @@ to the tests it names. Gate:
 ```bash
 git status --porcelain -uall   # before and after the re-run: no implementation file may change
 npm run check:test-lock -- --verify   # lists exactly what the re-run changed
+npm run format:check && npm run lint   # no later stage may fix a locked file
 ```
 
 Every listed path must be one the report named (or a fixture it depends on);
@@ -337,8 +340,9 @@ npm run verify
 npm run check:test-lock -- --clear    # the run's snapshot has done its job
 ```
 
-Summarize: what changed, a link to the spec, the review outcome, each Reject
-and Known limitation with its reason, and that everything above is green.
+Run and log the evals the spec listed, then summarize: what changed, a link to
+the spec, the review outcome, the eval results, each Reject and Known
+limitation with its reason, and that everything above is green.
 List separately each finding this change didn't cause, for the user to fix
 now, file or drop. Add the Stage 6 result. Ask before committing or pushing.
 

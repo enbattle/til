@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { getTopic } from '@/lib/content';
+import { TOPICS } from '@/lib/content';
 import { h2Headings } from '@/lib/headings';
 import {
   CASE_STUDIES,
@@ -115,7 +115,12 @@ describe('case study page (criterion 8)', () => {
     );
     expect(main).toHaveTextContent(caseStudy.date);
     expect(
-      await within(main).findByRole('heading', { level: 2, name: 'Requirements' }),
+      // The heading is read from the file, not pinned (docs/specs/
+      // harness-follow-ups.md, criterion 9).
+      await within(main).findByRole('heading', {
+        level: 2,
+        name: h2Headings(caseStudyBody(SLUG))[0].text,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -267,10 +272,17 @@ describe('sidebar selection (criterion 9)', () => {
 
 describe('topic page back-links (criterion 10)', () => {
   const BACKLINKS = 'Case studies this topic is used in';
+  // Topics are found from what the case studies link now, not pinned, so a
+  // rewrite of a case study's prose can't break these (docs/specs/
+  // harness-follow-ups.md, criterion 9).
+  function linkedTopic() {
+    const [topic] = topicsForCaseStudy(urlShortener());
+    expect(topic, 'the URL shortener links no topic').toBeDefined();
+    return topic;
+  }
 
   it('lists the linking case studies after the body, before the prev/next nav', async () => {
-    const topic = getTopic('systems-and-infrastructure', 'caching')!;
-    expect(topic).toBeDefined();
+    const topic = linkedTopic();
     const expected = caseStudiesForTopic(topic.section, topic.slug);
     expect(expected.map((c) => c.slug)).toContain(SLUG);
 
@@ -306,7 +318,8 @@ describe('topic page back-links (criterion 10)', () => {
   it('follows a back-link to the case study, with System Design current', async () => {
     const user = userEvent.setup();
     const caseStudy = urlShortener();
-    renderAt('/systems-and-infrastructure/caching');
+    const topic = linkedTopic();
+    renderAt(`/${topic.section}/${topic.slug}`);
     const nav = await screen.findByRole('navigation', { name: BACKLINKS });
     await user.click(within(nav).getByRole('link', { name: caseStudy.title }));
     expect(
@@ -318,8 +331,9 @@ describe('topic page back-links (criterion 10)', () => {
   });
 
   it('renders no back-link navigation for a topic no case study links', async () => {
-    const topic = getTopic('ai-and-ml', 'prompt-engineering')!;
-    expect(caseStudiesForTopic(topic.section, topic.slug)).toEqual([]);
+    const topic = TOPICS.find((t) => caseStudiesForTopic(t.section, t.slug).length === 0);
+    expect(topic, 'every topic is linked; this case needs a fixture').toBeDefined();
+    if (!topic) return;
     renderAt(`/${topic.section}/${topic.slug}`);
     await screen.findByRole('heading', { level: 1, name: topic.title });
     // Wait for the body so the absence is checked after the page has settled.

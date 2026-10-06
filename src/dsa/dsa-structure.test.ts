@@ -7,6 +7,7 @@ import { CodeLanguageProvider } from '@/contexts/CodeLanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { proseWordCount } from '@/lib/markdown.mjs';
+import { WORD_BUDGET } from '@/lib/reading-time';
 
 /**
  * Content-structure test for the DSA entries; the rules are in docs/dsa.md.
@@ -75,7 +76,6 @@ const TEMPLATES: Record<string, string[]> = {
     'Pitfalls',
   ],
 };
-const WORD_BUDGET = 1150;
 
 afterEach(() => {
   localStorage.clear();

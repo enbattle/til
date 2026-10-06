@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { readingMinutes } from './reading-time';
+import { readingMinutes, WORD_BUDGET, WORDS_PER_MINUTE } from './reading-time';
+
+// docs/specs/harness-follow-ups.md, criterion 1: the word budget both
+// structure tests enforce is five minutes' worth of reading, defined once here.
+describe('WORD_BUDGET (harness follow-ups criterion 1)', () => {
+  it('is five minutes at the read-time rate: 1,150 words', () => {
+    expect(WORDS_PER_MINUTE).toBe(230);
+    expect(WORD_BUDGET).toBe(5 * WORDS_PER_MINUTE);
+    expect(WORD_BUDGET).toBe(1150);
+    expect(readingMinutes(WORD_BUDGET)).toBe(5);
+  });
+});
 
 // docs/specs/five-minute-templates.md, criterion 2: `readingMinutes(words)` is
 // `max(1, ceil(words / 230))`, so the Writing Standard's 1,150 words read in

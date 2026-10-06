@@ -6,6 +6,9 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { getSection } from '@/content/registry';
 import { TOPICS, getTopic } from '@/lib/content';
+import { parseFrontmatter } from '@/lib/frontmatter';
+import { h2Headings } from '@/lib/headings';
+import { rawTopic } from '@/test/content';
 import { caseStudiesForTopic } from '@/lib/system-design';
 import App from '@/App';
 import { TopicPage } from './TopicPage';
@@ -119,9 +122,13 @@ describe('TopicPage body loading (criterion 9)', () => {
   });
 
   it('renders the real body of a real topic through the real loader', async () => {
+    // The heading is read from the topic's file, not pinned
+    // (docs/specs/harness-follow-ups.md, criterion 9).
+    const [first] = h2Headings(parseFrontmatter(rawTopic(SECTION, SLUG)).content);
+    expect(first).toBeDefined();
     renderTopic(`/${SECTION}/${SLUG}`);
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'The underlying skill' }),
+      await screen.findByRole('heading', { level: 2, name: first.text }),
     ).toBeInTheDocument();
   });
 

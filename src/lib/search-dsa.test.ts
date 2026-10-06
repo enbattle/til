@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CaseStudy, DsaEntry, Topic } from '@/types';
+import { TOPICS } from './content';
 import { DSA_ENTRIES, getDsaEntry } from './dsa';
 import { parseFrontmatter } from './frontmatter';
 import {
@@ -8,6 +9,7 @@ import {
   searchContent,
   type SearchResult,
 } from './search';
+import { CASE_STUDIES } from './system-design';
 
 // docs/specs/dsa-tab.md, criterion 14: DSA entries join search as
 // `{ kind: 'dsa', entry }`, with title and summary searchable at once and
@@ -137,17 +139,24 @@ describe('the real search index finds DSA entries (criterion 14)', () => {
     }) as Record<string, string>;
     const { content } = parseFrontmatter(raw['/src/dsa/entries/binary-search.md']);
     const entry = getDsaEntry('binary-search')!;
-    // A required template heading the title and summary don't contain, so
-    // only the body can match it.
-    const phrase = ['Pitfalls', 'Walkthrough', 'Complexity'].find(
-      (candidate) =>
-        content.includes(candidate) &&
-        !`${entry.title} ${entry.summary}`
-          .toLowerCase()
-          .includes(candidate.toLowerCase()),
-    );
+    // A heading read from the entry's own file now, which the title and summary
+    // don't contain, so only the body can match it; no published phrase is
+    // pinned here (docs/specs/harness-follow-ups.md, criterion 9).
+    const phrase = [...content.matchAll(/^##+ +(.+)$/gm)]
+      .map(([, heading]) => heading.trim())
+      .find(
+        (heading) =>
+          // Plain words within Fuse's 32-character pattern length.
+          /^[A-Za-z ]{4,32}$/.test(heading) &&
+          !`${entry.title} ${entry.summary}`
+            .toLowerCase()
+            .includes(heading.toLowerCase()),
+      );
     expect(phrase).toBeDefined();
     await ensureFullTextSearch();
-    expect(keys(searchContent(phrase!, 50))).toContain('dsa:binary-search');
+    // Every document may match a template heading, so the limit covers the
+    // whole corpus: this tests that the body is searched, not how it ranks.
+    const everything = TOPICS.length + CASE_STUDIES.length + DSA_ENTRIES.length;
+    expect(keys(searchContent(phrase!, everything))).toContain('dsa:binary-search');
   });
 });

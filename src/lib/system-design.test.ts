@@ -25,6 +25,16 @@ const REAL = Object.entries(RAW).map(([filePath, raw]) => ({
   body: parseFrontmatter(raw).content,
 }));
 
+/** `section/slug` of the first real topic a case study's file links to, read
+ * from the file at test time so no test pins a link inside published prose. */
+function firstLinkedTopic(slug: string): string {
+  const ref = extractTopicRefs(parseFrontmatter(rawFor(slug)).content).find(
+    ({ section, slug: topicSlug }) => getTopic(section, topicSlug) !== undefined,
+  );
+  expect(ref, `${slug} links to no real topic`).toBeDefined();
+  return `${ref!.section}/${ref!.slug}`;
+}
+
 const VALID_PATH = '/src/system-design/case-studies/my-case.md';
 
 const VALID_FIELDS: Record<string, string> = {
@@ -239,12 +249,16 @@ describe('topicsForCaseStudy (criterion 6)', () => {
     expect(first).toEqual(getTopic(first.section, first.slug));
   });
 
-  it('includes the caching topic for the URL shortener (its read-path deep dive)', () => {
+  // The link is read from the URL shortener's file now, not pinned here, so a
+  // rewrite of its prose can't break this (docs/specs/harness-follow-ups.md,
+  // criterion 9).
+  it('includes a topic the URL shortener links to', () => {
+    const linked = firstLinkedTopic('url-shortener');
     expect(
       topicsForCaseStudy(getCaseStudy('url-shortener')!).map(
         (t) => `${t.section}/${t.slug}`,
       ),
-    ).toContain('systems-and-infrastructure/caching');
+    ).toContain(linked);
   });
 
   it('returns [] for a case study that is not one of the real ones', () => {
@@ -288,10 +302,11 @@ describe('caseStudiesForTopic (criterion 6)', () => {
     }
   });
 
-  it('lists the URL shortener for systems-and-infrastructure/caching', () => {
-    expect(
-      caseStudiesForTopic('systems-and-infrastructure', 'caching').map((c) => c.slug),
-    ).toContain('url-shortener');
+  it('lists the URL shortener for a topic its file links to', () => {
+    const [section, topicSlug] = firstLinkedTopic('url-shortener').split('/');
+    expect(caseStudiesForTopic(section, topicSlug).map((c) => c.slug)).toContain(
+      'url-shortener',
+    );
   });
 
   it('is consistent with topicsForCaseStudy in both directions', () => {
@@ -303,7 +318,18 @@ describe('caseStudiesForTopic (criterion 6)', () => {
   });
 
   it('returns [] for a topic no case study links', () => {
-    expect(caseStudiesForTopic('ai-and-ml', 'prompt-engineering')).toEqual([]);
+    // Found from the files now, not pinned, since any case study may come to
+    // link a given topic (docs/specs/harness-follow-ups.md, criterion 9).
+    const linked = new Set(
+      CASE_STUDIES.flatMap((c) =>
+        extractTopicRefs(parseFrontmatter(rawFor(c.slug)).content).map(
+          (r) => `${r.section}/${r.slug}`,
+        ),
+      ),
+    );
+    const unlinked = TOPICS.find((t) => !linked.has(`${t.section}/${t.slug}`));
+    expect(unlinked, 'every topic is linked; this case needs a fixture').toBeDefined();
+    expect(caseStudiesForTopic(unlinked!.section, unlinked!.slug)).toEqual([]);
   });
 
   it('returns [] for a topic that does not exist', () => {
