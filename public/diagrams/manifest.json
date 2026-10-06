@@ -123,12 +123,12 @@
     }
   },
   "ride-sharing/architecture.d2": {
-    "sha256": "63cf00aef3c44bfdae88b7f596d35e210714a24e2950f82402051a8354ab3543",
-    "width": 916,
-    "height": 2221,
+    "sha256": "f1a71cb986e0e29e6dd94ef620aaf30568d2c7fe07c294d5614b480615420602",
+    "width": 879,
+    "height": 2121,
     "svgs": {
-      "light": "d7b9b2fd014aacdfd4c4f5431848925352f7965bbaa9cea219df5ceadbde800a",
-      "dark": "e91ecefc27c911f5a9f26a5db4dc3e0f94064d5e925fb7705c50863a82b9978e"
+      "light": "800b112185846e4b52bf0a2962d9aa55f9e92526df5345294275fa4795873cc4",
+      "dark": "dcaf1c88299ab41c323e437cf10af25bef5eaced1767e81550e988d09f76dbe7"
     }
   },
   "search-engine/architecture.d2": {
