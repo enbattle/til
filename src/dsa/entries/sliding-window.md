@@ -1,135 +1,85 @@
 ---
 title: Sliding Window
-summary: Keeping a running answer for a contiguous stretch of an array or string and moving its two ends only forward, so every question about "the best run" is answered in one O(n) pass instead of rescanning each run.
-date: 2026-10-01
+summary: Keeping a running answer for a contiguous run of an array and moving its two ends only forward, so a question about the best run takes one pass instead of a rescan per run.
+date: 2026-10-05
 kind: pattern
+template: 2
 ---
 
-A **window** is a contiguous stretch of an array or string, described by two
-indexes: `left`, the first position inside it, and `right`, the last. Sliding
-a window means moving those indexes forward while keeping an answer for what is
-currently inside, instead of recomputing that answer from scratch at every
-position. Two shapes come up: a **fixed-size** window, which always holds the
-same number of elements, and a **variable-size** window, which grows and
-shrinks to satisfy a condition.
+A **window** is a contiguous run of an array, marked by two indexes: `left`, its first position, and `right`, its last. Sliding it means moving those indexes forward while you keep an answer for what's inside, instead of recomputing that answer at every position. You'll use one array, `[2, 1, 5, 1, 3, 2]`, to ask three questions, one fixed-size window and two variable-size ones.
 
 ## Prerequisites
 
-- [Two Pointers](/dsa/two-pointers): the window is two indexes that only move
-  forward, the same-direction shape of that entry, with the rule for which one
-  to move changed.
-- [Hash Map](/dsa/hash-map): the variable window keeps a map from each
-  character to how many times it appears inside the window. That entry also
-  explains the big-O notation (O(1), O(n)) used here.
+- [Two pointers](/dsa/two-pointers): the window is two indexes that move in the same direction, with a new rule for which one moves.
+- [Hash map](/dsa/hash-map): the third question keeps a map from each value to how often it appears in the window. Complexity uses big-O notation, defined in [Arrays and strings](/dsa/arrays-and-strings).
 
 ## The idea
 
-**Fixed size.** Take `nums = [2, 1, 5, 1, 3, 2]` and ask for the largest sum
-of any 3 consecutive values. The slow way adds up every group of three from
-scratch: 4 groups, 3 additions each. But two neighbouring groups share all but
-one value. Moving the window one step right drops the value that leaves on the
-left and adds the value that enters on the right, so the new sum is the old sum
-plus one value minus another, a single step whatever the window size.
+Start with a fixed size: what's the largest sum of 3 consecutive values? The slow way adds up every group of three from scratch: 4 groups, 2 additions each. But neighboring groups share all but one value. Slide one step right, subtract the value that leaves, add the one that enters, and you have the new sum in one step, however wide the window is.
 
-| `right` | Value in | Value out | Window sum | Window       |
-| ------- | -------- | --------- | ---------- | ------------ |
-| 2       | (start)  | (start)   | 2+1+5 = 8  | indexes 0..2 |
-| 3       | 1        | 2         | 8+1-2 = 7  | indexes 1..3 |
-| 4       | 3        | 1         | 7+3-1 = 9  | indexes 2..4 |
-| 5       | 2        | 5         | 9+2-5 = 6  | indexes 3..5 |
+| `right` | In  | Out | Window sum | Indexes |
+| ------- | --- | --- | ---------- | ------- |
+| 2       |     |     | 2+1+5 = 8  | 0..2    |
+| 3       | 1   | 2   | 8+1-2 = 7  | 1..3    |
+| 4       | 3   | 1   | 7+3-1 = 9  | 2..4    |
+| 5       | 2   | 5   | 9+2-5 = 6  | 3..5    |
 
-The largest sum is 9, from `5, 1, 3`. The value leaving is always the one `k`
-positions behind `right`, which is why only `right` needs to be a loop
-variable.
+The answer is 9, from `5, 1, 3`. The leaver is always `k` positions behind `right`, so only `right` needs to be a loop variable.
 
-**Variable size.** Find the length of the longest stretch of a string with no
-repeated character. For `"pwwkew"` the answer is 3, from `"wke"`. The window
-can't have a fixed size here; the question is how large it can get while still
-satisfying the condition "every character appears once". The scan moves `right`
-one step at a time, adding the new character. If that character is now in the
-window twice, the window is invalid, so `left` moves forward, dropping
-characters, until the duplicate is gone:
+Now let the size vary. What's the shortest run that sums to at least 9? No size is given, so the window grows until it satisfies the condition, then shrinks from the left for as long as it still does, recording its length at each stop:
 
-| `right` | Char | What happens                    | Window (`left`..`right`) | Length |
-| ------- | ---- | ------------------------------- | ------------------------ | ------ |
-| 0       | p    | no duplicate                    | 0..0 `p`                 | 1      |
-| 1       | w    | no duplicate                    | 0..1 `pw`                | 2      |
-| 2       | w    | second w; drop p, then drop w   | 2..2 `w`                 | 1      |
-| 3       | k    | no duplicate                    | 2..3 `wk`                | 2      |
-| 4       | e    | no duplicate                    | 2..4 `wke`               | 3      |
-| 5       | w    | second w; drop the w at index 2 | 3..5 `kew`               | 3      |
+| `right` | Added | Total | Then                                        | Window | Shortest |
+| ------- | ----- | ----- | ------------------------------------------- | ------ | -------- |
+| 0       | 2     | 2     |                                             | 0..0   | none     |
+| 1       | 1     | 3     |                                             | 0..1   | none     |
+| 2       | 5     | 8     |                                             | 0..2   | none     |
+| 3       | 1     | 9     | length 4; drop 2, total 7                   | 1..3   | 4        |
+| 4       | 3     | 10    | length 4, drop 1; length 3, drop 5, total 4 | 3..4   | 3        |
+| 5       | 2     | 6     |                                             | 3..5   | 3        |
 
-The best length seen is 3.
+The answer is 3. Both ends only ever move forward. `right` visits each of the n positions once, and `left` can't pass `right`, so it moves at most n steps over the whole scan. That's at most 2n moves in total, even though a `while` loop sits inside a `for`: every step the inner loop takes is one `left` never takes again.
 
-**Why it's one pass.** In both shapes `left` and `right` only ever move
-forward, never back. `right` takes each of the n positions once, and `left`,
-which can never pass `right`, also moves at most n steps over the whole scan.
-That is at most 2n moves in total, however often the inner `while` loop runs,
-because every step it takes is one `left` can never take again.
+Why does shrinking from the left never miss an answer? Because the values are non-negative, so a longer run never has a smaller sum. Once the run from `left` to `right` reaches 9, every other run from `left` that reaches it ends later, so it is longer and can't win. Nothing is lost by moving `left` on. This one-way property is the rule behind the whole pattern: grow while the condition is unmet, shrink while it's met, and it works whenever the condition only ever moves in one direction as the window grows.
+
+The third question swaps the running sum for a map. What's the longest run holding at most 2 different values? Each step adds the value at `right` to a map of counts; if the map now has 3 keys, drop values from the left until it has 2. On our array the answer is 3, from `1, 5, 1`. The shape is the same, with a different thing kept up to date.
 
 ## When to use it
 
-The problem asks about a contiguous run (a subarray or a substring), not a
-selection of elements scattered across the input. Typical phrasings: the
-largest sum of `k` consecutive values, the longest run satisfying a rule, the
-shortest run that reaches a target.
-
-For a fixed size the window is always valid, so nothing else is needed. For a
-variable size there is a second requirement: the condition must stay broken or
-stay fixed in one direction. In the unique-characters problem, once a window
-contains a duplicate, making it bigger can't remove the duplicate, and making
-it smaller from the left can. That one-way behaviour is what lets `left` move
-forward and never reconsider a position it passed. "Find the shortest run of
-positive numbers whose sum is at least a target" has it, since adding a
-positive number only raises the sum.
-
-It fails when the condition isn't one-way. With negative numbers, "the sum
-equals a target" can become true, then false, then true again as the window
-grows, so no rule says which end to move. Those problems are usually handled
-with [Prefix Sums](/dsa/prefix-sums) and a hash map instead.
+- The problem is about a contiguous run, a subarray or substring, and not elements picked from anywhere.
+- It asks for the longest, shortest or best such run, or a count of them: "largest sum of `k` in a row", "longest without repeats", "shortest that reaches a target".
+- The condition holds or fails monotonically as the run grows: adding to a run can only push it one way. At-most-`k` distinct values, no repeats and a sum of positives at least a target all qualify.
+- Brute force is "try every start and end", and the answer for one run is cheap to update from its neighbor's.
 
 ## Walkthrough
 
 ```python
 def max_window_sum(nums: list[int], k: int) -> int | None:
-    """Largest sum of k consecutive values in nums, or None if nums has fewer than k."""
+    """Largest sum of k consecutive values, or None if nums has fewer than k."""
     if k < 1:
         raise ValueError("k must be at least 1")
     if k > len(nums):
         return None
     window = sum(nums[:k])
+    # Start from the first window, not 0: all-negative input has a negative best.
     best = window
-```
-
-```typescript
-/** Largest sum of `k` consecutive values in `nums`, or null if `nums` is shorter. */
-export function maxWindowSum(nums: number[], k: number): number | null {
-  if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be at least 1');
-  if (k > nums.length) return null;
-  let window = 0;
-  for (let i = 0; i < k; i++) window += nums[i];
-  let best = window;
-```
-
-The first window is the only one summed by brute force, and it's also the
-first candidate for the answer, so `best` starts there rather than at 0. A
-starting value of 0 would be wrong for an array of negative numbers, where the
-true answer is below zero. The two guards give the two bad inputs different
-answers on purpose. A `k` below 1 is a mistake by the caller, so it raises an
-error. An array shorter than `k` is a legitimate question with no answer, so it
-returns `None` (`null` in TypeScript). Without the second guard the answer
-would be wrong in a different way per language: Python would quietly sum a
-short first window, and TypeScript would add `undefined` and return `NaN`.
-
-```python
     for right in range(k, len(nums)):
+        # The value leaving is k behind right; right - k + 1 is still inside.
         window += nums[right] - nums[right - k]
         best = max(best, window)
     return best
 ```
 
 ```typescript
+/** Largest sum of `k` consecutive values, or null if `nums` is shorter. */
+export function maxWindowSum(nums: number[], k: number): number | null {
+  if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be at least 1');
+  if (k > nums.length) return null;
+  let window = 0;
+  for (let i = 0; i < k; i++) window += nums[i];
+  // Start from the first window, not 0: all-negative input has a negative best.
+  let best = window;
   for (let right = k; right < nums.length; right++) {
+    // The value leaving is k behind right; right - k + 1 is still inside.
     window += nums[right] - nums[right - k];
     best = Math.max(best, window);
   }
@@ -137,57 +87,93 @@ short first window, and TypeScript would add `undefined` and return `NaN`.
 }
 ```
 
-The loop starts at `k`, the first index not yet inside the window. When
-`right` is 4 with `k = 3`, the window before the step was indexes 1..3 and the
-one after is 2..4, so the value that leaves is index 1, which is `right - k`.
-Writing `right - k + 1` instead removes a value that is still inside the new
-window, and the sum drifts off by one element on every step.
+Prefix sums could answer this too, but with O(n) extra space; the window needs none.
 
 ```python
-def longest_unique_substring(text: str) -> int:
-    """Length, in code points, of the longest run of text with no repeated character."""
-    counts: dict[str, int] = {}
-    left = 0
-    best = 0
+def shortest_run_at_least(nums: list[int], target: int) -> int:
+    """Length of the shortest run summing to >= target, or 0 if none.
+
+    Needs non-negative values, so growing a run never lowers its sum.
+    """
+    if target < 1:
+        raise ValueError("target must be at least 1")
+    shortest = len(nums) + 1  # longer than any run; 0 here would win every min
+    total = left = 0
+    for right in range(len(nums)):
+        total += nums[right]
+        # while, not if: after one drop the run may still reach the target,
+        # and a shorter run would be missed.
+        while total >= target:
+            shortest = min(shortest, right - left + 1)
+            total -= nums[left]
+            left += 1
+    return shortest if shortest <= len(nums) else 0
 ```
 
 ```typescript
-/** Length, in code points, of the longest run of `text` with no repeated character. */
-export function longestUniqueSubstring(text: string): number {
-  const chars = Array.from(text);
-  const counts = new Map<string, number>();
+/**
+ * Length of the shortest run summing to >= target, or 0 if none.
+ * Needs non-negative values, so growing a run never lowers its sum.
+ */
+export function shortestRunAtLeast(nums: number[], target: number): number {
+  if (!Number.isInteger(target) || target < 1) {
+    throw new RangeError('target must be at least 1');
+  }
+  let shortest = nums.length + 1; // longer than any run; 0 here would win every min
+  let total = 0;
   let left = 0;
-  let best = 0;
+  for (let right = 0; right < nums.length; right++) {
+    total += nums[right];
+    // while, not if: after one drop the run may still reach the target,
+    // and a shorter run would be missed.
+    while (total >= target) {
+      shortest = Math.min(shortest, right - left + 1);
+      total -= nums[left];
+      left++;
+    }
+  }
+  return shortest <= nums.length ? shortest : 0;
+}
 ```
 
-The map counts how many times each character appears between `left` and
-`right`. Keys whose count drops to 0 stay in it, so it ends up holding every
-character seen so far, which is still at most one per distinct character.
-Python's `for` over a string already yields whole characters, called code
-points, one per Unicode character. A JavaScript string
-is stored as 16-bit units, and many emoji take two of them, so indexing it
-directly would split one emoji into two meaningless halves. Worse, two
-different emoji such as 😀 and 😁 start with the same unit, and would count as
-a repeat. `Array.from(text)` splits by code point, so the TypeScript version
-sees the same characters the Python one does. One thing it doesn't do is join a
-base emoji with a skin-tone modifier: 👍🏽 is two code points, and counts as 2.
+The `target < 1` guard keeps the loop honest: with a target of 0, an empty window would already qualify and `left` would run past `right`. Recording the length happens inside the loop, before each drop, because the window is valid exactly then. At `right = 4` the loop runs twice, finding length 4 and then length 3; an `if` stops after the first and returns 4. The last function keeps counts instead of a sum.
 
 ```python
-    for right, char in enumerate(text):
-        counts[char] = counts.get(char, 0) + 1
-        while counts[char] > 1:
-            counts[text[left]] -= 1
+def longest_with_k_distinct(nums: list[int], k: int) -> int:
+    """Length of the longest run holding at most k different values."""
+    if k < 1:
+        raise ValueError("k must be at least 1")
+    counts: dict[int, int] = {}
+    left = best = 0
+    for right in range(len(nums)):
+        value = nums[right]
+        counts[value] = counts.get(value, 0) + 1
+        while len(counts) > k:
+            gone = nums[left]
+            counts[gone] -= 1
+            if counts[gone] == 0:
+                del counts[gone]  # a key left at 0 still counts as distinct
             left += 1
         best = max(best, right - left + 1)
     return best
 ```
 
 ```typescript
-  for (let right = 0; right < chars.length; right++) {
-    const char = chars[right];
-    counts.set(char, (counts.get(char) ?? 0) + 1);
-    while (counts.get(char)! > 1) {
-      counts.set(chars[left], counts.get(chars[left])! - 1);
+/** Length of the longest run holding at most `k` different values. */
+export function longestWithKDistinct(nums: number[], k: number): number {
+  if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be at least 1');
+  const counts = new Map<number, number>();
+  let left = 0;
+  let best = 0;
+  for (let right = 0; right < nums.length; right++) {
+    const value = nums[right];
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+    while (counts.size > k) {
+      const gone = nums[left];
+      const remaining = counts.get(gone)! - 1;
+      // A key left at 0 would still count as distinct.
+      if (remaining === 0) counts.delete(gone);
+      else counts.set(gone, remaining);
       left++;
     }
     best = Math.max(best, right - left + 1);
@@ -196,54 +182,17 @@ base emoji with a skin-tone modifier: 👍🏽 is two code points, and counts as
 }
 ```
 
-Each step adds the character at `right` to the counts, then repairs the window
-if that broke it. The repair is a `while`, not an `if`, because one dropped
-character may not be enough: in `"pwwkew"` at `right = 2`, the first drop
-removes `p`, which doesn't touch the duplicate `w`, and only the second drop
-removes the first `w`. With an `if`, `"pwwkew"` and `"abba"` give wrong
-lengths. The loop condition looks only at `counts[char]`, the character just added, because
-the window was valid before this step and the new character is the only thing
-that can have broken it. After the repair, `right - left + 1` is the size of a
-valid window ending at `right`, since both ends are included, and `best` keeps
-the largest.
+Here the window is checked after growing, so it's repaired and then measured, and `best` takes the length of a valid window. At `right = 4` a third distinct value, 3, arrives; dropping the 1 at index 1 leaves the map at three keys, and only dropping the 5 as well, which removes its key, brings it back to 2.
 
 ## Complexity
 
-`max_window_sum` takes O(n) time: the first window costs k additions and each of
-the n - k later steps costs one subtraction and one addition, so about n
-operations in all, and it uses O(1) extra space. The brute force adds up every
-window separately, (n - k + 1) × k additions, which for n = 1,000,000 and
-k = 1,000 is about a billion. The sliding version does about a million.
-
-`longest_unique_substring` takes O(n) time: `right` moves n times, and the
-inner `while` loop runs in total at most n times across the whole scan, since
-`left` only moves forward and can't pass `right`. Map operations are O(1) on
-average (see [Hash Map](/dsa/hash-map)). Space is O(min(n, a)), where a is the
-number of distinct characters possible: the map keeps a key for every
-character seen so far, and there can't be more of those than there are
-positions in the text or distinct characters that exist.
-Checking every substring directly is O(n²) substrings, each needing its own
-duplicate check.
+All three take O(n) time. The brute force adds up every window separately, (n - k + 1) × k additions: about a billion for n = 1,000,000 and k = 1,000, against about a million here.
+Space is O(1) for the two sums, and O(k) for the map, which holds at most k + 1 keys at its peak.
 
 ## Pitfalls
 
-- **Dropping the wrong value from a fixed window.** The value leaving is
-  `nums[right - k]`. An off-by-one here still produces plausible numbers, so
-  check a small case by hand, like the table above.
-- **`if` instead of `while` when shrinking.** One drop may not restore the
-  window, as the `"pwwkew"` walkthrough shows. Shrinking until the condition
-  holds needs a loop.
-- **Starting `best` at 0 for sums.** All-negative input has a negative answer.
-  Start from the first window's value, or from negative infinity.
-- **Reading the input by UTF-16 units in JavaScript or TypeScript.** `text[i]`
-  and `text.length` count 16-bit units, so emoji and rarer characters are split
-  or double-counted. Convert with `Array.from(text)` first, and expect a
-  character built from several code points (an emoji with a skin tone) to count
-  as several.
-- **Applying it when the condition isn't one-way.** If growing the window can
-  both fix and break the condition, as with a sum target over numbers that can
-  be negative, moving `left` forward can skip the answer. Use prefix sums
-  instead.
-- **Forgetting the empty and too-short inputs.** An empty string has a longest
-  run of 0, and an array shorter than `k` has no window at all. Both need an
-  explicit answer rather than reading past the end.
+- **Dropping the wrong value from a fixed window.** The leaver is `nums[right - k]`. Writing `right - k + 1` removes a value still inside the window, and the sum drifts by one element per step, with plausible numbers and no error.
+- **`if` instead of `while` when shrinking.** One drop may not repair the window, or may leave it still valid with a shorter answer ahead. On our array the `if` version of `shortest_run_at_least` returns 4, not 3.
+- **Starting `best` or `shortest` at the wrong value.** `best = 0` fails on all-negative sums, and `shortest = 0` wins every `min`. Start from the first window, or from a length no run can reach.
+- **Leaving a count at 0 in the map.** In `longest_with_k_distinct`, a key stuck at 0 still counts toward `len(counts)`, so the window shrinks too far, or the loop runs `left` off the end of the array (in TypeScript it loops forever). Delete the key when its count hits 0.
+- **Using it when the condition isn't one-way.** With negative numbers, "the sum equals a target" can come true, then false, then true again as the window grows, so there's no telling which end to move. "Sum equals a target" is a job for [prefix sums](/dsa/prefix-sums) and a hash map; "shortest run reaching a target" needs prefix sums and a deque, as in [monotonic stack](/dsa/monotonic-stack).

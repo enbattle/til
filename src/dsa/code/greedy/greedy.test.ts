@@ -212,7 +212,7 @@ describe('canReachEnd (TypeScript)', () => {
   });
 });
 
-/** The true minimum, trying every coin at every step. */
+/** The true minimum by trying every coin at every step, memoized by amount. */
 function fewestCoins(coins: number[], amount: number): number | null {
   const memo = new Map<number, number | null>();
   const go = (left: number): number | null => {
@@ -278,5 +278,43 @@ describe('greedyCoinCount (TypeScript)', () => {
       if (greedy! > best) worse++;
     }
     expect(worse, 'seed 3: greedy never lost in 50 trials').toBeGreaterThan(0);
+  });
+});
+
+/** An array whose elements are counted each time they are read by index. */
+function counting(items: number[]) {
+  const stats = { reads: 0 };
+  const proxy = new Proxy(items, {
+    get(target, key, receiver) {
+      if (typeof key === 'string' && /^\d+$/.test(key)) stats.reads++;
+      return Reflect.get(target, key, receiver);
+    },
+  });
+  return { proxy, stats };
+}
+
+describe('the greedy passes (TypeScript)', () => {
+  it('canReachEnd reads each index once and stops at a gap', () => {
+    const long = counting(Array(50).fill(2));
+    expect(canReachEnd(long.proxy)).toBe(true);
+    expect(long.stats.reads).toBe(50);
+    const gap = counting([1, 0, 9, 9, 9, 9]);
+    expect(canReachEnd(gap.proxy)).toBe(false);
+    expect(gap.stats.reads).toBe(2); // sees the gap at index 2 before reading it
+  });
+
+  it('canReachEnd work does not grow with the size of the jumps', () => {
+    // Marking every index each position reaches takes n * n steps here.
+    const n = 100_000;
+    const start = performance.now();
+    expect(canReachEnd(Array(n).fill(n))).toBe(true);
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+
+  it('handles long inputs', () => {
+    expect(canReachEnd(Array(1_000_000).fill(1))).toBe(true);
+    expect(canReachEnd([...Array(999_999).fill(1), 0, 0])).toBe(false);
+    const given: Interval[] = Array.from({ length: 200_000 }, (_, i) => [i, i + 2]);
+    expect(selectIntervals(given)).toHaveLength(100_000);
   });
 });
