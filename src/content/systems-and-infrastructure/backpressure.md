@@ -1,80 +1,98 @@
 ---
 title: Backpressure
-summary: A mechanism for a slow consumer to tell a fast producer to slow down, instead of letting unconsumed work pile up without limit.
+summary: When a consumer can't keep up with a producer, the fix is to make the producer wait or shed work on purpose, because an unbounded buffer only delays the crash.
 date: 2026-09-15
 ---
 
-**Backpressure** is a mechanism for a slower consumer to signal a faster
-producer to slow down, rather than letting the work it can't keep up
-with pile up without limit. Without it, a producer that's faster than
-its consumer just keeps handing off work — into a
-[queue](/systems-and-infrastructure/message-queues), a buffer, a
-socket — that grows unboundedly until something breaks: memory runs
-out, or the whole system slows to a crawl trying to manage a backlog
-that never stops growing.
+Say you run a service that exports a customer's order history. It reads rows
+from a database and streams them to a browser. The database can hand over a
+million rows a second. The customer's hotel Wi-Fi can carry a hundredth of
+that. What happens to the other 99% of the rows?
 
-## The problem: a producer that outpaces its consumer
+If the code reads as fast as the database allows and drops each row into an
+output buffer with no size limit, they pile up in memory. The buffer grows for
+as long as the mismatch lasts, holding more and more rows that haven't reached
+the browser. Nothing is broken: the reader and the sender are each doing
+exactly what they were told. But the process eventually runs out of memory, or
+spends so long managing the backlog that everything else on it slows down.
 
-Picture a service reading rows from a database and streaming them to a
-client over a slow network connection. If the code just reads as fast as
-the database can supply rows and pushes them into an output buffer with
-no limit on its size, and the network can only carry a fraction of that
-rate, the buffer keeps growing for as long as the mismatch lasts —
-holding more and more rows in memory that haven't actually reached the
-client yet. Nothing here is technically broken; the producer (the
-database read) and the consumer (the network send) are each doing
-exactly what they were asked to do. The problem is that nothing is
-telling the faster side to wait for the slower one.
+The problem is that nothing tells the fast side to wait for the slow side. A
+mechanism that does is called **backpressure**: the slower stage (the
+**consumer**, here the sender to the browser) signals back upstream to the
+faster one (the **producer**, here the database read), so the whole pipeline runs at the speed of its slowest part.
 
-## The two things backpressure can actually do: block or drop
+## What can you do when the buffer fills?
 
-There are really only two honest responses once a producer is
-outpacing its consumer:
+First, put a limit on it. A **bounded buffer** holds at most some fixed number
+of rows, say 1,000. Once it is full, you have two real options, plus the one
+people fall into by default:
 
-- **Apply real backpressure** — block or slow the producer until the
-  consumer has caught up enough to accept more. This is backpressure in
-  the literal sense: pressure pushed back upstream, keeping the whole
-  pipeline running at the speed of its slowest stage.
-- **Shed load** — when blocking the producer isn't acceptable (a
-  real-time system that can't afford to stall), deliberately drop or
-  reject excess work once a buffer fills, rather than letting it grow
-  without bound. This is a stated, deliberate tradeoff — accepting that
-  some work won't be handled — not a bug.
+- **Block the producer.** The database read pauses until the sender has made
+  room. No row is lost and memory stays flat, but the producer is stalled
+  while it waits. For an export, that is exactly what you want.
+- **Shed load.** Drop or reject the excess on purpose. This suits a system
+  that can't afford to stall, such as a live dashboard where a stale row is
+  worthless by the time it arrives: drop the oldest rows.
+  Some work goes unhandled, and you accepted that in advance.
+- **Let it grow.** This is the unbounded buffer from the start of the page. It
+  isn't a third strategy, only the first two with the decision postponed until
+  the machine makes it for you, at the worst moment.
 
-Silently letting the buffer grow forever is the one option that isn't
-actually a choice — it just delays the failure and makes it worse when
-it finally arrives.
+How do you choose between blocking and shedding? Ask whether the work is still
+worth doing late. An export is, so block. A cursor position or a price tick
+usually isn't, so drop it and send the newest value.
 
-## A concrete mechanism: bounded buffers and a stop signal
+## How does the producer find out?
 
-The most familiar example of true backpressure is one almost every
-networked application already relies on without thinking about it: TCP's
-own flow-control window. A sender only transmits as much data as the
-receiver has already said it currently has room to buffer — the receiver
-communicates its available buffer space back to the sender with every
-ACK as data flows, and the sender throttles itself accordingly, entirely
-below the application layer. Neither side has to poll the other; the signal is
-built into the protocol itself.
+Someone has to say "wait" without the producer polling for it. You already
+rely on one such signal, in TCP. A receiver tells the sender how much buffer
+space it has left (the **receive window**) in every acknowledgement, and the
+sender never has more unacknowledged data in flight than that. When the
+receiving application reads slowly, the window shrinks to zero and the sender
+stops. When the network itself is the slow part, as with hotel Wi-Fi, TCP's
+congestion control limits the sender instead, paced by acknowledgements (the
+receiver's "got it" replies) that arrive slowly. Either way the socket's send
+buffer fills and your export service's write stops accepting data: the slow
+connection has travelled back to your process.
 
-The same idea shows up explicitly at the application layer in reactive
-streaming systems, where a consumer doesn't just passively receive
-whatever a producer sends — it explicitly requests a specific number of
-items it's currently ready to handle, and the producer sends no more
-than that until asked for more. It's the same mechanism as TCP's flow
-control, just made visible as something application code participates
-in directly instead of getting it for free from the network stack.
+Your code needs a way to hear that signal, and most streaming libraries have
+one. In Node.js, `write()` on a stream returns `false` once its internal
+buffer passes a threshold, and the producer is meant to wait for a `drain`
+event before writing again. Reactive streaming libraries make the same idea
+explicit: the consumer asks for a specific number of items ("send me 100"),
+and the producer sends no more until asked again. It is TCP's window, applied
+to your own code.
+
+The usual way to get backpressure wrong is to cut the chain. If your service
+copies each row into an unbounded in-memory queue, or hands each one to its own
+background task, the signal stops at that queue and the producer never feels
+it. Every hop between producer and consumer needs a bound, or the one without
+a bound is where the pile forms.
+
+Can the same idea work between separate services, where there is no shared
+protocol? Yes, though you build it yourself. A bounded
+[queue](/systems-and-infrastructure/message-queues) between two services makes
+a full queue the signal, and the sender sees it as a rejected or delayed
+enqueue. Capping how much work each caller may submit
+([rate limiting](/systems-and-infrastructure/rate-limiting)) pushes the limit
+back to the edge, and a fixed set of
+[workers](/systems-and-infrastructure/worker-pools) pulling jobs from a queue
+bounds how much runs at once.
+
+**Rule of thumb.** Put a bound on every buffer between a fast stage and a slow
+one, and decide in advance what happens when it fills: block the producer if
+the work is still worth doing late, drop it if it isn't.
 
 ## Where you'll meet this
 
 A chat server meets this once per connected client: a phone on a weak
 connection drains its outbound buffer more slowly than a busy group
-conversation fills it, so the server has to choose between waiting,
-dropping, or disconnecting that one client instead of holding an
-ever-growing pile of messages in memory for it. A notification or email
-pipeline has the same mismatch between stages: the step that expands one
-broadcast into thousands of per-recipient messages can enqueue far
-faster than the sending step can hand them to a mail provider. A bounded
-queue between the two forces the fan-out to slow down, or to drop
-low-priority sends on purpose, rather than letting the backlog swell.
-A UI receiving updates faster than it can render, and a log shipper
-reading lines faster than the network carries them, have the same shape.
+conversation fills it, so the server has to choose between waiting, dropping,
+or disconnecting that one client instead of holding an ever-growing pile of
+messages in memory for it. A notification or email pipeline has the same
+mismatch between stages: the step that expands one broadcast into thousands of
+per-recipient messages can enqueue far faster than the sending step can hand
+them to a mail provider, so a bounded queue between the two forces the fan-out
+to slow down, or to drop low-priority sends on purpose. A news feed shows both
+choices on one screen: new posts are buffered behind a "new posts" button
+rather than dropped, while live like and view counts keep only the newest value.

@@ -13,6 +13,8 @@ export const REDIRECTS: Readonly<Record<string, string>> = {
     'coding-agents/keeping-ai-native-docs-from-going-stale',
   'ai-and-ml/triaging-ai-code-review': 'coding-agents/triaging-ai-code-review',
   'security/session-vs-token-auth': 'security/jwt',
+  'systems-and-infrastructure/dead-letter-queue':
+    'systems-and-infrastructure/message-queues',
 };
 
 /** The current path (`/section/slug`) for an old one, if it was redirected. */

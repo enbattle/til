@@ -1,74 +1,111 @@
 ---
 title: Saga Pattern
-summary: Replacing a distributed transaction with a sequence of local steps, each with a compensating action to undo it if a later step fails.
+summary: Splitting an operation across services into local steps, each paired with a compensating step that undoes it if a later step fails.
 date: 2026-09-15
 ---
 
-A **saga** coordinates a business operation that spans multiple services
-— each with its own database — as a sequence of local transactions,
-each with a defined **compensating transaction** that undoes it if a
-later step fails. There's no distributed transaction wrapping the whole
-operation; instead, correctness comes from always having a way to unwind
-whatever has already happened.
+You are building checkout for a shop. A customer buys a laptop, and three
+services have to agree: **inventory** sets one laptop aside, **payments**
+charges the card, and **shipping** books a courier. Each service owns its own
+database. What happens if the card is declined after the laptop is already set
+aside?
 
-## Why a single-database transaction's guarantee disappears across services
+Inside a single database the answer is free. You wrap the work in a
+**transaction**, which commits everything or nothing, and a failure rolls all of
+it back. Across three services there is no such wrapper. Protocols that make
+several databases commit together, such as **two-phase commit** (every database
+first promises it can commit, then a coordinator tells them all to), make each
+database hold its locks until all of them agree. If the coordinator dies
+partway, those locks stay held and block every other order that touches the
+same rows. That is a cousin of the tension
+[CAP theorem](/systems-and-infrastructure/cap-theorem) describes between
+staying consistent and staying available.
 
-A transaction inside one database gives atomicity for free: either
-everything in it commits, or nothing does. Once an operation spans
-multiple services, each owning its own data, there's no shared
-transaction coordinator that can offer the same guarantee without an
-unacceptable cost to availability — a related tension to what
-[CAP theorem](/systems-and-infrastructure/cap-theorem) describes, and
-part of why coordinating a single transaction across multiple databases
-falls out of favor as a system grows. A saga accepts that intermediate
-states are real and briefly visible to the rest of the system, and
-designs explicitly for how to recover if a later step fails, rather than
-trying to prevent that visibility altogether.
+## What a saga does instead
 
-## A worked example: booking a trip
+A **saga** gives up on "all at once" and runs the operation as a sequence of
+**local transactions**, one per service, each committing on its own. Every step
+that changes something is paired with a **compensating transaction**, a second
+step that undoes the first one's business effect.
 
-A trip-booking saga might run: reserve a flight, then reserve a hotel,
-then charge the card. If charging the card fails after the flight and
-hotel are already reserved, the saga doesn't just give up — it runs
-compensating actions in reverse order: cancel the hotel reservation,
-then cancel the flight reservation. The end state is "nothing booked,
-nothing charged," reached deliberately through undo steps, rather than
-"two paid-for reservations with no successful booking to show for them,"
-which is what simply stopping at the point of failure would leave
-behind.
+For checkout, the pairs look like this:
 
-## Orchestration vs. choreography
+| Step               | Compensation            |
+| ------------------ | ----------------------- |
+| Reserve the laptop | Release the reservation |
+| Charge the card    | Refund the charge       |
+| Book the courier   | Cancel the booking      |
 
-Two ways to actually run the sequence of steps and compensations:
+If the courier booking fails, the saga runs the compensations for the steps that
+already succeeded, newest first: refund the card, then release the laptop. The
+order ends in "nothing reserved, nothing charged," reached on purpose. Stopping
+at the failure instead would leave a paid order with nothing shipping.
 
-- **Orchestration** — a central coordinator explicitly calls each step
-  in order and decides what to do if one fails. Easier to follow and
-  test, since the whole flow lives in one place, at the cost of adding a
-  new central component everything depends on. A
-  [workflow engine](/systems-and-infrastructure/workflow-engines) is
-  infrastructure built to run exactly this kind of coordinator.
-- **Choreography** — each service reacts to an event from the previous
-  step and emits its own event when it's done, with no central
-  coordinator at all. There's no single point of control, but the
-  overall flow becomes implicit: reconstructing "what happens when
-  payment fails" means tracing event handlers across every service
-  involved, rather than reading one place.
+## Compensation is not rollback
 
-## Living with partial state
+A rollback erases a change as if it never happened. A compensation is a new
+action that runs after the original one committed, so the original was real for
+a while. The laptop showed as unavailable to other shoppers. The customer saw a
+charge on their statement before the refund arrived. A saga is atomic in the end
+state, but it is not **isolated**: other requests can see the half-finished
+order in the middle. You design for that. Mark the order "pending" so a page
+doesn't show it as confirmed, and give reservations an expiry.
 
-Publishing each step's outcome reliably — so the next step, or a
-compensation, actually fires — is exactly the problem the
-[Outbox Pattern](/systems-and-infrastructure/outbox-pattern) solves;
-sagas are usually built on top of it, not as a replacement for it.
+This also suggests an ordering rule. Put steps that are hard or impossible to
+undo, such as sending an email or handing a parcel to a courier, last, after
+every step that can still fail. The reservation is cheap to release, so it goes
+first.
 
-A flight reserved with no hotel booked yet is a state someone else in
-the system can actually observe — the saga's job is to make sure there's
-always a way back out of it, not to pretend it never happens.
+## Who runs the steps?
+
+There are two ways to drive the sequence, and the choice is the main design
+decision.
+
+**Orchestration** puts one coordinator in charge. It calls inventory, then
+payments, then shipping, and on a failure it calls the compensations itself. The
+whole flow is readable in one place, and you can test it there. The cost is a
+central component that every order depends on. A
+[workflow engine](/systems-and-infrastructure/workflow-engines) is
+infrastructure built to be that coordinator, including remembering where an
+order stood if the coordinator crashes mid-way.
+
+**Choreography** has no coordinator. Inventory publishes "laptop reserved,"
+payments reacts to that and publishes "card charged," shipping reacts to that.
+A failure is another event: "payment failed" makes inventory release its
+reservation. There is no coordinator to break, but the flow now exists only as a
+pattern spread across handlers. To answer "what happens when payment fails?" you
+read every service.
+
+With two or three steps, choreography is pleasant. As the steps and branches
+multiply, the missing overview costs more, and orchestration usually wins.
+
+## Making the steps safe to retry
+
+Messages get delivered more than once and services crash between doing a step
+and confirming it was done, so each step and each compensation must be safe to run twice.
+Refunding the same charge twice must refund it once, which is the job of
+[idempotency](/systems-and-infrastructure/idempotency), usually done by sending
+a key built from the order's ID and the step's name with every call, so the
+refund isn't mistaken for a repeat of the charge. A step also has to commit its own database change
+and announce the result without losing one of the two; the
+[outbox pattern](/systems-and-infrastructure/outbox-pattern) exists for this, and
+sagas are usually built on top of it. Events that still can't be processed after
+retries are parked for a person to look at, as described in
+[message queues](/systems-and-infrastructure/message-queues).
+
+A compensation can itself fail. You can't give up on it, because the order would
+be stuck half undone, so you retry it, and if it keeps failing you park it for a person, as with any
+other stuck event. That is why you choose
+compensations that can always eventually succeed: a refund can, while "un-send
+this email" cannot.
+
+**Rule of thumb.** Use a saga when one business operation spans services that
+each own their data, and write the undo step for every step before you write
+the step. Prefer an ordinary transaction whenever the data lives in one database.
 
 ## Where you'll meet this
 
-Checkout, once it's split into services, is where a saga earns its keep. If
-the card is declined after stock has been reserved, a compensating step
-releases the stock; if something fails after the charge has gone through, the
-compensation is a refund, which is a new action with its own visible effects,
-not a rollback that erases the charge.
+In payments, a transfer between two ledgers kept in separate databases is a
+two-step saga: debit one account, credit the other, and if the credit fails,
+post a reversing credit to the first account rather than deleting the debit, so
+the ledger keeps a record of both.

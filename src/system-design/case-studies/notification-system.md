@@ -134,7 +134,7 @@ Why not retry a fixed five times, then dead-letter? Five doubling waits total
 dead-letter millions of messages.
 
 **Rule of thumb.** Retry until the message stops being useful, not for a fixed
-count, and keep the [dead-letter queue](/systems-and-infrastructure/dead-letter-queue)
+count, and keep the [dead-letter queue](/systems-and-infrastructure/message-queues#dead-letter-queues)
 for failures a person must read.
 
 ## Likely follow-ups
