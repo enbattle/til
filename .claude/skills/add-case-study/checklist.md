@@ -5,8 +5,8 @@ before Stage 2. Each item is a problem class that independent reviewers found
 repeatedly in the case studies so far. Each one cost a review round when
 missed.
 
-**Length.** At most 1,150 words of prose, not counting diagrams or code
-(docs/case-studies.md has the template; `case-study-structure.test.ts` counts
+**Length.** Within the word budget (docs/writing-standard.md), not counting
+diagrams or code (docs/case-studies.md has the template; `case-study-structure.test.ts` counts
 them). Most of the budget goes to the three decisions. When a draft runs long,
 cut an exception or a second alternative before cutting a decision's reason.
 
@@ -27,16 +27,13 @@ cut an exception or a second alternative before cutting a decision's reason.
    peaks, and requests separate from distinct items. Say what each figure
    sizes (the servers, the database, the cache): a bare "40,000 a second"
    leaves a reader asking 40,000 of what, hitting which part.
-3. **Decisions.** Each one names the choice, why in this design's numbers, the
-   one alternative a reader would suggest and why it loses here, and ends with
-   a `**Rule of thumb.**` paragraph stating the general rule. Pick the three
-   decisions that most shape the design; a fourth goes in follow-ups or is cut.
-   Don't re-teach a linked topic.
-4. **Diagrams fit the page.** The column is about 720 px and a diagram is
-   never scaled below 0.75, so every rendered SVG stays at or below 960 px
-   wide, target ~950 (`check:diagrams` fails on a wider width in
-   `public/diagrams/manifest.json`). Architecture diagrams have 8–11 nodes; if
-   the default layout is too wide, try
+3. **Decisions.** Each follows the decision template in docs/case-studies.md.
+   Pick the three decisions that most shape the design; a fourth goes in
+   follow-ups or is cut. Don't re-teach a linked topic.
+4. **Diagrams fit the page.** Every rendered SVG stays within the width
+   limit in docs/case-studies.md's diagrams rule (`check:diagrams` fails a
+   wider one). Architecture diagrams have 8–11 nodes; if the default layout is
+   too wide, try
    `vars: { d2-config: { layout-engine: elk } }`, merge nodes, or wrap labels.
    Sequence diagrams have at most 5–6 participants. Every component, edge and
    name matches the prose and the alt text exactly. A diagram costs no words,

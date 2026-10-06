@@ -40,8 +40,8 @@ deletes the old entries and their code folders in the same change and repoints
 every `/dsa/<old-slug>` link (`git grep -n "/dsa/<old-slug>"`). Treat the old
 text and code as research notes, not a draft to trim.
 
-`npm run test:py` needs Python 3.11+ with pytest. If it isn't installed, say
-so and give the install command from docs/dsa.md; don't finish an entry whose
+`npm run test:py` needs Python and pytest (docs/dsa.md has the version). If
+they aren't installed, say so and give the install command from docs/dsa.md; don't finish an entry whose
 Python tests never ran.
 
 ## Stage 1 — Draft the code, its tests, then the entry
@@ -53,7 +53,7 @@ Read the Writing Standard's "Case studies and DSA entries" section too: it
 sets the five-minute budget and the voice.
 
 1. **Code.** `src/dsa/code/<slug>/<slug_underscored>.py` (stdlib only, type
-   hints, Python 3.11+) and `<slug>.ts` (no imports, exported API). Each is
+   hints) and `<slug>.ts` (no imports, exported API). Each is
    idiomatic in its own language, not a line-by-line transliteration of the
    other, but the APIs match in shape. Keep lines under 90 characters. One
    core implementation, about 30–60 lines per language without comments, with
@@ -76,25 +76,20 @@ sets the five-minute budget and the voice.
 3. **Entry.** `src/dsa/entries/<slug>.md`, slug kebab-case. Frontmatter
    `title`, a one-sentence `summary`, `date` (today), `kind`, and no
    other key. The `##`
-   headings are the kind's template from docs/dsa.md, exactly. Then:
-   - **Prerequisites** links only the entries the prose really needs
-     (`[Hash map](/dsa/hash-map)`), each with a phrase saying what it's needed
-     for; with none, say so and name the basics assumed. Link only entries
-     that exist (`ls src/dsa/entries/`) or, in batch mode, a batch-mate.
+   headings are the kind's template from docs/dsa.md, exactly; use that
+   template for what each section holds. Then:
+   - **Prerequisites**: follow docs/dsa.md's "Prerequisites and order" (what
+     each link must say), linking only entries that exist
+     (`ls src/dsa/entries/`) or, in batch mode, a batch-mate.
    - **Code chunks** are copied from the finished code files, in file order,
-     as pairs: a ` ```python ` fence directly followed by a ` ```typescript `
-     fence. Every non-blank line of each file appears once, in order.
-   - **Walkthrough** (pattern, algorithm): at least two pairs, each followed
-     by one to three sentences that connect it to the next step. The code's
-     comments already say why each tricky line is written that way (`<` for
-     `<=`, `mid + 1` for `mid`), so the prose doesn't repeat them.
-     **Implementation** (data structure) does the same.
-   - **When to use it** lists the signals in a problem statement that point
-     here; **Pitfalls** names two to four real mistakes, each tied to a line.
+     as pairs (docs/dsa.md, "Code pairs and the code files").
+   - **Walkthrough** and **Implementation**: the code's comments already say
+     why each tricky line is written that way (`<` for `<=`, `mid + 1` for
+     `mid`), so the prose doesn't repeat them.
    - Carry one small concrete example through the entry (a table of pointer
      positions, the buckets after three inserts) and recompute it before
      moving on.
-   - **Budget**: at most 1,150 words of prose, code not counted. Run
+   - **Budget**: the word budget (docs/writing-standard.md), code not counted. Run
      `npx vitest run src/dsa/dsa-structure.test.ts` rather than estimating:
      it fails, naming the count, when the prose is over budget.
    - **Complexity** and **Operations and costs** give time and space with the

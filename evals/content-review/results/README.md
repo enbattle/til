@@ -19,44 +19,37 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-01 | Pastebin and Prefix Sums fixture fixes                     | 6    | 0    | 0         | CS-* and DS-*.                                                             |
 | 2026-10-02 | DSA tab completed (39 new entries), batch-mode edits       | 3    | 0    | 0         | DS-* only; Prefix Sums now exists, so it was excluded from existing items. |
 | 2026-10-05 | Five-minute content standard; CS and DS fixtures rewritten | 12   | 0    | 0         | All scenarios, CS-04 new; CS-03 and CS-04 re-run after a base fix.         |
+| 2026-10-06 | Stage 3 now points at every Writing Standard bullet        | 12   | 0    | 0         | Full run; controls drew only true findings.                                |
 
-## Latest run: 2026-10-05, five-minute content standard
+## Latest run: 2026-10-06, Writing Standard bullets made canonical
 
-**Follow-up run, same day: CS-01 to CS-04, 4/4 PASS.** The trigger was the user's
-pilot feedback that Key numbers didn't say where each figure lands. The rule
-went into docs/case-studies.md, the add-case-study checklist and SKILL.md, and
-the CS base gained the opening sentence and part-named leads. Every planted
-problem was caught and ranked first. The CS-03 control drew no false finding.
-Three of the four reviews flagged the same real gap in the base: the
-create-flooding answer limited requests while storage is what shapes the
-design. The base now caps bytes per address, and the summary no longer says
-"unguessable". Those last edits were not re-reviewed.
+- **Run by:** Claude (the orchestrating session).
+  - A builder agent assembled each scenario's packet in a shuffled, neutrally named folder: the draft files, plus the Stage 3 instruction read fresh from `docs/content-review.md` with its checklist filled.
+  - One fresh `general-purpose` reviewer per packet.
+- **Trigger:** branch docs/dedupe-canonical-facts.
+  - Stage 3's re-listed Writing Standard questions were replaced with "hold it to every bullet of docs/writing-standard.md, including its 'Case studies and DSA entries' section".
+  - The word budget's canonical home moved into the Writing Standard.
+  - Template rules moved from the content skills' checklists into docs/case-studies.md and docs/dsa.md.
+- **Scope:** all scenarios, since the shared instruction changed.
 
-### First run
+| ID    | Planted violation                         | Caught?                                                                    | Grade |
+| ----- | ----------------------------------------- | -------------------------------------------------------------------------- | ----- |
+| CR-01 | "hash function" never defined             | Yes: named "hash function" and "bit array" as used before definition       | PASS  |
+| CR-02 | AI-patterned tone                         | Yes: the "not just X — it's Y" closer, stacked intensifiers, bullet rhythm | PASS  |
+| CR-03 | over-explained figurative phrase          | Yes: its top finding, plus the paragraph's self-contradiction              | PASS  |
+| CR-04 | temperature 0 called fully deterministic  | Yes: blocking, with the floating-point and batching reasons                | PASS  |
+| CR-05 | none (control)                            | Three true Lows (a heading restated, the PEP 440 framing, summary tension) | PASS  |
+| CS-01 | read rate ten times too high              | Yes: High, recomputed as 116 a second and 1,160 at peak                    | PASS  |
+| CS-02 | a decision that names no alternative      | Yes: High, the text-in-row alternative never answered                      | PASS  |
+| CS-03 | none (control)                            | Two true Mediums (lifecycle-rule question, per-address cap vs a botnet)    | PASS  |
+| CS-04 | "nobody can ever guess a valid link"      | Yes: High, against the page's own one-in-2.3-billion odds                  | PASS  |
+| DS-01 | TypeScript loop bound drops the last item | Yes: blocking, with the thin TypeScript tests that miss it                 | PASS  |
+| DS-02 | a walkthrough paragraph that narrates     | Yes: its top finding, including the broken hand-off                        | PASS  |
+| DS-03 | none (control)                            | Five true Lows (subarray undefined, XOR, a transliteration judgment call)  | PASS  |
 
-Run by: self
-Trigger: branch `docs/digestible-content`. The Writing Standard gained a "Case studies and DSA entries" section (five-minute budget, enough to reason, one rejected alternative per decision, a rule of thumb, a lecturer's voice, comments that carry the why); `docs/content-review.md`'s Stage 3 instruction gained a sentence holding case studies and DSA entries to it; `add-case-study`'s checklist and Stage 3 checklist and `add-dsa-entry`'s Stage 3 checklist changed. Scope: all scenarios, since the Writing Standard and the shared Stage 3 instruction both changed.
-Fixture changes: the CS-* base was rewritten to the five-minute template (three `Decision:` sections, about 1,140 words of prose); CS-02 became "a decision that names no alternative"; CS-04, "a compression overclaim", is new. The DS-* base now carries why-comments in both code files, a counting function, two walkthrough pairs and about 1,000 words of prose. Reviews ran from neutral folder names with the scenario key kept outside them.
+**Notes:**
 
-| ID    | Planted violation                                       | Caught?                                                                                                | Grade |
-| ----- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----- |
-| CR-01 | Undefined jargon (bloom filters)                        | Yes: hash function, bit array and false positive used before defined, ranked second                    | PASS  |
-| CR-02 | AI-patterned tone (feature flags)                       | Yes: the "not just X — it's Y" crutch, the "real power" closer and stacked intensifiers, ranked first  | PASS  |
-| CR-03 | Over-explained figurative language (rubber duck)        | Yes: the paragraph defending the duck against a literal reading, ranked first                          | PASS  |
-| CR-04 | False technical claim (temperature 0 is deterministic)  | Yes: batching, floating-point and provider behavior, ranked first as a blocker                         | PASS  |
-| CR-05 | None (control, semantic versioning)                     | No defect; four Lows, all true of the text; it applied the new section to case studies and DSA only    | PASS  |
-| CS-01 | Read rate off by ten                                    | Yes: 116 a second, not 1,160, ranked first                                                             | PASS  |
-| CS-02 | Storage decision names no alternative                   | Yes: "So why not keep the text in the row?" is never answered, ranked first                            | PASS  |
-| CS-03 | None (control)                                          | No false finding; true findings listed in the notes; re-run after the base fix, again no false finding | PASS  |
-| CS-04 | A follow-up says nobody can ever guess a link           | Yes: against the page's own odds, ranked first; re-run after the base fix, caught again                | PASS  |
-| DS-01 | TypeScript loop stops one short; weakened TS tests pass | Yes: `[0, 3, 4, 8, 9, 0]` and the ranges it breaks, plus why the TS tests miss it                      | PASS  |
-| DS-02 | The paragraph after `range_sum` narrates                | Yes: ranked first, naming that it repeats the code and drops the hand-off                              | PASS  |
-| DS-03 | None (control)                                          | No defect; three Lows, all true or defensible                                                          | PASS  |
-
-Notes:
-
-- _*Every CS-* review flagged the same real gap in the first base:_* the paste-ID decision rejected a plain counter instead of random IDs, the alternative a reader would actually suggest, and kept seven characters with no reason. That is the new "why not the obvious alternative" check working on the control, so the base was fixed (ten random characters; the shortener's seven is now the rejected alternative), and CS-03 and CS-04 were re-run.
-- **Both re-runs found a defect the fix introduced:** writing the text before a conditional row insert lets a clash overwrite a live paste. The base now writes the text with a conditional put. Three smaller fixes went in with it: the botnet cap now leads its follow-up, the rule of thumb no longer reads "rather than secrets", and the expiry requirement says "by the next daily cleanup". These last edits were not re-reviewed.
-- **Open on the CS-03 control:** "why a cache at all, when the miss path meets 500 ms?" was raised once and left as a true observation, since the budget is nearly spent.
-- _*Open on the DS-* base:_* "only works when every value is positive" was called slightly strong by two reviews and defensible by a third. Counting exact sums with zeros present does break a plain window, so it was left as is.
-- **Reviewer arithmetic slip, not graded:** the CS-04 re-run computed the ten-character botnet figure as 96 hours rather than about 2,300 hours. It doesn't affect the grade, because the planted overclaim is what it caught.
+- The shorter instruction ("every bullet") lost no coverage. Every planted kind was named as the most severe, or near-most severe, finding.
+- Each control drew only findings that are true of the draft.
+- **CS-03 drew two real Mediums.** The lifecycle-rule question and the per-address cap against a botnet are genuine gaps in the base draft, not fabrications. Consider tightening the base so the control stays quiet.
+- **CR-05 and DS-03** both drew "subarray"- and "PEP 440"-style definition gaps that are true of the text.

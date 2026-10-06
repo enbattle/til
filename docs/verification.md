@@ -58,7 +58,7 @@ needs to show mojibake as an example would need an exemption there.
 
 `npm run test:py` (`scripts/test-python.mjs`) runs pytest over the DSA
 entries' Python code in `src/dsa/code`, and fails with install instructions
-when there's no Python 3.11+ or no pytest. [docs/dsa.md](dsa.md) has how it
+when there's no suitable Python or no pytest. [docs/dsa.md](dsa.md) has how it
 finds Python, what to install and how it pins pytest's config and import
 path; CI and the deploy install both with `actions/setup-python` before
 `verify`. It runs with bytecode and pytest's cache off, so it leaves no `__pycache__` or
@@ -127,8 +127,7 @@ read), `src/lib/markdown.d.mts` is used by tsc rather than imported, and
 `npm run check:diagrams` needs no d2: it proves the committed SVGs match their
 `.d2` sources and their own recorded bytes (the source and SVG hashes in
 `public/diagrams/manifest.json`), that no diagram's recorded width exceeds
-960 px (`MAX_WIDTH`, the width that still scales to 0.75 in the ~720 px
-column), that the `--color-*` tokens recorded there
+`MAX_WIDTH` (the limit and why are in [case-studies.md](case-studies.md)), that the `--color-*` tokens recorded there
 under `$tokens` still match `src/index.css` (its one top-level `:root` and one
 `.dark` block; `check:contrast` and `check:tokens` read them through the same
 `readThemeTokens` in `scripts/css-tokens.mjs`, which fails loudly on a second

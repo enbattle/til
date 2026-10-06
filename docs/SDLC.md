@@ -88,7 +88,7 @@ retrospective.
    has a rendered surface. Before any fix comes finding triage (below);
    the ones worth fixing go back for a fix (with a fresh test-writer's
    failing test first, where the finding could recur), then back for
-   re-review, capped at two rounds so a stuck loop surfaces to a human
+   re-review, capped (`/feature` Stage 4a) so a stuck loop surfaces to a human
    instead of running forever.
 5. **Final gate.** Every check green on the actual final diff, summarized
    for the user, who decides whether and when to commit and push. No stage

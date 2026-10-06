@@ -17,12 +17,11 @@ sections, and the whole thing is deployed as a static site.
   and collapse independently as you move between them (see
   [docs/DESIGN.md](docs/DESIGN.md)).
 - **System Design** — a second tab of worked design case studies ("design a
-  URL shortener"), each a five-minute read: requirements, the key numbers,
-  the architecture, the API and data model, three decisions (each with a
-  "why not" for the rejected alternative and a rule of thumb) and the likely
-  follow-up questions. Each links into the catalog topics it uses, and each
-  of those topics links back. Diagrams are written in [D2](https://d2lang.com)
-  and rendered at build time to static SVGs in the site's own colors, one per theme.
+  URL shortener"), each a five-minute read following one template
+  ([docs/case-studies.md](docs/case-studies.md)). Each links into the catalog
+  topics it uses, and each of those topics links back. Diagrams are written in
+  [D2](https://d2lang.com) and rendered at build time to static SVGs in the
+  site's own colors, one per theme.
 - **DSA** — a third tab of data structures, patterns and algorithms at
   interview depth, grouped by those three kinds, with each group listed so
   that an entry comes after the ones in it that it builds on. Every code example is shown in Python and TypeScript (one switch sets
@@ -49,14 +48,9 @@ npm run dev
 ```
 
 Then open the printed `localhost` URL. The supported Node versions are
-`engines` in `package.json`. `npm run verify` also runs the DSA entries'
-Python tests, which need Python 3.11+ (the workflows in `.github/workflows/` pin the version CI uses) with pytest installed.
-`npm run test:run` needs Python and pytest too, since
-`scripts/python-wiring.test.mjs` runs the real pytest runner:
-
-```bash
-python -m pip install -r requirements-dev.txt   # on Windows: py -m pip install -r requirements-dev.txt
-```
+`engines` in `package.json`. `npm run verify` and `npm run test:run` also need
+Python and pytest for the DSA entries' tests; [docs/dsa.md](docs/dsa.md) has
+the version and the install command.
 
 ## Commands
 
@@ -65,7 +59,7 @@ npm run dev             # Start the dev server
 npm run build            # Type-check + production build → dist/
 npm run preview          # Preview the production build locally
 npm run test              # Vitest, watch mode
-npm run test:run          # Vitest, run once; needs Python 3.11+ and pytest too
+npm run test:run          # Vitest, run once; needs Python and pytest too
 npm run test:py           # pytest over the DSA entries' Python code
 npm run format            # Prettier write
 npm run diagrams          # Render the .d2 sources to SVGs (needs d2 v0.9.x)
@@ -115,4 +109,4 @@ Features and nontrivial app changes go through a spec → TDD →
 implementation (+ docs) → adversarial review (code + UI) pipeline — see
 [docs/SDLC.md](docs/SDLC.md). Adding a topic, a System Design case study or a
 DSA entry gets a lighter, separate process instead (draft → an independent
-review, at most two rounds) — see [docs/content-review.md](docs/content-review.md).
+review, with a capped fix loop) — see [docs/content-review.md](docs/content-review.md).

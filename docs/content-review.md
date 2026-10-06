@@ -26,18 +26,9 @@ replace a checklist item that doesn't apply to this draft with "none"):
 > Review this new <kind> adversarially against the Writing Standard and the
 > checklist below; assume nothing about it is fine until you've checked it
 > yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line there
-> is always a real finding. Writing Standard: check every bullet of
-> docs/writing-standard.md: are terms defined before they're used, would a
-> reader with zero prior background follow it, does it use concrete worked
-> examples rather than staying abstract, is the frontmatter `summary` one
-> scannable sentence, does the prose read as something a knowledgeable person
-> wrote rather than generically AI-patterned, is any figurative phrase
-> over-explained, and is every substantive technical claim actually true
-> rather than confidently stated. A case study or DSA entry is also held to
-> the standard's "Case studies and DSA entries" section: would a reader
-> finish it, could they defend its main choice and guess at a question it
-> never asked, and does it spend words on an edge case that changes nothing.
-> Checklist: <checklist> Also check it isn't a
+> is always a real finding. Writing Standard: hold it to every bullet of
+> docs/writing-standard.md, including its "Case studies and DSA entries"
+> section. Checklist: <checklist> Also check it isn't a
 > near-duplicate of an existing <kind> (listed below). For each finding, quote
 > the text or code, or name a realistic input that breaks it; label anything
 > else "theoretical". Re-raise a decision listed below as already made only

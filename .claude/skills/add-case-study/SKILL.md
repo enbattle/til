@@ -47,22 +47,14 @@ the voice.
   a one-sentence `summary`, `date` (today), `order` (the next free
   positive integer; `ls src/system-design/case-studies/` and read the
   existing orders), and no other key.
-- **Headings**: the `##` heading template, with what each section holds, is
+- **Template**: use the `##` heading template, with what each section holds,
   in [docs/case-studies.md](../../../docs/case-studies.md) ("The template is
-  enforced"); `url-shortener.md` shows it.
-- **Requirements**: what it does (optional features marked), one line on
-  what's out of scope, and non-functional targets as numbers (scale, latency
-  percentile, availability).
-- **Key numbers**: open by saying what the numbers size, lead each figure
-  with the part it sizes, then worked arithmetic, one line per figure, every
-  figure following from a stated requirement or a stated assumption. Round sensibly
-  and say so. Recompute every line before moving on.
-- **Decisions**: the three that most shape the design, each with the
-  alternative a reader would suggest, why it loses in this design's numbers,
-  and a closing `**Rule of thumb.**`.
+  enforced"); `url-shortener.md` shows it. Recompute every key-numbers line
+  before moving on.
 - **Budget**: draft the decisions first, then fit the rest around them. Run
   `npx vitest run src/system-design/case-study-structure.test.ts` rather than
-  estimating: it fails, naming the count, when the prose is over 1,150 words.
+  estimating: it fails, naming the count, when the prose is over the word
+  budget (docs/writing-standard.md).
 - **Catalog links** go where the prose uses the concept, as
   `[text](/<section>/<slug>)` to a topic that exists
   (`ls src/content/*/`). Don't re-teach a topic's mechanism; say what it buys
@@ -72,10 +64,10 @@ the voice.
 - **Diagrams**: at least one in `High-level architecture`; add a
   `shape: sequence_diagram` diagram where a request flow is the point. One
   diagram per file at `src/system-design/diagrams/<slug>/<name>.d2`, sized by
-  checklist.md item 4 (nodes, participants, width), no colors (the theme comes from the tokens), laid out for the
-  ~720px content column. Run `npm run diagrams`, then look at the rendered
+  checklist.md item 4 (nodes, participants), no colors (the theme comes from the tokens), laid out for the
+  content column (width limit in docs/case-studies.md's diagrams rule). Run `npm run diagrams`, then look at the rendered
   `public/diagrams/<slug>/<name>.light.svg` and `.dark.svg` yourself (open
-  them in a browser, or screenshot them) at 720px wide: labels readable,
+  them in a browser, or screenshot them) at the column's width: labels readable,
   nothing overlapping, no huge empty areas. Rework the layout until they are.
   Reference each as an inline image,
   `![Alt text describing what the diagram shows](/diagrams/<slug>/<name>.svg)`;
@@ -129,8 +121,8 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   case study never edits or adds a catalog topic).
 - **Commit**: the `.md`, the `.d2` sources, the rendered SVGs and
   `public/diagrams/manifest.json`, with the log row.
-- **Batch mode**: each drafter stays within [checklist.md](checklist.md)'s
-  budget. A drafter's Stage 2 is `npm run diagrams`, `npm run check:diagrams`,
+- **Batch mode**: each drafter stays within the word budget
+  (docs/writing-standard.md). A drafter's Stage 2 is `npm run diagrams`, `npm run check:diagrams`,
   `npx vitest run src/system-design src/lib/system-design.test.ts`, and
   Prettier on its files. The integration step is `npm run diagrams`, run once for the batch
   ([docs/case-studies.md](../../../docs/case-studies.md) has the file rules).

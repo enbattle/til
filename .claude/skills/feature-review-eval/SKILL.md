@@ -1,6 +1,6 @@
 ---
 name: feature-review-eval
-description: Run this repo's feature-review eval — checks whether /feature's Stage 4 reviewer actually catches a deliberately planted defect in a diff (see evals/feature-review/scenarios.md for the current set) instead of rubber-stamping it, including a clean control it must not invent findings for. Use when asked to run/check the feature-review eval, after editing Stage 4's reviewer or finding-triage instruction in feature/SKILL.md or docs/NON_NEGOTIABLES.md, or after a defect escaped a /feature review (add a scenario for it first).
+description: Run this repo's feature-review eval — checks whether /feature's Stage 4 reviewer actually catches a deliberately planted defect in a diff (see evals/feature-review/scenarios.md for the current set) instead of rubber-stamping it, including a clean control it must not invent findings for. Use when asked to run/check the feature-review eval, after editing /feature's Stage 4 reviewer (evals/README.md's table lists every trigger), or after a defect escaped a /feature review (add a scenario for it first).
 ---
 
 # Feature-review eval
@@ -21,7 +21,10 @@ which.
 The diffs quote real code. If a file they touch has changed (the function
 moved, a quoted line is gone or reads differently), update the diff's context
 and hunk headers to the current code, keeping the same planted defect, before
-running: a drifted control is worse than none.
+running. A diff that still applies can drift too, when the code gains what it
+adds (FR-04 duplicated `reading-time.ts` once that landed): read each diff
+against the current code, not only `git apply --check`. A drifted control is
+worse than none.
 
 ## Stage 1 — Run each scenario, twice
 
