@@ -59,15 +59,6 @@
       "dark": "7cc0ee7936d973c63c10bf4b324d50fbd2363cb33e52140fd1e2a3a1277e66c7"
     }
   },
-  "llm-chat-serving/turn-sequence.d2": {
-    "sha256": "39560580b1dc5562a794c2345633ec7bed00b9de84cd7328e2d633d681a948fc",
-    "width": 942,
-    "height": 986,
-    "svgs": {
-      "light": "b73ac80af85d4958715e0b72e14df74390672a42dbbef20d35209b03ed859907",
-      "dark": "36e49ecfbc5413c912db95b82806d5f55e4257a1c28479d1762c89378cb929fd"
-    }
-  },
   "maps/architecture.d2": {
     "sha256": "f29e136739c107eac45ccb5a0a1a63eb7c4ba8c5aeab58807a60706a089946ba",
     "width": 902,
@@ -123,21 +114,12 @@
     }
   },
   "recommendation-system/architecture.d2": {
-    "sha256": "20fbc8b26e8b4769ba8c1e5a6fe1312df59b3306fd6c305b6ca943455cd70117",
-    "width": 780,
-    "height": 2160,
+    "sha256": "f8d81b4129aef1f394539ab6ba4a0bb348393f7e7b8ebe7624e5d888933e7e3a",
+    "width": 946,
+    "height": 2170,
     "svgs": {
-      "light": "00e71c313ad9039798dfea08518cd24b4fcdaf9d643c1a3e087e9e677610ffd7",
-      "dark": "eee36fb5b84da6e3b6eb3b40578edacc4c66144f50b5ca54d6c6f457b608f0fd"
-    }
-  },
-  "recommendation-system/serve-sequence.d2": {
-    "sha256": "911f54a42bec019285713d853c2a4168106702df9e524610f21de31d28488001",
-    "width": 828,
-    "height": 1558,
-    "svgs": {
-      "light": "87a885474fdeab549d96fea5f0ac2de096ae5e4ef49f5646ef7b70b5835c5324",
-      "dark": "fd5b0074eb2aadd48fc6090f0d7a2cee871ca67104ea110238e2f2cc4f0329f2"
+      "light": "6c1e8397d57dca6d091d078a6e4a6d08671ee41b17be608a418d15f1e9cb5f28",
+      "dark": "e2503d54da065d16a18e97b9e000c89c6c16438c4326dbf79b0984994c347e76"
     }
   },
   "ride-sharing/architecture.d2": {
@@ -156,15 +138,6 @@
     "svgs": {
       "light": "f48658063980de515188f9079f3d469a4b51c1fa399d0a079a01d890b2c2e12b",
       "dark": "9006614177a1bf6ec557b1fa00649c5624032eee07d7da58939239c4cfcae3bc"
-    }
-  },
-  "search-engine/query-sequence.d2": {
-    "sha256": "8c71e666988d96a683001ff9b1f19ccc249464d8ca7d524d0eacd6c858e82b32",
-    "width": 893,
-    "height": 1371,
-    "svgs": {
-      "light": "201539fdeee740f72710009cc83dfd2caa582a3b19fbc6c4a49d43737f3b85c1",
-      "dark": "c2308315ec25793579abdb15ee1499adf70bb8421df2011cace32f4571d4a6d2"
     }
   },
   "social-feed/architecture.d2": {
