@@ -4,7 +4,9 @@ import { TOPICS, loadAllTopicBodies } from './content';
 import { DSA_ENTRIES, loadAllDsaBodies } from './dsa';
 import { CASE_STUDIES, loadAllCaseStudyBodies } from './system-design';
 
-const FUSE_OPTIONS = {
+/** Exported so tests can ask whether a word fuzzy-matches the way the app's
+ * search does (src/test/content.ts `bodyOnlyWord`). */
+export const FUSE_OPTIONS = {
   keys: [
     { name: 'title', weight: 3 },
     { name: 'summary', weight: 2 },
