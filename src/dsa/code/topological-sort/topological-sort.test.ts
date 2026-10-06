@@ -1,219 +1,246 @@
 import { describe, expect, it } from 'vitest';
 import {
-  allVertices,
+  type Graph,
   courseOrder,
   topologicalSort,
   topologicalSortDfs,
-  type Graph,
 } from './topological-sort';
 
-const sorts = [topologicalSort, topologicalSortDfs];
+// The topological-sort entry's TypeScript code. API: `topologicalSort(adj)` is
+// Kahn's algorithm and `topologicalSortDfs(adj)` reverses a depth-first finishing
+// order; both return an order with every edge going forward, or null on a cycle.
+// `courseOrder(n, prerequisites)` takes [course, prerequisite] pairs. `adj[u]`
+// lists the vertices u points at.
 
-function graphOf(edges: Record<number, number[]>): Graph {
-  return new Map(Object.entries(edges).map(([key, targets]) => [Number(key), targets]));
-}
+const BOTH: [string, (adj: Graph) => number[] | null][] = [
+  ['topologicalSort', topologicalSort],
+  ['topologicalSortDfs', topologicalSortDfs],
+];
 
-function vertexSet(graph: Graph): number[] {
-  const all = new Set(graph.keys());
-  for (const targets of graph.values()) for (const t of targets) all.add(t);
-  return [...all].sort((a, b) => a - b);
-}
+// The entry's running example: 0 -> 1, 0 -> 2, 1 -> 3, 2 -> 3, 3 -> 4.
+const RUNNING: Graph = [[1, 2], [3], [3], [4], []];
+// The same with 4 -> 1 added, which closes the loop 1, 3, 4.
+const LOOPING: Graph = [[1, 2], [3], [3], [4], [1]];
 
-/** Every vertex exactly once, and every edge goes from earlier to later. */
-function isValid(graph: Graph, order: number[]): boolean {
-  if (
-    JSON.stringify([...order].sort((a, b) => a - b)) !== JSON.stringify(vertexSet(graph))
-  ) {
-    return false;
-  }
-  const position = new Map(order.map((vertex, i) => [vertex, i]));
-  for (const [u, targets] of graph) {
-    for (const v of targets) if (position.get(u)! >= position.get(v)!) return false;
-  }
-  return true;
-}
-
-function* permutations(items: number[]): Generator<number[]> {
-  if (items.length <= 1) {
-    yield items;
-    return;
-  }
-  for (let i = 0; i < items.length; i++) {
-    const rest = [...items.slice(0, i), ...items.slice(i + 1)];
-    for (const tail of permutations(rest)) yield [items[i], ...tail];
-  }
-}
-
-function someOrderExists(graph: Graph): boolean {
-  for (const p of permutations(vertexSet(graph))) if (isValid(graph, p)) return true;
-  return false;
-}
-
-function seededRandom(seed: number): () => number {
-  let state = seed;
+/** A small seeded generator (mulberry32), so a failing case can be replayed. */
+function seeded(seed: number): () => number {
+  let a = seed >>> 0;
   return () => {
-    state = (state * 1103515245 + 12345) % 2147483648;
-    return state / 2147483648;
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
-function randomGraph(random: () => number, acyclic: boolean): Graph {
-  const n = Math.floor(random() * 7);
-  const ranks = Array.from({ length: n }, (_, i) => i);
-  for (let i = n - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [ranks[i], ranks[j]] = [ranks[j], ranks[i]];
-  }
-  const graph: Graph = new Map();
-  for (let u = 0; u < n; u++) {
-    if (random() < 0.15) continue; // not a key: it can only appear as a target
-    const targets: number[] = [];
-    for (let v = 0; v < n; v++) {
-      if (random() < 0.3 && (!acyclic || ranks[u] < ranks[v])) targets.push(v);
-    }
-    graph.set(u, targets);
-  }
-  return graph;
+function directed(n: number, edges: [number, number][]): Graph {
+  const adj: Graph = Array.from({ length: n }, () => []);
+  for (const [u, v] of edges) adj[u].push(v);
+  return adj;
 }
 
-describe('topological sort (TypeScript)', () => {
-  it('handles the empty graph', () => {
-    for (const sort of sorts) expect(sort(new Map())).toEqual([]);
-  });
+function goesForward(adj: Graph, order: number[]): boolean {
+  const place = new Map(order.map((u, i) => [u, i]));
+  if (place.size !== adj.length || order.length !== adj.length) return false;
+  return adj.every((targets, u) => targets.every((v) => place.get(u)! < place.get(v)!));
+}
 
-  it('handles a single vertex and isolated vertices', () => {
-    for (const sort of sorts) {
-      expect(sort(graphOf({ 7: [] }))).toEqual([7]);
+/** Rows that count how many times each one is scanned, in one shared counter. */
+function counted(adj: Graph): { rows: Graph; scans: { n: number } } {
+  const scans = { n: 0 };
+  const rows = adj.map((row) => {
+    const copy = [...row];
+    Object.defineProperty(copy, Symbol.iterator, {
+      value: function* () {
+        scans.n++;
+        for (let i = 0; i < copy.length; i++) yield copy[i];
+      },
+    });
+    return copy;
+  });
+  return { rows, scans };
+}
+
+function existsOrder(adj: Graph): boolean {
+  const n = adj.length;
+  const used = new Array<boolean>(n).fill(false);
+  const order: number[] = [];
+  const search = (): boolean => {
+    if (order.length === n) return goesForward(adj, order);
+    for (let u = 0; u < n; u++) {
+      if (used[u]) continue;
+      used[u] = true;
+      order.push(u);
+      const found = search();
+      order.pop();
+      used[u] = false;
+      if (found) return true;
     }
-    // Reversing the finishing order also reverses the order of separate starts.
-    const isolated: Graph = new Map([
-      [3, []],
-      [1, []],
-      [2, []],
-    ]);
-    expect(topologicalSort(isolated)).toEqual([3, 1, 2]);
-    expect(topologicalSortDfs(isolated)).toEqual([2, 1, 3]);
+    return false;
+  };
+  return search();
+}
+
+describe.each(BOTH)('%s', (_name, sort) => {
+  it('handles the empty graph and one vertex', () => {
+    expect(sort([])).toEqual([]);
+    expect(sort([[]])).toEqual([0]);
   });
 
-  it('reports a self-loop as a cycle', () => {
-    for (const sort of sorts) {
-      expect(sort(graphOf({ 1: [1] }))).toBeNull();
-      expect(sort(graphOf({ 0: [], 1: [1] }))).toBeNull();
-    }
+  it('returns null on a cycle', () => {
+    expect(sort([[0]])).toBeNull(); // a self-loop
+    expect(sort([[1], [0]])).toBeNull();
+    expect(sort(LOOPING)).toBeNull();
+    // The loop is away from vertex 0 and not reachable from it, so a search that
+    // stopped after the first start or ignored later ones would miss it.
+    expect(sort([[], [2], [3], [1]])).toBeNull();
   });
 
-  it('reports a two-cycle and a cycle behind a valid start', () => {
-    for (const sort of sorts) {
-      expect(sort(graphOf({ 1: [2], 2: [1] }))).toBeNull();
-      expect(sort(graphOf({ 0: [1], 1: [2], 2: [3], 3: [1] }))).toBeNull();
-    }
+  it('handles duplicate edges and disconnected vertices', () => {
+    expect(sort([[1, 1], []])).toEqual([0, 1]);
+    const adj = [[1, 1], [], [3], []];
+    expect(goesForward(adj, sort(adj)!)).toBe(true);
+    expect([...sort([[], [], []])!].sort()).toEqual([0, 1, 2]);
   });
 
-  it('includes a vertex that appears only as a target', () => {
-    for (const sort of sorts) expect(sort(graphOf({ 1: [2] }))).toEqual([1, 2]);
-    expect(allVertices(graphOf({ 1: [2, 3], 4: [3, 5] }))).toEqual([1, 4, 2, 3, 5]);
-    expect(topologicalSort(graphOf({ 2: [9] }))).toEqual([2, 9]);
+  it('does not call a diamond a cycle', () => {
+    expect(sort([[1, 2], [3], [3], []])).not.toBeNull();
+  });
+});
+
+describe('exact orders', () => {
+  it('differ between the two methods on the running example', () => {
+    // The DFS method reverses the finish order 4, 3, 1, 2, 0.
+    expect(topologicalSort(RUNNING)).toEqual([0, 1, 2, 3, 4]);
+    expect(topologicalSortDfs(RUNNING)).toEqual([0, 2, 1, 3, 4]);
   });
 
-  it('does not report the diamond as a cycle', () => {
-    const graph = graphOf({ 0: [1, 2], 1: [3], 2: [3], 3: [] });
-    for (const sort of sorts) expect(isValid(graph, sort(graph)!)).toBe(true);
+  it('are first in first out for Kahn', () => {
+    // 0 readies 2 then 1. A queue takes 2 first; a stack or a lowest-first scan
+    // takes 1 first.
+    const adj = [[2, 1], [3], [3], []];
+    expect(topologicalSort(adj)).toEqual([0, 2, 1, 3]);
+    // The DFS method flips that tie: 1 finishes after 2, so it comes out earlier.
+    expect(topologicalSortDfs(adj)).toEqual([0, 1, 2, 3]);
   });
+});
 
-  it('tolerates duplicate edges', () => {
-    const graph = graphOf({ 0: [1, 1], 1: [2] });
-    for (const sort of sorts) expect(sort(graph)).toEqual([0, 1, 2]);
-  });
-
-  it('follows the documented tie rules exactly', () => {
-    const graph = graphOf({ 0: [2, 1], 1: [3], 2: [3], 3: [] });
-    expect(topologicalSort(graph)).toEqual([0, 2, 1, 3]);
-    expect(topologicalSortDfs(graph)).toEqual([0, 1, 2, 3]);
-    expect(isValid(graph, [0, 2, 1, 3]) && isValid(graph, [0, 1, 2, 3])).toBe(true);
-  });
-
-  it('accepts every order of a graph with no edges', () => {
-    const graph = graphOf({ 0: [], 1: [], 2: [] });
-    for (const p of permutations([0, 1, 2])) expect(isValid(graph, p)).toBe(true);
-  });
-
-  it('sorts a long chain without overflowing the call stack', () => {
-    const n = 50_000;
-    const graph: Graph = new Map();
-    for (let i = 0; i < n; i++) graph.set(i, [i + 1]);
-    const expected = Array.from({ length: n + 1 }, (_, i) => i);
-    for (const sort of sorts) expect(sort(graph)).toEqual(expected);
-  });
-
-  it('agrees with brute force on many seeded random graphs', () => {
-    const random = seededRandom(2024);
-    let sawCycle = false;
-    let sawOrder = false;
-    for (let i = 0; i < 50; i++) {
-      const graph = randomGraph(random, i % 2 === 0);
-      const exists = someOrderExists(graph);
-      const at = `seed 2024, trial ${i}: ${JSON.stringify([...graph])}`;
-      for (const sort of sorts) {
-        const order = sort(graph);
-        if (exists) {
-          expect(order, at).not.toBeNull();
-          expect(isValid(graph, order!), at).toBe(true);
-        } else {
-          expect(order, at).toBeNull();
-        }
-      }
-      if (exists) sawOrder = true;
-      else sawCycle = true;
-    }
-    expect(sawOrder && sawCycle).toBe(true);
-  });
-
-  it('always sorts random acyclic graphs', () => {
-    const random = seededRandom(7);
-    for (let i = 0; i < 50; i++) {
-      const graph = randomGraph(random, true);
-      const at = `seed 7, trial ${i}: ${JSON.stringify([...graph])}`;
-      for (const sort of sorts) expect(isValid(graph, sort(graph)!), at).toBe(true);
-    }
-  });
-
-  it('orders courses from (course, prerequisite) pairs', () => {
-    expect(courseOrder(0, [])).toEqual([]);
+describe('courseOrder', () => {
+  it('puts each prerequisite first', () => {
+    const pairs: [number, number][] = [
+      [1, 0],
+      [2, 0],
+      [3, 1],
+      [3, 2],
+      [4, 3],
+    ];
+    expect(courseOrder(5, pairs)).toEqual([0, 1, 2, 3, 4]);
     expect(courseOrder(3, [])).toEqual([0, 1, 2]);
-    expect(courseOrder(2, [[1, 0]])).toEqual([0, 1]);
+    expect(courseOrder(0, [])).toEqual([]);
     expect(
       courseOrder(2, [
-        [1, 0],
         [0, 1],
+        [1, 0],
       ]),
     ).toBeNull();
-    expect(courseOrder(1, [[0, 0]])).toBeNull();
-    expect(
-      courseOrder(4, [
-        [1, 0],
-        [2, 0],
-        [3, 1],
-        [3, 2],
-      ]),
-    ).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe('mechanism', () => {
+  it('scans each row twice in Kahn: once to count, once off the queue', () => {
+    // This catches a rescan of the rows; a rescan of the in-degree array reads no
+    // rows, so the timing test below catches that one.
+    const chain: Graph = Array.from({ length: 100 }, (_, i) => (i < 99 ? [i + 1] : []));
+    for (const adj of [RUNNING, chain]) {
+      const { rows, scans } = counted(adj);
+      expect(topologicalSort(rows)).not.toBeNull();
+      expect(scans.n).toBe(2 * adj.length);
+    }
   });
 
-  it('agrees with brute force on random course pairs', () => {
-    const random = seededRandom(99);
-    for (let i = 0; i < 50; i++) {
-      const n = Math.floor(random() * 7);
-      const count = n === 0 ? 0 : Math.floor(random() * 9);
-      const pairs: [number, number][] = [];
-      for (let k = 0; k < count; k++) {
-        pairs.push([Math.floor(random() * n), Math.floor(random() * n)]);
-      }
-      const graph: Graph = new Map();
-      for (let c = 0; c < n; c++) graph.set(c, []);
-      for (const [course, prerequisite] of pairs) graph.get(prerequisite)!.push(course);
-      const order = courseOrder(n, pairs);
-      const at = `seed 99, trial ${i}: ${JSON.stringify({ n, pairs })}`;
-      if (someOrderExists(graph)) expect(isValid(graph, order!), at).toBe(true);
-      else expect(order, at).toBeNull();
+  it('scans each row once in the DFS method, even through diamonds', () => {
+    // Finished vertices are never reset, so a chain of diamonds, with two routes
+    // through each, still scans each row once; resetting would make it 2^12 walks.
+    const edges: [number, number][] = [];
+    for (let i = 0; i < 12; i++) {
+      const a = 3 * i;
+      edges.push([a, a + 1], [a, a + 2], [a + 1, a + 3], [a + 2, a + 3]);
     }
+    for (const adj of [RUNNING, directed(37, edges)]) {
+      const { rows, scans } = counted(adj);
+      expect(topologicalSortDfs(rows)).not.toBeNull();
+      expect(scans.n).toBe(adj.length);
+    }
+  });
+
+  it('does linear work in Kahn, not V^2', () => {
+    const time = (adj: Graph) => {
+      const start = performance.now();
+      const order = topologicalSort(adj)!;
+      return { order, ms: performance.now() - start };
+    };
+    // A chain keeps one vertex ready at a time, so any step that searches all the
+    // vertices for the next ready one (even through the in-degree array, which the
+    // row counts can't see) does V^2 work: seconds here, milliseconds for Kahn's.
+    const n = 50_000;
+    const chain: Graph = Array.from({ length: n }, (_, i) => (i < n - 1 ? [i + 1] : []));
+    const chained = time(chain);
+    expect(chained.order[n - 1]).toBe(n - 1);
+    expect(chained.ms).toBeLessThan(500);
+    // A source with n - 1 sinks keeps the queue near n, so shifting from the front
+    // of a plain array moves about n items each time.
+    const m = 100_000;
+    const fan: Graph = [Array.from({ length: m - 1 }, (_, i) => i + 1)];
+    for (let i = 1; i < m; i++) fan.push([]);
+    const fanned = time(fan);
+    expect(fanned.order.length).toBe(m);
+    expect(fanned.ms).toBeLessThan(500);
+    // Last, so a quadratic version fails above instead of grinding through this
+    // one: a chain far deeper than any call stack, which Kahn's never recurses on.
+    const deep = 1_000_000;
+    const long: Graph = Array.from({ length: deep }, (_, i) =>
+      i < deep - 1 ? [i + 1] : [],
+    );
+    const order = topologicalSort(long)!;
+    expect(order.length).toBe(deep);
+    expect(order[0]).toBe(0);
+    expect(order[deep - 1]).toBe(deep - 1);
+  });
+});
+
+describe('random graphs', () => {
+  it('match a brute-force search over every order', () => {
+    const rand = seeded(7);
+    const int = (lo: number, hi: number) => lo + Math.floor(rand() * (hi - lo + 1));
+    let withOrder = 0;
+    let withCycle = 0;
+    for (let trial = 0; trial < 50; trial++) {
+      const n = int(1, 6);
+      let edges: [number, number][] = Array.from({ length: int(0, 7) }, () => [
+        int(0, n - 1),
+        int(0, n - 1),
+      ]);
+      if (trial % 2 === 0) {
+        // Orient along a shuffled labeling, so about half the graphs have an order.
+        const label = Array.from({ length: n }, (_, i) => i).sort(() => rand() - 0.5);
+        edges = edges.map(([u, v]) => (label[u] < label[v] ? [u, v] : [v, u]));
+      }
+      const adj = directed(n, edges);
+      const expected = existsOrder(adj);
+      if (expected) withOrder++;
+      else withCycle++;
+      for (const [name, sort] of BOTH) {
+        const result = sort(adj);
+        const msg = `seed=7 trial=${trial} ${name} adj=${JSON.stringify(adj)}`;
+        if (expected) {
+          expect(result !== null && goesForward(adj, result), msg).toBe(true);
+        } else {
+          expect(result, msg).toBeNull();
+        }
+      }
+    }
+    expect(withOrder).toBeGreaterThan(10);
+    expect(withCycle).toBeGreaterThan(10);
   });
 });

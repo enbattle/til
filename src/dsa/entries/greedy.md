@@ -206,7 +206,7 @@ With `{1, 3, 4}` and 6: the 4 goes in once, leaving 2; the 3 doesn't fit; the
 for every amount from 1 up, which last coin gives the fewest. For `{1, 3, 4}`
 that table runs 0, 1, 2, 1, 1, 2, 2 for amounts 0 to 6, and at 6 the 3 wins.
 It keeps every earlier answer instead of committing to one coin, and that's
-the difference between DP and greedy; [dynamic programming](/dsa/dp-knapsack)
+the difference between DP and greedy; [dynamic programming](/dsa/dynamic-programming-shapes)
 builds it.
 
 ## Complexity

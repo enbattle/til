@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { kruskal, prim, totalWeight, type Edge } from './prim-kruskal';
+import { kruskal, prim, type Edge } from './prim-kruskal';
+
+const totalWeight = (tree: Edge[]): number => tree.reduce((sum, e) => sum + e[2], 0);
 
 type Algorithm = (n: number, edges: Edge[]) => Edge[] | null;
 const algorithms: [string, Algorithm][] = [
@@ -211,18 +213,111 @@ describe('the worked example from the entry', () => {
   });
 });
 
-describe('prim', () => {
-  it('gives the same total from any start vertex', () => {
+describe.each(algorithms)('%s (TypeScript), more cases', (_name, algorithm) => {
+  it('connects both ends of an edge stored once', () => {
+    // (2, 0): Prim starts at 0, so it only finds 2 if both ends are stored.
+    const tree = algorithm(3, [
+      [2, 0, 1],
+      [2, 1, 1],
+    ]);
+    expect(totalWeight(tree!)).toBe(2);
+  });
+
+  it('does not reorder the input', () => {
+    const edges: Edge[] = [
+      [0, 1, 9],
+      [1, 2, 1],
+      [0, 2, 5],
+    ];
+    const before = JSON.stringify(edges);
+    algorithm(3, edges);
+    expect(JSON.stringify(edges)).toBe(before);
+  });
+});
+
+/** A weight that counts every conversion to a number, which any comparison makes. */
+function countedGraph(): { n: number; edges: Edge[]; calls: () => number } {
+  const random = makeRandom(11);
+  const int = (hi: number) => Math.floor(random() * hi);
+  const n = 300;
+  const pairs: [number, number][] = [];
+  for (let v = 1; v < n; v++) pairs.push([int(v), v]);
+  for (let i = 0; i < n; i++) pairs.push([int(n), int(n)]);
+  const weights = pairs.map((_, i) => i);
+  for (let i = weights.length - 1; i > 0; i--) {
+    const j = int(i + 1);
+    [weights[i], weights[j]] = [weights[j], weights[i]];
+  }
+  let count = 0;
+  const edges = pairs.map(([u, v], i): Edge => {
+    const weight = { valueOf: () => (count++, weights[i]) };
+    return [u, v, weight as unknown as number];
+  });
+  return { n, edges, calls: () => count };
+}
+
+// Sparse on purpose: a heap Prim compares about E log E times, but a Prim that
+// scans every crossing edge for the minimum compares about V * E / 2 times, and
+// one that scans an array of best-known costs about V * V / 2. A dense graph
+// couldn't tell those apart from the heap.
+describe('comparison counts on a sparse graph', () => {
+  it('kruskal sorts instead of scanning for each minimum', () => {
+    const { n, edges, calls } = countedGraph();
+    expect(kruskal(n, edges)).toHaveLength(n - 1);
+    expect(calls()).toBeLessThanOrEqual(24 * edges.length);
+  });
+
+  it('prim keeps comparisons near E log E', () => {
+    const { n, edges, calls } = countedGraph();
+    expect(prim(n, edges)).toHaveLength(n - 1);
+    expect(calls()).toBeLessThanOrEqual(50 * edges.length);
+  });
+});
+
+describe('kruskal', () => {
+  it('does not search the tree built so far for each edge', () => {
+    // A star: every edge joins a new leaf to vertex 0. Searching the chosen
+    // edges for each new one is O(E * V): about 4 s at this size, against
+    // about 5 ms for union-find, so the 500 ms limit has a wide margin.
+    const n = 8000;
+    const star: Edge[] = Array.from({ length: n - 1 }, (_, i) => [0, i + 1, i + 1]);
+    const start = performance.now();
+    const tree = kruskal(n, star);
+    const elapsed = performance.now() - start;
+    expect(tree).toHaveLength(n - 1);
+    expect(elapsed).toBeLessThan(500);
+  });
+
+  it('stops at n - 1 edges', () => {
+    // The sentinel is out of range and heaviest, so it sorts last. Looking at
+    // it adds a fourth edge to a tree of three vertices.
+    const tree = kruskal(3, [
+      [0, 1, 1],
+      [1, 2, 2],
+      [0, 99, 1e9],
+    ]);
+    expect(tree).toEqual([
+      [0, 1, 1],
+      [1, 2, 2],
+    ]);
+  });
+});
+
+describe('prim vs kruskal', () => {
+  it('gives the same total on larger random graphs', () => {
     const random = makeRandom(21);
+    const int = (lo: number, hi: number) => lo + Math.floor(random() * (hi - lo + 1));
     for (let trial = 0; trial < 50; trial++) {
-      const { n, edges } = randomConnectedGraph(random);
-      const expected = totalWeight(kruskal(n, edges)!);
-      for (let start = 0; start < n; start++) {
-        expect(
-          totalWeight(prim(n, edges, start)!),
-          `seed 21, trial ${trial}: ${JSON.stringify({ n, edges, start })}`,
-        ).toBe(expected);
+      const n = int(2, 40);
+      const edges: Edge[] = [];
+      for (let v = 1; v < n; v++) edges.push([int(0, v - 1), v, int(-50, 50)]);
+      for (let i = int(0, 3 * n); i > 0; i--) {
+        edges.push([int(0, n - 1), int(0, n - 1), int(-50, 50)]);
       }
+      expect(
+        totalWeight(prim(n, edges)!),
+        `seed 21, trial ${trial}: ${JSON.stringify({ n, edges })}`,
+      ).toBe(totalWeight(kruskal(n, edges)!));
     }
   });
 });
