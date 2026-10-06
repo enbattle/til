@@ -1,34 +1,32 @@
 ---
 title: Two Pointers
-summary: Walking two indices through a sorted array so that every step rules out one element for good, turning pair searches from O(n²) into one O(n) pass with no extra memory.
-date: 2026-09-30
+summary: Moving two positions through a sequence by a rule that retires something at every step, so a search that looks quadratic or memory-hungry becomes one pass in constant space.
+date: 2026-10-05
 kind: pattern
+template: 2
 ---
 
-Two pointers is a way of scanning an array with two indices at the same time
-instead of one. Each index is called a **pointer** here, though it's only an
-integer position in the array, not a memory address. The pattern works when a
-simple rule tells you, at every step, which pointer to move, and moving it
-provably can't skip the answer. It turns many problems that look like they
-need a loop inside a loop into a single pass.
+Two pointers scans a sequence with two positions at once instead of one. A
+**pointer** here is just an array index or a reference to a node, not a memory
+address. You'll meet the two shapes the pattern comes in: pointers closing in
+from both ends of a sorted array, and pointers chasing each other at different
+speeds through a linked list.
 
 ## Prerequisites
 
-- [Hash map](/dsa/hash-map): the Complexity section compares this pattern with
-  the hash-map solution to the same problem, which is just as fast but needs
-  extra memory. That entry also explains the big-O notation (O(1), O(n)) used
-  here.
+- [Hash map](/dsa/hash-map): the alternative to compare against, since it
+  solves both problems below at the price of O(n) memory, and big-O notation
+  is defined in [Arrays and strings](/dsa/arrays-and-strings), which that entry
+  builds on.
+- [Linked list](/dsa/linked-list): the second shape follows `next` links from
+  node to node.
 
 ## The idea
 
-There are two common shapes.
-
-**Opposite ends.** One pointer starts at the first element, the other at the
-last, and they move toward each other until they meet. The standard example is
-the pair-sum problem: given an array sorted in ascending order (each element
-at least as large as the one before it) and a target number, find two elements
-that add up to the target. Take `nums = [1, 3, 4, 6, 8, 11]` and a target of
-10:
+**Opposite ends.** Given a sorted array and a target, find two elements that
+add up to it. Try every pair and you do about n²/2 sums. Instead, start one
+pointer at each end and look at their sum. Run it on `[1, 3, 4, 6, 8, 11]` with
+a target of 10:
 
 | Step | `left` | `right` | Sum         | Move                       |
 | ---- | ------ | ------- | ----------- | -------------------------- |
@@ -38,41 +36,54 @@ that add up to the target. Take `nums = [1, 3, 4, 6, 8, 11]` and a target of
 | 4    | 1      | 3       | 3 + 6 = 9   | too small: move `left` up  |
 | 5    | 2      | 3       | 4 + 6 = 10  | found: indices 2 and 3     |
 
-Why is it safe to throw an element away? In step 1, 1 + 11 is too big. Every
-other element is at most 11, since the array is sorted, but 11 is too big even
-paired with the smallest element there is. So 11 can't be part of any answer,
-and `right` moves past it. In step 2, 1 + 8 is too small, and 8 is the largest
-element still in play, so 1 is too small to pair with anything left and
-`left` moves past it. Each comparison rules out one element for good, which is
-why one pass is enough.
+Why is it safe to throw an element away? In step 1, 11 is too big even beside
+the smallest element there is, so no pair uses it. In step 2, 1 is too small
+even beside the largest element still in play. Each comparison retires one
+element for good, which is why one pass is enough. It only works because the
+array is sorted, which is what lets a sum's size say which end to move.
 
-**Same direction.** Both pointers start at the front and move the same way,
-one ahead of the other. The classic example removes duplicates from a sorted
-array **in place**, meaning it rearranges the array it was given instead of
-building a new one. A `read` pointer visits every element; a `write` pointer
-marks where the next value worth keeping goes. For `[1, 1, 2, 3, 3]`, `read`
-skips the second 1 and the second 3, `write` collects 1, 2 and 3 at the front,
-and the function returns 3, the number of unique values.
+**Same direction, at different speeds.** A linked list is a chain of nodes,
+each holding a value and a link to the next, and its last link is empty. A
+**cycle** is when some node links back to an earlier one, so a walk never ends.
+To detect one without remembering visited nodes, move a slow pointer one node
+per step and a fast pointer two. Take seven nodes, 0 to 6, where node 6 links
+back to node 2: a tail of two nodes (0 and 1) leading into a cycle of five.
+
+| Step | `slow` | `fast` | Links `fast` needs to land on `slow` |
+| ---- | ------ | ------ | ------------------------------------ |
+| 1    | 1      | 2      | (`slow` is still in the tail)        |
+| 2    | 2      | 4      | 3                                    |
+| 3    | 3      | 6      | 2                                    |
+| 4    | 4      | 3      | 1                                    |
+| 5    | 5      | 5      | 0: they meet                         |
+
+Once `slow` is inside the cycle, `fast` is too, and the distance `fast` must
+cover to reach `slow` falls by exactly one per step. A count that falls by one
+can't jump from 1 to -1, so it hits 0: `fast` can't hop over `slow`. If the list
+has no cycle, `fast` just runs off the end first.
+
+Two relatives use the same idea. To find where the cycle starts, keep the
+meeting node, restart a second pointer at the head and move both one node per
+step. When they first met, `slow` had taken a multiple of the cycle's length
+in steps, so walking the tail's length `t` more, possibly lapping the cycle,
+lands on the start, exactly as the head pointer arrives. Here they land on node
+2 after two steps. And a `write` pointer trailing a `read` pointer in one
+direction removes duplicates from a sorted array in place.
 
 ## When to use it
 
-The strongest signal is a sorted array (or one you can afford to sort) and a
-question about pairs: two values with a given sum or difference, or the pair
-closest to a target. Triplets reduce to pairs: to find three numbers that add
-to zero, sort the array, fix each element in turn and run the opposite-ends
-search on the elements after it, which is O(n²) instead of the O(n³) of trying
-every triple. Opposite ends also fits any check that compares an array or
-string from both ends, like testing whether a string is a palindrome or
-reversing an array in place.
-
-The same-direction shape fits "in place" and "O(1) extra space" in a problem
-statement: removing duplicates or a given value, moving all zeros to the end,
-or merging two sorted arrays with one pointer in each. A close relative runs
-two pointers at different speeds through a linked list (a chain of nodes, each
-holding a link to the next) to find its middle or detect a cycle.
-
-When the input is unsorted and you need the original positions, a
-[hash map](/dsa/hash-map) of values already seen usually beats sorting first.
+- The input is sorted, or you can afford to sort it, and the question is about
+  pairs: a given sum or difference, or the pair closest to a target. Triplets
+  reduce to this: fix one element, then search the elements after it.
+- The statement says "in place" or "O(1) extra space", as in removing
+  duplicates, moving zeros to the end or merging two sorted arrays.
+- Something is compared from both ends: a palindrome check, reversing in
+  place, the container holding the most water.
+- A linked list has no index, so you want its middle (when `fast` falls off the
+  end, `slow` is halfway) or whether it loops. This also covers any sequence
+  where each value is computed from the one before.
+- The input is unsorted and you need original positions: use a
+  [hash map](/dsa/hash-map) instead, since sorting loses them.
 
 ## Walkthrough
 
@@ -80,22 +91,7 @@ When the input is unsorted and you need the original positions, a
 def pair_with_sum(nums: list[int], target: int) -> tuple[int, int] | None:
     """Indices (i, j), i < j, of two values in sorted nums that add up to target."""
     left, right = 0, len(nums) - 1
-```
-
-```typescript
-/** Indices [i, j], i < j, of two values in sorted `nums` that add up to `target`. */
-export function pairWithSum(nums: number[], target: number): [number, number] | null {
-  let left = 0;
-  let right = nums.length - 1;
-```
-
-The function returns the two indices rather than the two values, because a
-caller who has the indices can always read the values but not the other way
-round, and returns `None` (`null` in TypeScript) when no pair exists. The
-pointers start at the two ends. For an empty array `right` starts at -1, which
-is fine: the loop condition on the next line is false straight away.
-
-```python
+    # < not <=: with equal pointers one element would be paired with itself.
     while left < right:
         total = nums[left] + nums[right]
         if total == target:
@@ -103,18 +99,24 @@ is fine: the loop condition on the next line is false straight away.
 ```
 
 ```typescript
+/** Indices [i, j], i < j, of two values in sorted `nums` that add up to `target`. */
+export function pairWithSum(nums: number[], target: number): [number, number] | null {
+  let left = 0;
+  let right = nums.length - 1;
+  // < not <=: with equal pointers one element would be paired with itself.
   while (left < right) {
     const total = nums[left] + nums[right];
     if (total === target) return [left, right];
 ```
 
-The loop runs while the pointers are on two different elements. The
-comparison is a strict `<`: when `left` equals `right` both point at the same
-element, and adding an element to itself isn't a pair. With `[3]` and a target
-of 6, `<=` would return `(0, 0)`. A match returns straight away, with
-`left < right` guaranteed by the loop condition.
+The function returns indices, not values, because a caller with the indices can
+always read the values. An empty array starts `right` at -1, so the loop never
+runs and the answer is "no pair", which is correct.
 
 ```python
+        # Too small: nums[left] is too small even beside the largest value still
+        # in play, so no pair uses it. Too big: nums[right] fails the same way
+        # beside the smallest. Either move rules one element out for good.
         if total < target:
             left += 1
         else:
@@ -123,101 +125,112 @@ of 6, `<=` would return `(0, 0)`. A match returns straight away, with
 ```
 
 ```typescript
-    if (total < target) {
-      left++;
-    } else {
-      right--;
-    }
+    // Too small: nums[left] is too small even beside the largest value still
+    // in play, so no pair uses it. Too big: nums[right] fails the same way
+    // beside the smallest. Either move rules one element out for good.
+    if (total < target) left++;
+    else right--;
   }
   return null;
 }
 ```
 
-A sum that's too small can only grow by moving `left` up to a larger value; a
-sum that's too big can only shrink by moving `right` down. The `else` covers
-exactly the too-big case, since equality returned above. If the pointers meet
-without a match, the argument in "The idea" says no pair was skipped, so there
-is no pair.
+On the running example this is the five-row table above, ending at `(2, 3)`.
+The loop falls through to `None` only after the pointers meet, which by the
+retiring argument means no pair existed. Now the other shape, which needs a
+node type to walk.
 
 ```python
-def dedupe_sorted(nums: list[int]) -> int:
-    """Dedupe sorted nums in place; return k, the count of unique values in nums[:k]."""
-    if not nums:
-        return 0
-    write = 1
+class ListNode:
+    """One node of a singly linked list: a value and a link to the next node."""
+
+    def __init__(self, val: int, next: "ListNode | None" = None) -> None:
+        self.val = val
+        self.next = next
+
+
+def has_cycle(head: ListNode | None) -> bool:
+    """True when following next from head never reaches the end."""
+    slow = fast = head
+    # Test fast and fast.next: fast.next.next reads the next of nothing when
+    # an odd-length list leaves fast on its last node.
+    while fast is not None and fast.next is not None:
 ```
 
 ```typescript
-/** Dedupes sorted `nums` in place; returns k, the count of unique values now first. */
-export function dedupeSorted(nums: number[]): number {
-  if (nums.length === 0) return 0;
-  let write = 1;
-```
+export class ListNode {
+  val: number;
+  next: ListNode | null;
 
-Now the same-direction shape. The first element is always kept, since nothing
-comes before it to duplicate, so `write` starts at 1: position 0 is already
-done. That start needs the guard above it. Without it, an empty array would
-report one unique value.
-
-```python
-    for read in range(1, len(nums)):
-        if nums[read] != nums[write - 1]:
-            nums[write] = nums[read]
-            write += 1
-    return write
-```
-
-```typescript
-  for (let read = 1; read < nums.length; read++) {
-    if (nums[read] !== nums[write - 1]) {
-      nums[write] = nums[read];
-      write++;
-    }
+  constructor(val: number, next: ListNode | null = null) {
+    this.val = val;
+    this.next = next;
   }
-  return write;
+}
+
+/** True when following next from head never reaches the end. */
+export function hasCycle(head: ListNode | null): boolean {
+  let slow = head;
+  let fast = head;
+  // Test fast and fast.next: fast.next.next reads the next of nothing when
+  // an odd-length list leaves fast on its last node.
+  while (fast !== null && fast.next !== null) {
+```
+
+An empty list and a single node never enter the loop, so both return `False`.
+Inside it, `fast` takes its two hops and `slow` its one.
+
+```python
+        slow = slow.next
+        fast = fast.next.next
+        # After moving, not before: both start at head, so before always matches.
+        # `is`, not ==: two different nodes can hold equal values.
+        if slow is fast:
+            return True
+    return False
+```
+
+```typescript
+    slow = slow!.next;
+    fast = fast.next.next;
+    // After moving, not before: both start at head, so before always matches.
+    // === compares nodes, not values: two different nodes can hold equal values.
+    if (slow === fast) return true;
+  }
+  return false;
 }
 ```
 
-The rule that holds on every pass is that `nums[:write]` (the first `write`
-elements) holds the unique values seen so far, in order. Because the array is
-sorted, equal values sit next to each other, so a new value only has to be
-compared with the last one kept, `nums[write - 1]`, not with everything kept
-so far. A new value is copied to position `write` and `write` moves up. Since
-`write` never passes `read`, the copy only overwrites a slot that has already
-been read. The return value `write` is the count of unique values.
+On the seven-node list the loop returns `True` at step 5, the last row of the
+second table. In TypeScript, `slow!` tells the compiler that `slow` isn't
+`null`; it can't be, because `slow` trails `fast`, which was non-null a moment
+ago.
 
 ## Complexity
 
-`pair_with_sum` runs in O(n) time: each pass through the loop either returns
-or moves one pointer one step inward, and the pointers start n - 1 steps apart,
-so there are at most n - 1 passes. It uses O(1) extra space, just the two
-indices and a sum. `dedupe_sorted` reads each element once, O(n) time, and also
-uses O(1) extra space.
+`pair_with_sum` is O(n) time and O(1) space. Each pass either returns or moves
+one pointer inward, and they start n - 1 apart, so there are at most n - 1
+passes. Trying every pair costs n(n - 1)/2 sums, 499,500 for 1,000 elements. A
+hash map is also O(n) time but holds up to n values, and it handles unsorted
+input. Sorting first for two pointers costs O(n log n).
 
-Compare the other ways to solve pair-sum. Trying every pair is O(n²): n(n - 1)
-/ 2 pairs, about 500,000 for 1,000 elements. A single pass that stores each
-value in a hash map and checks whether `target - value` is already there is
-O(n) time, like two pointers, but O(n) extra space, and it works on unsorted
-input. If the input isn't sorted, two pointers needs a sort first, which costs
-O(n log n) and moves the elements away from their original indices.
+`has_cycle` is O(n) time and O(1) space. Without a cycle, `fast` reaches the
+end in about n/2 passes. With one, `slow` enters the cycle after the tail's
+length, `t` steps, with `fast` already inside. The gap to close is less than
+the cycle's length `c` and shrinks by one per step, so they meet within
+`t + c = n` steps: 5 for the 7-node example. A visited set is O(n) time too and
+simpler to trust, but it stores up to n nodes.
 
 ## Pitfalls
 
-- **Unsorted input.** The argument for discarding an element relies on the
-  order. On `[3, 1, 2]` with a target of 3, the scan compares 3 + 2, then
-  3 + 1, and stops with no answer, although 1 + 2 = 3.
-- **`<=` in the loop condition** lets both pointers land on the same element
-  and pair it with itself, as described in the walkthrough.
-- **Not moving a pointer after a match.** To collect every pair instead of the
-  first, record the match and move both pointers inward (skipping repeated
-  values, if each pair of values should appear once). Recording it and moving
-  neither loops forever.
-- **Expecting a clean array after deduplication.** Only the first `k`
-  positions are meaningful: `[1, 1, 2]` becomes `[1, 2, 2]` with `k = 2`. If
-  the list itself should shrink, cut it afterwards (`del nums[k:]` in Python,
-  `nums.length = k` in TypeScript).
-- **Overflow in fixed-width languages.** In Java, C or C++, the sum
-  `nums[left] + nums[right]` can exceed the largest 32-bit integer when the
-  values are large.
-  Python's integers never overflow. JavaScript's numbers hold integers exactly
-  up to 2^53, so the TypeScript version is exact for any values below 2^52.
+- **`<=` in `while left < right`.** Both pointers can land on one element and
+  pair it with itself: `[3]` with a target of 6 returns `(0, 0)`.
+- **Unsorted input to `pair_with_sum`.** The `total < target` branch assumes the
+  order. On `[3, 1, 2]` with a target of 3 it compares 3 + 2, then 3 + 1, and
+  returns `None`, although 1 + 2 = 3.
+- **Testing only `fast` in the loop condition.** A one-node list enters the
+  loop and then reads `fast.next.next`, the `next` of nothing, which crashes in
+  both languages.
+- **Comparing values, or comparing before moving.** With `slow.val == fast.val`,
+  the list `[5, 5, 5]` with no cycle reports one. With the check above the
+  moves, both pointers are the head and every list looks cyclic.

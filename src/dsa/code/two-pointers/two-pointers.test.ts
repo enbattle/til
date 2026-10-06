@@ -1,143 +1,185 @@
 import { describe, expect, it } from 'vitest';
-import { dedupeSorted, pairWithSum } from './two-pointers';
+import { ListNode, hasCycle, pairWithSum } from './two-pointers';
 
-// docs/specs/dsa-tab.md, criterion 12: the two-pointers entry's TypeScript
-// code. API:
-// - `pairWithSum(nums: number[], target: number): [number, number] | null`:
-//   the indices `[i, j]`, `i < j`, of two elements of the sorted array `nums`
-//   that add up to `target` (opposite-end pointers), or `null`.
-// - `dedupeSorted(nums: number[]): number`: removes duplicates from the sorted
-//   array in place (same-direction pointers) and returns the count `k` of
-//   unique values, which are then `nums.slice(0, k)` in order.
+// The two-pointers entry's TypeScript code. API: `pairWithSum(nums, target)`
+// returns indices [i, j], i < j, of two values in sorted `nums` that add up to
+// `target`, or null; `hasCycle(head)` says whether a ListNode chain loops back
+// on itself.
 
-/** Every pair of indices whose values add up to `target`. */
-function bruteForcePairs(nums: number[], target: number): string[] {
-  const pairs: string[] = [];
-  for (let i = 0; i < nums.length; i++) {
-    for (let j = i + 1; j < nums.length; j++) {
-      if (nums[i] + nums[j] === target) pairs.push(`${i},${j}`);
-    }
-  }
-  return pairs;
+/** A small seeded generator (mulberry32), so a failing case can be replayed. */
+function rng(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-function expectValidPair(nums: number[], target: number, label?: string) {
-  const result = pairWithSum(nums, target);
-  const possible = bruteForcePairs(nums, target);
-  if (possible.length === 0) {
-    expect(result, label).toBeNull();
-    return;
-  }
-  expect(result, label).not.toBeNull();
-  const [i, j] = result!;
-  expect(i, label).toBeLessThan(j);
-  expect(i, label).toBeGreaterThanOrEqual(0);
-  expect(j, label).toBeLessThan(nums.length);
-  expect(nums[i] + nums[j], label).toBe(target);
+/** Nodes holding `values`, linked in order; the last links to nodes[loopTo]. */
+function chain(values: number[], loopTo?: number): ListNode[] {
+  const nodes = values.map((v) => new ListNode(v));
+  nodes.forEach((node, i) => {
+    if (i + 1 < nodes.length) node.next = nodes[i + 1];
+  });
+  if (loopTo !== undefined) nodes[nodes.length - 1].next = nodes[loopTo];
+  return nodes;
+}
+
+const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
+
+function hasPair(nums: number[], target: number): boolean {
+  for (let i = 0; i < nums.length; i++)
+    for (let j = i + 1; j < nums.length; j++)
+      if (nums[i] + nums[j] === target) return true;
+  return false;
+}
+
+/** Counts reads by index. */
+function counted(items: number[]): { nums: number[]; reads: () => number } {
+  let reads = 0;
+  const nums = new Proxy(items, {
+    get(target, key, receiver) {
+      if (typeof key === 'string' && /^\d+$/.test(key)) reads++;
+      return Reflect.get(target, key, receiver);
+    },
+  });
+  return { nums, reads: () => reads };
 }
 
 describe('pairWithSum (TypeScript)', () => {
-  it('finds a pair in a sorted array', () => {
+  it('finds the running example pair', () => {
     const nums = [1, 3, 4, 6, 8, 11];
-    const result = pairWithSum(nums, 10);
-    expect(result).not.toBeNull();
-    const [i, j] = result!;
-    expect(nums[i] + nums[j]).toBe(10);
-    expect(i).toBeLessThan(j);
+    expect(pairWithSum(nums, 10)).toEqual([2, 3]);
+    expect(pairWithSum(nums, 12)).toEqual([0, 5]);
+    expect(pairWithSum(nums, 100)).toBeNull();
   });
 
-  it('finds the only pair, at the two ends', () => {
-    expect(pairWithSum([1, 5, 9, 20], 21)).toEqual([0, 3]);
-  });
-
-  it('finds the only pair, in the middle', () => {
-    expect(pairWithSum([1, 4, 6, 50], 10)).toEqual([1, 2]);
-  });
-
-  it('returns null for an empty array', () => {
+  it('has no pair in an empty or one-element array', () => {
     expect(pairWithSum([], 0)).toBeNull();
-  });
-
-  it('returns null for a single element, even when it is half the target', () => {
     expect(pairWithSum([3], 6)).toBeNull();
+    expect(pairWithSum([3], 3)).toBeNull();
   });
 
-  it('returns null when no pair adds up', () => {
-    expect(pairWithSum([1, 2, 4, 8], 7 + 8)).toBeNull();
-    expect(pairWithSum([1, 3], 6)).toBeNull();
+  it('handles two elements', () => {
+    expect(pairWithSum([1, 2], 3)).toEqual([0, 1]);
+    expect(pairWithSum([1, 2], 4)).toBeNull();
   });
 
-  it('uses two different indices holding equal values', () => {
+  it('pairs duplicates at two different positions', () => {
     expect(pairWithSum([2, 2], 4)).toEqual([0, 1]);
-    expectValidPair([1, 3, 3, 5], 6);
+    expect(pairWithSum([1, 2, 2, 5], 4)).toEqual([1, 2]);
+    expect(pairWithSum([2, 3], 4)).toBeNull();
   });
 
   it('handles negative numbers and zero', () => {
-    expectValidPair([-8, -3, 0, 2, 7], -1);
-    expectValidPair([-4, -1, 0, 0, 3], 0);
-    expect(pairWithSum([-5, -2], -7)).toEqual([0, 1]);
+    expect(pairWithSum([-5, -2, 0, 3, 7], 5)).toEqual([1, 4]);
+    expect(pairWithSum([-3, 0, 3], 0)).toEqual([0, 2]);
   });
 
-  it('agrees with a brute-force search on many sorted arrays', () => {
-    let seed = 7;
-    const random = () => {
-      seed = (seed * 1103515245 + 12345) % 2147483648;
-      return seed / 2147483648;
-    };
-    for (let n = 0; n < 50; n++) {
-      const length = Math.floor(random() * 9);
-      const nums = Array.from({ length }, () => Math.floor(random() * 21) - 10).sort(
+  it('matches brute force on 50 seeded arrays', () => {
+    const seed = 11;
+    const random = rng(seed);
+    for (let trial = 0; trial < 50; trial++) {
+      const length = Math.floor(random() * 10);
+      const nums = Array.from({ length }, () => Math.floor(random() * 17) - 8).sort(
         (a, b) => a - b,
       );
-      const target = Math.floor(random() * 41) - 20;
-      expectValidPair(
-        nums,
-        target,
-        `seed 7, trial ${n}: ${JSON.stringify({ nums, target })}`,
-      );
+      const target = Math.floor(random() * 25) - 12;
+      const got = pairWithSum(nums, target);
+      const where = `seed ${seed}, trial ${trial}: ${JSON.stringify(nums)} target ${target} -> ${got}`;
+      if (hasPair(nums, target)) {
+        expect(got, where).not.toBeNull();
+        const [i, j] = got!;
+        expect(0 <= i && i < j && j < nums.length, where).toBe(true);
+        expect(nums[i] + nums[j], where).toBe(target);
+      } else {
+        expect(got, where).toBeNull();
+      }
     }
   });
 
-  it('does not change the input', () => {
-    const nums = [1, 2, 3, 4];
-    pairWithSum(nums, 7);
-    expect(nums).toEqual([1, 2, 3, 4]);
+  it('reads two values per pass, one pass per element dropped', () => {
+    // Trying every pair would read about n * n times.
+    const high = counted(range(1000));
+    expect(pairWithSum(high.nums, 1e6)).toBeNull();
+    expect(high.reads()).toBe(2 * 999);
+    const low = counted(range(1000));
+    expect(pairWithSum(low.nums, -1)).toBeNull();
+    expect(low.reads()).toBe(2 * 999);
   });
 });
 
-describe('dedupeSorted (TypeScript)', () => {
-  it.each([
-    [[], []],
-    [[5], [5]],
-    [
-      [1, 2, 3],
-      [1, 2, 3],
-    ],
-    [[7, 7, 7, 7], [7]],
-    [
-      [1, 1, 2, 3, 3, 3, 4],
-      [1, 2, 3, 4],
-    ],
-    [
-      [-3, -3, 0, 0, 2],
-      [-3, 0, 2],
-    ],
-    [
-      [0, 0, 1, 1, 1, 2, 2, 3, 3, 4],
-      [0, 1, 2, 3, 4],
-    ],
-  ])('dedupes %j in place to %j', (input, expected) => {
-    const nums = [...input];
-    const k = dedupeSorted(nums);
-    expect(k).toBe(expected.length);
-    expect(nums.slice(0, k)).toEqual(expected);
+describe('hasCycle (TypeScript)', () => {
+  it('handles small cases', () => {
+    expect(hasCycle(null)).toBe(false);
+    expect(hasCycle(chain([1])[0])).toBe(false);
+    expect(hasCycle(chain([1], 0)[0])).toBe(true);
+    expect(hasCycle(chain([1, 2])[0])).toBe(false);
+    expect(hasCycle(chain([1, 2], 0)[0])).toBe(true);
+    expect(hasCycle(chain([1, 2], 1)[0])).toBe(true);
   });
 
-  it('works in place on the array it was given', () => {
-    const nums = [1, 1, 2];
-    const same = nums;
-    dedupeSorted(nums);
-    expect(nums).toBe(same);
-    expect(nums.slice(0, 2)).toEqual([1, 2]);
+  it('handles the running example', () => {
+    // Seven nodes, the last linking back to node 2: a tail of 2, a cycle of 5.
+    expect(hasCycle(chain(range(7), 2)[0])).toBe(true);
+    expect(hasCycle(chain(range(7))[0])).toBe(false);
+  });
+
+  it('ends on odd and even lengths without a cycle', () => {
+    for (let n = 1; n < 12; n++) expect(hasCycle(chain(range(n))[0]), `${n}`).toBe(false);
+  });
+
+  it('finds a cycle that is the whole list', () => {
+    for (let n = 1; n < 12; n++)
+      expect(hasCycle(chain(range(n), 0)[0]), `${n}`).toBe(true);
+  });
+
+  it('compares nodes, not values', () => {
+    const same = chain([1000, 1000, 1000, 1000, 1000]);
+    expect(hasCycle(same[0])).toBe(false);
+    same[4].next = same[1];
+    expect(hasCycle(same[0])).toBe(true);
+  });
+
+  it('matches the known shape on 50 seeded lists', () => {
+    const seed = 12;
+    const random = rng(seed);
+    for (let trial = 0; trial < 50; trial++) {
+      const n = 1 + Math.floor(random() * 14);
+      const pick = Math.floor(random() * (n + 1));
+      const loopTo = pick === n ? undefined : pick;
+      const values = Array.from({ length: n }, () => Math.floor(random() * 3));
+      expect(
+        hasCycle(chain(values, loopTo)[0]),
+        `seed ${seed}, trial ${trial}: ${n} ${loopTo}`,
+      ).toBe(loopTo !== undefined);
+    }
+  });
+
+  it('follows only a few links per node', () => {
+    const n = 1000;
+    const nodes = chain(range(n), 1);
+    let follows = 0;
+    nodes.forEach((node) => {
+      let link = node.next;
+      Object.defineProperty(node, 'next', {
+        get() {
+          follows++;
+          return link;
+        },
+        set(value) {
+          link = value;
+        },
+      });
+    });
+    expect(hasCycle(nodes[0])).toBe(true);
+    // A tail of 1 and a cycle of n - 1: slow and fast meet on step n - 1, and
+    // each step follows at least 3 links (fast.next twice over, slow.next).
+    // A one-pass visited set follows at most 2 per node, 2n + 2 in all.
+    expect(follows, `follows=${follows}`).toBeGreaterThanOrEqual(3 * (n - 1));
+    expect(follows, `follows=${follows}`).toBeLessThanOrEqual(6 * n);
   });
 });

@@ -1,7 +1,8 @@
 """Tests for greedy.py, checked against exhaustive oracles on seeded random input."""
 
 import random
-from functools import lru_cache
+import sys
+from functools import cache
 from itertools import combinations
 
 from greedy import can_reach_end, greedy_coin_count, select_intervals
@@ -172,17 +173,13 @@ def test_jump_agrees_with_search():
 # making change
 
 
-def fewest_coins(coins, amount):
-    """The true minimum, trying every coin at every step."""
-
-    @lru_cache(maxsize=None)
-    def go(left):
-        if left == 0:
-            return 0
-        rests = [go(left - c) for c in coins if c <= left]
-        return min((r + 1 for r in rests if r is not None), default=None)
-
-    return go(amount)
+@cache
+def exhaustive_fewest(coins, amount):
+    """The true minimum by trying every coin at every step (coins is a tuple)."""
+    if amount == 0:
+        return 0
+    rests = [exhaustive_fewest(coins, amount - c) for c in coins if c <= amount]
+    return min((r + 1 for r in rests if r is not None), default=None)
 
 
 def test_coins_zero_amount_needs_no_coins():
@@ -192,12 +189,12 @@ def test_coins_zero_amount_needs_no_coins():
 
 def test_coins_greedy_is_wrong_for_one_three_four():
     assert greedy_coin_count([1, 3, 4], 6) == 3  # 4 + 1 + 1
-    assert fewest_coins((1, 3, 4), 6) == 2  # 3 + 3
+    assert exhaustive_fewest((1, 3, 4), 6) == 2  # 3 + 3
 
 
 def test_coins_greedy_can_get_stuck():
     assert greedy_coin_count([5, 3], 9) is None  # 5, then 3, then 1 left: nothing fits
-    assert fewest_coins((5, 3), 9) == 3  # 3 + 3 + 3
+    assert exhaustive_fewest((5, 3), 9) == 3  # 3 + 3 + 3
 
 
 def test_coins_exact_single_coin_and_unordered_input():
@@ -207,7 +204,7 @@ def test_coins_exact_single_coin_and_unordered_input():
 
 def test_coins_greedy_is_optimal_for_us_coins():
     for amount in range(200):
-        assert greedy_coin_count([1, 5, 10, 25], amount) == fewest_coins(
+        assert greedy_coin_count([1, 5, 10, 25], amount) == exhaustive_fewest(
             (1, 5, 10, 25), amount
         )
 
@@ -220,8 +217,70 @@ def test_coins_greedy_never_beats_the_best_and_sometimes_loses():
         amount = rng.randint(0, 30)
         at = f"seed 3, trial {trial}: coins {coins}, amount {amount}"
         greedy = greedy_coin_count(list(coins), amount)
-        best = fewest_coins(coins, amount)
+        best = exhaustive_fewest(coins, amount)
         assert greedy is not None, at  # a 1-coin is always there
         assert greedy >= best, at
         worse += greedy > best
     assert worse > 0, "seed 3: greedy never lost in 50 trials"
+
+
+# the walk reads each index once
+
+
+class Counting(list):
+    """A list that counts the items an iteration actually hands out."""
+
+    reads = 0
+
+    def __iter__(self):
+        for item in super().__iter__():
+            Counting.reads += 1
+            yield item
+
+
+def test_jump_reads_each_index_once_and_stops_at_a_gap():
+    Counting.reads = 0
+    assert can_reach_end(Counting([2] * 50)) is True
+    assert Counting.reads == 50
+    Counting.reads = 0
+    assert can_reach_end(Counting([1, 0, 9, 9, 9, 9])) is False
+    assert Counting.reads == 3  # reads index 2, sees the gap, stops
+
+
+def lines_run_by(fn, *args, budget):
+    """Run fn, counting executed lines in greedy.py; raise past the budget."""
+    count = 0
+
+    def tracer(frame, event, arg):
+        nonlocal count
+        if frame.f_code.co_name != "can_reach_end":
+            return None
+        if event == "line":
+            count += 1
+            if count > budget:
+                raise AssertionError(f"more than {budget} lines run")
+        return tracer
+
+    sys.settrace(tracer)
+    try:
+        fn(*args)
+    finally:
+        sys.settrace(None)
+    return count
+
+
+def test_jump_work_does_not_grow_with_the_size_of_the_jumps():
+    # Marking every index each position reaches runs n * n lines here.
+    n = 300
+    assert lines_run_by(can_reach_end, [n] * n, budget=10 * n) <= 10 * n
+
+
+def test_jump_with_a_big_int_and_long_inputs():
+    assert can_reach_end([int("1000"), 0, 0]) is True
+    assert can_reach_end([1] * 1_000_000) is True
+    assert can_reach_end([1] * 999_999 + [0, 0]) is False
+
+
+def test_select_intervals_on_a_long_input():
+    given = [(i, i + 2) for i in range(200_000)]
+    assert len(select_intervals(given)) == 100_000

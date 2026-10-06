@@ -1,113 +1,190 @@
-"""docs/specs/dsa-tab.md, criterion 12: the two-pointers entry's Python code.
+"""Tests for the two-pointers entry's Python code.
 
-API:
-- ``pair_with_sum(nums, target) -> tuple[int, int] | None``: the indices
-  ``(i, j)``, ``i < j``, of two elements of the sorted list ``nums`` that add
-  up to ``target`` (opposite-end pointers), or ``None``.
-- ``dedupe_sorted(nums) -> int``: removes duplicates from the sorted list in
-  place (same-direction pointers) and returns the count ``k`` of unique
-  values, which are then ``nums[:k]`` in order.
+API: ``pair_with_sum(nums, target)`` returns indices ``(i, j)``, ``i < j``, of
+two values in sorted ``nums`` that add up to ``target``, or None;
+``has_cycle(head)`` says whether a ``ListNode`` chain loops back on itself.
 """
 
 import random
+from itertools import combinations
 
-import pytest
-
-from two_pointers import dedupe_sorted, pair_with_sum
-
-
-def brute_force_pairs(nums, target):
-    return [
-        (i, j)
-        for i in range(len(nums))
-        for j in range(i + 1, len(nums))
-        if nums[i] + nums[j] == target
-    ]
+from two_pointers import ListNode, has_cycle, pair_with_sum
 
 
-def assert_valid_pair(nums, target, where=""):
-    result = pair_with_sum(nums, target)
-    if not brute_force_pairs(nums, target):
-        assert result is None, where
-        return
-    assert result is not None, where
-    i, j = result
-    assert 0 <= i < j < len(nums), where
-    assert nums[i] + nums[j] == target, where
+def chain(values, loop_to=None):
+    """A list of nodes holding values; the last links to nodes[loop_to]."""
+    nodes = [ListNode(v) for v in values]
+    for a, b in zip(nodes, nodes[1:]):
+        a.next = b
+    if loop_to is not None:
+        nodes[-1].next = nodes[loop_to]
+    return nodes
 
 
-def test_finds_a_pair_in_a_sorted_list():
-    assert_valid_pair([1, 3, 4, 6, 8, 11], 10)
+class CountingList(list):
+    """A list that counts reads by index."""
+
+    def __init__(self, items):
+        super().__init__(items)
+        self.reads = 0
+
+    def __getitem__(self, index):
+        self.reads += 1
+        return super().__getitem__(index)
 
 
-def test_finds_the_only_pair_at_the_two_ends():
-    assert pair_with_sum([1, 5, 9, 20], 21) == (0, 3)
+class CountingNode(ListNode):
+    """A node that counts how often its next link is followed."""
+
+    follows = 0
+
+    def __getattribute__(self, name):
+        if name == "next":
+            CountingNode.follows += 1
+        return super().__getattribute__(name)
 
 
-def test_finds_the_only_pair_in_the_middle():
-    assert pair_with_sum([1, 4, 6, 50], 10) == (1, 2)
+class SameValueNode(ListNode):
+    """Nodes that compare equal by value, so == would confuse distinct nodes."""
+
+    def __eq__(self, other):
+        return isinstance(other, ListNode) and self.val == other.val
+
+    __hash__ = None  # type: ignore[assignment]
 
 
-def test_empty_list():
+def has_pair(nums, target):
+    return any(a + b == target for a, b in combinations(nums, 2))
+
+
+def test_running_example():
+    nums = [1, 3, 4, 6, 8, 11]
+    assert pair_with_sum(nums, 10) == (2, 3)
+    assert pair_with_sum(nums, 12) == (0, 5)
+    assert pair_with_sum(nums, 100) is None
+
+
+def test_empty_and_single_element_have_no_pair():
     assert pair_with_sum([], 0) is None
-
-
-def test_single_element_is_not_used_twice():
     assert pair_with_sum([3], 6) is None
+    assert pair_with_sum([3], 3) is None
 
 
-def test_no_pair_adds_up():
-    assert pair_with_sum([1, 2, 4, 8], 15) is None
-    assert pair_with_sum([1, 3], 6) is None
+def test_two_elements():
+    assert pair_with_sum([1, 2], 3) == (0, 1)
+    assert pair_with_sum([1, 2], 4) is None
 
 
-def test_equal_values_at_two_indices():
+def test_duplicates_pair_two_different_positions():
     assert pair_with_sum([2, 2], 4) == (0, 1)
-    assert_valid_pair([1, 3, 3, 5], 6)
+    assert pair_with_sum([1, 2, 2, 5], 4) == (1, 2)
+    assert pair_with_sum([2, 3], 4) is None
 
 
 def test_negative_numbers_and_zero():
-    assert_valid_pair([-8, -3, 0, 2, 7], -1)
-    assert_valid_pair([-4, -1, 0, 0, 3], 0)
-    assert pair_with_sum([-5, -2], -7) == (0, 1)
+    assert pair_with_sum([-5, -2, 0, 3, 7], 5) == (1, 4)
+    assert pair_with_sum([-3, 0, 3], 0) == (0, 2)
 
 
-def test_agrees_with_brute_force():
-    rng = random.Random(7)
+def test_pair_with_sum_matches_brute_force():
+    seed = 11
+    rng = random.Random(seed)
     for trial in range(50):
-        nums = sorted(rng.randint(-10, 10) for _ in range(rng.randint(0, 8)))
-        target = rng.randint(-20, 20)
-        assert_valid_pair(nums, target, f"seed 7, trial {trial}: {(nums, target)}")
+        nums = sorted(rng.randint(-8, 8) for _ in range(rng.randint(0, 9)))
+        target = rng.randint(-12, 12)
+        got = pair_with_sum(nums, target)
+        where = f"seed {seed}, trial {trial}: {nums} target {target} -> {got}"
+        if has_pair(nums, target):
+            assert got is not None, where
+            i, j = got
+            assert 0 <= i < j < len(nums), where
+            assert nums[i] + nums[j] == target, where
+        else:
+            assert got is None, where
 
 
-def test_does_not_change_the_input():
-    nums = [1, 2, 3, 4]
-    pair_with_sum(nums, 7)
-    assert nums == [1, 2, 3, 4]
+def test_pair_with_sum_reads_each_pointer_move_once():
+    # A target no pair reaches moves left up every pass: n - 1 passes, two
+    # reads each. Trying every pair would read about n * n times.
+    nums = CountingList(range(1000))
+    assert pair_with_sum(nums, 10**6) is None
+    assert nums.reads == 2 * 999, f"reads={nums.reads}"
 
 
-@pytest.mark.parametrize(
-    ("given", "expected"),
-    [
-        ([], []),
-        ([5], [5]),
-        ([1, 2, 3], [1, 2, 3]),
-        ([7, 7, 7, 7], [7]),
-        ([1, 1, 2, 3, 3, 3, 4], [1, 2, 3, 4]),
-        ([-3, -3, 0, 0, 2], [-3, 0, 2]),
-        ([0, 0, 1, 1, 1, 2, 2, 3, 3, 4], [0, 1, 2, 3, 4]),
-    ],
-)
-def test_dedupe_sorted(given, expected):
-    nums = list(given)
-    k = dedupe_sorted(nums)
-    assert k == len(expected)
-    assert nums[:k] == expected
+def test_pair_with_sum_discards_one_element_per_pass_from_either_end():
+    nums = CountingList(range(1000))
+    assert pair_with_sum(nums, -1) is None
+    assert nums.reads == 2 * 999, f"reads={nums.reads}"
 
 
-def test_dedupe_works_in_place():
-    nums = [1, 1, 2]
-    same = nums
-    dedupe_sorted(nums)
-    assert nums is same
-    assert nums[:2] == [1, 2]
+def test_has_cycle_small_cases():
+    assert not has_cycle(None)
+    assert not has_cycle(chain([1])[0])
+    assert has_cycle(chain([1], loop_to=0)[0])
+    assert not has_cycle(chain([1, 2])[0])
+    assert has_cycle(chain([1, 2], loop_to=0)[0])
+    assert has_cycle(chain([1, 2], loop_to=1)[0])
+
+
+def test_has_cycle_running_example():
+    # Seven nodes, the last linking back to node 2: a tail of 2, a cycle of 5.
+    assert has_cycle(chain(range(7), loop_to=2)[0])
+    assert not has_cycle(chain(range(7))[0])
+
+
+def test_has_cycle_odd_and_even_lengths_without_a_cycle():
+    for n in range(1, 12):
+        assert not has_cycle(chain(range(n))[0]), n
+
+
+def test_has_cycle_whole_list_is_the_cycle():
+    for n in range(1, 12):
+        assert has_cycle(chain(range(n), loop_to=0)[0]), n
+
+
+def test_has_cycle_compares_nodes_not_values():
+    big = int("1000")
+    same = [SameValueNode(big) for _ in range(5)]
+    for a, b in zip(same, same[1:]):
+        a.next = b
+    assert not has_cycle(same[0])
+    same[-1].next = same[1]
+    assert has_cycle(same[0])
+
+
+def test_has_cycle_matches_walking_with_a_visited_set():
+    seed = 12
+    rng = random.Random(seed)
+    for trial in range(50):
+        n = rng.randint(1, 14)
+        loop_to = rng.choice([None, *range(n)])
+        head = chain([rng.randint(0, 2) for _ in range(n)], loop_to)[0]
+        got = has_cycle(head)
+        assert got == (loop_to is not None), f"seed {seed}, trial {trial}: {n} {loop_to}"
+
+
+def test_has_cycle_needs_no_hashing_and_stays_linear():
+    # A visited-set version hashes every node; this one never should.
+    class Unhashable(ListNode):
+        __hash__ = None  # type: ignore[assignment]
+
+    nodes = [Unhashable(i) for i in range(50)]
+    for a, b in zip(nodes, nodes[1:]):
+        a.next = b
+    nodes[-1].next = nodes[10]
+    assert has_cycle(nodes[0])
+    nodes[-1].next = None
+    assert not has_cycle(nodes[0])
+
+    # A tail of 1 and a cycle of n - 1: slow and fast meet on step n - 1, and
+    # each step follows at least 3 links (fast.next twice over, slow.next).
+    # A one-pass visited set follows at most 2 per node, 2n + 2 in all.
+    n = 1000
+    nodes = [CountingNode(i) for i in range(n)]
+    for a, b in zip(nodes, nodes[1:]):
+        a.next = b
+    nodes[-1].next = nodes[1]
+    CountingNode.follows = 0
+    assert has_cycle(nodes[0])
+    follows = CountingNode.follows
+    assert 3 * (n - 1) <= follows <= 6 * n, f"follows={follows}"

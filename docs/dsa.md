@@ -33,7 +33,7 @@ rewritten in place.
 | ------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------- |
 | Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings` (done, DSA batch 1)                                                          |
 | Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque` (done, DSA batch 1)                                                          |
-| Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers`                                                                    |
+| Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers` (done, DSA batch 3)                                                |
 | Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps`                                                                     |
 | DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional` (done, batch 1)                                                                    |
 | DP: common shapes (`dynamic-programming-shapes`)       | pattern        | `dp-grids`, `dp-knapsack`, `dp-two-sequences`; a sentence each from `dp-intervals`, `dp-state-machines` |

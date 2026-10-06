@@ -9,6 +9,8 @@ import { buildPrefix, countSubarraysWithSum, rangeSum } from './prefix-sums';
 // - `countSubarraysWithSum(nums, k)`: number of non-empty contiguous subarrays
 //   that add up to exactly k.
 
+const RUNNING = [3, -1, 2, 1, -2, 4];
+
 function bruteCount(nums: number[], k: number): number {
   let count = 0;
   for (let i = 0; i < nums.length; i++) {
@@ -29,9 +31,22 @@ function seededRandom(seed: number) {
   };
 }
 
+// An array that counts reads of its numeric indexes, to prove the
+// structure is used: for-of reads each index once, nested loops many times.
+function counted(items: number[]) {
+  const reads = { count: 0 };
+  const proxy = new Proxy(items, {
+    get(target, prop, receiver) {
+      if (typeof prop === 'string' && /^\d+$/.test(prop)) reads.count++;
+      return Reflect.get(target, prop, receiver);
+    },
+  });
+  return { proxy, reads };
+}
+
 describe('buildPrefix (TypeScript)', () => {
-  it('has a leading zero', () => {
-    expect(buildPrefix([3, 1, 4])).toEqual([0, 3, 4, 8]);
+  it('prefixes the running example', () => {
+    expect(buildPrefix(RUNNING)).toEqual([0, 3, 2, 4, 5, 3, 7]);
   });
 
   it('handles empty and single-element input', () => {
@@ -39,18 +54,36 @@ describe('buildPrefix (TypeScript)', () => {
     expect(buildPrefix([7])).toEqual([0, 7]);
   });
 
-  it('handles negative numbers', () => {
+  it('handles negatives and duplicates', () => {
     expect(buildPrefix([2, -5, 3])).toEqual([0, 2, -3, 0]);
+    expect(buildPrefix([4, 4, 4])).toEqual([0, 4, 8, 12]);
+  });
+
+  it('matches a running reduce on random inputs', () => {
+    const random = seededRandom(3);
+    for (let n = 0; n < 50; n++) {
+      const length = Math.floor(random() * 13);
+      const nums = Array.from({ length }, () => Math.floor(random() * 19) - 9);
+      const want = [0];
+      for (const value of nums) want.push(want[want.length - 1] + value);
+      expect(buildPrefix(nums), `seed 3, trial ${n}: [${nums}]`).toEqual(want);
+    }
+  });
+
+  it('reads each element exactly once', () => {
+    const { proxy, reads } = counted(Array.from({ length: 50 }, (_, i) => i));
+    buildPrefix(proxy);
+    expect(reads.count).toBe(50);
   });
 });
 
 describe('rangeSum (TypeScript)', () => {
   it('answers inclusive ranges', () => {
-    const prefix = buildPrefix([3, 1, 4, 1, 5]);
-    expect(rangeSum(prefix, 0, 4)).toBe(14);
-    expect(rangeSum(prefix, 1, 3)).toBe(6);
+    const prefix = buildPrefix(RUNNING);
+    expect(rangeSum(prefix, 1, 3)).toBe(2);
+    expect(rangeSum(prefix, 0, 5)).toBe(7);
     expect(rangeSum(prefix, 0, 0)).toBe(3);
-    expect(rangeSum(prefix, 4, 4)).toBe(5);
+    expect(rangeSum(prefix, 5, 5)).toBe(4);
   });
 
   it('rejects bad ranges', () => {
@@ -60,13 +93,14 @@ describe('rangeSum (TypeScript)', () => {
       [2, 1],
       [0, 3],
       [3, 3],
+      [-1, -1],
     ]) {
       expect(() => rangeSum(prefix, left, right)).toThrow(RangeError);
     }
     expect(() => rangeSum(buildPrefix([]), 0, 0)).toThrow(RangeError);
   });
 
-  it('agrees with a direct sum on many random inputs', () => {
+  it('agrees with a direct sum on random inputs', () => {
     const random = seededRandom(11);
     for (let n = 0; n < 50; n++) {
       const length = 1 + Math.floor(random() * 12);
@@ -81,6 +115,13 @@ describe('rangeSum (TypeScript)', () => {
       ).toBe(direct);
     }
   });
+
+  it('reads two entries however long the range', () => {
+    const nums = Array.from({ length: 200 }, (_, i) => i + 1);
+    const { proxy, reads } = counted(buildPrefix(nums));
+    expect(rangeSum(proxy, 0, 199)).toBe((200 * 201) / 2);
+    expect(reads.count).toBe(2);
+  });
 });
 
 describe('countSubarraysWithSum (TypeScript)', () => {
@@ -88,6 +129,10 @@ describe('countSubarraysWithSum (TypeScript)', () => {
     expect(countSubarraysWithSum([], 0)).toBe(0);
     expect(countSubarraysWithSum([5], 5)).toBe(1);
     expect(countSubarraysWithSum([5], 4)).toBe(0);
+  });
+
+  it('counts the running example', () => {
+    expect(countSubarraysWithSum(RUNNING, 3)).toBe(4);
   });
 
   it('returns 0 when nothing adds up', () => {
@@ -114,13 +159,19 @@ describe('countSubarraysWithSum (TypeScript)', () => {
     expect(countSubarraysWithSum([3, -2, 2, 1], 1)).toBe(3);
   });
 
+  it('handles large values', () => {
+    const nums = [1000, -1000, 1000, 1000];
+    expect(countSubarraysWithSum(nums, 2000)).toBe(2);
+    expect(countSubarraysWithSum(nums, 0)).toBe(2);
+  });
+
   it('does not change the input', () => {
     const nums = [1, 2, 3];
     countSubarraysWithSum(nums, 3);
     expect(nums).toEqual([1, 2, 3]);
   });
 
-  it('agrees with a brute-force count on many random inputs', () => {
+  it('agrees with a brute-force count on random inputs', () => {
     const random = seededRandom(5);
     for (let n = 0; n < 50; n++) {
       const length = Math.floor(random() * 11);
@@ -131,5 +182,12 @@ describe('countSubarraysWithSum (TypeScript)', () => {
         `seed 5, trial ${n}: [${nums}], k ${k}`,
       ).toBe(bruteCount(nums, k));
     }
+  });
+
+  it('makes one pass over the input', () => {
+    const items = Array.from({ length: 60 }, (_, i) => (i % 7) - 3);
+    const { proxy, reads } = counted(items);
+    countSubarraysWithSum(proxy, 2);
+    expect(reads.count).toBe(60);
   });
 });
