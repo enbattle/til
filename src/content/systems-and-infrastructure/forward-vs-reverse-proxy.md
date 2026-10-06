@@ -59,8 +59,7 @@ Spreading requests freely only works if any server can answer any request. A
 server that keeps a user's login session in its own memory breaks that, since
 the user's next request may land elsewhere. One fix is to keep that state in a
 shared store, or in a signed token the client carries, such as a
-[JWT](/security/jwt); [Session vs. Token Authentication](/security/session-vs-token-auth)
-compares the two. The other is **sticky sessions**: the balancer sends each
+[JWT](/security/jwt) (that page compares the two). The other is **sticky sessions**: the balancer sends each
 user back to the same server, by a cookie or by hashing some key, which
 [consistent hashing](/systems-and-infrastructure/consistent-hashing) keeps
 stable as servers come and go. Stickiness costs evenness, since a few heavy

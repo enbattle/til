@@ -1,113 +1,62 @@
 ---
-title: OAuth 2.0 & OpenID Connect
-summary: Delegated authorization — how a third-party app gets scoped, revocable access to your data without your password — plus what OpenID Connect adds for login.
+title: OAuth 2.0 and OpenID Connect
+summary: How a third-party app gets scoped, revocable access to your data without ever seeing your password, and what OpenID Connect adds so the same exchange can log you in.
 date: 2026-09-15
 ---
 
-Say you want to let a third-party app read your calendar. Handing it
-your account password would give it _everything_, forever, with no way
-to take that access back short of changing the password entirely.
-**OAuth 2.0** is the protocol that fixes this: the app instead gets a
-limited, revocable **access token** — scoped to something like "read
-calendar," expiring in an hour — and never sees the password at all.
-It's **delegated authorization**: proving what an app may do, not who a
-person is.
+Say a scheduling app called Meetly wants to read your calendar so it can suggest free times. The obvious way is to give Meetly your calendar password. That hands it everything, forever: your email, your files, your ability to change the password. The only way to take that access back is to change the password, which breaks every other app you gave it to.
 
-## The four roles in every exchange
+**OAuth 2.0** is the protocol that fixes this. Meetly never sees your password. Instead it receives an **access token**, a string that means "this app may read this user's calendar until 3:00 p.m." You can revoke it without touching your password. OAuth is **delegated authorization**: it proves what an app may do, and says nothing about who you are. Hold that thought, because the second half of this page fixes it.
 
-- **Resource owner** — the user who owns the data.
-- **Client** — the app requesting access.
-- **Authorization server** — authenticates the user, gets their consent,
-  and issues tokens.
-- **Resource server** — the API holding the actual data, which accepts
-  the token on incoming requests.
+## Who is involved
 
-## The authorization code flow, step by step
+Every OAuth exchange has four roles. In our example:
 
-This is the standard flow for web and mobile apps, and — paired with
-PKCE, below — the current best practice for essentially every kind of
-client:
+- **Resource owner**: you, the person who owns the calendar data.
+- **Client**: Meetly, the app asking for access.
+- **Authorization server**: the service that signs you in, asks for your consent and issues tokens.
+- **Resource server**: the calendar API, which accepts a token and returns data.
 
-1. The client redirects the user to the authorization server's
-   `/authorize` endpoint, along with its `client_id`, a `redirect_uri`,
-   the `scope` it's requesting, a random `state` value, and a PKCE
-   `code_challenge`.
-2. The user authenticates with the authorization server and approves the
-   requested scopes.
-3. The authorization server redirects back to the `redirect_uri` with a
-   short-lived, single-use **authorization code**.
-4. The client exchanges that code — plus the PKCE `code_verifier` it
-   generated in step 1 — at the authorization server's `/token` endpoint
-   for an **access token**, and usually a refresh token too.
-5. The client calls the resource server with
-   `Authorization: Bearer <access token>`.
+## How Meetly gets its token
 
-The extra authorization-code step exists specifically so the access
-token itself is returned on a back-channel server-to-server request,
-never inside a browser URL where it would leak into browser history,
-server logs, and `Referer` headers.
+How does Meetly get a token without touching your password? It sends you to the authorization server and lets that server do the talking. This is the **authorization code flow**, the standard choice for web and mobile apps:
 
-**PKCE** (Proof Key for Code Exchange) ties the authorization code to
-the specific client that started the flow: the client sends
-`code_challenge = hash(code_verifier)` up front in step 1, and the raw
-`code_verifier` at exchange time in step 4, so a stolen authorization
-code is useless to anyone who doesn't also have the original verifier.
-Public clients — single-page apps, mobile apps — have no way to keep a
-client secret truly secret, so PKCE is what actually secures them; it's
-now recommended for confidential clients too. The **`state`** value is a
-random string the client generates and checks matches on return —
-[CSRF](/security/csrf) protection for the redirect itself.
+1. Meetly redirects your browser to the authorization server's `/authorize` endpoint. The URL carries Meetly's `client_id`, a `redirect_uri` to come back to, the `scope` it wants (`calendar.read`), a random `state` value and a PKCE `code_challenge` (both explained below).
+2. You sign in with the authorization server, not with Meetly, and approve the scope.
+3. The server redirects your browser back to Meetly's `redirect_uri` with a short-lived, single-use **authorization code**.
+4. Meetly's backend sends that code, plus the PKCE `code_verifier`, to the server's `/token` endpoint and receives an access token, usually with a refresh token.
+5. Meetly calls the calendar API with `Authorization: Bearer <access token>`.
+
+Why the detour through a code? Everything in steps 1 to 3 travels through your browser, in URLs that end up in history, server logs and `Referer` headers. A code in that URL is nearly harmless, because it is useless without step 4. The access token never travels in a browser URL; it comes back on the direct request in step 4.
+
+Two details close the remaining gaps. The `state` value is a random string Meetly generates in step 1 and checks on return. If an attacker tricks your browser into completing a flow Meetly never started, the check fails, which is [CSRF](/security/csrf) protection for the redirect.
+
+**PKCE** (Proof Key for Code Exchange, said "pixie") protects the code itself. Before step 1, Meetly makes a random `code_verifier` and sends only its hash as the `code_challenge`. In step 4 it sends the raw verifier, and the server hashes it and compares. Someone who steals the code in transit can't redeem it without the verifier. This matters most for **public clients**, such as single-page apps and mobile apps, which can't keep a client secret because anyone can read the code they ship. Current guidance is to use PKCE for every client, including those that do have a secret.
 
 ## Tokens and scopes
 
-- **Access token** — short-lived (minutes to an hour), scoped to
-  specific permissions, sent to the resource server on every call. It
-  may be an opaque string or a [JWT](/security/jwt).
-- **Refresh token** — long-lived, exchanged at the token endpoint for a
-  fresh access token without sending the user back through the consent
-  screen. Store it server-side or in secure device storage, and rotate
-  it on each use.
-- **Scopes** — space-separated permission strings (`calendar.read`).
-  Requesting the minimum needed matters twice over: a smaller ask means
-  a less alarming consent screen, and a smaller blast radius if the
-  token ever leaks.
+An access token is short-lived, minutes to an hour, so a leaked one stops working soon. It may be an opaque random string or a [JWT](/security/jwt), a token the resource server can check without calling anyone.
 
-## What OpenID Connect adds: knowing who, not just what
+A short life would be miserable if you had to re-consent every hour. So the server also issues a **refresh token**, which is long-lived and exchanged at `/token` for a fresh access token with no consent screen. Keep it server-side or in secure device storage, and have the server issue a new one on each use (**rotation**) so a stolen one is detected when both copies are used.
 
-OAuth 2.0 answers "what may this app do" — authorization. It
-deliberately says nothing about "who is this user." **OpenID Connect
-(OIDC)** is a thin layer on top that adds authentication:
+**Scopes** are space-separated permission strings like `calendar.read`. Ask for the minimum. Meetly needs to read events, so it should not ask to edit them: the consent screen looks less alarming, and a leaked token can do less.
 
-- an **ID token** — a JWT carrying verified identity claims (`sub`,
-  `email`, `name`, issuer, audience) that the client validates directly;
-- a `/userinfo` endpoint for fetching more profile detail;
-- the `openid` scope, which is what triggers all of the above.
+## From "what" to "who"
 
-"Log in with [identity provider]" buttons are OIDC. If an application
-needs to know who a user actually is, the ID token is the thing to use —
-not the access token, which was never meant to answer that question.
+Now back to the thought we parked. Suppose Meetly also wants a "Log in with..." button. Can it use the access token to learn who you are? No. The token says what Meetly may do. It isn't defined to carry an identity, and what Meetly might read out of it is up to the provider.
 
-## Common mistakes
+**OpenID Connect** (OIDC) is a thin layer on OAuth 2.0 that adds authentication. Meetly adds the `openid` scope to the same flow in step 1. The token response gains an ID token, and the provider also exposes a `/userinfo` endpoint:
 
-- **Treating the access token as proof of identity.** It's a capability
-  grant, not an ID — inspecting or trusting its contents to answer "who
-  is this" is exactly the mistake OIDC's separate ID token exists to
-  prevent.
-- **Not validating `state` on the redirect back**, which reopens the
-  CSRF hole the value was there to close.
-- **Skipping PKCE, or embedding a client secret in a single-page app** —
-  there's no way to keep a secret hidden inside code running in
-  a browser.
-- **Letting access tokens live too long.** Lean on short-lived access
-  tokens plus refresh tokens, so revoking access actually takes effect
-  quickly instead of staying valid until a long expiry finally arrives.
+- an **ID token**, a JWT of identity claims: `sub` (a stable user ID), `iss` (who issued it), `aud` (which client it is for) and often `email` and `name`. Meetly validates its signature and checks that `iss` and `aud` match and that it hasn't expired (`exp`);
+- a `/userinfo` endpoint where the access token can fetch more profile detail.
 
-## Where it fits
+Most "Log in with..." buttons, such as Google's and Microsoft's, are this. Meetly should key its own accounts on `iss` plus `sub`, never on email, which can change.
 
-OAuth and OIDC are the standard answer whenever a genuine third party
-needs access to a user's data, or whenever an app wants federated
-"log in with…" rather than running its own password database. For
-first-party authentication between an application's own frontend and
-its own backend, the lighter-weight options in
-[Session vs. Token Authentication](/security/session-vs-token-auth) are
-often all that's actually needed.
+## What goes wrong
+
+- Trusting an access token as proof of identity, which is the mistake the ID token exists to prevent.
+- Skipping the `state` check, which reopens the CSRF hole.
+- Skipping PKCE, or shipping a client secret inside a single-page app, where anyone can read it.
+- Long-lived access tokens, which make revocation slow.
+
+**Rule of thumb.** Use OAuth when an app needs limited access to data it doesn't own, and add OIDC when it also needs to know who the user is. For a first-party app talking to its own backend, plain [session or token login](/security/jwt) is usually enough.
