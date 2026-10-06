@@ -1,87 +1,54 @@
 ---
 title: Distributed Locks
-summary: Coordinating exclusive access across machines when a single-process mutex no longer applies — and why every such lock needs a lease.
+summary: A lock that works across machines can still be held by two workers at once, so the protected resource has to check a fencing token itself.
 date: 2026-09-15
 ---
 
-A mechanism for ensuring only one process, across multiple machines, can
-hold a given lock at a time — the multi-process equivalent of a
-[mutex](/systems-and-infrastructure/race-conditions),
-needed whenever [pessimistic locking](/systems-and-infrastructure/optimistic-vs-pessimistic-locking)
-has to work across services that don't share a database or a single
-process's memory.
+Suppose your billing service runs on three machines, and a customer's refund for invoice 42 must be issued once. A [race condition](/systems-and-infrastructure/race-conditions) is waiting here: if two machines both see the refund as unissued, both send it. Inside one process you would put a mutex around the check and the refund. A mutex lives in one process's memory, though, and these three machines share none. You need a **distributed lock**: a lock kept somewhere all three can reach, so that at most one of them is working on invoice 42 at a time. It is [pessimistic locking](/systems-and-infrastructure/optimistic-vs-pessimistic-locking) for the case where the workers don't share a database transaction.
 
-## The basic mechanism: atomic acquisition with a lease
+## Taking the lock
 
-A common building block, using a shared, fast external store:
+Where do you keep the lock? In a small, fast shared store that can do a conditional write atomically. In Redis, for example:
 
 ```
 SET lock:invoice-42 <unique-token> NX EX 30
 ```
 
-`NX` ("set if not exists") makes acquisition atomic — only the first
-caller to run this succeeds. `EX 30` gives the lock a time-to-live, so
-it's automatically released if the holder crashes before explicitly
-unlocking it. Releasing the lock checks that the stored token matches
-before deleting it, so a process can't accidentally release a lock it
-no longer actually holds — for example, after its own lock already
-expired and a different process has since acquired it. That check and
-that delete have to run as one atomic operation on the store — typically
-a small server-side script — rather than two separate round trips (fetch
-the token, compare it, then delete). Split into two steps, the gap
-between them reopens exactly the race this mechanism is supposed to
-close: another process can acquire the lock in between.
+`NX` means "only if the key doesn't exist". The store runs the check and the write as one step, so when three machines run this at the same moment, exactly one gets a success. The other two see a failure and either wait or move on.
 
-## The central hard problem: a lease can expire mid-work
+Now the question that shapes everything else: what if the winner crashes? Nobody would ever release the lock. That is what `EX 30` is for. The lock is a **lease**, a lock with an expiry, so it disappears after 30 seconds on its own.
 
-Concretely: Process A acquires the lock with a 30-second lease. A long
-garbage-collection pause, a slow disk, or simply underestimating how
-long the work takes causes A to run for 45 seconds instead. At the
-30-second mark, the lease expires — A is still working, believing it
-holds the lock. Process B now acquires the same lock successfully. For
-the next 15 seconds, both A and B believe they exclusively hold it, and
-both may act on that belief.
+Releasing takes care too. Before deleting the key, the holder checks that the stored token is still its own; otherwise a worker whose lease already expired could delete a lock another worker now holds. The compare and the delete must run as one atomic operation, usually a short server-side script, or another worker could take the lock in the gap between them.
 
-A longer lease doesn't fix this — it just delays the same failure to a
-later point, since there's no lease duration long enough to rule out
-every possible pause or slowdown.
+## The lease can expire while you work
 
-## Fencing tokens: moving the safety check to the resource itself
+Here is the part that surprises people. Machine A takes the lock for invoice 42 and starts the refund. Then a long garbage-collection pause (the runtime freezing your program while it reclaims memory) stalls A for 45 seconds. At 30 seconds the lease expires. Machine B takes the lock and starts the same refund. At 45 seconds A wakes up. It never noticed the time pass, still believes it holds the lock, and finishes its refund. The customer is refunded twice.
 
-The fix is giving every acquisition a monotonically increasing
-**fencing token**, and having the _protected resource itself_ reject any
-write that arrives with a stale token:
+Can you fix this with a longer lease, say 10 minutes? A longer lease only moves the failure out. A pause, a slow disk or a stalled network call can be longer than any number you pick, and a long lease also makes every crash cost you that many minutes of waiting. Can A check "do I still hold the lock?" just before it writes? That check can pass and the lease can expire a moment later, before the write lands, so the gap is shorter but still there.
+
+## Fencing tokens
+
+The workable fix moves the check to the one place that cannot be fooled by a pause: the resource being written. Every time the lock is granted, it comes with a **fencing token**, a number that goes up with each grant. A got token 33, and B, who took the lock after A's lease expired, got token 34. The resource remembers the highest token it has seen and rejects anything older:
 
 ```
 if incoming_token < resource.highest_seen_token:
-    reject()  # this holder's lock had already expired
+    reject()  # this holder's lease had expired
 resource.highest_seen_token = incoming_token
 apply(write)
 ```
 
-This moves the actual safety guarantee onto the resource being
-protected, rather than trusting that merely holding the lock implies
-exclusivity. This closes the gap fully — it isn't a workaround layered
-on top of the same broken assumption.
+B's refund arrives with token 34, so the resource records 34 and applies it. When A wakes up and sends its refund with token 33, the resource sees 33 < 34 and refuses. Notice that A is still confused about the lock. It doesn't matter, because the safety no longer depends on A's belief.
 
-## What this doesn't guarantee
+Where does the token come from? The lock service has to issue it. A bare `SET NX` gives you no counter, so you would increment one in the same atomic script, and the counter itself must not go backward, which a failover can make it do. Coordination services built on a consensus protocol (their copies of the data agree on one order of events) hand out such numbers as part of their locks.
 
-Unless the protected resource itself can reject a stale write on its
-own, mere lock possession is advisory, not a guarantee. Without fencing
-tokens, a distributed lock only prevents concurrent _acquisition_ — not
-concurrent _access_ — once a lease can expire mid-operation.
+## What the lock does and doesn't guarantee
+
+Without fencing, a distributed lock is meant to stop two workers from _acquiring_ the lock together, and under a lease that is all it promises. It does not stop two workers from _acting_ together, because a worker can outlive its lease without knowing. Fencing only helps if the resource can compare tokens, which a database row with a version column can and a third-party payment API usually cannot. For a resource like that, make the operation safe to repeat instead: send the refund with an [idempotency key](/systems-and-infrastructure/idempotency) such as the invoice number, so the second attempt is recognized and ignored.
+
+A Redis primary with replicas (copies that take over if it dies) adds a second weakness. Replicas are updated a moment later, so if the primary dies and a replica that hadn't yet received your lock key takes over, a second worker can be granted the same lock. That is another reason to let the resource, not the lock, have the last word.
+
+**Rule of thumb.** Use a distributed lock to cut down duplicate work, and don't trust it alone to protect data: when a stale write would do harm, make the resource check a fencing token or make the write safe to repeat.
 
 ## Where you'll meet this
 
-Several copies of a service must not all do the same job at once, and
-that is where these locks turn up. In a notification or email pipeline,
-a scheduled job such as a nightly digest runs on every instance of the
-service, and a lock lets only one of them send it, while a per-message
-lock can stop two workers from picking up the same queue item. Payments
-and checkout use the same idea for work like settling a batch of orders
-or issuing a refund, with the caveat above: because a lease can expire
-mid-operation, the write that moves the money still needs a fencing
-token, or has to be safe to repeat. Leader election among replicas is
-another common use, and the lock itself usually comes from a fast
-key-value store with atomic conditional writes, as in the example above,
-or from a consensus-based coordination service built for that guarantee.
+In a notification or email pipeline, a scheduled job such as a nightly digest runs on every instance of the service, and a lock lets only one of them send it. Payments and checkout use the same idea for work like settling a batch of orders, where the write that moves the money still needs a fencing token or an idempotency key. Choosing which one copy of a service acts as the leader is another common use.

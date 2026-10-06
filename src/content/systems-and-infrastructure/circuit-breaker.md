@@ -1,50 +1,42 @@
 ---
 title: Circuit Breaker
-summary: Why stopping calls to a failing dependency helps it recover, instead of every caller's retries adding to the pile-up.
+summary: A circuit breaker stops calls to a failing dependency so callers fail fast and the dependency gets room to recover, instead of retries piling on.
 date: 2026-09-14
 ---
 
-A **circuit breaker**, named after the electrical version, stops a
-service from repeatedly calling a downstream dependency that's already
-failing. Instead of letting every request wait out a full timeout against
-something that's clearly down, it "trips" and starts failing fast for a
-cooldown period, without even attempting the call.
+Picture a checkout service that calls a payment provider to charge each order. It takes 200 orders a second, and it has a pool of 200 worker threads (a thread is one unit of work running at a time; a request that is waiting on the provider occupies one). Normally the provider answers in 100 milliseconds, so each thread is busy for a tenth of a second and only about 20 of the 200 are busy at once.
 
-## The three states it moves through
+Now the provider starts hanging. Your calls don't fail, they wait, because you set a **timeout** of 10 seconds: the longest you'll wait before giving up. What happens next? Each request holds a thread for 10 seconds, 200 new requests arrive every second, and so all 200 threads are taken within about a second. Checkout can no longer serve anything, including the requests that never needed the provider. A slow dependency has become your outage.
 
-- **Closed** — normal operation. Requests pass through to the dependency
-  as usual, and failures are counted in the background.
-- **Open** — the failure count crossed a threshold. Every request fails
-  immediately, without even attempting to call the dependency, for a
-  fixed cooldown period.
-- **Half-open** — once the cooldown elapses, a small number of trial
-  requests are allowed through. If they succeed, the breaker closes again
-  and normal traffic resumes; if they fail, it reopens and the cooldown
-  starts over.
+A **circuit breaker** is the fix, named after the electrical part that cuts power before a wire melts. It is a small wrapper around the call to the provider that watches how the calls are going, and once they are clearly failing it stops making them.
 
-Picture it as a loop: closed until failures pile up, then open until the
-cooldown passes, then a cautious half-open trial that either confirms the
-dependency has recovered (back to closed) or confirms it hasn't (back to
-open).
+## The three states
 
-## Why failing fast is better than failing slowly
+The breaker is always in one of three states.
 
-Without a circuit breaker, a struggling dependency gets hit by every
-caller's retries — possibly spaced out with
-[backoff](/systems-and-infrastructure/exponential-backoff), but still
-hit — which can be exactly what prevents it from ever recovering in the
-first place. On top of that, every one of those callers pays the cost of
-waiting out a full timeout on each failed attempt, tying up its own
-threads or connections on a call that was never going to succeed.
+- **Closed** is normal operation. Calls go through to the provider, and the breaker counts failures. (The name is the electrical one: a closed circuit lets current flow.)
+- **Open** means the failure count crossed a threshold, say five failures in a row. Now every call fails immediately without being sent, for a cooldown period such as 30 seconds.
+- **Half-open** begins when the cooldown ends. The breaker lets a trial call through. If it succeeds, the breaker closes and traffic resumes. If it fails, the breaker opens again and the cooldown restarts.
 
-Failing fast while the breaker is open avoids both problems at once: the
-downstream service gets a real chance to recover without added load
-piling on top of it, and callers get an immediate, predictable failure
-instead of hanging until a timeout expires.
+Back in checkout: a hung call only counts as a failure when its timeout fires, so the breaker trips about 10 seconds into the hang, after the pool has already been full for most of that time. The breaker caps the stall at about one timeout; it doesn't prevent it. That is why it is paired with a short timeout. At 0.5 seconds, 200 orders a second hold about 100 threads, which still fits in the pool. Once tripped, each order for the next 30 seconds gets an instant "payment unavailable" instead of a wait, so the threads stay free and the rest of the site keeps working. After 30 seconds one trial charge goes out. If the provider has recovered, normal traffic resumes.
+
+## Why failing fast helps both sides
+
+There are two beneficiaries. Your callers stop paying the cost of a timeout on a call that was never going to work, which is the thread exhaustion above. And the provider stops receiving load while it is struggling. A dependency that is slow because it is overloaded gets worse when every caller keeps sending requests and retrying, and it may never recover until the traffic drops. Open state is that drop.
+
+Doesn't [exponential backoff](/systems-and-infrastructure/exponential-backoff) already do this? Backoff makes each caller space out its own retries, which helps with brief failures. But each caller decides alone, and every one of them still waits out its timeouts and keeps sending. A breaker acts on the pattern across calls and stops the sending altogether. Most systems use both: backoff for the occasional blip, the breaker for sustained failure.
 
 ## What it looks like in code
 
 ```python
+import time
+
+class CircuitOpenError(Exception):
+    pass
+
+class ProviderError(Exception):
+    """A timeout, connection error or 5xx: a sign the provider is unhealthy."""
+
 class CircuitBreaker:
     def __init__(self, failure_threshold=5, cooldown_seconds=30):
         self.failures = 0
@@ -61,7 +53,7 @@ class CircuitBreaker:
 
         try:
             result = fn()
-        except Exception:
+        except ProviderError:
             self.failures += 1
             if self.state == "half-open" or self.failures >= self.failure_threshold:
                 self.state = "open"
@@ -73,40 +65,14 @@ class CircuitBreaker:
             return result
 ```
 
-A wrapper like this sits around any call to a dependency that can fail —
-another service, a database, an external API — and the caller just sees
-either a normal result or a fast, predictable `CircuitOpenError` instead
-of an unpredictable hang.
+Checkout calls `breaker.call(lambda: charge(order))` and sees either a result or a fast `CircuitOpenError`, which it turns into a message to the shopper. This sketch counts consecutive failures and ignores threading. It counts only `ProviderError`: a declined card is the provider working correctly, and five declines in a row must not cut every shopper off. It also has a gap: once the cooldown ends, every caller that arrives next sees "half-open" and sends its request, so the "trial" is the full 200 orders a second landing on a provider that has only just started to recover. A production breaker caps the trial with a counter or semaphore (a lock that admits a fixed number of holders at once) so only one or a few calls get through. Many also trip on a failure rate over a time window, such as half of the last 20 calls, and count calls slower than a threshold as failures even when they eventually succeed.
 
-One thing this illustrative version leaves out: it doesn't cap how many
-callers can get through at once while the breaker is half-open — the
-state simply flips, and every concurrent caller that shows up next
-attempts the call. A production implementation needs an explicit
-concurrency gate here (a counter or semaphore limiting how many trial
-requests are in flight) so "half-open" actually means a small, bounded
-trial rather than the full request volume hitting a dependency that just
-started to recover.
+## What to do while it's open
 
-## Backoff and circuit breakers solve different halves of the problem
+Failing fast only helps if callers handle the failure. Some calls can fall back: a recommendations service that is down can be replaced by a cached or default list. A payment can't be faked, so checkout shows an error, or queues the order for a retry later. Decide that per dependency before the incident, and set each breaker's thresholds from how that dependency fails, not from one global default. One breaker per dependency also keeps a broken service from tripping calls to a healthy one.
 
-The two are easy to mix up because they both respond to failure, but
-they aren't interchangeable: backoff is something a caller does to
-survive its own transient failures, while a circuit breaker is something
-that shields the dependency from getting hit by everyone's retries at
-once. Most resilient systems run both together, since each is handling a
-failure mode the other doesn't touch. This pattern shows up
-constantly in service-to-service calls inside a
-[microservices architecture](/systems-and-infrastructure/monolith-vs-microservices),
-in database connection pools, and in any call to an external dependency
-that can degrade under load.
+**Rule of thumb.** Put a circuit breaker around every call to a dependency that can hang or fail under load, give each dependency its own, and decide in advance what the caller does when it is open.
 
 ## Where you'll meet this
 
-In checkout, a payment provider that has started timing out would
-otherwise leave every request holding a thread or connection for the
-full timeout. With the breaker open, checkout can tell the shopper right
-away that payment is unavailable, and the provider isn't hit by a wave
-of retries while it recovers. A news feed page assembled from several
-services (the posts themselves, recommendations, counts) can wrap each
-call in its own breaker, so one failing dependency means that section is
-skipped instead of the whole feed hanging.
+In payments, a breaker per provider lets checkout route around a failing one: with a second provider configured, an open breaker on the first sends charges to the second. In a news feed or timeline assembled from several services, each backend call gets its own breaker, so one failing source drops its section and the rest of the feed still loads. A notification or email pipeline wraps its email provider the same way, and while the breaker is open it leaves messages in the queue for later instead of failing them.

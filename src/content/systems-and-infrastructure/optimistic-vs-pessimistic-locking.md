@@ -1,155 +1,77 @@
 ---
 title: Optimistic vs. Pessimistic Locking
-summary: Locking a row up front vs. checking for a conflict at write time — which fits high-contention writes vs. mostly-independent ones.
+summary: Two ways to stop concurrent writes corrupting a row, locking it first or checking for a conflict when you write, and which fits your contention.
 date: 2026-09-15
 ---
 
-Two strategies for handling concurrent writes to the same data without
-corrupting it through a [race condition](/systems-and-infrastructure/race-conditions). **Pessimistic locking** assumes conflicts are likely and
-prevents them up front: acquire a lock before touching the data, so no
-one else can write to it until you're done. **Optimistic locking**
-assumes conflicts are rare — let everyone proceed without locking, but
-detect a conflict at write time and reject (or retry) whichever write
-loses the race.
+Your shop has one ticket left, and two buyers click "buy" in the same instant. Each request reads the stock, sees 1, and decides the sale can go ahead. Each then writes 0 and takes payment, and you have sold one ticket twice. That is a [race condition](/systems-and-infrastructure/race-conditions): the result depends on how two operations happen to interleave.
 
-## Pessimistic locking: prevent the conflict up front
+The fix is to make the two requests take turns on that row. There are two broad ways to do it, and the difference is when you pay for safety.
+
+## Lock first: pessimistic locking
+
+**Pessimistic locking** assumes a conflict is likely, so it prevents one. You take a lock on the row before you read it, and anyone else who wants to change it waits until you finish.
 
 ```sql
 BEGIN;
-SELECT * FROM inventory WHERE product_id = 42 FOR UPDATE; -- blocks other writers
+SELECT quantity FROM inventory WHERE product_id = 42 FOR UPDATE; -- blocks other writers
+-- the application checks quantity > 0 before going on
 UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 42;
 COMMIT;
 ```
 
-`SELECT ... FOR UPDATE` holds a row lock until the transaction commits.
-Any other transaction trying to update — or even lock — the same row
-blocks until this one finishes. This is safe by construction, but a
-slow or stuck transaction holds up everyone waiting behind it, and it
-doesn't work at all across services that don't share a database.
+`FOR UPDATE` locks the row until the transaction (a group of statements that succeed or fail together) commits or rolls back. The second buyer's `SELECT ... FOR UPDATE` waits, then reads the stock after the first buyer has written it, and sees 0.
 
-## Optimistic locking: detect the conflict at write time
+The price is that every writer pays for the lock, conflict or not, and a slow transaction holds up everyone queued behind it. A row lock also protects only writers who go through that database; across services that don't share one, you need a [distributed lock](/systems-and-infrastructure/distributed-locks).
 
-Instead of locking, add a version column and check that it hasn't
-changed since it was read:
+## Check at write time: optimistic locking
+
+**Optimistic locking** assumes a conflict is rare. Nobody holds a lock while reading and deciding. Instead the row carries a version number, and your write succeeds only if the version is still the one you read.
 
 ```sql
 UPDATE inventory
 SET quantity = quantity - 1, version = version + 1
 WHERE product_id = 42 AND version = 7; -- the version we read
 
--- 0 rows affected → someone else updated it first; re-read and retry
+-- 0 rows affected: someone else wrote first; re-read and retry
 ```
 
-No lock is ever held, so throughput under low contention is much
-better. But under high contention, many writers can end up retrying
-repeatedly — each one's write invalidated by the next one landing first —
-which can be worse in practice than simply queuing behind a lock in the
-first place.
+Both buyers read version 7. The first update matches and moves the row to version 8. The second finds no row at version 7, affects zero rows, and knows it lost. It re-reads, sees the stock is now 0, and tells the buyer it is sold out.
 
-## Sometimes a single statement is enough
+When conflicts are rare, this is cheaper: no lock is held, and almost every write succeeds on the first try. When they are frequent, it degrades. With many writers on one row, each one's write is invalidated by whichever lands first, so the losers retry and mostly lose again, and the wasted work can exceed what simply queuing behind a lock would have cost.
 
-Before reaching for either strategy, check whether the database can make the
-change atomically on its own, meaning as one indivisible step. A decrement
-guarded by a condition does the check and the write together:
+## Do you need either one?
+
+Often not. If the whole change fits in one statement, let the database check and write together:
 
 ```sql
 UPDATE inventory
 SET quantity = quantity - 1
 WHERE product_id = 42 AND quantity > 0;
 
--- 0 rows affected → sold out; nothing was written
+-- 0 rows affected: sold out, nothing written
 ```
 
-Two buyers racing for the last unit can't both succeed. A database's
-isolation level is a setting for how much concurrent transactions can see of
-each other's work, and at the defaults of Postgres (read committed) and
-MySQL's InnoDB (repeatable read) the second statement waits for the first
-transaction to finish, then evaluates its condition against the updated
-quantity, finds zero, and matches no row. In Postgres at repeatable read or
-serializable, the second transaction instead fails with a serialization error
-and has to be retried. There's no version column to maintain, and no lock is
-held while application code runs, as long as the statement commits promptly
-instead of sitting inside a long transaction. It only covers a change that
-fits in one statement; a flow that reads a row, decides something in
-application code, and then writes still needs one of the two strategies
-above.
+A database's **isolation level** sets how much concurrent transactions see of each other's work. At the default level of Postgres (read committed) and of MySQL's InnoDB (repeatable read), the second buyer's statement waits for the first transaction to finish, re-evaluates `quantity > 0` against the new value, and matches nothing. In Postgres at repeatable read or serializable, the second transaction instead fails with an error saying it conflicted and must be retried.
 
-## When one row is the bottleneck
+If the flow reads the ticket, applies a pricing rule in application code, and then writes, you are back to one of the two strategies above.
 
-Neither strategy makes a hot row faster; they only decide who waits. If
-thousands of requests update the same row (the stock of a flash-sale item, a
-global counter), they all queue behind that row's lock, and throughput is
-capped by how fast transactions that touch that row can commit one after
-another, even while the database has plenty of CPU and disk to spare.
+## When the ticket goes viral
 
-The cheapest relief is a shorter transaction. A row lock is held from the
-moment the row is locked until the transaction commits or rolls back, so slow
-work that doesn't depend on that row, such as calling a payment API or sending
-an email, belongs outside the transaction, and the statement that touches the
-hot row belongs as late in it as possible.
+Now suppose the ticket is the last of a flash sale and thousands of buyers hit that one row. Neither strategy makes it faster; they only decide who waits, and the sales per second are capped by how quickly transactions on that row can commit one after another.
 
-Past that, a counter can be split across several rows: each request updates
-one at random, and reading the total means adding them up. Writers collide far
-less often because they're spread across rows, at the price of more expensive
-reads. For stock that must not oversell, the randomly chosen row can be empty
-while others still hold units, so a request that lands on an empty row has to
-try another before reporting sold out. Checking the summed total first and
-then decrementing is the same read-then-write race as before: two requests can
-both see one unit left and both take it.
+The cheapest relief is a shorter transaction. Move slow work that doesn't need the row, such as the payment call or an email, outside the transaction, and put the statement that touches the hot row as late as you can.
 
-The most drastic option is to queue the writes and let a single worker, one
-process that drains the queue and is the only writer to that row, apply them.
-Because it is the only writer, contention disappears, and the worker can
-combine many requests into one statement, which cuts the per-transaction
-overhead, while the waiting requests sit in the queue instead of holding
-scarce database connections. The catch is that the worker has to decide in its
-own logic which requests get units, since a blind decrement of the whole batch
-would reject all of it whenever fewer units remain than requested. The caller
-also learns that its write was accepted, not that it was applied. The queue
-needs protection from growing without limit, which is what
-[backpressure](/systems-and-infrastructure/backpressure) is for, and because
-queues usually deliver a message at least once, a crashed worker can replay
-work, so the work has to be
-[idempotent](/systems-and-infrastructure/idempotency).
+Past that, you can split the stock across several rows, say ten rows holding a tenth each, and have each request pick one at random. Writers collide less often, at the cost of summing ten rows to read the total. A request that lands on an empty row must try another before it reports sold out, because checking the total first and then decrementing is the same read-then-write race again.
 
-## Betting on how often conflicts actually happen
+The most drastic option is to queue the writes and let one worker be the only writer to that row. The worker can fold many requests into one statement, but it must decide which requests get units, since one blind decrement of the whole batch would reject all of them when stock runs short, and the buyer learns the request was accepted, not that it was applied. The queue needs [backpressure](/systems-and-infrastructure/backpressure) so it can't grow without limit. Queues usually deliver a message at least once, so a replayed request must be [idempotent](/systems-and-infrastructure/idempotency), meaning applying it twice has the same effect as once.
 
-Locking is fundamentally a bet about conflict frequency, and the two
-strategies pay for that bet differently: pessimistic locking pays a
-guaranteed cost on every single write to buy safety up front; optimistic
-locking pays nothing on the common case but a real, escalating cost the
-moment contention turns out higher than assumed.
+## Picking one
 
-Pessimistic locking wins when conflicts are genuinely frequent and
-retrying is expensive — a multi-step checkout flow that's costly to redo
-from scratch. Optimistic locking wins when conflicts are rare and most
-attempts succeed on the first try, which describes the majority of
-real-world write patterns — part of why optimistic locking (or a
-database's own **MVCC** — multi-version concurrency control, where the
-database keeps multiple versions of a row around so readers never block
-writers or vice versa) tends to be the more common default — though note
-that write-write conflicts on the same row under MVCC typically still
-block or serialize, closer to pessimistic behavior than to lock-free
-optimistic locking.
+Pessimistic locking fits when conflicts are frequent or redoing the work is expensive, like a multi-step checkout that is costly to repeat. Optimistic locking fits when most writes touch different rows and succeed on the first try.
 
-This applies to any concurrent update to shared state: inventory
-counts, seat reservations, account balances, collaborative document
-edits. It's also the same underlying concern
-[idempotency](/systems-and-infrastructure/idempotency) addresses from a
-different angle: idempotency makes a _retried_ request safe, while a
-locking strategy determines what happens when two _different,
-concurrent_ requests touch the same data at the same time. Guess wrong
-about which strategy fits, and either throughput suffers for no reason,
-or retries pile up under load.
+**Rule of thumb.** First see whether a single guarded statement does the job. If it doesn't, use a version check when conflicts are rare and a row lock when they are common or a retry is expensive, and if one row is the bottleneck, shorten the transaction before you split the row or queue its writes.
 
 ## Where you'll meet this
 
-In payments and checkout, the contested thing is stock or a balance. A
-guarded single-statement decrement keeps two buyers from taking the last
-unit, and a multi-step flow that reads, decides, and then writes needs a
-row lock or a version check, with the lock the better bet when redoing
-the whole flow is expensive. A news feed meets the hot-row problem
-instead: the like counter on a viral post is one row with thousands of
-writers, so the relief is a shorter transaction, spreading the counter
-across several rows, or funneling the updates through a single worker,
-not a better choice between the two strategies.
+In payments, an account balance is the contested row, and a transfer that debits one account and credits another locks both rows, always in the same order, so two opposite transfers can't each wait on the other. A news feed meets the hot-row problem instead: the like counter on a viral post is one row with thousands of writers, so spreading the counter or queuing the updates matters more than which lock you pick.

@@ -1,92 +1,39 @@
 ---
 title: Worker Pools
-summary: A fixed number of workers that pull jobs from a queue, which caps how much work runs at once and lets the backlog absorb the rest.
+summary: A fixed number of workers pull jobs from a queue, which caps how much runs at once, sizes the pool by what the jobs wait on, and lets the backlog absorb a burst.
 date: 2026-09-21
 ---
 
-A **worker pool** is a fixed number of workers, each a thread, a
-process, or a whole server, that repeatedly take a job from a shared
-[queue](/systems-and-infrastructure/message-queues), run it, and come
-back for the next. The number of workers is set in advance and changed
-deliberately rather than per job. That is the point: the pool puts a
-ceiling on how much work runs at once, and jobs beyond that ceiling wait
-in the queue instead of all starting at the same moment.
+Say you run a photo-sharing site on one 8-core server. Every upload needs a thumbnail, and resizing an image takes about 200 ms of CPU. The simplest design starts a new thread for each upload. That is fine on a quiet day. Then a popular event ends, 1,000 photos arrive within a few seconds, and you have 1,000 threads, each holding a decoded image in memory, all competing for 8 cores. Nothing finishes quickly, memory climbs, and the server may fall over.
 
-The alternative is to start a new thread or process for every job. That
-works until a spike arrives, at which point thousands of simultaneous
-jobs fight over the CPU, memory and downstream services until everything
-slows down together. A pool turns that into a queue and a steady rate of
-completion.
+A **worker pool** fixes this. It is a fixed number of workers (threads, processes or whole servers) that repeatedly take a job from a shared [queue](/systems-and-infrastructure/message-queues), run it, and come back for the next. The count is set in advance and changed on purpose, not once per job. Jobs beyond what the workers can hold wait in the queue instead of all starting at once.
 
 ## How many workers?
 
-The right size depends on what each job spends its time doing.
+Start with the burst. The total work is 1,000 jobs at 200 ms, which is 200 CPU-seconds. Spread over 8 cores, that takes at least 25 seconds. A pool of 8 gets close to that floor; 1,000 threads only add switching and memory pressure on top. The pool doesn't make the work smaller. It changes how the work is shaped: 8 images in memory at a time instead of 1,000, and the first photos are done in a fraction of a second instead of everyone finishing at the end.
 
-A **CPU-bound** job keeps a processor busy the whole time, for example
-encoding a video or hashing a large file. A core can only run one such
-job at a time, so workers beyond the number of cores add no speed; they
-only add switching overhead. A pool for this kind of work is sized close
-to the core count.
+Why 8 workers, though? Because resizing is **CPU-bound**: the job keeps a processor busy the whole time. A core runs one such job at a time, so a ninth worker adds switching overhead and no speed. For CPU-bound work, size the pool near the core count.
 
-An **I/O-bound** job mostly waits: for a database reply, an HTTP
-response, a disk read. While it waits it uses almost no CPU, so a core
-can serve many such jobs by switching between them, and the pool can be
-much larger than the core count. How large depends on the ratio of
-waiting to working. If a job spends 90% of its time waiting, roughly ten
-workers can share one core's worth of computing.
+Now add a second step. After the resize, the worker puts an upload job on a second queue, served by its own pool, which sends the result to object storage. Suppose an upload takes 450 ms of waiting for the network and about 50 ms of CPU. This job is **I/O-bound**: it mostly waits, and a waiting job barely uses the CPU. If 90% of a job's time is waiting, about ten workers can take turns on one core, so 8 cores could support roughly 80 workers. The ratio of waiting to working sets the size, and real jobs are mixes, so treat the arithmetic as a starting guess. Watch CPU use and job latency, then adjust.
 
-Real jobs are usually a mix, so measure: start from a guess, watch CPU
-use and job latency, and adjust.
+Workers also use things that are limited elsewhere. If each of those 80 workers holds a database connection while it runs, and the [connection pool](/systems-and-infrastructure/database-connection-pooling) has 20, then at most 20 workers make progress at a time and 60 sit waiting for a connection. The smallest limit along the path is the real size of the pool.
 
-Workers also consume resources that are limited elsewhere. If each
-worker holds a database connection while it works, a pool of 200 workers
-against a
-[connection pool](/systems-and-infrastructure/database-connection-pooling)
-of 20 leaves 180 of them idle, waiting for a connection. The smaller
-number is the effective limit.
+## When do you add workers?
 
-## Queue depth tells you when to scale
+Say uploads settle at 50 a second, but your pool finishes 40 a second. The queue grows by 10 jobs a second, so after a minute 600 jobs are waiting. **Queue depth**, the number of jobs waiting, near zero means the workers keep up. A depth that climbs and doesn't come back down means jobs arrive faster than they finish. How long jobs wait is often more useful than the count: here, the oldest waiting job arrived about 12 seconds ago, and one joining now waits about 15 (600 jobs at 40 a second). That is the delay a user feels. This is also why fleets of workers are often autoscaled on queue depth and not on CPU. An I/O-bound pool can be far behind while its CPUs look idle.
 
-**Queue depth** is the number of jobs waiting. A depth near zero means
-the workers are keeping up. A depth that climbs and doesn't come back
-down means jobs are arriving faster than the pool finishes them, and
-more workers (or faster jobs) are needed. The age of the oldest waiting
-job is often more useful than the raw count, since it is what a user
-actually experiences as delay. This is why worker fleets are commonly
-autoscaled on queue depth rather than on CPU: an I/O-bound pool can be
-badly behind while its CPUs look idle.
+Adding workers helps only if the workers were the bottleneck. If every job hits one database that is already at its limit, more workers make it worse, and making each job faster is the better lever. The answer then is to slow the senders or turn work away, which is [backpressure](/systems-and-infrastructure/backpressure).
 
-Adding workers only helps if something else isn't the bottleneck. If the
-jobs all hit one database that is already at its limit, more workers
-make things worse, and the right response is to slow the producers or
-reject work, which is
-[backpressure](/systems-and-infrastructure/backpressure).
+## What if one job is slow?
 
-## A slow job takes a whole worker
+Each worker handles one job at a time. Suppose users can also export a whole album as a zip, which takes ten minutes. If eight exports arrive together, all eight workers are busy for ten minutes, and every thumbnail waits behind them. Two fixes are common: separate queues and pools for slow and fast work, so exports can only exhaust their own workers, and a per-job time limit, so a stuck job cannot hold a worker forever.
 
-Each worker handles one job at a time, so a job that takes an hour
-occupies a worker for an hour. If enough of them arrive together, every
-worker is stuck on a long job and quick jobs queue behind them. The
-usual fixes are separate queues and pools for slow and fast work, and a
-per-job time limit, so one stuck job can't hold a worker forever.
+## What happens on a deploy?
 
-## Shutting down without losing work
+Deploys and scale-downs stop workers, sometimes mid-job. In a **graceful shutdown**, the worker stops taking new jobs, then either finishes its current one within a time limit or hands it back to the queue. If a worker is killed outright, its job was never **acknowledged**, meaning the worker never told the broker (the queue's server) "done". An unacknowledged job typically reappears (after its visibility timeout, on brokers that use one) and another worker starts it from the beginning. The thumbnail may be generated twice, which is harmless here. It is safe in general only if the job is [idempotent](/systems-and-infrastructure/idempotency).
 
-Deploys and scale-downs stop workers, sometimes mid-job. A **graceful
-shutdown** has the worker stop taking new jobs, then either finish what
-it holds within a time limit or hand it back to the queue. If a worker
-is killed outright, an unacknowledged job typically reappears (after its
-visibility timeout, on brokers that use one) and another worker runs it
-from the start, which is safe only if the job is
-[idempotent](/systems-and-infrastructure/idempotency).
+**Rule of thumb.** Size the pool by what its jobs wait on: near the core count for CPU-bound work, larger for I/O-bound work, never beyond the tightest downstream limit. Watch queue depth and the oldest job's age, and keep slow jobs in a pool of their own.
 
 ## Where you'll meet this
 
-A URL shortener rarely needs one for the redirect itself, but it does
-for the background work around it, such as counting clicks or checking
-new links against a blocklist, where an I/O-bound pool absorbs bursts
-without slowing redirects. A news feed uses workers to update
-followers' timelines after a post, and a very popular account turns
-that into a large backlog worth watching. In a notification pipeline the
-pool is the sending stage, and its size is often set by what the mail
-or push provider will accept.
+In a notification or email pipeline, the pool is the sending stage, and its size is usually set by how many requests the mail or push provider accepts at once, not by your CPUs. In a news feed, workers update followers' timelines after a post, and a very popular account turns one post into a large burst of jobs. In a URL shortener, the redirect itself rarely needs a pool, but background work such as counting clicks or checking new links against a blocklist does.
