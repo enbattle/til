@@ -33,6 +33,8 @@ lake: "Data lake\n(offline store)" {
 }
 batch: "Batch and\ntraining jobs"
 registry: Model registry
+upload: Upload job
+catalog: Catalog
 
 client -> svc: "GET /recommendations"
 client -> collector: "POST /events"
@@ -51,3 +53,5 @@ batch -> registry: "models,\nembeddings"
 registry -> rank: "ranking model"
 registry -> ann: "index build"
 registry -> svc: "user tower,\nserving pointer"
+upload -> ann: "new-video\nembeddings"
+catalog -> svc: "ineligible IDs"
