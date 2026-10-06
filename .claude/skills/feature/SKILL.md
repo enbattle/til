@@ -150,6 +150,7 @@ to the tests it names. Gate:
 ```bash
 git status --porcelain -uall   # before and after the re-run: no implementation file may change
 npm run check:test-lock -- --verify   # lists exactly what the re-run changed
+npm run format:check && npm run lint   # no later stage may fix a locked file
 ```
 
 Every listed path must be one the report named (or a fixture it depends on);
