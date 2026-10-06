@@ -91,10 +91,10 @@ The prose, tables included, is at most 1,150 words; code blocks don't count
 `src/lib/markdown.mjs`). The same count, eager through the build-time `?words`
 view, gives the entry page's "N min read" label (230 words a minute,
 `readingMinutes` in `src/lib/reading-time.ts`). An intro
-paragraph before `## Prerequisites` is fine. `dynamic-programming.md` is the
-reference example on the new template; until each kind has one of its own,
-copy its voice, length and comment style and take the headings from the
-template above. The page builds its "On this page" list from these headings with
+paragraph before `## Prerequisites` is fine. The reference examples are
+`heap.md` for a data structure and `dynamic-programming.md` for a pattern or
+algorithm: copy their voice, length and comment style, and take the headings
+from the template above. The page builds its "On this page" list from these headings with
 `h2Headings`, as a case study does.
 
 ## Code pairs and the code files

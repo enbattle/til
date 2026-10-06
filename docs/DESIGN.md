@@ -132,7 +132,7 @@ notebook than a product. The UI follows that:
   add to the padding and land every jump too low. The same goes for in-body links: a markdown link whose href
   starts with `#` (a case study's links to its own headings) renders as
   a plain same-tab anchor, a `/…` link is a router `Link`, and an external
-  link opens in a new tab with `rel="noreferrer"`. Opening a topic or case study at a `#<heading-id>` URL works too:
+  link opens in a new tab with `rel="noreferrer"`. Opening a topic, case study or DSA entry at a `#<heading-id>` URL works too:
   the body loads after the browser's own jump, so `LazyBody` scrolls the
   heading into view once the body renders, and the same scroll padding applies;
   after that it re-aligns the heading whenever layout above it shifts, for at

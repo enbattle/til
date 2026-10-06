@@ -1,7 +1,7 @@
 # Content-review scenarios
 
-Each scenario is a fully fabricated draft topic — frontmatter and body,
-exactly as if it were about to be added via the `add-topic` skill — with
+Each scenario is a fully fabricated draft topic, case study or DSA entry —
+frontmatter and body, exactly as if it were about to be added via its skill — with
 **exactly one** deliberately planted problem. These drafts are fixtures
 for this eval only: never write them into `src/content/`. Give a
 scenario's draft, verbatim, to a fresh reviewer agent along with

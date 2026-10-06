@@ -60,7 +60,7 @@ CI or in the browser). The case studies are a bounded exception to the earlier
 worked designs that link into the catalog, but not tracks, curricula or a
 domain hierarchy over it, and catalog URLs, section pages and the topics' own
 prose are unchanged. The DSA tab ([docs/dsa.md](docs/dsa.md)) is a second
-bounded exception of the same kind: one list ordered by prerequisites, with
+bounded exception of the same kind: one list, grouped by kind and ordered by prerequisites, with
 code in files beside each entry that pytest and vitest run, but no code runner
 in the browser and no diagrams. Add one of the deferred items only if a real need shows up, not
 speculatively.

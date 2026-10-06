@@ -4,45 +4,70 @@ One row per run, newest last. Add a row for your run and replace the
 "Latest run" section below with its full log (trigger, files audited, findings, fixed, left open); git history keeps
 older logs, including the dated files this folder held until 2026-09-29.
 
-| Date       | Trigger                                 | Note                                                            |
-| ---------- | --------------------------------------- | --------------------------------------------------------------- |
-| 2026-09-24 | Process-hardening batch before merge    | 14 inaccurate claims, 11 hand-copied facts; text fixes applied. |
-| 2026-09-24 | Pre-merge audit of PR #11               | 24 inaccurate claims, 15 copied facts; text fixes applied.      |
-| 2026-09-29 | After PRs #19 to #22                    | 9 inaccurate claims, 7 copied facts; text fixes applied.        |
-| 2026-10-01 | After PRs #27 to #38                    | Text fixes applied; full log in git history.                    |
-| 2026-10-02 | After PRs #39 to #48 (DSA tab complete) | Text fixes applied; full log in git history.                    |
-| 2026-10-04 | After PRs #52 to #65                    | Latest run, below.                                              |
+| Date       | Trigger                                      | Note                                                            |
+| ---------- | -------------------------------------------- | --------------------------------------------------------------- |
+| 2026-09-24 | Process-hardening batch before merge         | 14 inaccurate claims, 11 hand-copied facts; text fixes applied. |
+| 2026-09-24 | Pre-merge audit of PR #11                    | 24 inaccurate claims, 15 copied facts; text fixes applied.      |
+| 2026-09-29 | After PRs #19 to #22                         | 9 inaccurate claims, 7 copied facts; text fixes applied.        |
+| 2026-10-01 | After PRs #27 to #38                         | Text fixes applied; full log in git history.                    |
+| 2026-10-02 | After PRs #39 to #48 (DSA tab complete)      | Text fixes applied; full log in git history.                    |
+| 2026-10-04 | After PRs #52 to #65                         | Text fixes applied; full log in git history.                    |
+| 2026-10-06 | After PRs #67 to #82 (five-minute migration) | Latest run, below.                                              |
 
-Last friction aggregation (docs-audit Stage 2b): 2026-10-04, 73 data rows. Settled from 2026-10-02 (#50): per-test timeouts deferred (DEFERRED_PRACTICES); `__pycache__` off in `test-python.mjs`; batches start from main; CI failures and re-run agents counted in rows; per-drafter `verify` declined. 2026-10-04 proposals (listed below), applied in the follow-up PR: 1, with the Stage 1 list shortened to a pointer rather than deleted; 3; 4, plus `check:pipeline-log` rejecting "pending" from 2026-10-05; 2 needed nothing new. Declined: none.
+Last friction aggregation (docs-audit Stage 2b): 2026-10-06, 119 data rows; its four proposals await the user (see Latest run). Before that 2026-10-04, 73 rows. Settled from 2026-10-02 (#50): per-test timeouts deferred (DEFERRED_PRACTICES); `__pycache__` off in `test-python.mjs`; batches start from main; CI failures and re-run agents counted in rows; per-drafter `verify` declined. 2026-10-04 proposals (listed below), applied in the follow-up PR: 1, with the Stage 1 list shortened to a pointer rather than deleted; 3; 4, plus `check:pipeline-log` rejecting "pending" from 2026-10-05; 2 needed nothing new. Declined: none.
 
-## Latest run: 2026-10-04, after PRs #52 to #65
+## Latest run: 2026-10-06, after PRs #67 to #82
 
-Trigger: 14 PRs with no audit since 2026-10-02: the wider shell and "On this page" nav with scroll-spy and a narrow-screen bar, DSA kind groups, the focus-not-obscured fix, test consolidation, the per-guard test split, and the `check:raw-html` work ending in its oxc-parser rewrite, plus four `/feature` edits. Stage 2b was due (73 data rows against 63) and ran alongside Stage 2.
+Trigger: 12 PRs with no audit since 2026-10-04.
 
-Files audited: CLAUDE.md, README.md, every file under `docs/` (specs spot-checked), `evals/` (READMEs, scenarios, results), every file under `.claude/skills/`, `.claude/hooks/*.js`, the workflow and Dependabot comments, and the site description in `package.json` (37 files plus 23 specs).
+- The five-minute writing standard and its evals (#69).
+- The temporary `template: 2` switch, `proseWordCount`, the `?words` view and the "N min read" label (#70, #71).
+- The migration of all 16 case studies and all DSA entries, 42 down to 28 (#71 to #80).
+- The final content audit (#81).
+- The retirement of the template switch, with frontmatter keys now pinned (#82).
+
+Files audited:
+
+- CLAUDE.md and README.md;
+- every file under `docs/` (specs skimmed for present-tense rules);
+- under `evals/`: the READMEs, scenarios and results;
+- every file under `.claude/skills/`;
+- `.claude/hooks/*.js`;
+- the comments in the workflows and the Dependabot config;
+- `package.json`'s description.
+
+The skill list, npm scripts, test names, function names and frontmatter allowlists all match. All eight feature-review diffs still apply.
 
 Findings fixed (stale facts):
 
-- `/feature` Stage 2 gate and `add-dsa-entry` batch mode ran `oxlint` without `--deny-warnings`, so a warning in a locked test passed Stage 2 and then failed Stage 3's `verify`, where no one may fix it.
-- `/feature` Stage 2's instruction still said #6's vector tables stay in `scripts/checks.test.mjs`; #6's sink tables moved to `scripts/check-raw-html.test.mjs`, and only the allowlist tables stay (Stages 3 and 4a already said so).
-- `docs/verification.md`: now says `check:raw-html` rejects more sinks than #6 names, that its header's list of unseen forms is examples, that `check-raw-html.test.mjs` and `check-pipeline-log.test.mjs` parse #6 and the log header (so editing either fails `test:run`), and what `check:tokens`, `check:contrast`, `check:npm-refs` and `check:pipeline-log` prove (README says verification.md has them).
-- `docs/case-studies.md`: `check:diagrams` enforces only a diagram's width, not its node or participant counts.
-- `docs/DESIGN.md`: "On this page" moved out of the "Case study navigation" bullet into its own (it covers topics and DSA entries); the thin-scrollbar item named two of the four scroll containers.
-- `docs/DEFERRED_PRACTICES.md` and `ci.yml`'s comment: "every skill's final gate runs `verify`" holds only for skills that change the repo.
-- `evals/feature-review/scenarios.md`: FR-02's hunk header pointed at line 68; the context is now at `TopicPage.tsx:72`.
-- This file's aggregation line called the 2026-10-02 proposals undecided; all were settled.
-- The skill-routing results lacked rows for #63's and #64's Stage 1 edits (#64's row says SR-01 passed); a scoped SR-01 and SR-18 run is logged there now.
-
-Rejected: the "~720 px column" figure (four docs, two code comments) is the narrowest desktop column, which is what the 960 px limit is sized for; not stale.
+- **`docs/dsa.md`:** it named `dynamic-programming.md` as the only reference example, "on the new template; until each kind has one of its own". It now names `heap.md` for data structures and `dynamic-programming.md` for patterns and algorithms.
+- **`CLAUDE.md`:** the DSA tab was "one list ordered by prerequisites". It is now "one list, grouped by kind and ordered by prerequisites".
+- **`docs/DESIGN.md`:** opening at a `#<heading-id>` URL works for DSA entries as well as topics and case studies.
+- **`evals/content-review/scenarios.md`:** the intro called every scenario a draft topic for `add-topic`, but the set now includes case studies and DSA entries.
+- **`evals/skill-routing/scenarios.md` SR-07:** the Why described a new estimation utility and a words-per-minute call. `readingMinutes` and `?words` exist now, so the Why now names the real topic-side work. The prompt and the Expected answer are unchanged.
+- **`scripts/check-diagrams.mjs`:** a comment cited checklist item 5 for diagram width; it's item 4.
+- **`docs/pipeline-log.md`:** heap.md's 2026-10-05 row logged 1 fix round with no findings. It was 0, a logging error, corrected.
 
 Left open for the user:
 
-- Owed eval: `feature-review-eval`, since a defect escaped the `on-this-page-bar` review (evals/README's table); last run 2026-10-01.
-- `.claude/hooks/nudge-precommit.js` names CLAUDE.md, README, docs/ and SKILL.md, not every surface this audit covers; folded into the proposal to make the reminder say when an audit is due.
-- Hand-copied facts: where planted guard cases go (three copies in `/feature`, plus #6 and `checks.test.mjs`'s header); `/feature`'s agent roster (CLAUDE.md, SDLC.md, the skill); the two-round review cap (five places); Python 3.11+ and the pytest install (four docs, owned by `MIN_MINOR` in `scripts/test-python.mjs`); "On this page" breakpoints restated in content.md, case-studies.md and dsa.md (DESIGN.md is canonical); the Writing Standard's bullets (still open from 2026-10-02); which edits call for an eval (evals/README, `nudge-sdlc.js`, Stage 6's process-file list, each eval skill).
-- Deletion candidates: merge `/feature`'s three "where planted cases go" parentheticals into one; the `text-tertiary`/`accent` value history in DESIGN.md's Contrast item; the one-time **Agents** backfill note in pipeline-log.md's header.
-- Stage 2b proposals:
-  1. Guard runs found one vector per round (six rows, about 64 agents and 16 fix rounds); each run added words to Stage 1's guard bullet and the next churned anyway. Stage 4's "try at least one other way of regressing what it guards" becomes "try every way you can find, reported together as one finding", and the latest Stage 1 example list (sink routes) is deleted, since `check-raw-html.test.mjs` and the script's header own it.
-  2. UI interaction-state gaps (scroll-spy, bar, focus fix): already acted on in #60; check the next UI row.
-  3. PowerShell garbling non-ASCII: `src/lib/text-encoding.test.ts` covers every tracked text file except `.py`; add `py` to its extensions.
-  4. Retro cells say "pending" for proposals later applied, and fixes held only in session briefs (prettier on saved specs): write the row in the retro commit once the user decides, have `check:pipeline-log` reject `pending` in a Retro cell, and add "run prettier on it" to Stage 1's spec-saving step.
+- **Copies of facts code owns:**
+  - README's intro line against `package.json` (nothing checks the README copy);
+  - the 1,150-word budget and 230 wpm in six docs (the code constants are defined twice);
+  - dsa.md's 28-entry Scope table and its backward-link list;
+  - the README System Design bullet's template outline;
+  - the diagram width in three docs.
+- **Hand-duplicated across docs:**
+  - the "N min read" sentence (three places);
+  - Python 3.11+ and the pytest install command (eight places, still open from 2026-10-04);
+  - the case-study and DSA templates in the docs and the skills;
+  - the Writing Standard bullets in content-review.md and `/feature` Stage 4 (Stage 4's copy omits the "Case studies and DSA entries" section);
+  - the two-round cap and which edits call for an eval (both still open).
+- **To delete or merge:**
+  - the second "N min read" passage in docs/case-studies.md;
+  - dsa.md's 28-entry Scope table, to be replaced by its own sentence plus the deliberate omissions;
+  - the one-time **Agents** backfill note in pipeline-log.md's header.
+- **Stage 2b proposals** (friction aggregation over rows 74 to 119):
+  1. Batch content rows record a `kinds:` list in the Retro cell, checked by `check:pipeline-log` against the content-review planted-violation names. Also reject a nonzero fix-round count when findings are 0/0/0 and the row has no `pre:N` (44 rows, about 90 agents, 44 fix rounds, kinds not recoverable).
+  2. Replace any remaining snapshot or value-pinned tests over published content with invariants (four rows of second copies drifting).
+  3. `/feature`'s spec gives every acceptance criterion an owner in Roles, and eval re-runs belong to the orchestrator at Stage 5. This replaces "implementer does not run evals" (four rows of orchestrator-owned gaps).
+  4. A PreToolUse hook blocks PowerShell `Set-Content` / `Out-File` on repo files without `-Encoding utf8` (two rows).
