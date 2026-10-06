@@ -1,4 +1,4 @@
----
+﻿---
 title: Heap and Priority Queue
 summary: Always knowing the smallest item and removing it in logarithmic time, by keeping a tree in an array where every parent is no larger than its children.
 date: 2026-10-01
@@ -15,7 +15,7 @@ priority queue that breaks ties fairly.
 
 ## Prerequisites
 
-- [Array and Dynamic Array](/dsa/dynamic-array): the heap lives in one, grows
+- [Arrays and strings](/dsa/arrays-and-strings): the heap lives in one, grows
   by appending at the end and shrinks by popping from the end, and the costs
   below lean on both being O(1) amortized.
 - [Binary Tree](/dsa/binary-tree): the heap is a complete binary tree, and the
@@ -126,7 +126,7 @@ paid for by the many cheap ones around it.
 Push and pop are one sift each, at most one swap per level of a tree whose
 height is ⌊log₂ n⌋. The O(n) worst case is the array underneath growing or
 shrinking, which is rare for the reasons in
-[Array and Dynamic Array](/dsa/dynamic-array). Finding an item other than the
+[Arrays and strings](/dsa/arrays-and-strings). Finding an item other than the
 smallest means checking them all: the heap property doesn't say which branch
 an item is in.
 

@@ -18,7 +18,7 @@ also notice when none exists.
   before backing up, the explicit stack that replaces recursion, and the three
   states (unvisited, on the path, finished) that detect a cycle in a directed
   graph. The DFS method below is that cycle detection with one extra line.
-- [Queue and Deque](/dsa/queue-and-deque), for first in, first out: items leave
+- [Stacks and queues](/dsa/stacks-and-queues), for first in, first out: items leave
   in the order they arrived. Kahn's method keeps its ready vertices in one. In
   Python the queue is a `deque`, whose `popleft` is O(1).
 

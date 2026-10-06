@@ -17,7 +17,7 @@ tree it handles correctly in principle: the tree is too deep.
 
 - [Linked List](/dsa/linked-list): a tree node is a linked-list node with two
   next pointers instead of one, and the same rules about references apply.
-- [Queue and Deque](/dsa/queue-and-deque): building a tree and visiting it
+- [Stacks and queues](/dsa/stacks-and-queues): building a tree and visiting it
   level by level both hand nodes through a first-in, first-out queue.
 
 You also need **recursion**: a function that calls itself on a smaller piece

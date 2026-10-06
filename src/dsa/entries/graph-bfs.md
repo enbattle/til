@@ -18,7 +18,7 @@ path it finds, and a variant that starts from many vertices at once on a grid.
   each vertex to the list of its neighbours) that the code here walks. The
   entry covers how a graph is stored but not how to traverse it, which is what
   this one adds.
-- [Queue and Deque](/dsa/queue-and-deque): BFS is a loop around a queue, and
+- [Stacks and queues](/dsa/stacks-and-queues): BFS is a loop around a queue, and
   the code relies on `popleft` taking constant time. The TypeScript version
   avoids removing from the front of an array, for the same reason that entry
   gives against `pop(0)`.
