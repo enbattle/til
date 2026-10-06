@@ -1,78 +1,43 @@
 ---
 title: Scaling Reads vs. Scaling Writes
-summary: Reads scale by adding copies of the data; writes have to scale the authoritative data itself — why that asymmetry exists and what actually helps each side.
+summary: Reads scale by adding copies of the data, while writes must be split across machines or smoothed out in time, so each kind of load needs its own fix.
 date: 2026-09-15
 ---
 
-Read-heavy and write-heavy workloads scale via genuinely different
-techniques, and conflating them is a common design mistake: throwing a
-read-scaling technique like a cache at a write-heavy problem does
-nothing for it, and vice versa.
+Say you run a photo-sharing app, and one database machine holds everything. Today people open photos about 20,000 times a second and upload about 200 new ones a second, a ratio of 100 reads to 1 write. The machine is sweating. What do you add?
 
-## The read side: adding copies
+That depends on which side is hurting, because reads and writes scale by different means. A **read** fetches data without changing it. A **write** changes it. Start with the easier side.
 
-Reads are usually the easier side to scale, because a read can be
-served from a **copy** of the data instead of the one authoritative
-source:
+## Why are reads easy to scale?
 
-- **Caching** — serve hot data from memory instead of hitting the
-  database at all; see [Caching](/systems-and-infrastructure/caching) for
-  where caches sit and how they're sized, and
-  [Cache Invalidation](/systems-and-infrastructure/cache-invalidation)
-  for the correctness side of keeping that copy from going stale.
-- **Read replicas** — one or more read-only copies of the database, kept
-  in sync (usually asynchronously) with the primary. Reads scale by
-  adding more replicas; every write still has to go through the single
-  primary. See [Read Replicas and Replication Lag](/systems-and-infrastructure/read-replicas)
-  for the lag that comes with them.
-- **A CDN** — for content that's identical for every user, push it to
-  edge servers physically close to the reader instead of serving it from
-  one origin every time.
+A read doesn't need the one true copy of the data. Any copy that is close enough to current will do, so you can make more copies. Three common ways:
 
-The common thread across all three: they all work by adding copies, and
-a copy means the reader might occasionally see slightly stale data — a
-real tradeoff to make deliberately, not a free win.
+- **A cache** keeps recently used results in fast memory, so many reads never reach the database. If 95% of those 20,000 photo opens hit the cache, the database sees 1,000 reads a second instead. See [Caching](/systems-and-infrastructure/caching) for where caches sit, and [Cache Invalidation](/systems-and-infrastructure/cache-invalidation) for keeping them from serving old data.
+- **Read replicas** are read-only copies of the database that follow the **primary**, the machine that takes writes. Spread the reads across five replicas and each handles a fifth. See [Read Replicas and Replication Lag](/systems-and-infrastructure/read-replicas).
+- **A CDN** (content delivery network) keeps copies of files that look the same to every viewer, such as the photos themselves, on servers near the readers, so they don't all travel to your servers.
 
-## The write side: splitting the source
+What does a copy cost you? It can be out of date. A replica may trail the primary by a moment, and a cache entry may outlive the change it should have reflected. You accept that on purpose, photo by photo, where a stale answer is harmless.
 
-Writes are the harder side, because every write eventually has to land
-somewhere authoritative — there's no copying your way out of needing to
-actually store the new data:
+## Why can't writes just be copied too?
 
-- **Sharding or partitioning** — split writes across multiple database
-  instances so no single machine absorbs all of the write load; see
-  [Partitioning vs. Sharding](/systems-and-infrastructure/partitioning-vs-sharding).
-- **Write-behind / asynchronous processing** — acknowledge a write once
-  it's durably queued (a message broker, a write-ahead log), and apply
-  it to the actual store slightly later, trading immediate consistency
-  for higher write throughput; see
-  [Batching and Asynchronous Writes](/systems-and-infrastructure/batching-and-asynchronous-writes).
-- **Batching** — combine many small writes into fewer, larger ones,
-  amortizing per-write overhead like a transaction commit or a network
-  round trip — the same [Latency vs. Throughput](/systems-and-infrastructure/latency-vs-throughput)
-  tradeoff batching always makes, applied to the write path specifically.
+Because a write has to land in the authoritative data, and copying doesn't change that. Replicas don't take writes off the primary, and each replica has to apply every change too. So the 200 uploads a second still arrive at one machine, and a read cache has nothing to offer them.
 
-## Diagnosing which one a system actually needs
+Suppose your app grows a feature: every photo view increments a view counter. Now each of those 20,000 views a second is also a write, and the cache you built does nothing for them. This is the situation where reads and writes need different answers. Writes have two kinds of fix.
 
-Any system-design question of "how does this scale" is really two
-separate questions, and they deserve separate answers: a social feed is
-read-heavy (far more views than posts) and leans on caching and
-replicas; a metrics-ingestion pipeline is write-heavy (constant
-high-volume writes, comparatively rare reads) and leans on sharding,
-batching, and asynchronous ingestion instead.
+**Split the data.** Divide it across several database machines, called **shards**, so each takes only part of the writes. If you shard by photo ID, the writes for one photo go to one shard and different photos' writes spread across the shards. Choosing the split, and what it costs you, is in [Partitioning vs. Sharding](/systems-and-infrastructure/partitioning-vs-sharding). A single photo that goes viral is still one counter on one shard, so splitting alone won't save you there.
 
-Reads scale by adding copies; writes scale by splitting the
-authoritative data itself. A design struggling under write load needs
-sharding or asynchronous processing, not a bigger cache — caching
-doesn't touch the write path at all.
+**Do less work per write, or do it later.** Instead of updating the database on every view, have each app server count views in memory and flush the totals once a second. Each server writes its own totals, so with 10 app servers, twenty thousand increments a second turn into at most 10 writes per photo per second: up to 5,000 a second if 500 photos are being watched, a quarter of the 20,000, and a viral photo costs 10 writes a second however many people watch it. The price is that the stored count can trail reality by about a second, and a crash can lose the unflushed counts, which a durable queue (one that writes each item to disk) in front of the store can prevent. See [Batching and Asynchronous Writes](/systems-and-infrastructure/batching-and-asynchronous-writes) for the mechanics and [Latency vs. Throughput](/systems-and-infrastructure/latency-vs-throughput) for the trade it makes, and [Message Queues and Dead Letter Queues](/systems-and-infrastructure/message-queues) for the queue.
+
+## What if reads and writes need different shapes?
+
+Sometimes the two loads pull the design in opposite directions. Writes want data stored compactly and consistently, while reads want it pre-assembled, like a photo with its counts and comments already joined. Then you can give each side its own data model, and keep the read side up to date from the write side. That is [CQRS](/systems-and-infrastructure/cqrs), and it is the same idea carried further: stop forcing one structure to serve both loads.
+
+## How do you tell which problem you have?
+
+Measure the ratio and watch where the database is struggling. A mostly-read system, like the original photo app, is held up by repeated reads of the same data, which a cache or replicas absorb. A mostly-write system, like one that ingests a stream of sensor readings, gets nothing from either. Check too whether your "reads" are quietly writing, as the view counter did.
+
+**Rule of thumb.** Find out which side is overloaded before choosing a fix. Add copies for reads, and accept some staleness in return. For writes, split the data across machines, or batch and defer the work and accept that a deferred write may not be visible, or may not survive a crash, the instant it is acknowledged unless you make it durable first.
 
 ## Where you'll meet this
 
-A news feed's reads are cached, but its posts and reactions still add a write
-load that a bigger cache does nothing for. A URL shortener is the extreme read
-case: a link is created once and followed many times, so caches, replicas and
-sometimes a CDN absorb the traffic, and link creation rarely becomes the
-bottleneck. Chat is write-heavy in a way a feed isn't: every message sent is a
-new row to store, so splitting messages across shards by conversation spreads
-that load while keeping one conversation's history together, though one very
-busy conversation can still overload its shard.
+A news feed is read-heavy, since far more people scroll than post, so its timelines come from caches and replicas while the posts themselves go to the primary. A URL shortener is the extreme case, with each link created once and followed many times, so caches and replicas serve almost all the traffic. Chat is far more write-heavy than a feed, because every message sent is a new write, so its relief comes from splitting messages across shards by conversation.
