@@ -1,4 +1,4 @@
----
+﻿---
 title: Union-Find
 summary: Tracking which elements belong together as groups merge, by pointing each element at a parent and keeping the trees flat, so every merge and every "same group?" question costs nearly constant time.
 date: 2026-10-01
@@ -16,7 +16,7 @@ that make it fast, and shows what goes wrong without each.
 
 ## Prerequisites
 
-- [Array and Dynamic Array](/dsa/dynamic-array): the whole structure is two
+- [Arrays and strings](/dsa/arrays-and-strings): the whole structure is two
   arrays indexed by element number, and every step relies on reading
   `parent[i]` in constant time.
 

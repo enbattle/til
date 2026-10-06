@@ -11,7 +11,7 @@ one of its neighbours, and keep going deeper until you reach a vertex with
 nothing new to visit. Then you back up to the most recent vertex that still has
 an unexplored neighbour and go deep again from there. Backing up always
 returns to the latest unfinished vertex, which is the behaviour of a
-[stack](/dsa/stack), so a stack is all the machinery it needs. This entry uses
+[stack](/dsa/stacks-and-queues), so a stack is all the machinery it needs. This entry uses
 it for two jobs: counting the separate pieces of a graph, and finding out
 whether a directed graph contains a loop.
 
@@ -22,7 +22,7 @@ whether a directed graph contains a loop.
   the code here walks. That entry covers storing a graph but not walking one;
   this is where walking starts. The code uses a plain dictionary (`Map` in
   TypeScript) instead of that entry's class, to stay short.
-- [Stack](/dsa/stack), for last in, first out: `push` adds to the top, `pop`
+- [Stacks and queues](/dsa/stacks-and-queues), for last in, first out: `push` adds to the top, `pop`
   removes the top, and both are O(1). A Python list and a TypeScript array do
   this with `append` / `pop` and `push` / `pop`.
 

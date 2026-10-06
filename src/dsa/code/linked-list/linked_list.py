@@ -1,12 +1,13 @@
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
 
 class Node(Generic[T]):
-    """One link: a value and a reference to the next node, or None at the end."""
+    """One link: a value and the next node, or None at the end."""
 
+    # No per-node __dict__: a million nodes would each pay for one.
     __slots__ = ("value", "next")
 
     def __init__(self, value: T) -> None:
@@ -15,83 +16,72 @@ class Node(Generic[T]):
 
 
 class LinkedList(Generic[T]):
-    """A singly linked list that keeps pointers to its first and last nodes."""
+    """A singly linked list that keeps pointers to both ends."""
 
-    def __init__(self, values: Iterable[T] = ()) -> None:
-        self._head: Node[T] | None = None
-        self._tail: Node[T] | None = None
-        self._size = 0
-        for value in values:
-            self.push_back(value)
-
-    def __len__(self) -> int:
-        return self._size
+    def __init__(self) -> None:
+        self.head: Node[T] | None = None
+        self.tail: Node[T] | None = None
 
     def __iter__(self) -> Iterator[T]:
-        node = self._head
+        node = self.head
         while node is not None:
             yield node.value
             node = node.next
 
     def push_front(self, value: T) -> None:
         node = Node(value)
-        node.next = self._head
-        self._head = node
-        if self._tail is None:
-            self._tail = node
-        self._size += 1
+        # Aim the new node at the old head before moving head. The other order
+        # makes it point at itself and drops the rest of the list.
+        node.next = self.head
+        self.head = node
+        if self.tail is None:
+            self.tail = node
 
     def push_back(self, value: T) -> None:
         node = Node(value)
-        if self._tail is None:
-            self._head = node
+        if self.tail is None:
+            self.head = node
         else:
-            self._tail.next = node
-        self._tail = node
-        self._size += 1
+            # Through the tail; walking from head to find it would cost O(n).
+            self.tail.next = node
+        self.tail = node
 
     def pop_front(self) -> T:
-        if self._head is None:
+        node = self.head
+        if node is None:
             raise IndexError("pop from empty linked list")
-        node = self._head
-        self._head = node.next
-        if self._head is None:
-            self._tail = None
-        self._size -= 1
+        self.head = node.next
+        if self.head is None:
+            # Left alone, tail keeps the popped node and the next push_back
+            # links after it, so head never gets set.
+            self.tail = None
         return node.value
 
-    def find(self, value: T) -> Node[T] | None:
-        node = self._head
-        while node is not None and node.value != value:
-            node = node.next
-        return node
-
-    def __contains__(self, value: object) -> bool:
-        return any(v == value for v in self)
-
     def remove(self, value: T) -> bool:
+        # A node can't say who points at it, so carry that node along.
         prev: Node[T] | None = None
-        node = self._head
+        node = self.head
         while node is not None and node.value != value:
             prev, node = node, node.next
         if node is None:
             return False
         if prev is None:
-            self._head = node.next
+            self.head = node.next
         else:
             prev.next = node.next
-        if node is self._tail:
-            self._tail = prev
-        self._size -= 1
+        if node is self.tail:
+            # Left alone, push_back would link after a node that's gone.
+            self.tail = prev
         return True
 
     def reverse(self) -> None:
         prev: Node[T] | None = None
-        node = self._head
-        self._tail = node
+        node = self.head
+        # The old head ends up last, and nothing will point at it afterward.
+        self.tail = node
         while node is not None:
+            # Saved first: the next line overwrites the only way forward.
             following = node.next
             node.next = prev
-            prev = node
-            node = following
-        self._head = prev
+            prev, node = node, following
+        self.head = prev

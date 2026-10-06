@@ -31,8 +31,8 @@ rewritten in place.
 
 | New entry (slug)                                       | Kind           | Absorbs                                                                                                 |
 | ------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------- |
-| Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings`                                                                              |
-| Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque`                                                                              |
+| Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings` (done, DSA batch 1)                                                          |
+| Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque` (done, DSA batch 1)                                                          |
 | Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers`                                                                    |
 | Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps`                                                                     |
 | DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional` (done, batch 1)                                                                    |
@@ -165,8 +165,7 @@ The code files:
   name (`py -c "import sys; print('queue' in sys.stdlib_module_names)"`).
   pytest puts each code folder first on the import path, so a `queue.py` or
   `string.py` either loses to the standard module already imported or shadows
-  it for every later import in the run. Name the entry instead: `dynamic-array`,
-  `strings`, `queue-and-deque`.
+  it for every later import in the run. Name the entry instead: `arrays-and-strings`, `stacks-and-queues`.
 - `test_<slug_underscored>.py` (pytest) and `<slug>.test.ts` (vitest) import
   the real code files and cover the edge cases, not only the happy path: empty
   input, duplicates, the boundaries, and a comparison against a brute-force

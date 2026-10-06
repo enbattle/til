@@ -1,4 +1,4 @@
----
+﻿---
 title: Intervals
 summary: Treating ranges as [start, end] pairs and sorting them so overlaps become neighbours, which lets one pass merge them and one sweep over the endpoints find the busiest moment.
 date: 2026-10-01
@@ -21,7 +21,7 @@ says which comparisons flip for them.
 
 ## Prerequisites
 
-- [Array and Dynamic Array](/dsa/dynamic-array): the input is a list of
+- [Arrays and strings](/dsa/arrays-and-strings): the input is a list of
   intervals, and both algorithms sort a list and then walk it by index.
 
 ## The idea

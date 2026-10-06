@@ -19,7 +19,7 @@ alternating directions. All three are the same loop with one small change.
   and the level-order list format (`[1, 2, 3, 4, None, 5, 6, None, 7]`) that
   `build_tree` below turns into nodes. That entry's `level_order` is the loop
   this one modifies.
-- [Queue and Deque](/dsa/queue-and-deque): BFS hands nodes through a
+- [Stacks and queues](/dsa/stacks-and-queues): BFS hands nodes through a
   first-in, first-out queue, and the Python code uses `collections.deque`
   because removing from the front of a plain list is slow.
 

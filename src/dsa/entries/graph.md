@@ -1,4 +1,4 @@
----
+﻿---
 title: Graph
 summary: Points joined by connections, stored either as a list of neighbours per point or as a grid with a cell for every possible connection, and how to pick between the two.
 date: 2026-10-01
@@ -18,7 +18,7 @@ this one.
 
 - [Hash Map](/dsa/hash-map), for the adjacency list: it maps each vertex to
   its list of neighbours, so finding a vertex's list is O(1) on average.
-- [Array and Dynamic Array](/dsa/dynamic-array), for the neighbour lists
+- [Arrays and strings](/dsa/arrays-and-strings), for the neighbour lists
   themselves (appending is amortized O(1), removing from the middle shifts the
   items after it) and for the rows of the adjacency matrix.
 

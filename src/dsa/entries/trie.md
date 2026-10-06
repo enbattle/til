@@ -1,4 +1,4 @@
----
+﻿---
 title: Trie
 summary: A tree that stores strings one character per level, so words that share a prefix share nodes and a lookup costs the length of the key, not the number of words.
 date: 2026-10-01
@@ -18,7 +18,7 @@ with a prefix all hang below one spot.
 - [Hash Map](/dsa/hash-map): each node keeps its children in a map from a
   character to the next node, and the costs below assume that map's O(1)
   average lookup.
-- [String](/dsa/strings): what a key is, and why the code steps through it by
+- [Arrays and strings](/dsa/arrays-and-strings): what a key is, and why the code steps through it by
   code point, so an emoji is one step and not two halves.
 
 ## What it is

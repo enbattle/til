@@ -1,4 +1,4 @@
----
+﻿---
 title: 'Dynamic Programming: Two Sequences'
 summary: Comparing two strings by filling a table with one row per prefix of the first and one column per prefix of the second, to find their longest common subsequence or the fewest edits that turn one into the other.
 date: 2026-10-01
@@ -179,7 +179,7 @@ shows, so diffing huge files uses cleverer algorithms.
 Both languages compare strings by **code point**, a single Unicode character
 such as `a` or `😀`. Python strings are sequences of code points already. A
 JavaScript string is a sequence of 16-bit units (see
-[Strings](/dsa/strings)), where `😀` counts as 2, so the TypeScript code turns
+[Arrays and strings](/dsa/arrays-and-strings)), where `😀` counts as 2, so the TypeScript code turns
 each string into an array with `Array.from`, which splits by code point. A
 character made of several code points, such as an emoji with a skin tone, is
 still several characters here.

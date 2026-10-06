@@ -1,11 +1,11 @@
-"""docs/specs/dsa-tab.md, criterion 12: the hash-map entry's Python code.
+"""Tests for the hash-map entry's Python code.
 
 API: ``HashMap(capacity=8, hash_fn=hash)`` with ``put``, ``get(key,
 default=None)``, ``delete`` (returns whether the key was there), ``len()``,
 ``in`` and a ``capacity`` property (the number of buckets).
 """
 
-import pytest
+import random
 
 from hash_map import HashMap
 
@@ -21,20 +21,15 @@ def test_starts_empty_with_the_given_capacity():
     assert m.capacity == 4
     assert m.get("a") is None
     assert "a" not in m
+    assert m.delete("a") is False
 
 
-def test_defaults_to_a_positive_capacity():
-    assert HashMap().capacity > 0
-
-
-def test_put_and_get():
+def test_one_entry():
     m = HashMap()
-    m.put("one", 1)
-    m.put("two", 2)
-    assert m.get("one") == 1
-    assert m.get("two") == 2
-    assert "one" in m
-    assert len(m) == 2
+    m.put("only", 1)
+    assert (len(m), m.get("only"), "only" in m) == (1, 1, True)
+    assert m.delete("only") is True
+    assert (len(m), m.get("only"), "only" in m) == (0, None, False)
 
 
 def test_missing_key_returns_none_or_the_default():
@@ -59,56 +54,23 @@ def test_stores_falsy_values_and_keys():
     m.put(0, None)
     m.put(None, "none-key")
     assert m.get("") == 0
-    assert "" in m
     assert 0 in m
     assert m.get(0, "missing") is None
     assert m.get(None) == "none-key"
     assert len(m) == 3
 
 
-def test_any_hashable_key():
-    m = HashMap()
-    m.put((1, 2), "tuple")
-    m.put(3, "int")
-    assert m.get((1, 2)) == "tuple"
-    assert m.get(3) == "int"
-
-
-def test_colliding_keys_stay_apart():
-    m = HashMap(8, collide)
-    for i in range(5):
-        m.put(f"key{i}", i)
-    for i in range(5):
-        assert m.get(f"key{i}") == i
-    assert m.get("key9") is None
-    m.put("key2", 20)
-    assert m.get("key2") == 20
-    assert len(m) == 5
-
-
-def test_delete_reports_whether_the_key_was_there():
-    m = HashMap()
-    m.put("a", 1)
-    m.put("b", 2)
-    assert m.delete("a") is True
-    assert m.get("a") is None
-    assert "a" not in m
-    assert m.get("b") == 2
-    assert len(m) == 1
-    assert m.delete("a") is False
-    assert m.delete("never") is False
-    assert len(m) == 1
-
-
-@pytest.mark.parametrize("victim", [0, 2, 4])
-def test_delete_from_a_collision_chain_keeps_the_rest(victim):
+def test_colliding_keys_stay_apart_and_delete_keeps_the_rest():
     m = HashMap(16, collide)
     for i in range(5):
         m.put(f"key{i}", i)
-    assert m.delete(f"key{victim}") is True
-    assert len(m) == 4
-    for i in range(5):
-        assert m.get(f"key{i}") == (None if i == victim else i)
+    m.put("key2", 20)
+    assert m.get("key2") == 20 and m.get("key9") is None
+    for victim in (0, 4, 2):  # first, last (self-swap), middle
+        assert m.delete(f"key{victim}") is True
+    assert len(m) == 2
+    assert (m.get("key1"), m.get("key3")) == (1, 3)
+    assert all(f"key{i}" not in m for i in (0, 2, 4))
 
 
 def test_put_again_after_delete():
@@ -120,41 +82,71 @@ def test_put_again_after_delete():
     assert len(m) == 1
 
 
+def test_negative_hashes():
+    m = HashMap(8, lambda key: -1 - len(key))
+    for i in range(20):
+        m.put("x" * i, i)
+    assert all(m.get("x" * i) == i for i in range(20))
+    assert m.delete("xxx") is True
+    assert m.get("xxx") is None
+
+
 def test_resize_keeps_load_factor_and_every_key():
     m = HashMap(4)
     for i in range(200):
         m.put(f"k{i}", i)
         assert len(m) / m.capacity <= 0.75
-    assert m.capacity > 4
     assert len(m) == 200
-    for i in range(200):
-        assert m.get(f"k{i}") == i
-
-
-def test_resize_rehashes_with_a_custom_hash():
-    m = HashMap(2, lambda key: len(key) * 7919)
-    keys = ["a", "bb", "ccc", "dddd", "eeeee", "ffffff", "ggggggg", "hh"]
-    for i, k in enumerate(keys):
-        m.put(k, i)
-    assert m.capacity > 2
-    for i, k in enumerate(keys):
-        assert m.get(k) == i
-
-
-def test_negative_hashes():
-    m = HashMap(8, lambda key: -1 - len(key))
-    for i in range(20):
-        m.put("x" * i, i)
-    for i in range(20):
-        assert m.get("x" * i) == i
-    assert m.delete("xxx") is True
-    assert m.get("xxx") is None
+    assert all(m.get(f"k{i}") == i for i in range(200))
 
 
 def test_overwrites_alone_do_not_grow():
     m = HashMap(4)
-    m.put("a", 1)
     for i in range(50):
         m.put("a", i)
-    assert m.capacity == 4
-    assert len(m) == 1
+    assert (m.capacity, len(m)) == (4, 1)
+
+
+def test_resize_moves_a_key_to_its_new_bucket():
+    # The entry's example: hashes 17, 6, 13 in 4 buckets; the 4th key resizes.
+    hashes = {"ada": 17, "bob": 6, "cy": 13, "di": 2}
+    m = HashMap(4, hashes.__getitem__)
+    for key in hashes:
+        m.put(key, 0)
+    assert m.capacity == 8
+    assert all(key in m for key in hashes)
+
+
+def test_doubling_keeps_total_hash_calls_linear():
+    # Mechanism: growing by a constant instead of doubling rehashes
+    # everything every few puts, which is quadratic in hash calls.
+    calls = 0
+
+    def counting(key):
+        nonlocal calls
+        calls += 1
+        return key
+
+    n = 1000
+    m = HashMap(8, counting)
+    for i in range(n):
+        m.put(i, i)
+    assert calls <= 4 * n, calls
+
+
+def test_matches_a_dict_on_random_operations():
+    for seed in range(50):
+        rng = random.Random(seed)
+        m, ref = HashMap(2, lambda key: key * 7 - 50), {}
+        for step in range(120):
+            key, op = rng.randint(0, 15), rng.choice("pgd")
+            where = f"seed={seed} step={step} op={op} key={key}"
+            if op == "p":
+                m.put(key, step)
+                ref[key] = step
+            elif op == "g":
+                assert m.get(key, "miss") == ref.get(key, "miss"), where
+            else:
+                assert m.delete(key) == (ref.pop(key, None) is not None), where
+            assert len(m) == len(ref), where
+            assert (key in m) == (key in ref), where

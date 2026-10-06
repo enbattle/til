@@ -1,4 +1,4 @@
----
+﻿---
 title: Prefix Sums
 summary: Precomputing running totals so any range sum is one subtraction, and counting subarrays that hit a target sum in one pass by remembering how often each earlier total occurred.
 date: 2026-10-01
@@ -14,7 +14,7 @@ number in a single pass.
 
 ## Prerequisites
 
-- [Array and Dynamic Array](/dsa/dynamic-array): the running totals are stored
+- [Arrays and strings](/dsa/arrays-and-strings): the running totals are stored
   in an array, and reading any index of it is the O(1) step everything here
   depends on.
 - [Hash Map](/dsa/hash-map): the counting problem keeps a map from each

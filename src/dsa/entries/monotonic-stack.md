@@ -14,7 +14,7 @@ single pass, where the obvious approach is a loop inside a loop.
 
 ## Prerequisites
 
-- [Stack](/dsa/stack): the push, pop and peek (look at the top without removing
+- [Stacks and queues](/dsa/stacks-and-queues): the push, pop and peek (look at the top without removing
   it) operations used throughout. Everything else is defined below, including
   the big-O notation (O(1), O(n)) in the Complexity section.
 
