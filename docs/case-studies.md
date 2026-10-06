@@ -29,7 +29,7 @@ is eager too (the build-time `?words` view, `proseWordCount` in
 `src/lib/markdown.mjs`), so the page's "N min read" label (230 words a minute,
 `readingMinutes` in `src/lib/reading-time.ts`) shows before the body loads.
 Frontmatter is the usual flat `key: value`, with one more required field,
-`order`, and, during the migration below, the optional `template: 2`:
+`order`:
 
 ```md
 ---
@@ -37,7 +37,6 @@ title: Design a URL Shortener (like TinyURL)
 summary: One plain-text sentence — the hook shown on the landing page and in search.
 date: YYYY-MM-DD
 order: 1
-template: 2
 ---
 ```
 
@@ -45,16 +44,9 @@ template: 2
   listed, numbered and linked prev/next in ascending `order`. `parseCaseStudy`
   throws at load time, naming the file and field, if any of the four fields is
   missing or `order` isn't a positive integer.
-- **Migrating (2026-10).** The case studies are being rewritten from a
-  6,000-word template (an `At a glance` summary, estimates, data model, API,
-  architecture, deep dives, failure modes, trade-offs) to the five-minute
-  template below, about five per pull request. A case study opts in with the
-  frontmatter line `template: 2`, and `case-study-structure.test.ts` then
-  checks it against the template below; one without the line is still checked
-  against the old template. Any other `template` value fails the test, naming
-  the file and the value. Only the structure test reads the line; the loader
-  ignores it. Every new or rewritten case study carries `template: 2`. The last
-  migration batch removes the old template, the line and this note.
+- **These four keys and no others.** `case-study-structure.test.ts` fails a
+  case study whose frontmatter has any other key, or lacks one of the four,
+  naming the file and the key.
 - **A case study is a five-minute read.** The whole page is the summary a
   reader takes into an interview, with enough reasoning under each decision to
   defend it and to guess well at a question it never asked. It meets the
@@ -98,8 +90,8 @@ template: 2
   `src/lib/markdown.mjs`: the body's prose, outside code blocks, image alt
   text, raw HTML and reference definitions). The same count, eager through the
   build-time `?words` view, gives the page's "N min read" label (230 words a
-  minute, `readingMinutes` in `src/lib/reading-time.ts`), on every case study,
-  old template or new. An in-page link,
+  minute, `readingMinutes` in `src/lib/reading-time.ts`), on every case study.
+  An in-page link,
   `[text](#heading-id)`, uses the id the heading renders with (`headingId` in
   `src/lib/headings.ts`: "Decision: the read path" is
   `#decision-the-read-path`), and the test fails one that resolves to no `#` or
@@ -107,7 +99,7 @@ template: 2
   the same tab. The page builds its "On this page" list from these headings,
   parsed with the renderer's own markdown stack and heading-id pass
   (`h2Headings` in `src/lib/headings.ts`), so keep them plain text. The URL
-  shortener (`url-shortener.md`) is rewritten first and is the reference
+  shortener (`url-shortener.md`) is the reference
   example to copy.
 
 - **Links are the data.** A case study's catalog links are extracted at build

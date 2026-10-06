@@ -3,7 +3,6 @@ title: Intervals
 summary: Sorting [start, end] ranges so overlaps become neighbors, which turns merging, inserting and counting the busiest moment into one pass.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 An **interval** is a range written `[start, end]`: a meeting from 9 to 11, a

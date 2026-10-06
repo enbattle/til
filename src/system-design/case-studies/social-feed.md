@@ -3,7 +3,6 @@ title: Design a Social Media Feed (like Instagram)
 summary: Home feeds for 500 million daily users, built by pushing posts to ordinary accounts' followers and pulling the posts of accounts with over 100,000 followers at read time.
 date: 2026-10-05
 order: 4
-template: 2
 ---
 
 You're asked to design the home screen of a photo-sharing app, like Instagram's. It's the **feed**, a scrolling list of recent posts from the accounts you follow, your **followees**; the people who follow you are your **followers**. "Posts by anyone I follow, newest first" sounds like one query, but at this scale it's the most expensive thing the system does. So the question is when to do that work: once per post, when it's written, or once per view, when it's read. It depends on who posted.

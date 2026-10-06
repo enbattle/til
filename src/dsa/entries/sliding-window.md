@@ -3,7 +3,6 @@ title: Sliding Window
 summary: Keeping a running answer for a contiguous run of an array and moving its two ends only forward, so a question about the best run takes one pass instead of a rescan per run.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 A **window** is a contiguous run of an array, marked by two indices: `left`, its first position, and `right`, its last. Sliding it means moving those indices forward while you keep an answer for what's inside, instead of recomputing that answer at every position. One array, `[2, 1, 5, 1, 3, 2]`, carries three questions: one fixed-size window and two variable-size ones.

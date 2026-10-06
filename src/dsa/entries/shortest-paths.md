@@ -3,7 +3,6 @@ title: Shortest Paths
 summary: The cheapest route from one vertex to all the others in a weighted graph, found with a heap when no edge is negative and by repeated relaxation when some are.
 date: 2026-10-05
 kind: algorithm
-template: 2
 ---
 
 "The cheapest flight", "the lowest-latency route": a graph whose edges have costs. You'll run one four-vertex graph through two algorithms: Dijkstra, which is fast but needs every cost to be zero or more, and Bellman-Ford, which is slower, accepts negative costs and can tell you when no answer exists.

@@ -3,7 +3,6 @@ title: Binary Tree
 summary: Nodes that each point to at most two children, where the tree's height, not its node count, sets the cost of walking it and whether recursion survives.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 A binary tree is a linked list that branches: each node points to up to two nodes below it instead of one. File systems and HTML documents are trees, and most tree questions come down to visiting every node in the right order. You'll build one from the list format interview problems use, write the walks that matter, and see how a tree that is too deep breaks the easy way of writing them.

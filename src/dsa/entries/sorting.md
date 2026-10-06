@@ -3,7 +3,6 @@ title: Sorting
 summary: Merge sort for a guaranteed stable O(n log n) order, quickselect for the k-th smallest without sorting the rest, and counting sort when keys are small integers.
 date: 2026-10-05
 kind: algorithm
-template: 2
 ---
 
 Sorting is two jobs: putting everything in order, and finding one rank without ordering the rest. You'll run both on `[4, 7, 2, 4, 9, 1, 4]`, which sorts to `[1, 2, 4, 4, 4, 7, 9]`: merge sort for the first job, quickselect for the second.

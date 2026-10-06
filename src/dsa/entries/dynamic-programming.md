@@ -3,7 +3,6 @@ title: 'Dynamic Programming: Memoization and Tabulation'
 summary: Answering each smaller version of a problem once, by caching a recursion or filling a table from the smallest case up, so an exponential search becomes one visit per subproblem.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 Dynamic programming (DP) solves a problem by answering smaller versions of it,

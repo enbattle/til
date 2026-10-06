@@ -3,7 +3,6 @@ title: Binary Search Tree
 summary: A binary tree that keeps smaller keys on each node's left and larger on its right, so search, insert and remove each walk one path, as long as the tree stays bushy.
 date: 2026-10-05
 kind: data-structure
-template: 2
 ---
 
 A binary search tree keeps keys sorted while you add and remove them. Build one from the keys `50, 30, 70, 20, 40, 60, 80, 65`, remove from it three ways, and then feed the same keys in a different order to see what breaks it.

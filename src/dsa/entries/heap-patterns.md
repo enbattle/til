@@ -3,7 +3,6 @@ title: Heap Patterns
 summary: Three jobs a heap does better than sorting, keeping the best k of a stream, merging sorted lists and tracking a running median, each by holding only the items that can still change the answer.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 "The 10 biggest orders", "merge these sorted logs", "the median so far". Each asks for one extreme or middle item, again and again, as data arrives, and sorting everything each time does far more work than the question needs. You'll run one stream, `4, 1, 7, 3, 8, 5`, through three heap shapes: the top 3, a merge of its sorted pieces, and its median after every value.

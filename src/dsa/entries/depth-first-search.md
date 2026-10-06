@@ -3,7 +3,6 @@ title: Depth-First Search
 summary: Following one connection as deep as it goes before backing up, to reach everything in a graph, spot a cycle, or compute a value from the bottom of a tree upward.
 date: 2026-10-05
 kind: algorithm
-template: 2
 ---
 
 Depth-first search (DFS) explores by committing: step to a neighbor, then to one of its neighbors, and keep going until you are stuck. Then back up to the nearest place with an unexplored option. Here it counts the pieces of a graph, finds a loop in a directed graph, and answers questions about a tree, which is a graph with a root and no loops.

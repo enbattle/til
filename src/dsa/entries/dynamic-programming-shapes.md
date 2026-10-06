@@ -3,7 +3,6 @@ title: 'Dynamic Programming: Common Shapes'
 summary: Most dynamic-programming problems fit one of a few table shapes, such as a grid, a budget or two sequences, and spotting the shape tells you the state, the order to fill it and the recurrence.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 Once you can write a recurrence, the hard part of a new problem is guessing its state. Three shapes hand it to you, and you'll run a small example through each.

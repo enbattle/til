@@ -3,7 +3,6 @@ title: Prefix Sums
 summary: Precompute running totals so a range sum is one subtraction, and count subarrays that hit a target by remembering which totals you have already passed.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 A prefix sum is a running total: the sum of an array from the start up to some

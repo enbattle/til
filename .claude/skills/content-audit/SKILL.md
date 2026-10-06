@@ -1,6 +1,6 @@
 ---
 name: content-audit
-description: Sweep published topic(s) under src/content/**/*.md, System Design case studies under src/system-design/case-studies/*.md, and DSA entries under src/dsa/entries/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic, case study and DSA entry (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic, case study or DSA entry. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics, case studies or DSA entries "sound AI-written," or a quality check or revision of one specific already-published topic, case study or DSA entry (not a brand-new topic being drafted — that's add-topic's job — not a brand-new case study — that's add-case-study's job — not a brand-new DSA entry — that's add-dsa-entry's job — not a rewrite of a case study or DSA entry to the current five-minute template, or a merge of DSA entries, which add-case-study and add-dsa-entry own — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
+description: Sweep published topic(s) under src/content/**/*.md, System Design case studies under src/system-design/case-studies/*.md, and DSA entries under src/dsa/entries/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic, case study and DSA entry (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic, case study or DSA entry. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics, case studies or DSA entries "sound AI-written," or a quality check or revision of one specific already-published topic, case study or DSA entry (not a brand-new topic being drafted — that's add-topic's job — not a brand-new case study — that's add-case-study's job — not a brand-new DSA entry — that's add-dsa-entry's job — not a merge of DSA entries, which add-dsa-entry owns — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
 ---
 
 # Content audit
@@ -50,8 +50,7 @@ first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
 section is unusually large. The case studies get batches of their
 own, split so each agent can read its share in full (about five per agent,
-with their `.d2` sources; a case study still on the old 6,000-word template
-needs about three per agent); check 4 below applies to them. The DSA
+with their `.d2` sources); check 4 below applies to them. The DSA
 entries get batches of their own too, about five entries per agent, since each
 comes with four code and test files under `src/dsa/code/<slug>/`; check 6
 below applies to them.

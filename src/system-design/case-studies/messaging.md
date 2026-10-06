@@ -3,7 +3,6 @@ title: Design a Chat App (like WhatsApp and Slack)
 summary: One owner numbering each conversation, retries with deduplication, and fan-out that switches to store-once above 100 members, for 10 billion messages a day.
 date: 2026-10-05
 order: 5
-template: 2
 ---
 
 You're asked to design a chat app. Alice types "On my way" to Bob: if his phone is open it should appear within a fraction of a second, and if it's off it should be waiting when it comes back, once, in the right place. A **conversation** is a 1:1 chat, a group, or a **channel**: a named room of up to tens of thousands of mostly-reading members. The hard parts are millions of open connections, one agreed order, and no lost messages.

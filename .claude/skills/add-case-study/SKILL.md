@@ -1,6 +1,6 @@
 ---
 name: add-case-study
-description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a collaborative editor case study", "add the next case study"), or to rewrite an existing one to the current five-minute template — not for a catalog topic under src/content/ (that's add-topic), not for checking an existing case study's prose quality (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
+description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a collaborative editor case study", "add the next case study") — not for a catalog topic under src/content/ (that's add-topic), not for checking an existing case study's prose quality (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
 ---
 
 # Add a case study
@@ -28,10 +28,6 @@ study would link to, write that first with `add-topic` (a case study links to
 topics; it doesn't substitute for one). Never edit files under `src/content/`
 from this skill.
 
-Rewriting an existing case study to the current template also follows this
-skill: keep its slug, `order` and any diagram that still fits, and treat the
-old text as research notes, not a draft to trim.
-
 `npm run diagrams` needs d2 v0.9.x on PATH (`d2 --version`). If it isn't
 installed, say so and give the install command docs/verification.md lists; don't commit a
 `.d2` source without its rendered SVGs, since `check:diagrams` would fail.
@@ -50,8 +46,7 @@ the voice.
   Frontmatter: `title` ("Design a <Thing> (like <familiar product>)"),
   a one-sentence `summary`, `date` (today), `order` (the next free
   positive integer; `ls src/system-design/case-studies/` and read the
-  existing orders) and `template: 2` (the five-minute template; docs/case-studies.md,
-  "Migrating").
+  existing orders), and no other key.
 - **Headings**: the `##` heading template, with what each section holds, is
   in [docs/case-studies.md](../../../docs/case-studies.md) ("The template is
   enforced"); `url-shortener.md` shows it.
@@ -97,8 +92,7 @@ to assume, which three decisions matter most), ask the user rather than guess.
 npm run verify
 ```
 
-`case-study-structure.test.ts` (the template, and the word budget on a
-`template: 2` case study, as
+`case-study-structure.test.ts` (the template, and the word budget, as
 [docs/case-studies.md](../../../docs/case-studies.md) lists them),
 `system-design.test.ts` (frontmatter, unique `order`,
 dead links), `check:diagrams` (sources rendered, SVGs and tokens current,

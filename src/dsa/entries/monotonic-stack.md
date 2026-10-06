@@ -3,7 +3,6 @@ title: Monotonic Stack
 summary: A stack that stays sorted because you pop whatever would break the order before each push, so every position's nearest larger or smaller neighbor falls out of one O(n) pass.
 date: 2026-10-05
 kind: pattern
-template: 2
 ---
 
 A monotonic stack is an ordinary stack with one rule: before you push, pop everything that would break the order you want. "Monotonic" means the stack only ever runs one way. Run it on the array `[2, 1, 2, 4, 3]` to find each value's next larger value, then flip the comparison to measure the biggest rectangle in a histogram.

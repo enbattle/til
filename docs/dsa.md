@@ -12,38 +12,6 @@ entries" section) and walks through one real, commented implementation a few
 lines at a time, in both Python and TypeScript, and that code is the same code
 the entry's tests run.
 
-**Migrating (2026-10).** The entries are being consolidated (42 to 28; the
-list is under "Scope" below) and rewritten to the templates and budget on
-this page, about five per pull request. An entry opts in with the frontmatter
-line `template: 2`, and `dsa-structure.test.ts` then checks it against the
-templates and budget on this page; one without the line is still checked
-against the earlier templates (git history has them). Any other `template`
-value fails the test, naming the file and the value. Only the structure test
-reads the line; the loader ignores it. Every new or rewritten entry carries
-`template: 2`. The last migration batch removes the earlier templates, the
-line and this note.
-
-Each merge below reads its old entries and code as research notes, deletes
-them and their code folders, and repoints every link to an old slug
-(`git grep -n "/dsa/<old-slug>"`). The new slugs are checked against Python's
-standard-library module names. Every entry not listed keeps its slug and is
-rewritten in place.
-
-| New entry (slug)                                       | Kind           | Absorbs                                                                                                                     |
-| ------------------------------------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings` (done, DSA batch 1)                                                                              |
-| Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque` (done, DSA batch 1)                                                                              |
-| Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers` (done, DSA batch 3)                                                                    |
-| Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps` (done, DSA batch 4)                                                                     |
-| DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional` (done, batch 1)                                                                                        |
-| DP: common shapes (`dynamic-programming-shapes`)       | pattern        | `dp-grids`, `dp-knapsack`, `dp-two-sequences`; a sentence each from `dp-intervals`, `dp-state-machines` (done, DSA batch 5) |
-| Sorting (`sorting`)                                    | algorithm      | `merge-sort`, `quicksort-quickselect`, `bucket-counting-sort` (counting sort as prose, no code) (done, DSA batch 5)         |
-| Breadth-first search (`breadth-first-search`)          | algorithm      | `graph-bfs`, `tree-bfs` (done, DSA batch 4)                                                                                 |
-| Depth-first search (`depth-first-search`)              | algorithm      | `graph-dfs`, `tree-dfs` (done, DSA batch 4)                                                                                 |
-| Shortest paths (`shortest-paths`)                      | algorithm      | `dijkstra`, `bellman-ford` (done, DSA batch 5)                                                                              |
-
-`prim-kruskal` keeps its slug under the title "Minimum Spanning Trees" (done, DSA batch 5).
-
 ```
 src/dsa/
   entries/<slug>.md                    # one entry
@@ -71,7 +39,6 @@ title: Binary Search
 summary: One plain-text sentence — the hook shown on the landing page and in search.
 date: YYYY-MM-DD
 kind: algorithm
-template: 2
 ---
 ```
 
@@ -91,6 +58,10 @@ problem: an algorithm's doesn't, a pattern's does. `parseDsaEntry` throws
 at load time, naming the file and field, if a field is missing or empty, if
 `kind` is anything else, or if the file isn't `src/dsa/entries/<slug>.md` with
 a lowercase kebab-case slug.
+
+Those four keys are the whole frontmatter: `dsa-structure.test.ts` fails an
+entry with any other key, or without one of the four, naming the file and the
+key.
 
 ## Templates
 
@@ -259,8 +230,7 @@ The tab covers data structures, patterns and algorithms at interview depth;
 `src/dsa/entries/` and each file's `kind` are the list. Fewer, broader entries
 beat many narrow ones: a variant someone would learn in the same sitting
 (fast and slow pointers, Bellman-Ford beside Dijkstra) is a section of the
-entry it varies, not an entry of its own. The migration's target list, 28
-entries:
+entry it varies, not an entry of its own. The 28 entries:
 
 | Kind           | Entries                                                                                                                                                                                                                                                              |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -272,3 +242,9 @@ Interval DP and state-machine DP get a sentence each in "DP: common shapes",
 not entries. Segment trees and Fenwick trees are deliberately left out.
 Adding an entry is a scope decision for the user, not a gap; a new entry still
 goes through the `add-dsa-entry` skill.
+
+Merging entries into one also follows that skill. The merge reads the old
+entries and code as research notes, deletes them and their code folders, and
+repoints every link to an old slug (`git grep -n "/dsa/<old-slug>"`); a new
+slug is checked against Python's standard-library module names ("Code pairs
+and the code files" above).

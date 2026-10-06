@@ -9,7 +9,6 @@ missed.
 (docs/case-studies.md has the template; `case-study-structure.test.ts` counts
 them). Most of the budget goes to the three decisions. When a draft runs long,
 cut an exception or a second alternative before cutting a decision's reason.
-The earlier 6,000-word case studies were thorough and hard to remember.
 
 1. **Durability and duplicates, named, not exhaustively traced.** Where a
    write goes to two places ("store, then publish"), name the risk (the second
