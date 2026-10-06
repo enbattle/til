@@ -12,6 +12,7 @@ export const REDIRECTS: Readonly<Record<string, string>> = {
   'ai-and-ml/keeping-ai-native-docs-from-going-stale':
     'coding-agents/keeping-ai-native-docs-from-going-stale',
   'ai-and-ml/triaging-ai-code-review': 'coding-agents/triaging-ai-code-review',
+  'security/session-vs-token-auth': 'security/jwt',
 };
 
 /** The current path (`/section/slug`) for an old one, if it was redirected. */

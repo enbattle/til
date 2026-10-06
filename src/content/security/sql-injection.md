@@ -1,69 +1,105 @@
 ---
-title: SQL Injection & Parameterized Queries
-summary: How unsanitized input becomes executable SQL, and why parameterized queries — not manual escaping — are the fix.
+title: SQL Injection and Parameterized Queries
+summary: Why gluing user input into a SQL string lets an attacker rewrite your query, and how parameterized queries close the hole.
 date: 2026-09-14
 ---
 
-SQL injection happens when a query is built by gluing untrusted input
-directly into a string instead of treating that input as data. The
-database can't tell "SQL the developer wrote" apart from "SQL an attacker
-smuggled in" — it just executes whatever text it's handed.
+Picture a login page. You type an email, and the server looks up your row in
+a `users` table. Somewhere in the code, a developer wrote this:
 
 ```python
-# vulnerable — user_input becomes part of the SQL itself
-query = f"SELECT * FROM users WHERE email = '{user_input}'"
+# vulnerable: the input becomes part of the SQL text
+query = f"SELECT * FROM users WHERE email = '{email}'"
 db.execute(query)
 ```
 
-If `user_input` is `' OR '1'='1`, the query becomes
-`WHERE email = '' OR '1'='1'`: true for every row, returning the entire
-table. If it's `'; DROP TABLE users; --`, the database may execute that as
-a second statement entirely.
+For an ordinary email, this works. So what goes wrong when the input isn't
+ordinary?
 
-## Why this keeps ranking as a top vulnerability
+## Input that rewrites the query
 
-It's consistently one of the most common and most damaging vulnerabilities
-in software — a recurring entry on the **OWASP Top 10**, a periodically
-updated ranking, published by the Open Web Application Security Project,
-of the web's most critical security risks. A successful injection can
-read, modify, or delete an entire database, or bypass authentication
-outright, and the vulnerable code often looks completely unremarkable
-until someone tests it with the right input. It doesn't take a
-sophisticated attacker, just one query built the wrong way.
+The database receives one string of text and has to decide which parts are
+the developer's instructions and which are the user's data. It can't tell.
+Whatever text arrives gets parsed as SQL.
 
-## Separate the data from the code, don't sanitize it
+Say the attacker types `' OR '1'='1` into the email field. After
+interpolation, the database sees:
 
-Never build SQL by concatenating or interpolating untrusted input directly
-into it. Use parameterized queries (prepared statements), where the query
-structure and the data are sent to the database separately: the driver
-guarantees the data can never be interpreted as SQL syntax, no matter what
-it contains.
-
-```python
-# safe — value is passed separately, never interpreted as SQL
-query = "SELECT * FROM users WHERE email = ?"
-db.execute(query, (user_input,))
+```sql
+SELECT * FROM users WHERE email = '' OR '1'='1'
 ```
 
-Every mainstream database driver supports this, as does every **ORM**
-(object-relational mapper — a library that lets you work with database
-rows as regular objects in your code, e.g. `User.find(id)` instead of
-writing SQL by hand; most ORMs use parameterized queries under the hood
-even though you never see the query string). There's rarely a good reason
-to build a query by string concatenation at all.
+The first quote closes the string the developer opened, and the rest becomes
+new SQL. `'1'='1'` is true for every row, so the query returns the whole
+table. If the code logs in whoever the query returns first, the attacker is
+now logged in as someone else, with no password.
 
-The fix is to never let input be interpreted as code in the first place,
-not to "sanitize or escape it carefully" after the fact — sanitization
-has to be remembered and done correctly on every single query, and one
-missed spot is all it takes. Parameterized queries make the safe behavior
-the default instead of a discipline every developer has to maintain by
-hand.
+Worse input exists. `x'; DROP TABLE users; --` closes the string, ends the
+statement with a semicolon, adds a second statement, and uses `--` (the SQL
+comment marker) to discard the leftover quote. Many drivers refuse to run
+two statements in one call by default, which blunts this particular
+trick. Attackers have other routes, such as appending a `UNION SELECT` that
+reads a different table and returns it in the page's results. All of them
+are the same bug: input that was meant to be a value got to act as code.
 
-## The same bug wears different clothes elsewhere
+This is called **SQL injection**. It has stayed on the **OWASP Top 10**, the
+Open Web Application Security Project's periodic ranking of the most
+critical web security risks, for years running (lately as part of its
+Injection category), because the vulnerable code
+looks unremarkable and one missed query is enough.
 
-Any code that builds a database query from external input — form fields,
-URL parameters, HTTP headers, even values that "shouldn't" contain SQL
-syntax (attackers don't respect that assumption) — carries this risk. The
-same underlying bug class (untrusted input treated as code) also shows up
-as command injection and, in a different form,
-[cross-site scripting](/security/xss): different syntax, same root cause.
+## Why not just clean the input?
+
+Your first idea is probably to strip or escape the dangerous characters,
+like the single quote. It sounds reasonable and it fails in practice. You
+have to remember to do it on every query in the codebase, in every place
+input enters (form fields, but also URL parameters, headers and cookies), and get the escaping right for your specific database and
+character encoding. One forgotten spot is a hole. A fix that depends on
+every developer being careful forever will eventually break.
+
+## Keep the data out of the SQL text
+
+The better fix removes the ambiguity. A **parameterized query** (also called
+a prepared statement) separates the two parts: you write the SQL with a
+placeholder where each value goes, and hand the values over separately.
+
+```python
+# safe: the driver handles the value, not your string
+query = "SELECT * FROM users WHERE email = ?"
+db.execute(query, (email,))
+```
+
+Now the database is given the structure of the query first, with the shape
+already fixed. The email arrives afterward, and it is only ever treated as a
+value to compare against. If an attacker types `' OR '1'='1`, the database
+looks for a user whose email is literally that odd string, finds none, and
+returns nothing. The quote has no power to close anything. Some drivers
+instead quote the value into the SQL text themselves, with escaping written
+once and tested for that database; either way, the value can't become SQL.
+
+Placeholder syntax varies (`?`, `$1`, `%s`, `:email`), but every mainstream
+driver supports it. So does every **ORM** (object-relational mapper), a
+library that lets you work with database rows as objects, such as
+`User.find_by(email: email)`, instead of writing SQL yourself. ORMs generally use
+parameterized queries underneath, which is why ordinary ORM calls are safe
+by default.
+
+## Where parameters can't help
+
+Two gaps remain, and they come up in practice.
+
+A placeholder stands in for a value, not for part of the query's structure.
+You can't parameterize a table name or a column name, which matters when a
+user picks a sort column, for example. In that case, compare the input
+against a fixed list of allowed names in your code and use only a match.
+
+And ORMs usually offer a "raw query" escape hatch for hand-written SQL.
+Interpolating input into that string brings the original bug back, ORM or
+not. Raw queries take placeholders too, so use them there as well.
+
+The same root cause, untrusted input treated as code, appears outside
+databases: command injection builds shell commands from input, and
+[cross-site scripting](/security/xss) builds HTML from it. The syntax
+differs, the mistake doesn't.
+
+**Rule of thumb.** Never build a SQL string out of user input: write the query with placeholders, pass the values separately, and allowlist anything that must be a name.

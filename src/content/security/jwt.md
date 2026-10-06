@@ -1,18 +1,35 @@
 ---
 title: JSON Web Tokens (JWT)
-summary: A signed, self-contained token a server can verify without a database lookup — what that buys you, and the ways it's misused.
+summary: A signed token a server can verify without a lookup, set against the session cookie it competes with, with what each costs in revocation, scale and attack surface.
 date: 2026-09-14
 ---
 
-A JSON Web Token is three parts joined by dots — `header.payload.signature`
-— each part encoded with **base64url** (a variant of base64 text encoding
-that's safe to put directly in a URL, since it avoids the `+`, `/`, and
-`=` characters plain base64 uses). The header and payload are JSON
-objects; the signature is the raw output of the signing operation, not
-JSON.
+Say you run a notes app. Priya logs in, and her next request, a few seconds
+later, may land on any of your three API servers. Each server has to answer
+one question without asking her again: who is this? There are two standard
+answers, and the rest of this page is the difference between them.
+
+## Answer one: a session
+
+On login the server creates a **session**, a record saying "this is Priya",
+stored in memory, Redis or a table. It sends back an opaque random ID in a
+cookie. On every request the browser attaches the cookie, and the server looks
+the ID up to find out who is calling.
+
+That lookup is the cost. All three servers need the same session store, or a
+[load balancer](/systems-and-infrastructure/forward-vs-reverse-proxy) has to
+send Priya back to the one server holding her session ("sticky sessions").
+The payoff is control: delete the record and she is logged out instantly.
+
+## Answer two: a signed token
+
+What if the server skipped the lookup? On login it could hand Priya a **JSON
+Web Token** (JWT) instead: a small statement of who she is, signed so nobody
+can alter it. A JWT is three parts joined by dots, `header.payload.signature`,
+each encoded in **base64url** (base64 text encoding with `+` and `/` replaced by `-` and `_`
+and the `=` padding dropped, so it is safe in a URL). Decoded, the payload is JSON:
 
 ```json
-// payload (the middle part) — decoded
 {
   "sub": "user_42",
   "role": "admin",
@@ -21,67 +38,77 @@ JSON.
 }
 ```
 
-The signature covers the header and payload, computed one of two ways:
+Priya's client sends the token on each request, usually as
+`Authorization: Bearer <token>`. The server checks the signature against the
+header and payload with its key. If it checks out, the payload is untampered and
+came from someone holding the signing key. Nothing is looked up, so any of the
+three servers can check it. The signature is made one of two ways:
 
-- **HMAC** — a _symmetric_ algorithm: the same secret key both creates
-  the signature and checks it, the way a padlock and its one matching key
-  both lock and unlock it. Every service that needs to verify a token has
-  to hold that same secret.
-- **RSA or ECDSA** — an _asymmetric_ algorithm: a private key creates the
-  signature, and a separate public key checks it. The public key can be
-  handed out freely — anyone with it can confirm a token is genuine, but
-  only the holder of the private key could have produced it.
+- **HMAC** is _symmetric_: one secret key both signs and verifies, so every
+  service that verifies tokens must hold that secret.
+- **RSA or ECDSA** is _asymmetric_: a private key signs, and a separate public
+  key verifies. The public key can be handed out freely, since it can confirm a
+  token but never make one.
 
-Either way, anyone holding the right key (secret or public) can verify
-that the payload is untampered and was issued by someone who holds the
-signing key — **without a database lookup**. Note what the signature does
-_not_ do: a JWT is signed, not encrypted. Anyone who has the token can
-read every claim in it. Never put secrets in the payload.
+A JWT is signed, not encrypted. Anyone holding Priya's token can read every
+claim in it, so keep secrets out of the payload.
 
-## What "no database lookup" actually buys you
+## What does statelessness cost?
 
-A client logs in once and gets back a signed token; from then on, any
-service that holds the signing key can verify that token locally, with no
-round-trip to a central session store on every request. That's convenient
-for microservices and for scaling horizontally behind a [load balancer](/systems-and-infrastructure/forward-vs-reverse-proxy):
-with a session store, the load balancer has to keep routing a given user
-to the same backend instance that holds their session ("sticky
-sessions"), or every instance needs access to a shared store. Stateless
-verification needs neither — any instance holding the signing key can
-handle any request.
+Revocation. The token is valid until its `exp` time, and no database says
+otherwise. If Priya's laptop is stolen, you cannot log her out. The fixes put
+state back: a short `exp` (say 15 minutes) with a longer-lived **refresh
+token** that is checked against the database whenever a new JWT is issued, a
+denylist of revoked token IDs, or a per-user version number you check on
+sensitive actions.
 
-## What that same statelessness costs you
+The token also rides on every request, and it is far larger than a session ID,
+often several hundred bytes against a few dozen.
 
-- **Revocation is hard.** A signed token is valid until it expires. There's
-  no "log out everywhere" without adding state back — a short `exp` plus
-  refresh tokens, a denylist of revoked IDs, or a per-user token version
-  you check on sensitive actions.
-- **Algorithm attacks.** The `alg` field in the header names which
-  algorithm the signature uses — and a naive verifier that just trusts it
-  is exploitable. Set `alg` to `none` and some libraries skip signature
-  checking entirely, accepting any payload as valid. Or take a server that
-  signs with RSA (public key openly available) and trick a verifier that
-  branches on the incoming `alg` field into treating that same public key
-  as an _HMAC_ secret instead — since HMAC verification just re-computes
-  the signature with the key it's given, the attacker can forge a
-  perfectly valid-looking HMAC signature using the public key everyone
-  already has. Both are real, previously-exploited vulnerabilities. The
-  fix is to never let the token pick its own verification method: hardcode
-  the expected algorithm server-side and reject anything else, rather than
-  branching on whatever `alg` the incoming token claims.
-- **Size.** A JWT is far larger than an opaque session ID and rides on
-  every request.
+## Where does the token live?
 
-## Treat it as a bearer token, because that's what it is
+The two answers differ in how they travel, and that decides the attack surface.
 
-Whoever holds the token can use it. Keep `exp` short, send it only over
-TLS, and store it with care: a token in `localStorage` is readable by any
-[XSS](/security/xss) payload, while an `HttpOnly` cookie can't be read by
-JS but then needs [CSRF](/security/csrf) defenses. There's no storage
-location that's free of tradeoffs.
+|                     | Session + cookie                   | Signed token                            |
+| ------------------- | ---------------------------------- | --------------------------------------- |
+| Revocation          | Instant: delete the record         | Hard: valid until `exp`                 |
+| Server state        | A shared store, or sticky sessions | None: verify with a key                 |
+| Default transport   | Cookie, sent automatically         | Header, attached by your code           |
+| Main attack surface | [CSRF](/security/csrf)             | [XSS](/security/xss), if JS can read it |
+| Fits best           | One server-rendered app            | APIs, mobile apps, other domains        |
 
-API access tokens, service-to-service auth, and identity tokens issued by
-an external login provider are where a JWT earns its keep. For a classic
-server-rendered web app with one backend, a session cookie is usually
-simpler and gives you instant revocation — see
-[Session vs. Token Authentication](/security/session-vs-token-auth).
+A cookie rides along on cross-site requests, so session auth needs CSRF
+defences such as `SameSite`. A token in a header is not attached
+automatically, so it is immune to CSRF. But if the client keeps it in
+`localStorage` so JS can attach it, any XSS payload can read it and send it to
+an attacker. Whoever holds the token is Priya, which is why it is called a
+**bearer token**. Send it only over TLS and keep `exp` short.
+
+## Can the token lie about how to verify it?
+
+It can try. The header's `alg` field names the signing algorithm, and a naive
+verifier trusts it. Set `alg` to `none` and some libraries skip signature
+checking, accepting any payload. Or take a server that signs with RSA, whose
+public key is published. An attacker sets `alg` to HMAC and signs a forged
+token using that public key as the HMAC secret. A verifier that branches on the
+incoming `alg` recomputes the HMAC with the key it already has for RSA, and
+accepts it. Both attacks have hit real libraries. The fix is to hardcode the
+expected algorithm in server code and reject any token that names another. A
+valid signature also doesn't mean the token is meant for you, so check `exp`,
+the issuer (`iss`) and the audience (`aud`) too.
+
+## Choosing for Priya's app
+
+- **One server-rendered backend:** sessions. They are simpler, and logout works.
+- **A single-page app or mobile client calling several APIs, or services
+  calling each other:** tokens, because statelessness and cross-domain use
+  outweigh the revocation gap. Identity tokens from an external login provider
+  are JWTs too; see [OAuth and OIDC](/security/oauth-oidc).
+- **A hybrid:** a short-lived JWT in an `HttpOnly`, `SameSite` cookie. JS
+  cannot read it, so XSS cannot steal it, the browser attaches it, and the
+  short lifetime bounds the revocation gap.
+
+**Rule of thumb.** A JWT trades instant revocation for freedom from shared
+state, so reach for one only when many services or domains must verify
+identity, and keep it short-lived; otherwise a session cookie is simpler and
+safer.
