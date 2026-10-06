@@ -29,8 +29,8 @@
     <script>
       // GitHub Pages SPA deep-link redirect (see public/404.html): a hard
       // reload or a shared link to e.g. /til/ai-and-ml/tokens hits 404.html,
-      // which encodes the path into `?p=` and reloads here. Decode it back
-      // into a real history entry before React Router ever mounts.
+      // which saves the path in sessionStorage and reloads here. Restore it
+      // as the real history entry before React Router ever mounts.
       (function () {
         const redirect = sessionStorage.getItem('til-redirect-path');
         if (redirect) {

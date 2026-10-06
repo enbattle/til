@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { readingMinutes, WORD_BUDGET, WORDS_PER_MINUTE } from './reading-time';
+import {
+  CATALOG_WORD_BUDGET,
+  readingMinutes,
+  WORD_BUDGET,
+  WORDS_PER_MINUTE,
+} from './reading-time';
+
+// docs/specs/catalog-standard.md, criterion 1: the catalog topics' budget is
+// its own constant, defined beside WORD_BUDGET.
+describe('CATALOG_WORD_BUDGET (catalog-standard criterion 1)', () => {
+  it('is 1,000 words', () => {
+    expect(CATALOG_WORD_BUDGET).toBe(1000);
+  });
+});
 
 // docs/specs/harness-follow-ups.md, criterion 1: the word budget both
 // structure tests enforce is five minutes' worth of reading, defined once here.

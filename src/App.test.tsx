@@ -15,7 +15,7 @@ describe('App routing', () => {
   it('renders a section page for a known section', () => {
     renderAt('/ai-and-ml');
     expect(
-      screen.getByRole('heading', { level: 1, name: 'AI & Machine Learning' }),
+      screen.getByRole('heading', { level: 1, name: 'AI and Machine Learning' }),
     ).toBeInTheDocument();
   });
 
@@ -39,13 +39,13 @@ describe('App routing', () => {
   // `.prose` (only the markdown body is), so they rely on the base `a`
   // style actually applying `underline`, not just a color change. Scoped to
   // <main> because the persistent sidebar nav (a sibling of <main>, present
-  // on every page) has its own "AI & Machine Learning" link with the same
+  // on every page) has its own "AI and Machine Learning" link with the same
   // accessible name.
   it('renders the section breadcrumb as an underlined link, not color-only', async () => {
     renderAt('/ai-and-ml/prompt-engineering');
     const main = screen.getByRole('main');
     const breadcrumb = await within(main).findByRole('link', {
-      name: /AI & Machine Learning/i,
+      name: /AI and Machine Learning/i,
     });
     expect(breadcrumb).not.toHaveClass('no-underline');
   });
@@ -205,10 +205,10 @@ describe('App routing', () => {
     await user.click(screen.getByRole('button', { name: /menu/i }));
     const dialog = screen.getByRole('dialog', { name: /navigation/i });
     // The home page starts with every section collapsed (section-nav
-    // redesign) — expand AI & Machine Learning before its topic link is
+    // redesign) — expand AI and Machine Learning before its topic link is
     // queryable.
     await user.click(
-      within(dialog).getByRole('button', { name: /AI & Machine Learning/i }),
+      within(dialog).getByRole('button', { name: /AI and Machine Learning/i }),
     );
     const topicLink = within(dialog).getByRole('link', { name: /Prompt Engineering/i });
     await user.click(topicLink);

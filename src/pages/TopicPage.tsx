@@ -1,4 +1,5 @@
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
+import { redirectFor } from '@/content/redirects';
 import { getSection } from '@/content/registry';
 import { TOPICS, getTopic, loadTopicBody } from '@/lib/content';
 import { LazyBody } from '@/components/LazyBody';
@@ -12,10 +13,15 @@ import { caseStudiesForTopic } from '@/lib/system-design';
 
 export function TopicPage() {
   const { section: sectionSlug, slug } = useParams<{ section: string; slug: string }>();
+  const { search, hash } = useLocation();
   const section = sectionSlug ? getSection(sectionSlug) : undefined;
   const topic = section && slug ? getTopic(section.slug, slug) : undefined;
 
-  if (!section || !topic) return <Navigate to="/not-found" replace />;
+  if (!section || !topic) {
+    const moved = sectionSlug && slug ? redirectFor(sectionSlug, slug) : undefined;
+    // A moved topic keeps the old URL's ?query and #hash; an unknown one doesn't.
+    return <Navigate to={moved ? `${moved}${search}${hash}` : '/not-found'} replace />;
+  }
 
   const { prev, next } = neighbours(
     TOPICS.filter((t) => t.section === topic.section),

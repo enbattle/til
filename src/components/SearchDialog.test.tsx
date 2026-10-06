@@ -14,7 +14,7 @@ describe('SearchDialog', () => {
     // the dialog panel), which makes a plain findByText ambiguous.
     const result = await screen.findByRole('button', { name: /Prompt Engineering/i });
     // A topic result is labelled with its section, not System Design.
-    expect(result).toHaveTextContent('AI & Machine Learning');
+    expect(result).toHaveTextContent('AI and Machine Learning');
     expect(result).not.toHaveTextContent('System Design');
   });
 

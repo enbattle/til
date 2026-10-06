@@ -16,8 +16,9 @@ pass on denser subjects, not assumed on the first read. Concretely:
   description.
 - The `summary` frontmatter field is a one-sentence scannable hook — it's
   the only place terseness is the goal. The body is a teaching write-up,
-  not a short "gotcha" note. (Case studies and DSA entries are short by
-  design; the last section below says how they meet this standard.)
+  not a short "gotcha" note. (Every page has a word budget; the two
+  sections below say how catalog topics, case studies and DSA entries meet
+  this standard within it.)
 - Prose reads like something a knowledgeable person actually wrote, not
   a generically AI-patterned draft: avoid stock rhetorical crutches
   ("not just X — it's Y," "that's the real/actual X" as a closer),
@@ -48,13 +49,44 @@ pass on denser subjects, not assumed on the first read. Concretely:
   real knowledge of the subject before publishing, not assumed correct
   because it reads confidently.
 
+## Catalog topics
+
+A topic under `src/content/` teaches one idea from zero background, and it is
+where case studies and DSA entries send a reader for more. It gets more room
+than those pages, but not unlimited room: a reader should finish it in one
+sitting.
+
+- **Five minutes at most.** At most 1,000 words of prose, which the
+  reading-time label shows as 5 min; aim for 600–900 (3 or 4 min). Words count as in the section below (tables count; code blocks and
+  frontmatter don't). In code, `src/lib/reading-time.ts` owns the number as
+  `CATALOG_WORD_BUDGET`, which `src/content/topic-structure.test.ts` imports.
+- **The lecturer voice and one running example**, exactly as the section
+  below describes them: talk to the reader, ask their next question, and carry
+  one example from the first section to the last instead of starting a new one
+  per section.
+- **A closing rule of thumb.** The body ends with one paragraph that opens
+  with bold `**Rule of thumb.**` and gives the rule a reader should carry away
+  ("**Rule of thumb.** Cache what is read often and changes rarely."). In
+  `systems-and-infrastructure`, it is the last block before
+  `## Where you'll meet this` (docs/content.md), which stays the last section.
+- **One title pattern.** A plain noun phrase ("Consistent Hashing") or
+  "X vs. Y" ("Latency vs. Throughput"). Join with "and", never "&". No
+  "What is…", "What are…" or "What's…" opener, and no subtitle of any kind
+  (colon, dash, `--` or parenthetical). The one exception is a trailing
+  all-caps acronym gloss in parentheses ("Cross-Site Scripting (XSS)"), which
+  is allowed and isn't a subtitle.
+
+`topic-structure.test.ts` checks the budget, the title and the rule-of-thumb
+paragraph. Topics not yet rewritten to this standard are on its `PENDING`
+list, which only ever shrinks (docs/content.md has the rollout).
+
 ## Case studies and DSA entries
 
 These pages prepare a reader to talk through a design or a problem in an
 interview. A reader who zones out halfway learns nothing, so they trade
 completeness for a page someone finishes and remembers. Where a rule above
-pulls the other way, this section decides for these pages; catalog topics keep
-their full depth, and they are where these pages send a reader for more.
+pulls the other way, this section decides for these pages; catalog topics
+teach more depth, and they are where these pages send a reader for more.
 
 - **About five minutes.** At most 1,150 words of prose, about five minutes at
   230 words a minute. Tables count; code blocks, diagrams and frontmatter

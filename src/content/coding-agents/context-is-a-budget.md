@@ -9,7 +9,7 @@ rather than making up the product itself: the instruction file the agent reads
 at the start of every session, the skills and procedures it loads for
 particular tasks, the hooks that fire on its actions, the checks it has to
 pass, and the [evals](/ai-and-ml/what-are-evals) that test whether the rest
-still works. [Documentation, skill or hook?](/ai-and-ml/documentation-vs-skill-vs-hook)
+still works. [Documentation, skill or hook?](/coding-agents/documentation-vs-skill-vs-hook)
 covers which of those forms a rule should take. This topic is about how many
 rules there should be.
 
@@ -42,7 +42,7 @@ the less likely any one of them is to be followed.
 
 Then there's upkeep. Every rule has to stay true as the code changes around
 it, and a rule that has quietly become false is worse than no rule, because
-the agent follows it. [Keeping AI-native docs from going stale](/ai-and-ml/keeping-ai-native-docs-from-going-stale)
+the agent follows it. [Keeping AI-native docs from going stale](/coding-agents/keeping-ai-native-docs-from-going-stale)
 covers that problem; the fewer rules there are, the less of it there is.
 
 One project added a fix for each problem it hit for under three weeks and
@@ -55,7 +55,7 @@ whenever a new check read the site's markdown, the plan for it had to list
 every way the markdown could be laid out (a list nested in a list, a list
 inside a quote, a link written in reference style), and in practice each
 **review round**, one pass of review and fixes, turned another of those into a
-test. [Triaging AI code review](/ai-and-ml/triaging-ai-code-review)
+test. [Triaging AI code review](/coding-agents/triaging-ai-code-review)
 covers what replaced it.
 
 ## Keeping it lean
