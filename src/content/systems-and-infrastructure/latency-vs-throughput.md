@@ -1,72 +1,37 @@
 ---
 title: Latency vs. Throughput
-summary: Two different performance numbers that trade off against each other, so optimizing one can quietly wreck the other.
+summary: Latency is how long one request takes and throughput is how many a system finishes per second, and tuning one often costs you the other.
 date: 2026-09-14
 ---
 
-**Latency** is how long a single request takes to complete — "this
-response came back in 120 milliseconds." **Throughput** is how much work
-a system gets through per unit of time — "this system handles 5,000
-requests per second." They sound like two ways of saying "how fast is
-it," but they're genuinely different measurements, and improving one can
-actively make the other worse.
+Imagine a service that records user events, such as clicks and page views, by writing a row to a database for each one. Two numbers describe how well it performs, and they sound like the same thing. **Latency** is how long a single request takes from start to finish ("this event was saved 120 milliseconds after it arrived"). **Throughput** is how much work the system finishes per unit of time ("it can save up to 5,000 events per second"). Why can't you always have both at once?
 
-## Why raising one can lower the other
+## Why does improving one hurt the other?
 
-**Batching** is the clearest example. Processing items one at a time
-keeps each item's latency low — it's handled the moment it arrives — but
-caps throughput at whatever a single item costs to process. Grouping many
-items into a batch spreads a fixed cost (a network round-trip, a database
-transaction) across all of them, which raises throughput. But now the
-first item to arrive has to sit and wait for the rest of the batch to
-fill before anything gets processed at all — its individual latency just
-went up, even though the system as a whole is getting more done per
-second.
+Take the event service. Suppose every database write has a fixed cost of 10 ms (a network round trip plus the commit, the step that makes the write durable), and each row inside the write adds 0.1 ms. Writing events one at a time costs 10.1 ms each, so a lone write's latency is low, about 10 ms. But one writer, waiting on each write before starting the next, manages only about 99 writes per second, because each one pays the full 10 ms.
 
-The same tension shows up with concurrency. Adding more workers raises
-throughput, up to a point — but past that point, contention (workers
-waiting on the same lock, waiting their turn for CPU time, queueing for
-a shared resource) starts increasing how long each individual request
-takes, even while total throughput keeps climbing.
+Now suppose events arrive at 1,000 per second. One at a time, the service falls far behind, and a line of unsaved events grows without limit. The standard fix is **batching**: collect 100 events and write them together. That costs 10 + 100 × 0.1 = 20 ms per batch, which is 5,000 events per second of capacity, fifty times better. See [Batching and Asynchronous Writes](/systems-and-infrastructure/batching-and-asynchronous-writes) for the full technique.
 
-## The formula that ties them together: Little's Law
+Look at what happened to latency, though. At 1,000 events per second, a batch of 100 takes 100 ms to fill. The first event in a batch waits about 100 ms for its companions and then another 20 ms to be written: 120 ms, where a lone write took 10. The last event waits no time to fill and takes 20 ms. Averaged over the batch, it's about 70 ms. Capacity went up fiftyfold, and each event now takes about seven times as long as a lone write would. At 1,000 a second that is still a win, since the unbatched line was growing without limit, but at low traffic you would be paying latency to buy throughput nobody needs.
 
-**Little's Law** states a simple, mechanical relationship: `L = λW` — the
-average number of requests a system is holding at once (`L`) equals the
-rate new requests arrive (`λ`) multiplied by how long each one spends in
-the system (`W`, which is latency). It's not an optimization technique,
-just a reminder that these two numbers can't be treated as independent.
+## What about adding more workers?
 
-Concretely: a service handling 50 requests per second, each taking 200
-milliseconds, is holding `L = 50 × 0.2 = 10` requests at any given moment
-on average — that's the concurrency it needs just to keep up, before any
-actual queueing starts. Push the arrival rate up without also pushing
-latency down, and the number of requests in flight at once grows too —
-which usually means queueing, and queueing usually makes latency worse
-next, not better. (For the underlying raw latencies that estimates like
-this build on — memory, disk, and network round-trip times — see
-[Numbers Every Engineer Should Know](/engineering-practices/numbers-every-engineer-should-know).)
+The other way out is to run many writers at once. Several workers writing in parallel (a [worker pool](/systems-and-infrastructure/worker-pools)) raise throughput, because while one waits on the database another can be working. Little's Law, below, says how many: at 1,000 events a second and 10.1 ms each, about 10 writers keep up without batching. But the workers share things: the database's connections, a lock on a hot row, the CPU. Past some point each new worker mostly adds waiting, so every request takes longer, and total throughput flattens and can even fall. Doubling the workers doesn't double anything once the shared resource is the limit.
 
-## Deciding which one actually matters here
+## How do the two numbers connect?
 
-Most systems can't maximize both latency and throughput at once, and
-which one should win is a real design decision that differs by endpoint,
-not just by system. A search-autocomplete endpoint needs low latency even
-at some throughput cost — a suggestion that arrives a second late is
-useless no matter how many the backend could technically serve per
-second. A nightly batch job processing millions of records wants maximum
-throughput and can tolerate high latency on any single record, since
-nothing is waiting on one record in particular. Optimizing for the wrong
-one — batching a user-facing request to squeeze out more throughput, or
-handling a bulk job one row at a time to keep per-row latency low — is a
-common, and avoidable, performance mistake.
+**Little's Law** ties them together: `L = λW`. Here `L` is the average number of requests inside the system at once, `λ` (lambda) is the rate at which requests arrive, and `W` is the average time each spends in the system, which is its latency. It holds for any stable system, whatever its internals.
+
+Check it against the batched service. Events arrive at 1,000 per second and spend about 0.07 s each in the system, so `L = 1,000 × 0.07 = 70` events are in flight on average: the ones waiting for a batch to fill and the ones being written. The law makes one fact hard to ignore. If you hold throughput fixed and latency rises, more work piles up inside the system. If you push arrivals past what the system can finish, `L` has nowhere to level off, and a queue grows. That queue is where latency goes to get much worse; the usual defence is [backpressure](/systems-and-infrastructure/backpressure), refusing or slowing new work instead of letting the line grow. The raw costs behind numbers like the 10 ms above are in [Numbers Every Engineer Should Know](/engineering-practices/numbers-every-engineer-should-know).
+
+## Which one should you optimize?
+
+It depends on who is waiting. If a person is watching a screen, latency wins, and you should look at the slow tail as well as the average. A "p99" latency is the time that 99 percent of requests beat, so the slowest 1 percent are worse than that. If nobody is waiting on any individual item, such as a nightly job loading millions of records, throughput wins and a long wait per record is fine.
+
+You can bound the latency cost by batching on size and on time: write when 100 events have gathered or when 20 ms have passed, whichever comes first. Under heavy load batches fill to the size limit and throughput stays high; when traffic is light, the time limit keeps latency bounded. When one system holds both kinds of work, a [message queue](/systems-and-infrastructure/message-queues) between them lets each side run at its own pace.
+
+**Rule of thumb.** Decide who is waiting on each request. If a person is, protect latency and batch only up to a short, fixed time limit. If no one is, batch as large as memory and failure recovery allow, and measure both numbers whenever you change either.
 
 ## Where you'll meet this
 
-Chat is a latency system: holding messages back to deliver them in batches
-would raise throughput and make every conversation feel laggy. A notification
-pipeline has to decide between latency and throughput twice, because a
-password-reset message needs to arrive within seconds while a newsletter going
-to a million recipients is happy to be batched and slow per recipient. That
-split is commonly handled by giving the two kinds of traffic separate queues,
-so a bulk send doesn't sit in front of an urgent one.
+In chat and messaging, a message should show up in well under a second, so senders are served one at a time or in tiny batches, while the history written behind the scenes can be grouped heavily. A notification or email pipeline serves both kinds: a password-reset message is latency-sensitive and a bulk announcement is throughput-sensitive, so the two usually travel on separate queues so a large send doesn't sit in front of an urgent one.
