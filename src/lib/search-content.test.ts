@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { bodyOnlyWord } from '@/test/content';
+import { TOPICS } from './content';
+import { DSA_ENTRIES } from './dsa';
 import { parseFrontmatter } from './frontmatter';
 import { CASE_STUDIES } from './system-design';
 import { ensureFullTextSearch, searchContent } from './search';
@@ -38,7 +41,11 @@ describe('searchContent', () => {
 
   it('finds a topic by a distinctive body phrase once full-text search has loaded', async () => {
     await ensureFullTextSearch();
-    const results = searchContent('thin vertical slice');
+    // Read from the topic's file, not pinned (docs/specs/harness-follow-ups.md,
+    // criterion 9).
+    const results = searchContent(
+      bodyOnlyWord('engineering-practices', 'plan-before-you-build'),
+    );
     expect(
       results.some(
         (result) =>
@@ -51,22 +58,25 @@ describe('searchContent', () => {
     const raw = RAW['/src/system-design/case-studies/url-shortener.md'];
     expect(raw).toBeDefined();
     const { data, content } = parseFrontmatter(raw);
-    // A required template heading that the title and summary don't contain, so
-    // only the body can match it.
-    const phrase = [
-      'Back-of-the-envelope estimates',
-      'Failure modes and bottlenecks',
-      'High-level architecture',
-    ].find(
-      (candidate) =>
-        content.includes(candidate) &&
-        !`${data.title} ${data.summary}`.toLowerCase().includes(candidate.toLowerCase()),
-    );
+    // A heading read from the file now, which the title and summary don't
+    // contain, so only the body can match it; no published phrase is pinned
+    // (docs/specs/harness-follow-ups.md, criterion 9).
+    const phrase = [...content.matchAll(/^##+ +(.+)$/gm)]
+      .map(([, heading]) => heading.trim())
+      .find(
+        (heading) =>
+          // Plain words within Fuse's 32-character pattern length.
+          /^[A-Za-z -]{4,32}$/.test(heading) &&
+          !`${data.title} ${data.summary}`.toLowerCase().includes(heading.toLowerCase()),
+      );
     expect(phrase).toBeDefined();
 
     await ensureFullTextSearch();
+    // Every document may match a template heading, so the limit covers the
+    // whole corpus: this tests that the body is searched, not how it ranks.
+    const everything = TOPICS.length + CASE_STUDIES.length + DSA_ENTRIES.length;
     expect(
-      searchContent(phrase!, 50).some(
+      searchContent(phrase!, everything).some(
         (r) => r.kind === 'caseStudy' && r.caseStudy.slug === 'url-shortener',
       ),
     ).toBe(true);

@@ -59,6 +59,35 @@ export function dsaEntryBody(slug: string): string {
   return parseFrontmatter(rawDsaEntry(slug)).content;
 }
 
+/** A word only the body of topic `section/slug` contains: in no other
+ * published file and not in its own frontmatter, so only full-text search can
+ * find it, and it ranks first. Read from the files at test time, so a search
+ * test pins no published phrase (docs/specs/harness-follow-ups.md,
+ * criterion 9). */
+export function bodyOnlyWord(section: string, slug: string): string {
+  const path = `/src/content/${section}/${slug}.md`;
+  const raw = rawTopic(section, slug);
+  const { data, content } = parseFrontmatter(raw);
+  const frontmatter = Object.values(data).join(' ').toLowerCase();
+  const others = Object.entries({
+    ...RAW_TOPICS,
+    ...RAW_CASE_STUDIES,
+    ...RAW_DSA_ENTRIES,
+  })
+    .filter(([other]) => other !== path)
+    .map(([, text]) => text.toLowerCase());
+  const word = content
+    .toLowerCase()
+    .match(/\b[a-z]{9,20}\b/g)
+    ?.find(
+      (candidate) =>
+        !frontmatter.includes(candidate) &&
+        others.every((text) => !text.includes(candidate)),
+    );
+  if (!word) throw new Error(`${section}/${slug} has no word of its own to search for`);
+  return word;
+}
+
 /** A copy of frontmatter `data` with `field` removed. */
 export function without(
   data: Record<string, string>,

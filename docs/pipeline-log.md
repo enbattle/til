@@ -35,7 +35,8 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
   Stage 3 round the same way. Example: `0/2/1, pre:1`.
 - **Fix rounds** — rounds of the capped fix loop used: `0`, `1` or `2`, or
   `N (user-authorized)` (N of 3 or more) when the user explicitly authorized
-  rounds beyond the cap.
+  rounds beyond the cap. From 2026-10-07, a fix round needs a cause: the
+  check rejects one on a row with no gate failure, finding or `pre:N`.
 - **Agents** — how many agent runs the run started: every Agent call, test-writers,
   reviewers, triagers, fixers and eval agents included. `—` on rows from
   before the column existed.
@@ -45,7 +46,12 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
   change). Never a proposal still pending: the row is written once the user
   has decided, and the check rejects "pending" from 2026-10-05. `n/a` for
   `add-topic`, `add-case-study` and `add-dsa-entry`, which have no
-  retrospective.
+  retrospective; from 2026-10-07, one of those whose findings aren't `0/0/0`
+  names their kinds instead, as `kinds: a, b` from: `jargon`, `tone`,
+  `figurative`, `wrong-claim`, `estimate`, `no-alternative`, `compression`,
+  `code-bug`, `test-gap`, `narration`, `duplication`, `inconsistency`,
+  `structure`. `KINDS` in `scripts/check-pipeline-log.mjs` is the source of
+  this list.
 - **Escaped defect** — empty until a later fix traces a bug to this run.
 
 | Date       | Run                                                                          | Gate failures                                                                                                      | Findings (H/M/L, pre) | Fix rounds          | Agents | Retro                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Escaped defect                                                                                                                                                                                      |

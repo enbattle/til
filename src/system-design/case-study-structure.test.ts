@@ -6,6 +6,7 @@ import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { proseWordCount } from '@/lib/markdown.mjs';
+import { WORD_BUDGET } from '@/lib/reading-time';
 
 /**
  * Content-structure test for the System Design case studies; the rules are in
@@ -114,7 +115,6 @@ const TEMPLATE: (string | RegExp)[] = [
   DECISION,
   'Likely follow-ups',
 ];
-const WORD_BUDGET = 1150;
 
 /** The text of the bold that `block` (a list item or paragraph) opens with,
  * looking through a loose item's paragraph; `undefined` when it doesn't open

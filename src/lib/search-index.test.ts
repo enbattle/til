@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { bodyOnlyWord } from '@/test/content';
 import type { CaseStudy, Topic } from '@/types';
 import { createSearchIndex, type SearchResult } from './search';
 
@@ -284,16 +285,19 @@ describe('the default search instance (criteria 5, 6, 7)', () => {
   });
 
   it('does not find plan-before-you-build by a body-only phrase until ensureFullTextSearch runs', async () => {
+    // Read from the topic's file, not pinned (docs/specs/harness-follow-ups.md,
+    // criterion 9).
+    const phrase = bodyOnlyWord('engineering-practices', 'plan-before-you-build');
     const search = await import('./search');
     expect(search.isFullTextSearchReady()).toBe(false);
-    expect(keys(search.searchContent('thin vertical slice'))).not.toContain(
+    expect(keys(search.searchContent(phrase))).not.toContain(
       'topic:engineering-practices/plan-before-you-build',
     );
 
     await search.ensureFullTextSearch();
 
     expect(search.isFullTextSearchReady()).toBe(true);
-    expect(keys(search.searchContent('thin vertical slice'))).toContain(
+    expect(keys(search.searchContent(phrase))).toContain(
       'topic:engineering-practices/plan-before-you-build',
     );
   });

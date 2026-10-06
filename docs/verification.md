@@ -46,7 +46,10 @@ proves text clears WCAG AA (4.5:1) on the surfaces it sits on, in both themes;
 script in `package.json`; `check:pipeline-log` proves every row of
 `docs/pipeline-log.md` has its header's eight columns in their format, and that
 a run with gate failures or findings doesn't close with a bare "nothing to
-change" retro.
+change" retro. For rows dated after 2026-10-06 it also fails a content row
+(`add-topic`, `add-case-study`, `add-dsa-entry`) with findings whose Retro
+doesn't name them as `kinds: a, b` from the script's `KINDS` list, and any row
+with a fix round but no gate failure, finding or `pre:N` to cause it.
 
 `src/lib/text-encoding.test.ts` (part of `test:run`) fails on any tracked text
 file holding double-encoded UTF-8. That happens when a UTF-8 file is read as
@@ -54,7 +57,27 @@ Windows-1252 and written back, as Windows PowerShell 5.1's
 `Get-Content`/`Set-Content` do. It also fails on U+FFFD, which is what a file
 saved in the ANSI code page decodes to. It scans `git ls-files` output (plus
 untracked, unignored files) by extension and skips `public/`. A topic that
-needs to show mojibake as an example would need an exemption there.
+needs to show mojibake as an example would need an exemption there. It stays
+the real gate; `.claude/hooks/block-powershell-writes.js` only saves the redo,
+denying a PowerShell command that writes a file inside the project
+(`Set-Content`, `Add-Content`, `Out-File`, `Tee-Object` and their aliases
+`sc`, `ac`, `tee`; a `>`/`>>`/`2>`/`*>` redirection; `[IO.File]::Write*`/`Append*`)
+and pointing to the Edit or Write tool or a Node script. It resolves
+`$env:X`/`${env:X}` and a variable assigned a quoted literal earlier in the
+same command, taking the assignment in force where each write runs (a write
+before any assignment, or through a variable last assigned anything but a
+quoted literal, fails open); assignment-looking text inside a quoted string is
+ignored. It matches command text, not a full parse, so it fails open: writes
+outside the project, `$null`, a path starting with an unknown variable and
+unparseable input are allowed, a variable chain (`$f="$root\docs\a.md"`) fails
+open, and typed (`[string]$f=`) and scoped (`$script:f`) assignments,
+`Set-Variable`, a parenthesised `($f)` and `$(...)` subexpressions aren't
+recognized. It reads text order, not run order, so a script block or function
+defined before the assignment it reads resolves against the assignments above
+it. It doesn't track a `cd` inside the command, recognize dot-sourcing a write
+cmdlet (`. Set-Content ...`) or check `New-Item -Value`, `Export-Csv` or
+`Start-Transcript` (the hook's header lists these limits). `scripts/block-powershell-writes.test.mjs` holds
+its vectors.
 
 `npm run test:py` (`scripts/test-python.mjs`) runs pytest over the DSA
 entries' Python code in `src/dsa/code`, and fails with install instructions

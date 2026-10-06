@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TOPICS, loadAllTopicBodies } from '@/lib/content';
 import { CASE_STUDIES, getCaseStudy } from '@/lib/system-design';
+import { bodyOnlyWord } from '@/test/content';
 import { escapeRegExp, renderDialog } from '@/test/render';
 
 // The dialog's search module is swapped for one whose index is built fresh for
@@ -27,7 +28,9 @@ vi.mock('@/lib/search', async () => {
 });
 
 const LOADING = 'Loading full-text search…';
-const BODY_ONLY_PHRASE = 'thin vertical slice';
+// Read from the topic's file, not pinned (docs/specs/harness-follow-ups.md,
+// criterion 9).
+const BODY_ONLY_PHRASE = bodyOnlyWord('engineering-practices', 'plan-before-you-build');
 const BODY_ONLY_TOPIC = /Plan Before You Build/i;
 const CASE_STUDY_BODY_WORD = 'zanzibarquokkatron';
 

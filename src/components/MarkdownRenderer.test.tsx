@@ -35,9 +35,9 @@ describe('MarkdownRenderer', () => {
     expect(link).toHaveAttribute('rel', 'noreferrer');
   });
 
-  // At-a-glance spec, criterion 5: an in-page `#…` link (how a case study's
-  // At a glance section links into its own sections) stays in the same tab
-  // as a plain anchor, so the browser scrolls to the heading id natively.
+  // An in-page `#…` link (how a case study's prose points to one of its own
+  // `Decision:` headings) stays in the same tab as a plain anchor, so the
+  // browser scrolls to the heading id natively.
   it('renders an in-page #id link as a plain same-tab <a>, with no target or rel', () => {
     const { container } = renderMarkdown('## Some id\n\nSee [the section](#some-id).');
     const link = screen.getByRole('link', { name: 'the section' });

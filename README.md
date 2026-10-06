@@ -2,8 +2,10 @@
 
 A searchable reference of programming, systems, AI and learning topics, plus
 worked System Design case studies and data structures & algorithms entries for
-interview prep. Topics are grouped into
-sections, and the whole thing is deployed as a static site.
+interview prep.
+
+Topics are grouped into sections, and the whole thing is deployed as a static
+site.
 
 **[enbattle.github.io/til](https://enbattle.github.io/til)**
 

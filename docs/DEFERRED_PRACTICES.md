@@ -38,7 +38,9 @@ than relying on the agent choosing to run checks.
 rejected for a specific, verified reason: Claude Code's PreToolUse hooks
 **fail open on timeout** — if the check doesn't finish inside its
 configured timeout, the tool call proceeds anyway, block or no block.
-`til`'s existing hooks use a 10-second timeout; the full verification
+`til`'s existing hooks use a 10-second timeout (the one that denies,
+`block-powershell-writes.js`, blocks a PowerShell file write, not a commit, and
+decides from the command text alone, so it never nears it); the full verification
 suite (`npm run verify`; docs/verification.md describes each check) can exceed that, which means a naive version of this hook would
 silently stop blocking the first time a check ran slow — a false sense
 of security, which is worse than no hook. A narrower version (gating
