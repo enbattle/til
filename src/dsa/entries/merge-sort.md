@@ -87,7 +87,7 @@ runs. V8, the engine behind Chrome and Node.js, also uses Timsort for
 unstable quicksort; JavaScript's specification has required a stable sort
 since ES2019. Both are stable, which is why you can sort by a secondary key
 first and a primary key second. Merging sorted pieces is also the idea behind
-[k-way merge](/dsa/k-way-merge), which merges many sorted lists with a heap.
+[k-way merge](/dsa/heap-patterns), which merges many sorted lists with a heap.
 
 Another approach, quicksort, is usually faster in practice on arrays held in
 memory and uses less extra space, but it is not stable and its worst case is

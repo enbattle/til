@@ -34,12 +34,12 @@ rewritten in place.
 | Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings` (done, DSA batch 1)                                                          |
 | Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque` (done, DSA batch 1)                                                          |
 | Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers` (done, DSA batch 3)                                                |
-| Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps`                                                                     |
+| Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps` (done, DSA batch 4)                                                 |
 | DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional` (done, batch 1)                                                                    |
 | DP: common shapes (`dynamic-programming-shapes`)       | pattern        | `dp-grids`, `dp-knapsack`, `dp-two-sequences`; a sentence each from `dp-intervals`, `dp-state-machines` |
 | Sorting (`sorting`)                                    | algorithm      | `merge-sort`, `quicksort-quickselect`, `bucket-counting-sort` (counting sort as prose, no code)         |
-| Breadth-first search (`breadth-first-search`)          | algorithm      | `graph-bfs`, `tree-bfs`                                                                                 |
-| Depth-first search (`depth-first-search`)              | algorithm      | `graph-dfs`, `tree-dfs`                                                                                 |
+| Breadth-first search (`breadth-first-search`)          | algorithm      | `graph-bfs`, `tree-bfs` (done, DSA batch 4)                                                             |
+| Depth-first search (`depth-first-search`)              | algorithm      | `graph-dfs`, `tree-dfs` (done, DSA batch 4)                                                             |
 | Shortest paths (`shortest-paths`)                      | algorithm      | `dijkstra`, `bellman-ford`                                                                              |
 
 `prim-kruskal` keeps its slug under the title "Minimum Spanning Trees".
@@ -236,9 +236,9 @@ prerequisites are all placed, the first by kind, then title, then slug. The
 groups then keep that order, kind by kind (`groupDsaEntries`). So a new entry
 sits among its kind by title unless a prerequisite holds it back; one of a
 later kind holds it until every entry of its own kind that's ready has gone,
-which puts it at or near the end of its group. That prerequisite comes after
-its dependent; today the only one is
-`binary-search-tree` -> `binary-search`, and after the migration also
+which puts it at or near the end of its group. Such a prerequisite comes after
+its dependent; today there are two:
+`binary-search-tree` -> `binary-search` and
 `backtracking` -> `depth-first-search` (a pattern that builds on an
 algorithm). Their **Before this** links still work. `dsa.test.ts` pins that list, so a new backwards cross-group link fails
 the test until someone extends the list on purpose (ask the user first).

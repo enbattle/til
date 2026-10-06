@@ -87,7 +87,7 @@ k-th smallest. It is expected O(n), where sorting first is O(n log n). Compared
 with a heap, it needs the whole array in memory and reorders it, but it does less
 work for one answer. For the k smallest or largest values out of a stream, or
 when k is small and the data is too big to hold, keep a heap of size k instead:
-see [Top-K with a Heap](/dsa/top-k).
+see [Heap patterns](/dsa/heap-patterns).
 
 ## Walkthrough
 

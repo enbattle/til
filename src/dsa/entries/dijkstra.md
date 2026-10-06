@@ -8,7 +8,7 @@ kind: algorithm
 Dijkstra's algorithm answers "what is the cheapest way to get from here to
 everywhere else?" when every edge has a cost (a weight) that is zero or more:
 road lengths, travel times, prices. Where
-[breadth-first search](/dsa/graph-bfs) counts edges, this adds up weights. The
+[breadth-first search](/dsa/breadth-first-search) counts edges, this adds up weights. The
 trick is to always work on the closest vertex that is still undecided, and a
 heap hands that vertex over in logarithmic time. This entry covers the
 distances, the route itself, and why a single negative weight breaks the
@@ -16,8 +16,8 @@ method.
 
 ## Prerequisites
 
-- [Graph Breadth-First Search](/dsa/graph-bfs): the same "explore outward from a
-  source" loop, with a distance record and parent links for rebuilding a route.
+- [Breadth-First Search](/dsa/breadth-first-search): the same "explore outward from a
+  source" loop, with a queue and parent links for rebuilding a route.
   That entry also explains why BFS fails on weighted edges, which is the problem
   this one solves.
 - [Heap and Priority Queue](/dsa/heap): the structure that removes the smallest
@@ -106,7 +106,7 @@ navigation, network routing by latency, the cheapest sequence of moves when
 each move has a price. One run from a source gives the distance to every
 vertex, so it suits "from here to everywhere" questions and also a single
 target. When every edge costs the same, plain
-[BFS](/dsa/graph-bfs) is simpler and faster, O(V + E) with no heap. When
+[BFS](/dsa/breadth-first-search) is simpler and faster, O(V + E) with no heap. When
 weights can be negative, it is the wrong tool.
 
 ## Walkthrough

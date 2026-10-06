@@ -105,7 +105,7 @@ If a route may move in all four directions, this pattern stops working. A cell's
 answer would depend on its neighbour on every side, including ones not filled
 in yet, and a route can loop back through cells it has already used. Finding
 the best route then becomes a shortest-path problem on a graph: when every
-step costs the same, use [Graph Breadth-First Search](/dsa/graph-bfs), which
+step costs the same, use [Breadth-First Search](/dsa/breadth-first-search), which
 explores outward from the start one step at a time, and with different costs it
 needs a different algorithm again. Counting routes gets no such replacement:
 with revisits allowed there are infinitely many, and counting the routes that
@@ -339,5 +339,5 @@ C(34, 17) = 2,333,606,220 routes. The table needs 18 × 18 = 324 cells.
 - **Using this for four-direction movement.** Once a route can go up or left,
   cells depend on each other in cycles and no fill order exists. For the best
   route, treat the grid as a graph and search it, as in
-  [Graph Breadth-First Search](/dsa/graph-bfs) when steps cost the same; for
+  [Breadth-First Search](/dsa/breadth-first-search) when steps cost the same; for
   counting routes there is no efficient replacement.
