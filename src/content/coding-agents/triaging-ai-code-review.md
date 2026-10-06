@@ -13,7 +13,7 @@ for itself, and it runs in a **fresh context**, a new session that hasn't seen
 the conversation where the code was planned and written. It works because an
 author reviewing their own work reads what they meant rather than what's
 there, a blind spot
-[keeping AI-native docs from going stale](/ai-and-ml/keeping-ai-native-docs-from-going-stale)
+[keeping AI-native docs from going stale](/coding-agents/keeping-ai-native-docs-from-going-stale)
 covers in more depth.
 
 The trouble starts with what happens to the findings.
@@ -130,9 +130,9 @@ automated loop will apply it by instinct.
 ## Where it fits in the tooling
 
 Triage is one of the process rules an AI-assisted project keeps somewhere an
-agent will read it. [Documentation, skill or hook?](/ai-and-ml/documentation-vs-skill-vs-hook)
+agent will read it. [Documentation, skill or hook?](/coding-agents/documentation-vs-skill-vs-hook)
 covers where a rule like this should live, and
-[keeping AI-native docs from going stale](/ai-and-ml/keeping-ai-native-docs-from-going-stale)
+[keeping AI-native docs from going stale](/coding-agents/keeping-ai-native-docs-from-going-stale)
 covers keeping it true. To see whether a reviewer still catches what it should
 after its instructions change, use [evals](/ai-and-ml/what-are-evals): a
 planted defect it must find and a clean control it must not invent findings

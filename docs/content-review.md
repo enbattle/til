@@ -27,8 +27,8 @@ replace a checklist item that doesn't apply to this draft with "none"):
 > checklist below; assume nothing about it is fine until you've checked it
 > yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line there
 > is always a real finding. Writing Standard: hold it to every bullet of
-> docs/writing-standard.md, including its "Case studies and DSA entries"
-> section. Checklist: <checklist> Also check it isn't a
+> docs/writing-standard.md, including its "Catalog topics" and "Case studies
+> and DSA entries" sections. Checklist: <checklist> Also check it isn't a
 > near-duplicate of an existing <kind> (listed below). For each finding, quote
 > the text or code, or name a realistic input that breaks it; label anything
 > else "theoretical". Re-raise a decision listed below as already made only
@@ -69,8 +69,9 @@ don't ship it.
 
 ## Batch mode
 
-`add-case-study` and `add-dsa-entry` can add several items at once; the skill
-adds any ordering or integration step of its own.
+`add-topic`, `add-case-study` and `add-dsa-entry` can add (or, for
+`add-topic`, rewrite) several items at once; the skill adds any ordering or
+integration step of its own.
 
 1. One drafter agent per item, in parallel, each in its own worktree
    (`isolation: "worktree"`), runs the skill's Stages 0–2 only, with Stage 2

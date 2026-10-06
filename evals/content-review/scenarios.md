@@ -60,6 +60,10 @@ told apart, too many and the array fills up quickly. Databases such as
 Cassandra keep a Bloom filter per data file for exactly this
 "cheap definitely-not versus probably-yes" check, so most lookups for a key
 that isn't there never touch the disk.
+
+**Rule of thumb.** Put a Bloom filter in front of a slow lookup when most
+queries are for things that aren't there and an occasional wasted lookup is
+acceptable.
 ```
 
 **Expected finding:** flags that "hash function" (and "hash the item")
@@ -110,6 +114,9 @@ It's not just a toggle in your code — it's a deployment strategy in
 disguise, letting you separate "is this code live" from "is this code
 visible" as two genuinely independent questions. That's the real power
 of feature flags.
+
+**Rule of thumb.** Put a change behind a flag when you want to be able to
+turn it off without a deploy, and remove a release flag once it's fully rolled out.
 ```
 
 **Expected finding:** flags the "not just X — it's Y" closer, the
@@ -158,6 +165,9 @@ it's forcing verbalization.
 The technique scales down to solo work and up to pair programming, where
 your pair effectively plays the duck's role while also being able to ask
 a real follow-up question.
+
+**Rule of thumb.** When you're stuck, explain the code aloud, line by line,
+before asking anyone for help.
 ```
 
 **Expected finding:** flags the third paragraph as over-explaining a
@@ -210,6 +220,9 @@ token every time with no other source of randomness. This makes
 temperature 0 the right setting whenever you need the exact same output
 for the exact same input, such as automated testing or caching model
 responses.
+
+**Rule of thumb.** Lower the temperature when you want focused, predictable
+answers, and raise it when you want variety.
 ```
 
 **Expected finding:** flags the temperature-0-determinism claim as
@@ -336,6 +349,9 @@ changes for someone to review, that do the same. Each route shows up as a
 change to `package-lock.json`, so an upgrade becomes a
 deliberate change that can be reviewed and tested like any other, instead of
 something that arrives unnoticed on the next install.
+
+**Rule of thumb.** Let version ranges say which updates you'd accept, and
+commit the lockfile so you choose when to take them.
 ```
 
 **Expected finding:** no finding that is false of the text. A thorough

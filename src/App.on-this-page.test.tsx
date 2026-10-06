@@ -570,7 +570,7 @@ describe.each(PAGES)('On this page bar focus on a $kind', ({ path, title, body }
 describe('pages without sections (nav criterion 4, bar criterion 10)', () => {
   it.each([
     ['/', 'til'],
-    ['/ai-and-ml', 'AI & Machine Learning'],
+    ['/ai-and-ml', 'AI and Machine Learning'],
     ['/system-design', 'System Design'],
     ['/dsa', 'Data Structures & Algorithms'],
     ['/not-found', /page not found/i],

@@ -88,7 +88,7 @@ describe('TopicPage body loading (criterion 9)', () => {
     renderTopic(`/${SECTION}/${SLUG}`);
 
     expect(screen.getByRole('heading', { level: 1, name: TITLE })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /AI & Machine Learning/ })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /AI and Machine Learning/ })).toHaveAttribute(
       'href',
       `/${SECTION}`,
     );

@@ -9,6 +9,9 @@ changing a topic or a section; [CLAUDE.md](../CLAUDE.md) routes here.
 src/content/
   registry.ts          # every section: slug, label, description
   registry.test.ts      # asserts registry.ts matches the folders on disk
+  redirects.ts          # old section/slug -> new, for moved or merged topics
+  redirects.test.ts     # every redirect's shape, target and lack of chains
+  topic-structure.test.ts        # the catalog standard (budget, title, rule of thumb)
   where-youll-meet-this.test.ts  # systems topics' closing section
   <section-slug>/
     <topic-slug>.md
@@ -83,13 +86,53 @@ and its length. If a topic already ends with a section about where it shows
 up, rename that section instead of adding a second. Other sections' topics
 don't need it.
 
+## The catalog standard and its rollout
+
+Every topic is held to the Writing Standard's
+["Catalog topics"](writing-standard.md#catalog-topics) section, which
+`src/content/topic-structure.test.ts` checks. Topics written before that
+standard are on the test's `PENDING` list and skipped. The list only ever
+shrinks: the test fails on an entry naming no topic, and on an entry whose
+topic already passes every check. A new topic is never added to it. Rewriting
+a topic to the standard (`add-topic`'s rewrite mode) removes its entry in the
+same change, and the last rewrite batch deletes the list and its handling.
+
+## Moving, merging or renaming a topic
+
+A catalog URL keeps working after its topic moves, so a bookmark or an
+external link never breaks.
+
+1. Move the file with `git mv` (to another section's folder, or to a new
+   slug), so history follows it. For a merge, fold the old topic's content into
+   the surviving one and delete the old file in the same change.
+2. Repoint every link to the old path across `src/content`, `src/system-design`
+   and `src/dsa` (`git grep -n "/<section>/<old-slug>"`).
+   `src/lib/catalog-gaps.test.ts` fails on any dead link it misses.
+3. Add an entry to `REDIRECTS` in `src/content/redirects.ts`, from the old
+   `section/slug` to the new one. `TopicPage` checks it before falling back to
+   /not-found and replaces the old URL with the new one; a hard load reaches it
+   through `public/404.html`. If an existing entry pointed at the old path,
+   repoint it at the new one too, since `redirects.test.ts` fails a chain.
+
+Never remove a redirect: someone may still hold the old link. The one
+exception is moving a topic back to a path a redirect starts from: delete that
+entry in the same change, since the path is live again and
+`redirects.test.ts` fails a redirect from a live topic. If the moved
+topic is still on `PENDING`, rename its entry to the new path; a merged-away
+topic's entry goes with its file.
+
 ## Adding a new section
 
 1. Create the folder: `src/content/<new-section-slug>/`.
 2. Add an entry to the `SECTIONS` array in `src/content/registry.ts`
-   (`slug`, `label`, `description`).
-3. Add at least one topic file into the new folder.
+   (`slug`, `label`, `description`). A label joins words with "and", never
+   "&".
+3. Add the new slug, in its place, to the pinned slug order in
+   `src/content/registry.test.ts`, and its label to the pinned slug-to-label
+   map there.
+4. Add at least one topic file into the new folder.
 
 `registry.test.ts` fails if the folder and the registry entry don't match
-in both directions — a new section is only "done" once that test passes
+in both directions, if a label contains "&", or if the order or labels differ
+from the pinned ones — a new section is only "done" once that test passes
 again.

@@ -83,7 +83,7 @@ describe('shared test helpers (dedupe criterion 8)', () => {
   it('renderAt renders the whole app at the path by default, with the probe', () => {
     renderAt('/ai-and-ml');
     expect(
-      screen.getByRole('heading', { level: 1, name: 'AI & Machine Learning' }),
+      screen.getByRole('heading', { level: 1, name: 'AI and Machine Learning' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location-display').textContent).toBe('/ai-and-ml');
   });

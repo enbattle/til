@@ -42,24 +42,23 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-06 | Retire the template switch: three skill descriptions, SR-19 retired               | 6    | 0    | 0         | SR-06, 11, 15, 16, 18, 20; SR-20 prompt now a BT+BST merge.  |
 | 2026-10-06 | Dedupe canonical facts: three eval descriptions, content skills, /feature Stage 4 | 9    | 0    | 0         | SR-01, 09, 10, 12, 14, 15, 16, 18, 20.                       |
 | 2026-10-06 | Harness follow-ups: /feature Stages 1 and 5, PowerShell-write hook                | 4    | 0    | 0         | SR-01, 05, 07, 17; run at Stage 5 by the new rule.           |
+| 2026-10-07 | Catalog standard: add-topic rewrite and batch modes, content-audit exclusion      | 5    | 0    | 0         | SR-02, 04, 06, 11, 16 at Stage 5.                            |
 
-## Latest run: 2026-10-06, harness follow-ups
+## Latest run: 2026-10-07, catalog standard
 
 - **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario, at `/feature` Stage 5 as the spec listed.
-- **Trigger:** branch chore/harness-follow-ups (docs/specs/harness-follow-ups.md):
-  - edited `/feature` Stage 1 (each acceptance criterion names who proves it; the spec lists the evals its edits call for);
-  - edited Stage 5 (the orchestrator runs those evals before the handoff);
-  - added the `.claude/hooks/block-powershell-writes.js` hook.
-- **Scope:** the scenarios whose answer depends on `/feature`.
+- **Trigger:** branch feat/catalog-standard (docs/specs/catalog-standard.md) changed three things:
+  - `add-topic`'s description and body now include a rewrite mode (rewrite, merge or move topics to the catalog standard) and a batch mode;
+  - `content-audit`'s description now excludes catalog rewrites;
+  - docs/content.md gained the moving and redirect conventions.
+- **Scope:** the scenarios that route to or around these skills.
 
-| ID    | Routing decision                      | Reasoning (one line)                                             | Grade |
-| ----- | ------------------------------------- | ---------------------------------------------------------------- | ----- |
-| SR-01 | `/feature`                            | A nontrivial UI change to the search dialog.                     | PASS  |
-| SR-05 | triage first, then route by the cause | Reproduce read-only; direct fix with a regression test if local. | PASS  |
-| SR-07 | `/feature`                            | Reading time on topic cards and pages touches UI, lib and tests. | PASS  |
-| SR-17 | `/feature`                            | A UI button plus a new diagram-check rule.                       | PASS  |
+| ID    | Routing decision                                     | Reasoning (one line)                                   | Grade |
+| ----- | ---------------------------------------------------- | ------------------------------------------------------ | ----- |
+| SR-02 | `add-topic`                                          | A new topic in an existing section.                    | PASS  |
+| SR-04 | direct, via docs/content.md's "Adding a new section" | add-topic's description excludes new sections.         | PASS  |
+| SR-06 | direct                                               | A few words in one existing topic.                     | PASS  |
+| SR-11 | `content-audit`                                      | A corpus-wide quality sweep, not a rewrite.            | PASS  |
+| SR-16 | `content-audit` (one file)                           | Tighten an existing case study, not a catalog rewrite. | PASS  |
 
-**Notes:**
-
-- The Stage 1 and Stage 5 rewording didn't change routing.
-- The new hook doesn't touch routing.
+**Note:** the rewrite mode added to add-topic didn't pull SR-06 or SR-11 away from their skills.
