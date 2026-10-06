@@ -31,14 +31,12 @@ and the seat map. Assume 2.5 tickets an order, two hold attempts per order (a
 seat is often just gone), 60% of admitted shoppers buying, admission at 250 a second, and 100,000 events of 2,000 seats at 100 bytes a row:
 
 - **Front door:** 2,000,000 ÷ 60 s ≈ 33,000 arrivals a second. "Is it my turn?"
-  every 20 seconds adds 100,000 status checks a second, all with one answer.
+  every 20 seconds adds 100,000 status checks a second, all getting the same now-serving number.
 - **Shoppers admitted:** 50,000 seats ÷ 2.5 = 20,000 orders; ÷ 0.6 ≈ 33,000
   shoppers, or 133 seconds at 250 a second.
 - **Database:** 250 admitted × 2 attempts ≈ 500 holds a second on one event's
   shard. All inventory is 100,000 events × 2,000 seats × 100 bytes = 20 GB.
 - **Seat map:** 50,000 seats ÷ 8 bits ≈ 6 KB, rebuilt once a second.
-
-The waiting room turns 33,000 requests a second into 500.
 
 ## High-level architecture
 
@@ -77,7 +75,7 @@ orders   order_id, hold_id (unique), amount, payment_ref
 
 An event's rows share one **shard**, a database holding a slice of the events,
 so a hold never spans two
-([sharding](/systems-and-infrastructure/partitioning-vs-sharding)). Eight shards are for isolation, not size: each on-sale gets its own. `client_key` makes a retried hold return the first one
+([sharding](/systems-and-infrastructure/partitioning-vs-sharding)). Eight shards are for isolation, not size: each of up to 5 on-sales gets its own. `client_key` makes a retried hold return the first one
 ([idempotency](/systems-and-infrastructure/idempotency)), and the unique
 `hold_id` on orders rejects a second order for one hold.
 
@@ -126,8 +124,7 @@ the hold `confirmed` and the seats `sold` and writes the order and outbox row.
 
 Why not charge without the state, and refund if the seats were resold? Then
 two people can pay for one seat, and refunds cost fees and trust. Our cost: a
-slow payment ties up seats for three minutes, and if the payment service still hasn't answered by then, the sweeper releases them and refunds if the charge
-landed.
+slow payment ties up seats for three minutes, after which the sweeper settles the hold from the payment's status.
 
 **Rule of thumb.** Move a lease into a state its reaper leaves alone before
 doing something slow and irreversible.
@@ -138,8 +135,6 @@ doing something slow and irreversible.
   and a row takes about 500 changes a second (1 ÷ a 2 ms commit that waits for the standby), which is all
   500 holds a second. Split it into 10 buckets, about 50 each.
 - **What if the booking server crashes mid-payment?** The hold stays `paying`.
-  A retried confirm repeats the charge with the same key. Otherwise the sweeper
-  asks the payment service to void the key, which works only if no charge
-  exists, and finishes the confirm if one does.
+  A retried confirm repeats the charge with the same key. Otherwise the sweeper asks the payment service for the key's status, voiding it if no charge exists: charged, it finishes the confirm; voided, it releases the seats; unknown, it releases them and refunds later if a charge lands.
 - **When would you use one writer per event?** When one event needs thousands of holds a second; it costs routing, log replay and [fencing](/systems-and-infrastructure/distributed-locks).
 - **What if the primary fails mid-sale?** The standby, in another availability zone, is written synchronously, so it has every committed write. Holds fail with `503` while it is promoted.

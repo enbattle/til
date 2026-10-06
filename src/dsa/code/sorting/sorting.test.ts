@@ -237,8 +237,9 @@ describe('quickselect', () => {
       // Mechanism: partition, then follow one side. Sorting to pick the k-th
       // costs about 10n comparisons on random input and only n - 1 on sorted
       // input, so the 2n floor (measured: 2n on all-equal, over 4n otherwise)
-      // rules out a sort there. A first-element pivot costs ~n^2 on sorted or
-      // reversed input. The 9n ceiling holds for these seeds (6.5n measured);
+      // rules out a sort there. A first-element pivot costs ~n^2 on reversed
+      // input (3.4M comparisons at n = 3000) and ~n^1.5 on sorted (270k); both
+      // clear the ceiling. The 9n ceiling holds for these seeds (6.5n measured);
       // it is not a guarantee for every seed.
       // Each comparison reads two numbers, so valueOf is called twice per one.
       const n = 3000;

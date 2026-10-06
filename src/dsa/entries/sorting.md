@@ -35,7 +35,7 @@ The merge can also count **inversions**, pairs where an earlier item is larger t
 
 ## When to use it
 
-Call the built-in first, in nearly every case. Python's `sorted` and `list.sort` are guaranteed stable and use Timsort, a merge sort that exploits runs already in order; they take `key=` and `reverse=`. JavaScript's `Array.prototype.sort` has had to be stable since ES2019. Pass it a comparator like `(a, b) => a - b`, because the default compares as strings: `[10, 9, 1].sort()` gives `[1, 10, 9]`. Write the algorithms yourself when:
+Call the built-in first. Python's `sorted` and `list.sort` are guaranteed stable and use Timsort, a merge sort that exploits runs already in order; they take `key=` and `reverse=`. JavaScript's `Array.prototype.sort` has had to be stable since ES2019. Pass it a comparator like `(a, b) => a - b`, because the default compares as strings: `[10, 9, 1].sort()` gives `[1, 10, 9]`. Write the algorithms yourself when:
 
 - The data is a linked list (merging needs no random access) or too big for memory: sort chunks, then merge them as streams.
 - The statement counts or reasons about out-of-order pairs: merge with a count.
@@ -177,8 +177,9 @@ def quickselect(nums: list[int], k: int, rng: random.Random | None = None) -> in
     rng = rng or random.Random()
     lo, hi = 0, len(nums)
     while True:
-        # A random pivot means no input is reliably bad; always taking the
-        # first element makes sorted input shrink the range by one a round.
+        # A random pivot means no input is reliably bad. A first-element pivot
+        # is the maximum every round on reversed input, so the range shrinks
+        # by one a round; sorted input is milder, about n^1.5.
         lt, gt = partition(nums, lo, hi, nums[rng.randrange(lo, hi)])
         if k < lt:
             hi = lt
@@ -201,8 +202,9 @@ export function quickselect(
   let lo = 0;
   let hi = nums.length;
   for (;;) {
-    // A random pivot means no input is reliably bad; always taking the
-    // first element makes sorted input shrink the range by one a round.
+    // A random pivot means no input is reliably bad. A first-element pivot
+    // is the maximum every round on reversed input, so the range shrinks
+    // by one a round; sorted input is milder, about n^1.5.
     const pivot = nums[lo + Math.floor(random() * (hi - lo))];
     const [lt, gt] = partition(nums, lo, hi, pivot);
     if (k < lt) hi = lt;
@@ -212,7 +214,7 @@ export function quickselect(
 }
 ```
 
-The range check comes first because an out-of-range `k` never lands in a zone, so the loop would not end. The middle zone is why an all-equal array finishes in one pass; a two-way partition goes quadratic on many duplicates.
+The range check comes first because an out-of-range `k` never lands in a zone, so Python would fail inside `randrange` and TypeScript would loop forever. The middle zone is why an all-equal array finishes in one pass; a Lomuto-style two-way partition goes quadratic on many duplicates.
 
 ## Complexity
 
@@ -232,4 +234,4 @@ Quickselect's rounds cost the size of the range, and a random pivot shrinks it b
 - **`<` where merge has `<=`.** The sort still sorts, so numbers alone never show it, but `[("a", 2), ("c", 2)]` by number comes out `[("c", 2), ("a", 2)]`.
 - **Dropping the two `extend` lines.** The loop ends when one side empties, and without them the other side's items vanish: `merge_sort([4, 7, 2, 4, 9, 1, 4])` returns `[1]`.
 - **Advancing `i` after swapping a larger value.** The item swapped in from `gt` is unexamined. With `i += 1` there, `partition` on the example around 4 returns `lt = 1` and `gt = 5`, leaving a stray 1 inside the equal zone, and `quickselect(nums, 1)` can return 1 or 4 instead of 2, depending on the pivot drawn.
-- **Taking the first item as the pivot.** Sorted input makes it the minimum every round. For the median of a sorted 1,000 items that is about 53,000 comparisons against about 5,000 with a random pivot.
+- **Taking the first item as the pivot.** Reversed input makes it the maximum every round. For the median of a reversed 1,000 items that is about 376,000 comparisons against about 5,000 with a random pivot; sorted input costs about 53,000.

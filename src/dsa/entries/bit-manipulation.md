@@ -66,11 +66,9 @@ from 0 to 2^n - 1 visits every subset once. This is a **bitmask**. For
 negative one behaves as if it had infinitely many 1s on the left (two's
 complement): `-1 >> 100` is still -1, and `~5` is -6. JavaScript, and so
 TypeScript, converts the operands of its bitwise operators to **32-bit
-signed integers** (`>>>` reads its left one as unsigned), keeping the low 32 bits, where bit 31 is the sign. So
-`1 << 31` is -2147483648, `1 << 32` is 1 (the shift count wraps) and
-`(2 ** 32 + 1) | 0` is 1. Its `>>` copies the sign bit in (`-8 >> 1` is -4),
-while `>>>` shifts in zeros and reads the result as unsigned (`-1 >>> 0` is
-4294967295).
+signed integers**, keeping the low 32 bits, where bit 31 is the sign. So
+`1 << 31` is -2147483648 and `(2 ** 32 + 1) | 0` is 1. Only `>>>` reads its
+result as unsigned, which is why `countSetBits` can test its range with it.
 
 ## When to use it
 
@@ -230,8 +228,7 @@ export function subsets<T>(items: T[]): T[][] {
 Mask 6 is 110: its lowest set bit is 2 (bit 1, so `b`), and clearing it
 leaves 100 (bit 2, so `c`), giving `[b, c]`. The inner loop runs once per item
 that's in; TypeScript steps with Trick 1, Python XORs the isolated bit away.
-The empty list gives `[[]]`, one subset. Neither version caps the item count:
-memory runs out at about 25 items, long before the 32-bit limit matters.
+The empty list gives `[[]]`, one subset.
 
 ## Complexity
 
@@ -242,7 +239,8 @@ Both use O(1) space. `single_number` reads n values once: O(n) time and O(1)
 space, against O(n) space for counting in a [hash map](/dsa/hash-map) and
 O(n log n) time for sorting first. `subsets` makes 2^n masks, and across them
 each of the n items is in half, so n * 2^(n - 1) steps: O(n * 2^n) time, and
-the same for the output. For n = 20 that's over a million subsets.
+the same for the output. For n = 20 that's over a million subsets. Neither version caps the item count:
+memory runs out at about 25 items, long before the 32-bit limit matters.
 
 ## Pitfalls
 

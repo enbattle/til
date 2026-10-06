@@ -6,12 +6,12 @@ kind: algorithm
 template: 2
 ---
 
-Some jobs must happen before others: you take Algebra before Calculus, compile a library before the program that uses it. Draw each "A before B" as an arrow from A to B and you have a directed graph. A **topological order** lines up every vertex so that every arrow points forward. You'll build one two ways, and both tell you when none exists.
+Some jobs must happen before others: you take Algebra before Calculus, compile a library before the program that uses it. Draw each "A before B" as an arrow from A to B and you have a directed graph. A **topological order** lines up every vertex so that every arrow points forward. Two methods build one, and both tell you when none exists.
 
 ## Prerequisites
 
 - [Graph](/dsa/graph): directed edges and the adjacency list, where `adj[u]` holds the vertices `u` points at.
-- [Depth-first search](/dsa/depth-first-search): the three states, unvisited, on the path and finished, and the recursive walk that the second method records the end of.
+- [Depth-first search](/dsa/depth-first-search): the three states, unvisited, on the path and finished, and the recursive walk, whose finishing order the second method records.
 - [Stacks and queues](/dsa/stacks-and-queues): the first method keeps its ready vertices in a queue, first in, first out.
 
 ## The idea
@@ -166,7 +166,7 @@ export function topologicalSortDfs(adj: Graph): number[] | null {
 }
 ```
 
-This is the DFS entry's `has_cycle` with three changes: `finished.append` records each vertex on exit, `visit` returns `True` when no cycle was found, where `has_cycle` returned `True` on finding one, and the list is reversed at the end. Where Kahn gave `0, 1, 2, 3, 4`, this gives `0, 2, 1, 3, 4`, as worked above. Note that the recursion is as deep as the longest path, so a chain of a few thousand vertices overflows Python's default limit and a chain of a million overflows Node's call stack. Kahn's never recurses.
+This is the DFS entry's `has_cycle` with three changes: `finished.append` records each vertex on exit, `visit` returns `True` when no cycle was found, where `has_cycle` returned `True` on finding one, and the list is reversed at the end. Where Kahn gave `0, 1, 2, 3, 4`, this gives `0, 2, 1, 3, 4`, as worked above. Note that the recursion is as deep as the longest path, so a chain of about a thousand vertices overflows Python's default limit and a chain of a million overflows Node's call stack. Kahn's never recurses.
 
 ```python
 def course_order(n: int, prerequisites: list[tuple[int, int]]) -> list[int] | None:

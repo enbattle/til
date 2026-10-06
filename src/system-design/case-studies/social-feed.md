@@ -6,7 +6,7 @@ order: 4
 template: 2
 ---
 
-You're asked to design the home screen of a photo-sharing app, like Instagram's. It's the **feed**, a scrolling list of recent posts from the accounts you follow, your **followees**; the people who follow you are your **followers**. "Posts by anyone I follow, newest first" sounds like one query, but at this scale it's the most expensive thing the system does. So the interview is about when to do that work: once per post, when it's written, or once per view, when it's read. It depends on who posted.
+You're asked to design the home screen of a photo-sharing app, like Instagram's. It's the **feed**, a scrolling list of recent posts from the accounts you follow, your **followees**; the people who follow you are your **followers**. "Posts by anyone I follow, newest first" sounds like one query, but at this scale it's the most expensive thing the system does. So the question is when to do that work: once per post, when it's written, or once per view, when it's read. It depends on who posted.
 
 ## Requirements
 
@@ -57,8 +57,6 @@ timeline   per user: up to 500 (post_id, author_id) pairs, newest first
 
 Post IDs sort by creation time, so merging two lists of posts is merging two sorted lists, and a **cursor** (where a page ended) can be the last ID seen, sent as a string because JSON numbers lose digits past 2⁵³. `likes` is keyed by user, so "which of these 20 has this viewer liked?" hits one shard.
 
-Now the three choices.
-
 ## Decision: push for ordinary accounts, pull for celebrities
 
 **Fan-out** means delivering a post's ID to many places at once; here, into each follower's timeline. Push to everyone and a feed read is one lookup in memory. But a post from the 50-million-follower account is 50 million inserts, about 11 seconds of a fleet sized for pushing everything at peak (4.5 million a second), and ordinary posts queued behind it miss their 5-second target. So an account over 100,000 followers is a **celebrity**: its post is only appended to `author_posts` and sent to every app server, which keeps the newest 100 IDs of all 10,000 celebrities in memory, 8 MB. A read merges the viewer's timeline with those lists; no post costs over 100,000 inserts.
@@ -71,9 +69,9 @@ Why not push everyone, the simpler single path? It works for most apps; here, on
 
 ## Decision: timelines of IDs in memory
 
-Where does a timeline live? In memory, in a Redis sorted set (members kept in order). Every score is 0, so members sort by the post ID they start with, and a raised compact-encoding limit keeps 500 of them near 20 bytes each. A timeline is derived data: if one is lost, a pull from the user's 200 followees rebuilds it, so it needs no backup. Users map to shards by [consistent hashing](/systems-and-infrastructure/consistent-hashing).
+Where does a timeline live? In memory, in a Redis sorted set (members kept in order) of up to 500 IDs, about 16 bytes each. A timeline is derived data: if one is lost, a pull from the user's 200 followees rebuilds it, so it needs no backup. Users map to shards by [consistent hashing](/systems-and-infrastructure/consistent-hashing).
 
-Why not a wide-column store such as Cassandra, on disk? That works too, and holds the 8 TB far more cheaply. But reads take milliseconds, not a fraction of one, and trimming to 500 after each insert leaves deletion markers (tombstones) that reads must skip until compaction. At 580,000 reads a second, memory is worth its price.
+Why not a wide-column store such as Cassandra, on disk? It holds the 8 TB far more cheaply. But reads take milliseconds, not a fraction of one, and trimming to 500 after each insert leaves deletion markers (tombstones) that reads must skip until compaction. At 580,000 reads a second, memory is worth its price.
 
 **Rule of thumb.** If you can rebuild data from a source of truth, optimize it for speed and let the store be disposable.
 
@@ -81,13 +79,13 @@ Why not a wide-column store such as Cassandra, on disk? That works too, and hold
 
 The `likes` rows spread out, but a post's total doesn't: 1,400 updates a second to one counter row, each waiting a few milliseconds to commit while the rest queue. So the app server records the like and an event, and the worker that owns the post takes its events from the queue and, once a second, writes one increment, "+1,387". A hot post costs one write a second ([batching](/systems-and-infrastructure/batching-and-asynchronous-writes)).
 
-Why not a **sharded counter**, spreading a post's count over 20 rows? It works too, and counts stay current. But a read sums 20 rows, and each post needs its own row count. The queue needs no tuning, and the requirements already let counts lag.
+Why not a **sharded counter**, spreading a post's count over 20 rows? Counts stay current. But a read sums 20 rows, and each post needs its own row count. The queue needs no tuning, and the requirements already let counts lag.
 
 **Rule of thumb.** If a value may lag, batch its writes; if it must be current, split the hot row.
 
 ## Likely follow-ups
 
 - **What if both copies of a timeline shard are lost?** Each affected user's timeline is rebuilt by a pull when they next open the app. Cap concurrent rebuilds.
-- **What if a celebrity's post is a hot key?** When its cache entry expires, millions of feeds miss together, a [thundering herd](/systems-and-infrastructure/thundering-herd-problem). Let one request fetch while the rest wait.
+- **What if a celebrity's post is a hot key?** When its cache entry expires, millions of feeds miss together, a [thundering herd](/systems-and-infrastructure/thundering-herd-problem). Serve the old entry while one request rebuilds it.
 - **How do you rank the feed?** Score the newest 500 candidates by affinity (how much the viewer interacts with the author) decayed by age, and fall back to newest first if ranking is down.
 - **What happens when a celebrity drops below the line?** Promote at 100,000 followers but demote below 80,000, so an account near the line doesn't flip back and forth.

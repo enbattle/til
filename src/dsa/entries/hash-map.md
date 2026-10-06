@@ -7,9 +7,9 @@ template: 2
 ---
 
 A hash map stores values under keys, the way a contacts list stores numbers
-under names. Python's `dict` and JavaScript's `Map` are hash maps. You'll build
-one from scratch, so that "constant time" stops being magic and you can say
-exactly when it fails.
+under names. Python's `dict` and JavaScript's `Map` are hash maps. Building
+one from scratch makes "constant time" stop being magic, and shows exactly
+when it fails.
 
 ## Prerequisites
 
@@ -53,7 +53,7 @@ other buckets are never touched.
 
 How long the scan takes depends on the list lengths. The **load factor**,
 entries divided by buckets, is the average length. Keep it bounded and every
-lookup stays constant-time however many entries you add. The map does that by
+lookup stays constant-time on average however many entries you add. The map does that by
 **resizing**: when an insert would push the load factor past 0.75, it doubles
 the buckets and refiles every pair. Why not wait until chains are long? Because
 by then every operation is already slow, and a resize that keeps pace with
@@ -69,7 +69,8 @@ growth costs almost nothing, as you'll see below.
 - The wrong signal: you need the smallest key, the next key after this one, or
   all keys in a range. A hash map scatters keys on purpose and can't answer
   those without visiting everything; keep sorted data and use
-  [binary search](/dsa/binary-search).
+  [binary search](/dsa/binary-search), or a
+  [binary search tree](/dsa/binary-search-tree) if it keeps changing.
 
 ## Operations and costs
 
@@ -137,8 +138,8 @@ class HashMap:
 function stringHash(key: string): number {
   let h = 0;
   for (let i = 0; i < key.length; i++) {
-    // | 0 wraps h to 32 bits each step; without it h passes 2^53
-    // and the double loses its low digits.
+    // imul multiplies as 32-bit ints, as Java does; | 0 wraps the final
+    // sum too, so the result is a signed 32-bit int like Java's.
     h = (Math.imul(31, h) + key.charCodeAt(i)) | 0;
   }
   return h;

@@ -11,9 +11,9 @@ it needs to tell a user something. The order service says "order 83121 shipped,
 tell user u_4821", and your system picks the channels: a **push notification**
 (the banner a phone shows with the app closed), an email, an SMS, an in-app inbox entry, or several. Each outside channel runs through a
 **provider** (Apple's and Google's push services, an email service, an SMS
-gateway) that caps how fast you may call it. The interview is about sharing
+gateway) that caps how fast you may call it. The tension is sharing
 those providers between a login code someone is waiting for and a sale
-announcement for 50 million people, and about sends that fail after they've
+announcement for 50 million people, and handling sends that fail after they've
 had an effect.
 
 ## Requirements
@@ -33,7 +33,7 @@ Out of scope: audience lists, templates and A/B tests.
 
 ## Key numbers
 
-First, size what each part must handle: the requests the API accepts, the sends
+Size what each part must handle: the requests the API accepts, the sends
 the workers make, the status writes behind them, and the log's disk. Peak is
 ten times average
 ([numbers every engineer should know](/engineering-practices/numbers-every-engineer-should-know)),

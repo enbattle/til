@@ -21,7 +21,7 @@ def days_until_warmer(temps: list[int]) -> list[int]:
 def largest_rectangle(heights: list[int]) -> int:
     """Area of the biggest rectangle that fits under the bars of a histogram."""
     best = 0
-    stack: list[int] = []  # indices of bars, heights never decreasing
+    stack: list[int] = []  # indices of bars, heights strictly increasing
     # One extra step with height 0 pops every bar still waiting; without it
     # the bars left on the stack at the end are never measured.
     for i in range(len(heights) + 1):

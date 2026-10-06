@@ -8,7 +8,7 @@ template: 2
 
 You're asked to design a wallet like PayPal. Alice pays an online store $25
 with her card, then sends Bob $10 from her balance. Each is a few rows, so the
-interview is about what goes wrong: a card charge whose answer was lost, a retry
+interview is about what goes wrong: a lost charge answer, a retry
 after a timeout, a transfer between two databases.
 
 ## Requirements
@@ -27,7 +27,7 @@ Out of scope: currency conversion, fraud scoring and payouts to banks.
 
 ## Key numbers
 
-First, size the databases: transactions committed, shards, data kept. Peak is
+Peak is
 ten times average
 ([numbers every engineer should know](/engineering-practices/numbers-every-engineer-should-know)):
 
@@ -43,7 +43,7 @@ ten times average
   200 bytes = 36 GB, plus 50 million payments × 400 bytes and 50 million webhooks × 300 bytes.
 - **Hottest row:** one fee account would take about 4,000 credits a second at peak
   (35 million card and wallet payments to merchants a day, each paying a 2% fee). A locked row
-  manages about 250 updates a second, assuming 4 ms to commit.
+  manages about 500 updates a second, assuming 2 ms to commit.
 
 ## High-level architecture
 
@@ -59,8 +59,7 @@ confirming a commit only after a replica in another zone has it. Later outcomes
 arrive as **webhooks**, HTTP requests to us. Outbox rows, committed with the
 payment ([outbox pattern](/systems-and-infrastructure/outbox-pattern)), reach
 the event queue through the outbox relay for payment workers, which finish
-transfers and resolve unknown outcomes. A daily reconciliation job checks the
-processor's settlement file against the ledger.
+transfers and resolve unknown outcomes.
 
 ## API and data model
 
@@ -82,7 +81,7 @@ webhook_events       event_id (unique), payment_id, received_at
 
 An **account** is anything holding a balance: wallets, merchants, our fee
 account, and the processor's **clearing account** (what it owes us for captures
-it hasn't paid out). The choice that matters is `source_ref`: every
+it hasn't paid out). The key column is `source_ref`: every
 money-moving event has a natural name ("the capture of `p_42`"), and its unique
 index makes a duplicate webhook or retry fail on insert.
 
@@ -94,19 +93,17 @@ sum to zero. Alice's captured $25 writes `processor clearing −2500`,
 application's database login can't update them); a mistake or refund is a new
 transaction pointing back through `reverses_txn_id`.
 
-Why not a balance column per account, with an audit log? It's simpler, and
-wallets keep a cached balance anyway so a debit checks funds in one update. But
+Why not a balance column per account, with an audit log? It's simpler, and wallets keep one anyway to check funds in one update. But
 a bug that adds without subtracting creates money silently; here a commit
 refuses a transaction that doesn't sum to zero. The price is 3.6 rows a
-movement. So the fee and processor-clearing accounts exist once per shard, about 250 credits a second each at peak, and keep no cached balance; one shared account would queue 4,000.
+movement. Fee and processor-clearing accounts exist once per shard, so each payment is one local transaction, and keep no cached balance, so they only take inserts and no row is locked. One shared balance row would queue 4,000 credits a second.
 
 **Rule of thumb.** Record the movement, not the result. Cache a balance only on
 rows that don't get hot.
 
 ## Decision: idempotency keys all the way to the processor
 
-Avoiding a double charge is harder: a processor call
-can end in silence, and her card may hold a charge or not. The checkout's
+A processor call can end in silence, and her card may or may not hold a charge. The checkout's
 `Idempotency-Key` is stored with new payment `p_42` before the processor is
 called, so a retry gets `p_42` back. Processor
 calls carry keys derived from the payment (`p_42-auth`, `p_42-cap`), so any
@@ -127,22 +124,22 @@ repeat, then check their records anyway.
 
 ## Decision: a saga for transfers between shards
 
-Alice's $10 to Bob spans two shards 15 times in 16, say 3 and 11.
-Step 1, on shard 3: `wallet alice −1000`, `clearing@3 +1000` (a per-shard
+Alice's $10 to Bob spans two shards 15 times in 16, 3 and 11.
+Step 1, on shard 3: `wallet alice −1000`, `transit@3 +1000` (a per-shard
 account holding money in transit), payment `x_55` marked `debited`, and an
 outbox row; the API answers when that commits. A worker runs step 2 on shard 11
-(`clearing@11 −1000`, `wallet bob +1000`, unique `source_ref` `x_55:credit`, so a
+(`transit@11 −1000`, `wallet bob +1000`, unique `source_ref` `x_55:credit`, so a
 redelivery does nothing), then step 3 marks `x_55` completed. If Bob's account
 closed meanwhile, a compensating step returns the money
 ([saga pattern](/systems-and-infrastructure/saga-pattern)).
 
-Why not two-phase commit, keeping the transfer atomic? It works, but shards hold locks across an extra round trip, and a coordinator that dies
+Why not two-phase commit, where a coordinator has both shards prepare, then commit together? Shards hold locks across the extra round trip, and a coordinator that dies
 between phases leaves them held. At about 2,700 cross-shard movements a second
-at peak (25 million × 15/16 ÷ 86,400 × 10), that is many locks to strand. The
+at peak (25 million × 15/16 ÷ 86,400 × 10), so many locks to strand. The
 saga costs two more transactions each, and money sits in transit.
 
 **Rule of thumb.** When one write spans databases, split it into local steps
-that each balance, with an undo, before reaching for a distributed lock.
+that each balance, with an undo, before reaching for a distributed transaction.
 
 ## Likely follow-ups
 
@@ -154,4 +151,4 @@ that each balance, with an undo, before reaching for a distributed lock.
 - **What if the processor is down?** A
   [circuit breaker](/systems-and-infrastructure/circuit-breaker) gives card
   payments a fast `503`; wallet payments never call the processor.
-- **How do you catch a wrong but balanced transaction?** A nightly job recomputes changed wallets from entries and freezes any that differ.
+- **How do you catch a wrong but balanced transaction?** Balanced entries can still be wrong. Reconciliation matches each ledger transaction to the processor's settlement file; nightly checks assert that `transit` nets to zero and cached wallet balances equal their entries, freezing any that differ.

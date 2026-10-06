@@ -38,7 +38,7 @@ A **priority queue** is a heap of `(priority, counter, item)` entries, the count
 ## When to use it
 
 - You repeatedly need the smallest or largest item of a collection that keeps changing: scheduling by deadline, "next closest node", merging sorted streams.
-- The statement says "k largest" or "k smallest" over a stream. A heap of size k holds the answer without sorting everything.
+- The statement says "k largest" or "k smallest" over a stream. A heap of size k holds the answer without sorting everything ([heap patterns](/dsa/heap-patterns)).
 - You need the extreme once: scan instead. You need the whole order: sort. You must find or delete arbitrary items: use a [binary search tree](/dsa/binary-search-tree).
 
 ## Operations and costs
@@ -54,7 +54,7 @@ n is the number of items.
 | Find or remove another item | O(n)     | O(n)              |
 | Space                       | O(n)     | O(n)              |
 
-A complete tree of n nodes has height ⌊log₂ n⌋, since each level holds twice the one above, and a sift moves one level per swap: at most 19 swaps for a million items. Push also appends to a dynamic array, which costs O(n) when it resizes. Pop removes from the array's end, O(1). Another item could be in any branch, so finding it means checking them all.
+A complete tree of n nodes has height ⌊log₂ n⌋, since each level holds twice the one above, and a sift moves one level per swap: at most 19 swaps for a million items. Push also appends to a dynamic array, which costs O(n) when it resizes. Pop removes from the array's end, O(1). Another item could be in any branch, so finding it means checking them all. A sorted array loses because each push shifts items to make room, O(n); the heap's looser order is what keeps both push and pop at O(log n).
 
 Heapify being O(n), not O(n log n), is the surprising row. A node sifting down falls only as far as the levels below it, and most nodes have almost none: half are leaves, a quarter can move one level, an eighth two. The total is at most n × (1/4 + 2/8 + 3/16 + …) = n swaps. On 100,000 items in reverse order, heapify makes 99,990 swaps and pushing one at a time makes 1,468,946.
 

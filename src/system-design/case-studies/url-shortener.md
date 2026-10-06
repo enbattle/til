@@ -9,7 +9,7 @@ template: 2
 You're asked to design a service like TinyURL. It takes a long link, hands back
 `https://sho.rt/x7Kp2Qa`, and sends anyone who opens that on to the original
 with a **redirect**, an HTTP response in the 300s whose `Location` header names
-the destination. The product fits in a sentence, so the interview is about what
+the destination. The product fits in a sentence, so the design turns on what
 it forces: minting **short codes** (the `x7Kp2Qa` part) that no two links
 share, answering tens of thousands of redirects a second, and counting clicks
 without making anyone wait.
@@ -32,7 +32,7 @@ owner), editing a link's destination, and dashboards.
 
 ## Key numbers
 
-First, size the service: requests its servers must answer, data its database
+Size the service: requests its servers must answer, data its database
 must hold, memory a cache would need. Rounded, with peak at ten times average
 ([numbers every engineer should know](/engineering-practices/numbers-every-engineer-should-know)):
 
@@ -46,8 +46,6 @@ must hold, memory a cache would need. Rounded, with peak at ten times average
   redirects × 500 bytes ≈ 33 GB.
 - **Codes: 3.5 trillion possible.** 62⁷ in **base62** (`0-9`, `a-z`, `A-Z`);
   6 billion links use about 0.17% of them.
-
-The hard part is 40,000 small reads a second under 20 ms.
 
 ## High-level architecture
 
@@ -92,20 +90,17 @@ store ([SQL vs. NoSQL](/systems-and-infrastructure/sql-vs-nosql)). The redirect
 is a `302`, not a `301`: browsers may cache a `301` and stop asking, which
 breaks expiry, disabling and click counts.
 
-Now the three choices inside it.
-
 ## Decision: pre-allocated ID ranges
 
 Each app server claims a block of 10,000 IDs from the allocator, a counter row
-bumped by 10,000 in one atomic step, and hands them out from memory. Ten
-servers at 400 creates a second ask for one about every 25 seconds between
-them. Before encoding in base62, each ID is encrypted over the 62⁷
+bumped by 10,000 in one atomic step, and hands them out from memory. With ten
+servers sharing 400 creates a second, one asks about every 25 seconds. Before encoding in base62, each ID is encrypted over the 62⁷
 range with a key only the app servers hold, a one-to-one mapping, so
 `x7Kp2Qa`'s neighbors look unrelated and two generated codes can't collide.
 Inserts are conditional: a second request for a taken alias gets `409`, and a
 generated code that matches an alias takes the next ID.
 
-Why not random codes, retrying on a clash? At 0.17% full that works too: about
+Why not random codes, retrying on a clash? At 0.17% full it rarely does: about
 one create in 600 retries by year five. Ranges are more predictable: no
 generated code ever retries, however full the space gets. Hashing the URL is
 worse, since one URL always gets one code and the two-links requirement rules

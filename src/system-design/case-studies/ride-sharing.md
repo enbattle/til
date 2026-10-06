@@ -6,7 +6,7 @@ order: 8
 template: 2
 ---
 
-You're asked to design a service like Uber. Two workloads sit behind that tap. One is a firehose:
+You're asked to design a service like Uber. A rider taps "Request ride" and two workloads sit behind that tap. One is a firehose:
 every online driver's phone reports a position every few seconds, and each
 report is stale by the next. The other is small and strict: a request must end
 with one driver and a driver with one ride, even when two riders a block apart
@@ -24,7 +24,7 @@ want the same car in the same second.
 - A driver never holds two trips and a request never gets two drivers; trips
   are 99.99% available.
 
-Out of scope: payments, maps, pooling, fraud and the routing service's internals (it answers "how long from A to B?").
+Out of scope: payments, maps, pooling, fraud and the routing service's internals.
 
 ## Key numbers
 
@@ -34,8 +34,8 @@ store; request rates peak at ten times their average
 
 - **Location updates: 750,000 a second at peak.** 3 million drivers ÷ 4
   seconds.
-- **Location index: 600 MB, 12 shards.** 3 million × 200 bytes fits in memory;
-  the writes don't. At an assumed 100,000 updates a second per node with
+- **Location index: 600 MB, 12 shards.** 3 million × 200 bytes is 600 MB, which one node holds;
+  the writes are the problem. At an assumed 100,000 updates a second per node with
   headroom, 750,000 needs 8, plus room for uneven areas.
 - **Matching: about 2,900 requests and 4,100 offers a second at peak.** 25
   million ÷ 86,400 ≈ 289, × 10; at an assumed 70% acceptance, 1.43 offers a
@@ -111,7 +111,7 @@ cheap log for history.
 The worker claims the closest candidate with a conditional write that turns
 the driver's row from `available` to `offered`, with an `offer_id` and an
 expiry 15 seconds out. Two workers after the same driver both try; one matches
-the row and the other moves to its next candidate. On accept, the driver row must still hold this `offer_id`, unexpired, so a late tap loses; then the trip row moves `requested` to `matched` (unless a cancel got there first), and the driver row to `on_trip`. A decline or expiry frees the driver and the worker
+the row and the other moves to its next candidate. On accept, the driver row must still hold this `offer_id`, unexpired, so a late tap loses. Then the trip row moves `requested` to `matched` (unless a cancel got there first) and the driver row to `on_trip`. A decline or expiry frees the driver and the worker
 tries the next.
 
 Why not offer to the three closest at once? The requirement covers only the first offer, which one at a time doesn't delay.
@@ -131,7 +131,7 @@ The gateways work as in the [chat app](/system-design/messaging).
 
 Why not have riders poll? To see the car within 2 seconds at p99 a rider must
 poll about every second: 1.3 million requests a second, three in four
-returning nothing new. Rider sockets cost about 13 more stateful servers (1.3 million ÷ 100,000) and a plan for reconnects.
+returning nothing new. Rider sockets cost about 13 more stateful servers (1.3 million ÷ 100,000).
 
 **Rule of thumb.** When the server learns something first and delay matters,
 push it; polling spends requests on answers that haven't changed.

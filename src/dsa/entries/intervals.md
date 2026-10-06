@@ -45,7 +45,7 @@ one past 7, shares no point, and stays apart.
 
 **Inserting.** If the list is already merged and sorted, a new interval needs
 no sort. Skip everything that ends before it starts, fuse everything that
-starts before it ends, and copy the rest. Adding `[7, 9]` to the result above
+starts at or before it ends, and copy the rest. Adding `[7, 9]` to the result above
 fuses `[1, 7]` and `[8, 10]` into `[1, 10]`.
 
 **Counting the busiest moment.** You want the fewest rooms that fit all five
@@ -236,10 +236,7 @@ time and space, with no sort.
 - **The wrong comparison for the convention.** With inclusive ends, merging on
   `start <= last[1]` joins `[1, 3]` and `[3, 5]`, and `<` leaves them apart. With
   half-open ranges like `[1, 3)`, where the end is excluded, both flip: merge
-  on `<`, and in the sweep let `<=` retire an end at the same coordinate. Two
-  adjacent whole-number ranges such as `[1, 3]` and `[4, 5]` share no point,
-  so this entry keeps them apart; if the problem says to fuse them, compare
-  with `last[1] + 1`.
+  on `<`, and in the sweep let `<=` retire an end at the same coordinate.
 - **Keeping the end of a nested interval.** Assigning `end` instead of
   `max(merged[-1][1], end)` shrinks `[1, 10]` plus `[2, 3]` to `[1, 3]`.
 - **Pairing sorted starts with unsorted ends.** The sweep sorts the ends on

@@ -79,7 +79,7 @@ direction removes duplicates from a sorted array in place.
   duplicates, moving zeros to the end or merging two sorted arrays.
 - Something is compared from both ends: a palindrome check, reversing in
   place, the container holding the most water.
-- A linked list has no index, so you want its middle (when `fast` falls off the
+- A linked list and you want its middle (when `fast` falls off the
   end, `slow` is halfway) or whether it loops. This also covers any sequence
   where each value is computed from the one before.
 - The input is unsorted and you need original positions: use a
@@ -218,7 +218,7 @@ input. Sorting first for two pointers costs O(n log n).
 end in about n/2 passes. With one, `slow` enters the cycle after the tail's
 length, `t` steps, with `fast` already inside. The gap to close is less than
 the cycle's length `c` and shrinks by one per step, so they meet within
-`t + c = n` steps: 5 for the 7-node example. A visited set is O(n) time too and
+`t + c = n` steps; the 7-node example meets at step 5. A visited set is O(n) time too and
 simpler to trust, but it stores up to n nodes.
 
 ## Pitfalls

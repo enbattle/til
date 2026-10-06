@@ -44,13 +44,12 @@ These size the product-page servers, the cache and the databases. Peak is ten ti
   second.
 - **Orders:** about 1,200 a second at peak. 10 million ÷ 86,400 ≈ 120 on
   average, so 3,000 lines a second at peak.
-- **Inventory database:** about 9,000 writes a second at peak. 3,000 lines × 3
-  writes (reserve, commit, ship).
+- **Inventory database:** about 9,000 writes a second at peak. 3,000 lines × 3 writes over an order's life (reserve, commit, ship).
 - **Order database:** 18 TB a year. 10 million orders × 5 KB = 50 GB a day.
 
 ## High-level architecture
 
-![Architecture of the e-commerce checkout. A browser or app sends HTTPS API calls to an API gateway. The gateway routes product pages to the catalog service, cart calls to the cart service, and orders to the order service. The catalog service reads the catalog cache first. The order service reads the cart from the cart service, gets current prices from the catalog service, writes state and outbox rows to the order database, calls the inventory service to reserve, commit and release, and calls the payment service to authorize and void. An outbox relay publishes from the order database to the order event stream, which sends clear ordered items to the cart service and order events to email and fulfilment.](/diagrams/ecommerce-checkout/architecture.svg)
+![Architecture of the e-commerce checkout. A browser or app sends HTTPS API calls to an API gateway. The gateway routes product pages to the catalog service, cart calls to the cart service, and orders to the order service. The catalog service reads the catalog cache first. The order service reads the cart from the cart service, gets current prices from the catalog service, writes state and outbox rows to the order database, calls the inventory service to reserve, commit and release, and calls the payment service to authorize and void. An outbox relay publishes from the order database to the order event stream, which sends clear ordered items to the cart service and order events to email and fulfillment.](/diagrams/ecommerce-checkout/architecture.svg)
 
 Follow a shopper buying two blue kettles. The **API gateway**, a
 [reverse proxy](/systems-and-infrastructure/forward-vs-reverse-proxy), sends
@@ -59,9 +58,9 @@ product pages to the catalog service, which reads the
 entries expire after 60 seconds. "Place order" goes to the
 order service, the **orchestrator**: it reads the cart and current prices,
 recomputes the total, inserts order `o_5521`, reserves stock, has the payment
-service authorize $81.20, commits the stock, then marks the order `CONFIRMED` and writes an **outbox** row, an event waiting to be published, in one order-database transaction
+service authorize $81.20, commits the stock, marks the order `CONFIRMED` and writes an **outbox** row, an event waiting to be published, in one order-database transaction
 ([outbox pattern](/systems-and-infrastructure/outbox-pattern)). A relay sends
-it to the stream, where the cart, email and fulfilment pick it up.
+it to the stream, where the cart, email and fulfillment pick it up.
 
 ## API and data model
 
@@ -115,7 +114,7 @@ the last unit can't both match: the database applies updates one at a time. The
 reservation's `expires_at` is 10 minutes out, a **lease**: a
 claim that lapses on its own, so the inventory service's expiry sweeper frees units an order never came back for.
 
-Why not decrement after payment? It works, but assume 1 order in 1,000 meets a
+Why not decrement after payment? Assume 1 order in 1,000 meets a
 sell-out: 10,000 orders a day whose card was authorized before the stock check
 failed, each needing a void, and some banks show an authorization as a pending
 charge for days. Reserving turns them into "out of stock" before the card is
@@ -137,8 +136,7 @@ order's `status` records the last finished step, so a recovery sweeper in the or
 Why not one transaction, with **two-phase commit**, where a coordinator has
 every participant prepare (hold its locks, promise to commit) before telling
 them to commit? The payment service offers an HTTP API, not prepare and commit.
-And the stock row would stay locked through a roughly
-2-second authorization, so one SKU could sell 0.5 orders a second; a
+And the stock row would stay locked through a 2-second authorization, so one SKU could sell 0.5 orders a second; a
 reservation holds it for about a millisecond. The saga's price: while `o_5521`
 waits on the bank, another shopper sees "1 left" where there were 3.
 
@@ -153,8 +151,7 @@ response. So the client makes an **idempotency key**, a unique
 string, when the review page loads and sends it with every attempt
 ([idempotency](/systems-and-infrastructure/idempotency)). The order service
 inserts the order and the key in one transaction, and the unique index on
-`(user_id, idempotency_key)` makes the second of two simultaneous attempts fail.
-Either way the retry gets the first order's state. The bank call
+`(user_id, idempotency_key)` fails the second of two simultaneous attempts, and a later retry finds the key; both get the first order's state. The bank call
 carries its own key, `o_5521:auth-1`, so a retry returns the first result
 instead of authorizing again.
 

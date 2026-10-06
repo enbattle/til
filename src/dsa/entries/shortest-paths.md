@@ -22,9 +22,9 @@ The **cost** of a route is the sum of its edge weights, and the **distance** to 
 0: (1, 4) (2, 1)     1: (3, 1)     2: (1, 2) (3, 5)     3: no edges
 ```
 
-Vertex 1 is one edge from the source at cost 4, but going through 2 costs 1 + 2 = 3, so the first route found isn't always the cheapest.
+Vertex 1 is one edge away at cost 4, but going through 2 costs 1 + 2 = 3, so the first route found isn't always cheapest.
 
-**Dijkstra** finishes vertices in order of distance. Take the unfinished vertex with the smallest best-known cost `d` and call it final: a cheaper route would have to leave the finished region through another unfinished vertex, already at least `d`, and edges only add. A min-heap of `(cost, vertex)` entries hands it over. A heap can't lower an entry in place, so when an edge improves a vertex you push a second entry and skip the old, **stale** one when it surfaces. That is lazy deletion.
+**Dijkstra** finishes vertices in order of distance. Take the unfinished vertex with the smallest best-known cost `d` and call it final: a cheaper route would have to leave the finished region through another unfinished vertex, already at least `d`, and edges only add. A min-heap of `(cost, vertex)` entries hands it over. A heap can't lower an entry in place, so an improved vertex gets a second entry, and the old, **stale** one is skipped when it surfaces (lazy deletion).
 
 | Pop    | Action                          | Heap afterward      |
 | ------ | ------------------------------- | ------------------- |
@@ -37,7 +37,7 @@ Vertex 1 is one edge from the source at cost 4, but going through 2 costs 1 + 2 
 
 The distances are `[0, 3, 1, 4]`: six pops, four scans.
 
-**Why a negative edge breaks it.** Take `0 -> 1` (2), `0 -> 2` (3), `2 -> 1` (-2) and `1 -> 3` (1). The cheapest route to 3 is 0, 2, 1, 3 for 3 - 2 + 1 = 2. Vertex 1 comes off the heap first, at cost 2, before the -2 edge that undercuts it is seen. The answer is `[0, 1, 3, 2]`. A version that never lowers a finished vertex returns `[0, 2, 3, 3]`, and the textbook visited-set version, which lowers it but doesn't rescan it, returns `[0, 1, 3, 3]`. The code below skips only entries priced above the current best, so a vertex whose cost drops is scanned again, which never happens with non-negative weights. That recovers here by scanning vertex 1 twice, but its worst case is exponential (a known result, not measured here), and a negative cycle never stops it.
+**Why a negative edge breaks it.** Take `0 -> 1` (2), `0 -> 2` (3), `2 -> 1` (-2) and `1 -> 3` (1). The cheapest route to 3 is 0, 2, 1, 3 for 3 - 2 + 1 = 2. Vertex 1 comes off the heap first, at cost 2, before the -2 edge that undercuts it is seen. The answer is `[0, 1, 3, 2]`, but a version that never lowers a finished vertex returns `[0, 2, 3, 3]`. The code below skips only entries priced above the current best, so a vertex whose cost drops is scanned again, which never happens with non-negative weights. That recovers here by scanning vertex 1 twice, but rescans can pile up, and a negative cycle never stops it.
 
 **Bellman-Ford** stops being clever: relax every edge, call that a **round**, and repeat. A cheapest route repeats no vertex, since cutting out a cycle costing zero or more is no worse, so it has at most `V - 1` edges. Round `k` fixes every cheapest route of `k` edges, so `V - 1` rounds finish the job. Scanning vertices 0 to 3:
 
@@ -57,7 +57,7 @@ When every weight is the same, the heap hands vertices out in the order a queue 
 
 - The cheapest or fastest route from one place to every other, over edges with costs. All costs zero or more means Dijkstra.
 - Every step costs the same, or the question is "fewest hops": BFS.
-- The statement allows negative weights (refunds, discounts), or asks whether a loop can keep gaining. Currency exchange fits: logarithms turn a product of rates into a sum, so a profitable loop is a negative cycle. Bellman-Ford.
+- The statement allows negative weights (refunds, discounts), or asks whether a loop can keep gaining. Currency exchange fits: with weight -log(rate), a product of rates becomes a sum, so a profitable loop is a negative cycle. Bellman-Ford.
 - "At most `k` stops" means `k + 1` edges: `k + 1` rounds, each reading a copy of the last round's distances so it can't use two new edges.
 - Only a negative cycle reachable from the source is noticed. To find one anywhere, start every vertex at 0. An undirected negative edge is itself a negative cycle, since it's two directed edges.
 
@@ -71,7 +71,7 @@ Graph = list[list[tuple[int, int]]]  # graph[u] holds a (v, weight) pair per edg
 ```
 
 ```typescript
-/** heap.ts's MinHeap without heapify or empty checks: callers test `size` first. */
+/** heap.ts's MinHeap without heapify, peek or empty checks: callers test `size` first. */
 export class MinHeap<T> {
   private readonly items: T[] = [];
 
@@ -112,7 +112,7 @@ export class MinHeap<T> {
 export type Graph = [number, number][][];
 ```
 
-JavaScript has no built-in heap, so this is the [heap](/dsa/heap) entry's class, trimmed: no heapify, and no empty checks, since the caller tests `size` first.
+JavaScript has no built-in heap, so this is the [heap](/dsa/heap) entry's class, trimmed: no heapify, no peek and no empty checks, since the caller tests `size` first.
 
 ```python
 def dijkstra(graph: Graph, source: int) -> list[float]:
@@ -212,7 +212,7 @@ export function bellmanFord(graph: Graph, source: number): number[] | null {
 }
 ```
 
-Bellman-Ford takes `n` rounds, not `n - 1`, so the last one is the check. It returns after the first round that changes nothing (round 3 here), so only a negative cycle reaches the end of the loop. A vertex the source can't reach stays at infinity, so a negative cycle among such vertices is never reported. Use a real infinity: a sentinel like `10**9` gets relaxed down by negative edges and makes an unreachable vertex look reachable.
+Bellman-Ford takes `n` rounds, not `n - 1`, so the last is the check. It returns after the first round that changes nothing (round 3 here), so only a negative cycle reaches the end of the loop. A negative cycle among vertices the source can't reach is never reported. Use a real infinity: a sentinel like `10**9` gets relaxed down by negative edges and makes an unreachable vertex look reachable.
 
 ## Complexity
 
@@ -223,5 +223,5 @@ Bellman-Ford takes `n` rounds, not `n - 1`, so the last one is the check. It ret
 
 - **Skipping the stale check** (`if d > dist[u]: continue`). The distances stay right, but the example rescans vertices 1 and 3.
 - **`<=` in the relaxation.** Two vertices joined by zero-weight edges both ways push each other forever.
-- **The vertex first in the heap entry.** The heap orders by the first field, so `(v, d + w)` pops by vertex number and returns wrong distances. Cost goes first.
+- **The vertex first in the heap entry.** The heap orders by the first field, so `(v, d + w)` pops by vertex number. Distances stay right, since rescans repair them, but the cheapest-first order and its bound are gone: the example scans 5 vertices instead of 4, and 50 random graphs of 300 vertices and 2,000 edges averaged about 1,190 scans against 300. Cost goes first.
 - **Stopping after `n - 1` rounds.** A graph with a negative cycle then returns distances that look fine but mean nothing. Round `n` is the check.

@@ -293,7 +293,7 @@ output. Candidates `[2, 4]` and a target of 81 have no answer, yet the search
 makes 441 calls to say so, because pruning can't tell an odd target is
 unreachable. With k candidates and depth D (the target divided by the smallest
 candidate) there are at most C(D + k, k) calls: polynomial in D, exponential in
-k. Doubling the target to 161 takes 441 calls to 1,681.
+k. Raising the target to 161 (twice the depth) takes 441 calls to 1,681.
 
 ## Pitfalls
 

@@ -74,15 +74,14 @@ segment:  index (0..699,999,999) -> from, to, length, road class, speed curve
 tile:     {block_version}/{z}/{x}/{y}.mvt   (a file; z is the zoom level)
 ```
 
-`cell_id` turns "near here" into "this cell or its neighbours", a lookup an ordinary
+`cell_id` turns "near here" into "this cell or its neighbors", a lookup an ordinary
 [index](/systems-and-infrastructure/database-indexing) answers.
-A segment's `index` is its position in every in-memory array, so a live speed is one array write. `seq` lets retries be recognised.
+A segment's `index` is its position in every in-memory array, so a live speed is one array write. `seq` lets retries be recognized.
 
 ## Decision: vector tiles
 
 Each tile holds **vector** data (road lines, building outlines, label
-positions), and the phone draws it with a style file. Tiles stop at zoom 14,
-about 2.4 km a side. Zoom z has 4^z tiles, so zooms 0 to 14 total 358 million; with 30% holding land, that is 107 million × an assumed 20 KB ≈ 2.1 TB, one
+positions), and the phone draws it with a style file. Tiles stop at zoom 14, about 2.4 km a side; deeper zooms **overzoom**, scaling the zoom-14 data. Zoom z has 4^z tiles, so zooms 0 to 14 total 358 million; with 30% holding land, that is 107 million × an assumed 20 KB ≈ 2.1 TB, one
 copy for every style.
 
 Why not **raster** tiles, ready-made images? They cost the phone nothing, but
@@ -120,7 +119,7 @@ publish only the changes, as files plus a pointer to the latest. A segment
 needs three different sessions, so one phone can't fake a jam. If pointers go
 five minutes stale, routing falls back to typical speeds.
 
-Why not a batch job every 5 minutes? It is simpler, but its 5-minute window alone can break the 3-minute target. The streamed path's
+Why not a batch job every 5 minutes? Simpler, but its window alone can break the 3-minute target. The streamed path's
 worst case is 155 s: 10 s for an upload, 10 s in queues, a 60 s window, 20 s
 for late probes, 5 s to publish, 10 s to the next poll, 40 s to customize.
 
@@ -136,9 +135,9 @@ simplest design whose worst case fits.
   them) has its own version in tile URLs, listed in a 16 KB manifest the phone caches for 5 minutes, so only changed blocks miss
   ([cache invalidation](/systems-and-infrastructure/cache-invalidation)).
 - **How is the ETA updated every 10 seconds?** The session's routing server
-  keeps its route in memory (a 60 km route is about 5,000 segments × 4 bytes =
-  20 KB; 1 million sessions = 20 GB) and re-sums the remaining segments.
-  Resending it would be 2 GB/s. The reroute check each minute is a full search
+  keeps its route in memory (a 60 km route is about 1,000 segments × 4 bytes =
+  4 KB; 1 million sessions = 4 GB) and re-sums the remaining segments.
+  Resending it would be 0.4 GB/s. The reroute check each minute is a full search
   (the routing [ride-sharing](/system-design/ride-sharing) also calls).
 - **What if an aggregator crashes mid-window?** It commits its queue position
   only after writing its delta file and moving the pointer, so the next owner

@@ -134,7 +134,8 @@ def test_explore_marks_only_the_reachable_part():
 
 def test_explore_goes_deep_before_backing_up():
     # Vertex 1 must be fully explored (reaching 3) before 2 is visited. A queue
-    # gives 0, 1, 2, 3; marking on push gives 0, 3, 2, 1.
+    # gives 0, 1, 2, 3; marking on push gives 0, 1, 2, 3 with the reversal and
+    # 0, 3, 2, 1 without it.
     seen = OrderedSet()
     explore([[1, 2, 3], [0, 3], [0], [0, 1]], 0, seen)
     assert seen.order == [0, 1, 3, 2]

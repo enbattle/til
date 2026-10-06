@@ -56,8 +56,9 @@ def quickselect(nums: list[int], k: int, rng: random.Random | None = None) -> in
     rng = rng or random.Random()
     lo, hi = 0, len(nums)
     while True:
-        # A random pivot means no input is reliably bad; always taking the
-        # first element makes sorted input shrink the range by one a round.
+        # A random pivot means no input is reliably bad. A first-element pivot
+        # is the maximum every round on reversed input, so the range shrinks
+        # by one a round; sorted input is milder, about n^1.5.
         lt, gt = partition(nums, lo, hi, nums[rng.randrange(lo, hi)])
         if k < lt:
             hi = lt

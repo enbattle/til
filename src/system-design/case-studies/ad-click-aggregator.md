@@ -82,7 +82,7 @@ ad_minute_counts
 ```
 
 The **click token** holds the impression ID, ad ID and impression time, signed with an HMAC (a
-hash only the key's holders can produce), so forgeries fail. A bad token still gets the redirect, recorded `valid: false`, as a `302`
+hash only the key's holders can produce), so forgeries fail. A bad token still gets the `302` redirect, recorded `valid: false`,
 for the reason in [the URL shortener](/system-design/url-shortener).
 Dashboards scan one ad over a time range, which suits a **columnar
 store** (columns stored compressed apart). It prefers appending, so each write

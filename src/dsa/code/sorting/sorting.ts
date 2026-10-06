@@ -63,8 +63,9 @@ export function quickselect(
   let lo = 0;
   let hi = nums.length;
   for (;;) {
-    // A random pivot means no input is reliably bad; always taking the
-    // first element makes sorted input shrink the range by one a round.
+    // A random pivot means no input is reliably bad. A first-element pivot
+    // is the maximum every round on reversed input, so the range shrinks
+    // by one a round; sorted input is milder, about n^1.5.
     const pivot = nums[lo + Math.floor(random() * (hi - lo))];
     const [lt, gt] = partition(nums, lo, hi, pivot);
     if (k < lt) hi = lt;

@@ -85,7 +85,7 @@ from collections.abc import Iterator
 Edge = tuple[int, int]
 
 def check(n: int, edges: list[Edge]) -> None:
-    # Python reads adj[-1] as the last vertex, so a bad id would not fail.
+    # Python reads adj[-1] as the last vertex, so a negative id would not fail.
     for u, v in edges:
         if not (0 <= u < n and 0 <= v < n):
             raise ValueError(f"edge ({u}, {v}) names a vertex outside 0..{n - 1}")

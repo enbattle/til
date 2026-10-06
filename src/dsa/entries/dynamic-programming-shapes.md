@@ -47,7 +47,7 @@ Coin change is the same row with two changes: a coin can be used any number of t
 
 Two coins, 3 + 3. When counting ways, loop order matters: amounts outside and coins inside counts orderings, so coins 1, 2 and amount 3 give 3, not 2 combinations.
 
-**Two sequences.** To turn `"abc"` into `"yabd"` with single-character inserts, deletes and replaces, let `table[i][j]` be the distance between the first `i` characters of one string and the first `j` of the other. If the last characters match, the cell copies its diagonal neighbor. Otherwise it is 1 plus the cheapest of three neighbors: above (delete), left (insert) and diagonal (replace). An empty prefix needs one insert per character, which fills the first row and column.
+**Two sequences.** To turn `"abc"` into `"yabd"` with single-character inserts, deletes and replaces, let `table[i][j]` be the distance between the first `i` characters of one string and the first `j` of the other. If the last characters match, the cell copies its diagonal neighbor. Otherwise it is 1 plus the cheapest of three neighbors: above (delete), left (insert) and diagonal (replace). An empty prefix costs one insert or delete per character, which fills the first row and column.
 
 | a \ b | ""  | y   | a   | b   | d   |
 | ----- | --- | --- | --- | --- | --- |
@@ -62,7 +62,7 @@ The answer is 2: insert `y`, replace `c` with `d`. For the longest common subseq
 
 ## When to use it
 
-- "Right or down" movement across a grid, asking for a count or a best total: the grid shape. If a path can also go up or left, cells depend on each other in cycles and no fill order exists. Search the grid as a graph instead: [breadth-first search](/dsa/breadth-first-search) when every step costs the same, [shortest paths](/dsa/shortest-paths) when cells have costs. Counting paths then has no answer, since revisits allow infinitely many.
+- "Right or down" movement across a grid, asking for a count or a best total: the grid shape. If a path can also go up or left, cells depend on each other in cycles and no fill order exists. Search the grid as a graph instead: [breadth-first search](/dsa/breadth-first-search) when every step costs the same, [shortest paths](/dsa/shortest-paths) when cells have costs. Counting walks then has no finite answer, since revisits allow infinitely many.
 - A list of items and a limit (a capacity, a target sum, an amount), where you pick a subset to maximize, minimize, count or just make possible: the knapsack shape.
 - Two strings or arrays, asked how alike they are or how to turn one into the other: the two-sequences shape.
 - The answer for a stretch depends on a split point: interval DP.
@@ -181,7 +181,7 @@ export function minCoins(coins: number[], amount: number): number {
 }
 ```
 
-The row ends as `[0, 1, 2, 1, 1, 2, 2]`, so `min_coins([1, 3, 4], 6)` is 2. The last shape needs two indexes at once.
+The row ends as `[0, 1, 2, 1, 1, 2, 2]`, so `min_coins([1, 3, 4], 6)` is 2. The last shape tracks two indexes at once.
 
 ```python
 def edit_distance(a: Sequence[str], b: Sequence[str]) -> int:

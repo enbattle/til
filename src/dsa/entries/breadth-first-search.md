@@ -17,7 +17,7 @@ Breadth-first search (BFS) visits everything one step from the start, then every
 
 A queue holds the vertices that are found but not yet scanned. Take one from the front, look at each neighbor, and add every neighbor you haven't seen to the back. Since the queue is first in, first out, everything one edge from the start is scanned before anything two edges away, and the first time you reach a vertex is by a route with the fewest edges.
 
-That only works because every step adds exactly 1. The queue holds vertices at distance d, then at d + 1, never mixed, so the order of reaching vertices is the order of their distances. If edges had weights, the first route to a vertex could be beaten by a route with more edges that costs less, and the queue order would no longer be the cost order. That is a job for Dijkstra's algorithm.
+That only works because every step adds exactly 1. The queue holds vertices at distance d, then at d + 1, never mixed, so the order of reaching vertices is the order of their distances. If edges had weights, the first route to a vertex could be beaten by a route with more edges that costs less, and the queue order would no longer be the cost order. That is a job for [Dijkstra's algorithm](/dsa/shortest-paths).
 
 Here is the running graph, undirected, with 7 edges:
 
@@ -35,7 +35,7 @@ Search from 0 for 5, recording each vertex's **parent**, the vertex it was first
 | 2   | 0, 3, 4 | 4 (2)                 | 3, 4        |
 | 3   | 1, 2, 5 | 5 (3)                 | 4, 5        |
 
-Vertex 5 is found while scanning 3, so the search stops. Following parents back, 5 to 3 to 1 to 0, gives the path 0, 1, 3, 5: 3 edges. On a tree, drop the visited set, since a node has only one way in; [Binary tree](/dsa/binary-tree) builds its levels with the same queue idea.
+Vertex 5 is found while scanning 3, so the search stops. Following parents back, 5 to 3 to 1 to 0, gives the path 0, 1, 3, 5: 3 edges. On a tree, drop the visited set, since a node has only one way in; [Binary tree](/dsa/binary-tree) groups its levels the same way, a whole level at a time.
 
 ## When to use it
 
@@ -43,7 +43,7 @@ Vertex 5 is found while scanning 3, so the search stops. Following parents back,
 - The input is a maze, a grid or a graph of states (word ladder, knight moves) and "minimum number of moves" is the question.
 - Something spreads from several places at once and you want the time until it covers everything: rotting fruit, fire, flooding, "distance to the nearest gate".
 - You want a tree's minimum depth or its nearest leaf: BFS stops at the first leaf it pops, where a depth-first walk must visit the whole tree to be sure.
-- Steps have different costs, so a fewest-edges path isn't the cheapest one. That is Dijkstra's job, not this one's.
+- Steps have different costs, so a fewest-edges path isn't the cheapest one. That is [Dijkstra's](/dsa/shortest-paths) job, not this one's.
 
 ## Walkthrough
 
@@ -206,7 +206,7 @@ export function minutesToRot(grid: number[][]): number {
 }
 ```
 
-Take the grid `[[2, 1, 1], [1, 1, 0], [0, 1, 2]]`, with two rotten cells. Minute 1 starts with a queue of 2 and rots 3 cells, (0,1), (1,0) and (2,1). Minute 2 starts with 3, rots (0,2) and (1,1), and leaves no fresh cell, so the answer is 2; with only the top-left source it would be 4. Taking `len(queue)` at the start of a minute is what turns the queue into a count of minutes.
+Take the grid `[[2, 1, 1], [1, 1, 0], [0, 1, 2]]`, with two rotten cells. Minute 1 starts with a queue of 2 and rots 3 cells, (0,1), (1,0) and (2,1). Minute 2 starts with 3, rots (0,2) and (1,1), and leaves no fresh cell, so the answer is 2; with only the top-left source, and the bottom-right cell fresh instead of rotten, it would be 4. Taking `len(queue)` at the start of a minute is what turns the queue into a count of minutes.
 
 ## Complexity
 

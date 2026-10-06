@@ -31,11 +31,10 @@ Out of scope: search, ads, the player and moderation.
 ## Key numbers
 
 These size the ranking servers, retrieval index, feature store and logs. Peak
-is 3 times average; tiers run at no more than 60% of capacity:
+is 3 times average, as time zones spread users; tiers run at no more than 60% of capacity:
 
-- **Requests:** about 18,000 a second at peak. 500 million a day ÷ 86,400 ≈
-  5,800 a second, × 3.
-- **Ranking servers:** 24 of 32 cores. 500 candidates a request is 9 million
+- **Requests:** about 18,000 a second at peak. 500 million a day ÷ 86,400 ≈ 5,800 a second, × 3 ≈ 17,400, rounded up.
+- **Ranking servers:** 24 servers of 32 cores. 500 candidates a request is 9 million
   scores a second; at an assumed 20,000 per core, 450 cores busy, 750 at 60%.
 - **Retrieval index:** 32 GB per replica, 15 replicas. 50 million × 128
   floats × 4 bytes = 25.6 GB, plus assumed links of 6.5 GB. At an assumed
@@ -92,13 +91,13 @@ Reads are lookups by one key, so a
 that matters is `request_id`: each event names the request that showed the
 tile, which is how training joins features to outcomes.
 
-## Decision: approximate nearest-neighbour retrieval
+## Decision: approximate nearest-neighbor retrieval
 
 Ranking all 50 million videos per request would be 900 billion scores a second,
 so a cheap stage picks first. An **embedding** is a list of 128 numbers placing
 a user or video in a shared space, so Maya sits near videos she would watch;
 computing hers per request lets tonight's cooking videos move her.
-**Approximate nearest-neighbour (ANN)** search
+**Approximate nearest-neighbor (ANN)** search
 ([vector search](/ai-and-ml/vector-search)) visits a few thousand vectors, not
 all 50 million, at the cost of **recall**, the share of the true top 300
 returned: at 95%, about 15 are missed.
@@ -122,8 +121,7 @@ about 60 TB at an assumed 4× compression, and a new feature needs weeks of
 logging.
 
 Why not recompute features from the lake as of each impression (a point-in-time
-join)? It works, stores far less, and lets a new feature backfill. But
-streaming and batch code still disagree at the edges: if streaming drops events
+join)? It stores far less and lets a new feature backfill, but streaming and batch code still disagree at the edges: if streaming drops events
 over 5 minutes late and batch counts them, served counts run low.
 
 **Rule of thumb.** If a model must train on what it saw in serving, log the
@@ -140,7 +138,7 @@ Then one of the 20 slots goes to the best new candidate: 500 million requests ÷
 400,000 = 1,250 slots per video a day on average, 2,500 in 48 hours. With 12 of 20 tiles
 on screen, 1,500 are seen: at an assumed 5% click rate, about 75 clicks.
 
-Why not a score boost for new videos? It is simpler, and it works. But how many slots it takes from ranked videos shifts with the competition; the slot costs a known 5%.
+Why not a score boost for new videos? It's simpler, but how many slots it takes from ranked videos shifts with the competition; the slot costs a known 5%.
 
 **Rule of thumb.** If a system learns only from what it shows, budget
 exploration as a fixed share of slots, so the cost is known.
