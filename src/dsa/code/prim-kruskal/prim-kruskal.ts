@@ -1,7 +1,7 @@
 /** An undirected weighted edge: [u, v, weight], with vertices numbered 0..n-1. */
 export type Edge = [u: number, v: number, weight: number];
 
-/** A binary min-heap on an array: `less(a, b)` says a belongs nearer the root. */
+/** heap.ts's MinHeap without heapify, peek or empty checks: test `size` first. */
 class MinHeap<T> {
   private readonly items: T[] = [];
 
@@ -12,51 +12,40 @@ class MinHeap<T> {
   }
 
   push(item: T): void {
-    const items = this.items;
-    items.push(item);
-    let i = items.length - 1;
-    while (i > 0) {
+    const a = this.items;
+    a.push(item);
+    for (let i = a.length - 1; i > 0;) {
       const parent = (i - 1) >> 1;
-      if (!this.less(items[i], items[parent])) break;
-      [items[i], items[parent]] = [items[parent], items[i]];
+      if (!this.less(a[i], a[parent])) return;
+      [a[i], a[parent]] = [a[parent], a[i]];
       i = parent;
     }
   }
 
-  /** Removes and returns the root. The heap must not be empty. */
   pop(): T {
-    const items = this.items;
-    const top = items[0];
-    const last = items.pop()!;
-    if (items.length > 0) {
-      items[0] = last;
-      let i = 0;
-      for (;;) {
-        let smallest = i;
-        const left = 2 * i + 1;
-        const right = left + 1;
-        if (left < items.length && this.less(items[left], items[smallest]))
-          smallest = left;
-        if (right < items.length && this.less(items[right], items[smallest])) {
-          smallest = right;
-        }
-        if (smallest === i) break;
-        [items[i], items[smallest]] = [items[smallest], items[i]];
-        i = smallest;
-      }
+    const a = this.items;
+    const top = a[0];
+    const last = a.pop() as T;
+    if (a.length === 0) return top; // a[0] = last would refill the emptied array
+    a[0] = last;
+    for (let i = 0, c = 1; c < a.length; c = 2 * i + 1) {
+      if (c + 1 < a.length && this.less(a[c + 1], a[c])) c++; // the smaller child
+      if (!this.less(a[c], a[i])) break;
+      [a[i], a[c]] = [a[c], a[i]];
+      i = c;
     }
     return top;
   }
 }
 
-/** A minimum spanning tree as a list of edges, or null if the graph is disconnected. */
+/** A minimum spanning tree as a list of edges, or null if disconnected. */
 export function kruskal(n: number, edges: Iterable<Edge>): Edge[] | null {
   const parent = Array.from({ length: n }, (_, i) => i);
   const size = new Array<number>(n).fill(1);
 
   const find = (x: number): number => {
     while (parent[x] !== x) {
-      parent[x] = parent[parent[x]]; // path halving
+      parent[x] = parent[parent[x]]; // halving: point at the grandparent
       x = parent[x];
     }
     return x;
@@ -66,45 +55,45 @@ export function kruskal(n: number, edges: Iterable<Edge>): Edge[] | null {
   for (const edge of [...edges].sort((a, b) => a[2] - b[2])) {
     let rootU = find(edge[0]);
     let rootV = find(edge[1]);
+    // Roots, not u and v: 0 and 1 can already be linked through 2.
     if (rootU === rootV) continue;
-    if (size[rootU] < size[rootV]) [rootU, rootV] = [rootV, rootU];
+    if (size[rootU] < size[rootV]) [rootU, rootV] = [rootV, rootU]; // shallow trees
     parent[rootV] = rootU;
     size[rootU] += size[rootV];
     chosen.push(edge);
+    // A tree has no room for more, and every edge left would close a cycle.
     if (chosen.length === n - 1) break;
   }
   return chosen.length === Math.max(n - 1, 0) ? chosen : null;
 }
 
-/** A minimum spanning tree grown from `start`, or null if the graph is disconnected. */
-export function prim(n: number, edges: Iterable<Edge>, start = 0): Edge[] | null {
-  if (n === 0) return [];
+/** A minimum spanning tree grown from vertex 0, or null if disconnected. */
+export function prim(n: number, edges: Iterable<Edge>): Edge[] | null {
+  if (n === 0) return []; // adjacent[0] below would not exist
   const adjacent: Edge[][] = Array.from({ length: n }, () => []);
   for (const [u, v, w] of edges) {
+    // Both ends: an edge stored once is a one-way street, and Prim would
+    // miss vertices behind it.
     adjacent[u].push([u, v, w]);
     adjacent[v].push([v, u, w]);
   }
 
   const inTree = new Array<boolean>(n).fill(false);
-  inTree[start] = true;
+  inTree[0] = true;
   const heap = new MinHeap<Edge>((a, b) => a[2] < b[2]);
-  for (const edge of adjacent[start]) heap.push(edge);
+  for (const edge of adjacent[0]) heap.push(edge);
   const chosen: Edge[] = [];
   while (heap.size > 0 && chosen.length < n - 1) {
     const edge = heap.pop();
     const v = edge[1];
-    if (inTree[v]) continue; // a cheaper edge already brought v in
+    // Stale: a cheaper edge already brought v in, and this one would
+    // close a cycle. Edges are never removed from the heap, only skipped.
+    if (inTree[v]) continue;
     inTree[v] = true;
     chosen.push(edge);
     for (const next of adjacent[v]) {
-      if (!inTree[next[1]]) heap.push(next);
+      if (!inTree[next[1]]) heap.push(next); // an edge back into the tree is never used
     }
   }
   return chosen.length === n - 1 ? chosen : null;
-}
-
-export function totalWeight(tree: Iterable<Edge>): number {
-  let total = 0;
-  for (const [, , w] of tree) total += w;
-  return total;
 }

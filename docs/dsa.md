@@ -29,20 +29,20 @@ them and their code folders, and repoints every link to an old slug
 standard-library module names. Every entry not listed keeps its slug and is
 rewritten in place.
 
-| New entry (slug)                                       | Kind           | Absorbs                                                                                                 |
-| ------------------------------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------- |
-| Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings` (done, DSA batch 1)                                                          |
-| Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque` (done, DSA batch 1)                                                          |
-| Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers` (done, DSA batch 3)                                                |
-| Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps` (done, DSA batch 4)                                                 |
-| DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional` (done, batch 1)                                                                    |
-| DP: common shapes (`dynamic-programming-shapes`)       | pattern        | `dp-grids`, `dp-knapsack`, `dp-two-sequences`; a sentence each from `dp-intervals`, `dp-state-machines` |
-| Sorting (`sorting`)                                    | algorithm      | `merge-sort`, `quicksort-quickselect`, `bucket-counting-sort` (counting sort as prose, no code)         |
-| Breadth-first search (`breadth-first-search`)          | algorithm      | `graph-bfs`, `tree-bfs` (done, DSA batch 4)                                                             |
-| Depth-first search (`depth-first-search`)              | algorithm      | `graph-dfs`, `tree-dfs` (done, DSA batch 4)                                                             |
-| Shortest paths (`shortest-paths`)                      | algorithm      | `dijkstra`, `bellman-ford`                                                                              |
+| New entry (slug)                                       | Kind           | Absorbs                                                                                                                     |
+| ------------------------------------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Arrays and strings (`arrays-and-strings`)              | data structure | `dynamic-array`, `strings` (done, DSA batch 1)                                                                              |
+| Stacks and queues (`stacks-and-queues`)                | data structure | `stack`, `queue-and-deque` (done, DSA batch 1)                                                                              |
+| Two pointers (`two-pointers`)                          | pattern        | `two-pointers`, `fast-slow-pointers` (done, DSA batch 3)                                                                    |
+| Heap patterns (`heap-patterns`)                        | pattern        | `top-k`, `k-way-merge`, `two-heaps` (done, DSA batch 4)                                                                     |
+| DP: memoization and tabulation (`dynamic-programming`) | pattern        | `dp-one-dimensional` (done, batch 1)                                                                                        |
+| DP: common shapes (`dynamic-programming-shapes`)       | pattern        | `dp-grids`, `dp-knapsack`, `dp-two-sequences`; a sentence each from `dp-intervals`, `dp-state-machines` (done, DSA batch 5) |
+| Sorting (`sorting`)                                    | algorithm      | `merge-sort`, `quicksort-quickselect`, `bucket-counting-sort` (counting sort as prose, no code) (done, DSA batch 5)         |
+| Breadth-first search (`breadth-first-search`)          | algorithm      | `graph-bfs`, `tree-bfs` (done, DSA batch 4)                                                                                 |
+| Depth-first search (`depth-first-search`)              | algorithm      | `graph-dfs`, `tree-dfs` (done, DSA batch 4)                                                                                 |
+| Shortest paths (`shortest-paths`)                      | algorithm      | `dijkstra`, `bellman-ford` (done, DSA batch 5)                                                                              |
 
-`prim-kruskal` keeps its slug under the title "Minimum Spanning Trees".
+`prim-kruskal` keeps its slug under the title "Minimum Spanning Trees" (done, DSA batch 5).
 
 ```
 src/dsa/
