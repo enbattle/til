@@ -1,92 +1,40 @@
 ---
-title: Plan Before You Build: How Engineering Teams Work Before Writing Code
-summary: Why experienced teams write a short design doc and get alignment before the first line of code.
+title: Plan Before You Build
+summary: A one-page written plan, reviewed before coding starts, is the cheapest place to find out an approach is wrong.
 date: 2026-09-13
 ---
 
-It's tempting to treat "start coding" as the first step of building
-something. For a five-minute fix, that's fine. For anything bigger — a new
-feature, a system that touches several parts of a codebase, a decision
-that's expensive to reverse — teams that build reliably do something less
-obvious first: they write down the problem and the proposed approach, in
-plain language, before touching an editor.
+Your product manager asks for an "Export my data" button. You could open an editor and start. A reasonable first guess is a button that runs a database query and streams the result as a CSV file. By Friday you have it working, and on Monday someone mentions that one customer has eleven million rows. The request would time out, and your approach has to change after a week of work.
 
-## Why bother writing anything down first
+Teams that build reliably do something less obvious first. For anything bigger than a small fix, they write down the problem and the proposed approach in plain language, and they get it read before they write code. Why does that help? Because code is an expensive way to ask "does this make sense?" A page of prose takes an hour to write and a few minutes to read. Finding the same flaw by building takes days.
 
-Code is a very expensive way to ask "does this make sense?" Writing a
-paragraph that says what you're building and why takes minutes; writing,
-testing, and then discovering the approach was wrong can take days. A
-short written plan is a cheap place to catch:
+## What goes on the page
 
-- **A misunderstood problem.** Maybe the real complaint wasn't what you
-  assumed it was.
-- **A missed constraint.** Someone reading the plan might know a reason
-  the obvious approach won't work.
-- **Multiple reasonable approaches**, each with different trade-offs
-  (speed vs. flexibility, simplicity vs. future-proofing) that are worth
-  choosing between deliberately instead of by accident.
+Companies give this document different names: a **design doc**, an **RFC** (Request for Comments), and its product-side cousin, the **PRD** (Product Requirements Document), states what to build rather than how. A short design doc usually answers five questions, and here is how each looks for the export button.
 
-This is the same reason architects draw blueprints before pouring
-concrete: changing a drawing costs nothing; changing a poured foundation
-costs a great deal.
+1. **What problem are we solving, and for whom?** "Customers who leave need their data, and support spends hours a week pulling it by hand." That is different from "build an export button," and it tells a reviewer what success means.
+2. **What is the proposed approach?** In prose and rough diagrams, not code: a click queues an export job, a background worker writes the file, and the user gets an email with a download link. The queue is a [message queue](/systems-and-infrastructure/message-queues), the same idea of handing work to a separate worker so the request doesn't wait.
+3. **What are the alternatives, and why not those?** Streaming the file straight from the request is simpler and is what you first imagined. It loses because large accounts would time out. Naming the road not taken is what makes the decision deliberate instead of arbitrary.
+4. **What is out of scope?** "No PDF export, no scheduled exports." This stops a small feature from quietly growing.
 
-## What this looks like in practice
+5. **How will we know it works?** "Export the largest account in staging and time it." The [testing pyramid](/engineering-practices/testing-pyramid) helps decide which checks to plan for.
 
-Different companies give it different names — a **design doc**, an
-**RFC** (Request for Comments), a **PRD** (Product Requirements
-Document) — but the shape is similar. A short design doc usually answers:
+Keep it short on purpose: long enough to think clearly, short enough that a teammate reads all of it. Some companies decide in writing as a matter of course. Amazon is the best-known case: a narrative memo of up to six pages, read silently at the start of the meeting, replaces slides.
 
-1. **What problem are we solving, and for whom?** Not "what are we
-   building," but what's broken or missing without this.
-2. **What's the proposed approach?** Described in prose and rough
-   diagrams, not code.
-3. **What are the alternatives, and why not those?** Naming the roads not
-   taken is what makes a decision look deliberate instead of arbitrary.
-4. **What's explicitly out of scope?** Just as important as what's in —
-   it stops a small change from quietly growing.
+## Get it read before you build
 
-The document is short on purpose — long enough to think clearly, short
-enough that a teammate will actually read the whole thing. At companies
-with a strong writing culture — Amazon's six-page narrative memos are the
-best-known example — this is a normal part of shipping anything
-nontrivial, not extra bureaucracy layered on top of "real work."
+A plan nobody reads has done only half its job. You send the doc to a teammate, a tech lead, and anyone the change affects. Someone on the data team writes back, "We cap every query at thirty seconds, so the worker's single query over eleven million rows will hit that too. Page through the rows in batches and write the file to object storage." That comment costs five minutes now. It would cost a week if it arrived after the worker was built.
 
-Not every decision needs a full document. Many teams keep a lightweight
-**decision log** — a running table of `Decision | Date | Why | Alternatives
-considered` — for smaller calls that still deserve a written reason, without
-the overhead of a full doc.
+Once the team agrees, resist the urge to build every layer to completion before connecting them. Build a **thin vertical slice** first: the smallest version that works end to end, such as a button that exports one small account through the queue and the email. It proves the shape of the approach while changing it is still cheap, and it gives people something real to react to instead of a document.
 
-## Capturing _why_, not just _what_
+## Record why, not just what
 
-Once a decision is made, some teams also write a short **ADR**
-(Architecture Decision Record): a few paragraphs, checked into the
-repository next to the code, that says what was decided and why. The
-value shows up months later, when someone (often the same person who
-wrote it) is staring at an unusual piece of code and wondering "why is
-this done this way?" A commit message answers _what_ changed. An ADR
-answers _why_ — including the option that seemed obviously better and
-turned out not to be.
+After the decision, some teams write a short **ADR** (Architecture Decision Record): a few paragraphs, kept in the repository next to the code, saying what was decided and why. Months later someone asks why exports go through a queue when a direct download would be simpler. A commit message says what changed. The ADR says why, including the option that looked better and lost.
 
-## Getting alignment before scaling up
+Smaller calls can go in a lightweight **decision log**, a running table of decision, date, reason and alternatives considered. It gives a call a written reason without a full document. Choices that trade speed now for cost later are worth logging too, since they are how [technical debt](/engineering-practices/technical-debt-vs-time-to-market) gets taken on deliberately rather than by accident.
 
-Once a plan exists, it gets reviewed — by a teammate, a tech lead, or
-whoever else the decision affects — _before_ significant work begins. This
-step is what actually saves time: a five-minute comment on a doc ("have
-you considered X?") is far cheaper than the same feedback arriving after
-a week of work is already built the other way.
+## When to skip it
 
-After alignment, the next habit worth borrowing is building a **thin
-vertical slice** first: the smallest version of the thing that works
-end-to-end, rather than building every layer to completion before
-connecting them. A thin slice proves the shape of the approach is right
-while it's still cheap to change, and gives everyone something real to
-react to instead of reacting to a document.
+You would not write a design doc to fix a typo on the export page. For a well-understood, low-risk change, the doc costs more than it saves. The judgment is proportional: the less certain the approach, the costlier it is to reverse, and the more people it touches, the more a written plan is worth.
 
-## When to skip all of this
-
-None of this is a ritual to perform on every task. A one-line bug fix or
-a well-understood, low-risk change doesn't need a design doc — writing
-one would cost more than it saves. The judgment call is proportional: the
-less certain the approach, the more expensive it is to reverse, or the
-more people it affects, the more it's worth putting the plan in writing
-before the code.
+**Rule of thumb.** If a wrong approach would cost more than a day to undo, spend an hour writing the plan and have someone else read it before you build.

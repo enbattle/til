@@ -1,119 +1,45 @@
 ---
-title: 'Documentation, Skill, or Hook? A Framework for AI-Native Codebases'
-summary: A decision framework for where a piece of guidance for an AI coding agent belongs — passive context, an invokable skill, or an automated hook — that transfers across tools even though the names don't.
+title: Documentation vs. Skill vs. Hook
+summary: Guidance for an AI coding agent belongs in an always-loaded file, an on-demand skill, or a hook, depending on whether it is a standing fact, a situational procedure, or something that must happen without anyone remembering.
 date: 2026-09-14
 ---
 
-If you work with an AI coding agent long enough, you'll eventually write
-some guidance for it — a convention, a checklist, a procedure — and hit
-the same question every time: does this go in a document the agent reads
-automatically, does it become something explicitly invokable, or does it
-become something that fires on its own? Getting this wrong doesn't
-usually break anything outright, but it quietly makes the guidance less
-likely to actually get followed. This is worth being deliberate about,
-because the underlying judgment is the same skill regardless of which
-tool you're using — even though the tools all name the pieces
-differently.
+Suppose you maintain a web shop's codebase and work with an AI coding agent. Within a week you have three pieces of guidance to hand it. First, "we use pnpm, not npm." Second, an eight-step procedure for shipping a release. Third, "never edit a file in the `migrations/` folder once it has been merged." You could paste all three into one document. Should you?
 
-## Three shapes, defined from first principles
+Each one has a different shape, and the shape decides where it lives. Put it in the wrong place and nothing breaks loudly. The guidance just gets followed less often than you assumed.
 
-Strip away the branding and there are three fundamentally different
-things you can build:
+## Three places guidance can live
 
-- **Passive, always-loaded context.** A file the agent reads
-  automatically at the start of every session, without anyone asking for
-  it — project conventions, architecture, house style. It's _always
-  there_, whether or not it's relevant to the current task.
-- **An invokable, on-demand procedure.** This one has to be _found and
-  chosen_, not just read: something with a name, surfaced in a list of
-  "things you can ask for," that runs only when explicitly triggered —
-  by a person typing a command, or by the agent recognizing the
-  situation calls for it.
-- **An event-triggered automation** fires on its own when a specific
-  action happens — a file gets edited, a command gets run — with no one
-  needing to remember to trigger it. It requires zero recall from
-  whoever's working, because it's wired to the event itself, not to
-  someone's memory of a rule.
+- **Always-loaded context.** A plain file the agent reads at the start of every session, with nobody asking. It holds standing facts: conventions, architecture, house style. It is present whether or not the current task needs it.
+- **An on-demand skill.** A named, self-contained procedure with a short description. The agent sees the name and description, and it loads the full text only when you invoke it by name or the agent decides the situation fits.
+- **A hook.** A small program the tool runs automatically when a specific event happens, such as a file being edited or a command about to run. Its behavior doesn't depend on the model remembering or choosing anything, because ordinary code fires it.
 
-## The decision test
+What separates them is who has to do something for the guidance to take effect. Always-loaded context needs nothing from anyone. A skill needs someone, you or the agent, to recognize the moment. A hook needs no recognition, because the event itself triggers it.
 
-Three questions, in order, usually settle it:
+## Sorting the shop's three rules
 
-1. **Is this true and relevant no matter what the agent is doing right
-   now?** If yes — a coding convention, a fact about the project's
-   architecture, "we use this library, not that one" — it belongs in
-   passive context. Making it something you have to invoke defeats the
-   point: you'd need to already know it applies before that were
-   possible.
-2. Making a rule invokable only helps if someone actually invokes it —
-   so the second question is **whether this only matters in a specific,
-   recognizable situation where someone needs to trigger it on
-   purpose.** A repeatable multi-step procedure, a specific kind of
-   change with its own process — these should be distinct, invokable
-   units with their own name and description, not a paragraph buried in
-   a longer document. A procedure sitting in passive prose only gets
-   followed if someone already remembers it exists and goes looking for
-   it; a named, invokable unit gets surfaced on its own.
-3. **Does this need to happen automatically, with nobody having to
-   remember to ask for it?** If yes — a reminder tied to a specific kind
-   of edit, an automatic check before a risky action — it belongs as an
-   event-triggered hook. This is the only one of the three that removes
-   the "did anyone remember" failure mode entirely, because it doesn't
-   depend on anyone recalling anything.
+Ask three questions in order.
 
-The trap to watch for in both directions: turning a fact into an
-invokable procedure adds friction (now something has to remember to ask
-for a fact that was true the whole time), and turning a procedure into
-passive prose loses discoverability (now it only helps the person who
-already knew to look). Matching the shape to the actual property of what
-you're encoding — a permanent fact, a conditional procedure, or a
-triggerable event — is what makes the guidance actually get used instead
-of technically existing.
+**Is it true no matter what the agent is doing?** "We use pnpm, not npm" holds for every task in the repo. That is a standing fact, so it goes in the always-loaded file. Making it a skill would be backwards: the agent would have to know the rule applied before it knew to load it. The cost of the always-loaded file is that every line is paid for on every task, which is why it should stay short ([Context Budget for an AI Coding Harness](/coding-agents/context-is-a-budget) covers that cost).
 
-## The vocabulary changes by platform; the framework doesn't
+**Does it only matter in one recognizable situation?** The eight-step release procedure is irrelevant to nearly every task and essential to one. Left as a paragraph in the always-loaded file, it costs tokens (the units a model reads text in) on every task and is easy to skim past when the release finally happens. As a skill named `release`, it costs a one-line description until needed, then loads in full and is easy to find. A procedure is a skill.
 
-This is the same underlying decision in every AI coding tool that has
-this kind of configuration — they just name the three shapes differently,
-and some split "invokable procedure" and "reusable capability" into
-distinct concepts of their own:
+**Must it happen even if nobody remembers?** "Never edit a merged migration" is a rule where one lapse does damage. A sentence in the always-loaded file is only a request, and a model can overlook a request, especially deep into a long session. A hook can check, before each edit, whether the target is a migration already on the main branch, and refuse the edit. The rule now holds without anyone, human or model, recalling it, as long as the hook covers every way the agent can write a file, its edit tool and the shell alike. Use hooks for what must always happen or never happen.
 
-| Concept                        | Claude Code          | Amazon Kiro    | Cursor                                 |
-| ------------------------------ | -------------------- | -------------- | -------------------------------------- |
-| Passive, always-loaded context | `CLAUDE.md`          | Steering files | Rules (`.cursor/rules/`)               |
-| Invokable, on-demand procedure | A skill (`SKILL.md`) | Agent Skills   | A skill (`SKILL.md`, same file format) |
-| Event-triggered automation     | A hook               | Agent Hooks    | Hooks                                  |
+## Where each choice goes wrong
 
-One more wrinkle worth knowing, and it's a useful exception rather than a
-complication: `AGENTS.md` is a separate, cross-tool convention for
-repository context — read by Cursor, but also by several other agents —
-not any single platform's own vocabulary. It's exactly the kind of thing
-this table would misrepresent if it got filed under one platform's
-column instead of called out on its own.
+Turning a fact into a skill adds friction. Someone now has to remember to ask for something that was always true.
 
-This exact confusion is common enough that platforms in this
-space have had to explicitly address it — the boundary between "always
-loaded" and "invoked on demand" isn't obvious just from looking at two
-similarly shaped markdown files. The lesson transfers regardless of which
-of these you're actually using: the question is never "what's this
-platform's word for it," it's "which of the three underlying properties
-does this thing actually have."
+Turning a procedure into always-loaded prose costs twice. It bloats every session, and it helps only a reader who already knows it is there.
 
-## Worked examples
+Treating a hard rule as a document line leaves the "did anyone remember?" gap open. A hook closes it, but a hook is also the most rigid of the three. It runs on every matching event whether or not the situation is an exception, so the rule you wire into one should be one you almost never want to break. A rule with judgment calls belongs in the document, where a model can weigh it.
 
-- A rule like "topics must define terms before using them" is true every
-  time you write a topic, regardless of which one — passive context.
-- A multi-step process for drafting a new piece of content and getting
-  it independently reviewed before it's considered finished is a skill,
-  because it's only relevant when someone specifically wants that done,
-  and it benefits from being triggerable by name rather than requiring
-  someone to remember a procedure buried in a markdown file.
-- Nobody should have to remember to check whether a bigger review
-  process applies the moment they start editing a certain kind of file —
-  which makes that a hook: it fires the instant the edit happens,
-  without anyone having to ask.
+You can also combine them. The always-loaded file might say "releases go through the `release` skill," a one-line pointer that makes the skill discoverable, while a hook blocks direct pushes to the main branch.
 
-Getting this classification right the first time is genuinely hard, and
-getting it wrong isn't usually catastrophic — a procedure left as prose
-still works if someone happens to find it and read that far. But the gap
-between "technically documented" and "reliably followed" is exactly this
-judgment call, as a project's tooling grows.
+## The names change; the test doesn't
+
+Tools label these differently, and some let one kind of file work in more than one of these roles, loaded always or only when a task calls for it. A separate convention, a file named `AGENTS.md`, exists so that several different agents can read the same repository context, and it fills the always-loaded slot rather than adding a fourth kind.
+
+None of that changes the questions. When you meet a new tool, skip its vocabulary and ask which of the three properties your guidance has: always true, situationally needed, or must-fire.
+
+**Rule of thumb.** If it is always true, put it in the always-loaded file. If it is a procedure for one kind of situation, make it a skill. If it must happen or be blocked every time, make it a hook.

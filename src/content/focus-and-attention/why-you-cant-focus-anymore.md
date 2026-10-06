@@ -1,112 +1,35 @@
 ---
-title: Why You Can't Focus Anymore (And What Actually Helps)
-summary: What's actually happening in your brain when focus feels impossible lately, and which fixes are backed by real research versus wishful thinking.
+title: Focus and Distraction
+summary: Why a dense page gets harder to stay with when your phone is nearby, and which fixes have research behind them.
 date: 2026-09-14
 ---
 
-If concentrating on one thing for more than a few minutes feels harder
-than it used to, you're not imagining it, and you're not broken. There's
-a real mechanism behind it — but the popular explanation for it ("dopamine
-detox," "rewire your dopamine") gets the actual science backwards in a way
-that makes the fix easy to miss. This topic works through what's
-happening, and what's shown to help.
+Picture yourself sitting down to read a dense chapter on a topic you want to learn. Your phone is face-down next to the book. Within a few minutes you have read the same paragraph twice, picked up the phone, put it down, and started over. You were not lazy, and the chapter did not get harder. Two separate mechanisms are at work, and each has a different fix.
 
-## What dopamine is for
+## Why does the phone pull so hard?
 
-Dopamine gets talked about as "the pleasure chemical" your brain releases
-when something feels good. That's not quite right, and the difference
-matters. One of the better-supported ways to understand it is as a
-**prediction and motivation signal**: it fires in anticipation of a
-reward at least as much as in response to getting one, tracking your
-brain's running prediction of "is something good about to happen." It's
-active constantly, during completely mundane moments, not just during
-pleasure — because its job is to help you decide what's worth paying
-attention to and pursuing next, not to make you feel good after the fact.
+Start with **dopamine**, a chemical messenger in the brain. It is often called "the pleasure chemical," but a better-supported picture, from decades of research on animals and people, treats it as part of a **prediction signal**. It tracks whether something better than expected might be about to happen, and it helps decide what is worth pursuing next. What you can change is what in your environment triggers the pursuit.
 
-"Dopamine detox" isn't literal — what you can change is what triggers
-dopamine and how strongly, which is the more useful question.
+What triggers it most strongly is uncertainty. In a **variable reward** schedule, a reward arrives after an unpredictable number of tries. This is the structure of a slot machine, and behavioral psychology has long found that animals and people tend to keep responding under it, often more persistently than when the reward comes on a fixed pattern. A vending machine that always gives a snack is easy to walk away from. One that gives a snack occasionally and at random is not.
 
-## The mechanism behind it: variable reward
+Now look at your phone. Every pull-to-refresh might show something interesting, or nothing. Feeds are built on this structure. It is a hypothesis, not a settled finding, that a day of frequent checking leaves a dense page feeling slow by comparison, because the page never offers a maybe. Better supported is the pull itself, and that the pull makes the next check likely.
 
-A slot machine is effective not because winning feels amazing, but
-because you never know _when_ you'll win — a
-predictable reward (a vending machine that always dispenses a snack) is
-far less compelling than an unpredictable one. This is called **variable
-reward**, and it's a well-established finding in behavioral psychology:
-unpredictability itself drives repeated-checking behavior, independent of
-how good the reward actually is.
+## What does a check cost you?
 
-Your phone, and social feeds especially, are built on exactly this
-structure. Every pull-to-refresh, every scroll, might surface something
-interesting — or might not. You can't predict which, so your
-brain's prediction system stays highly engaged, generating a small hit of
-anticipation on every check. Estimates of how often people check
-their phones vary a lot depending on how a study measures "a check" — but
-they consistently land somewhere between dozens and a few hundred times a
-day. Do this often enough and your brain adapts to expect a new
-prediction-worthy event every few seconds. A task that
-doesn't offer that — reading a dense paragraph, debugging a hard problem,
-sitting with one idea for twenty minutes — starts to feel comparatively
-unbearable, not because the task got harder, but because your baseline
-expectation for how often something "happens" got faster than the task
-can match.
+Suppose you give in and glance at a notification. You return to the chapter. Is the glance free?
 
-## Why this specifically wrecks learning
+Researcher Sophie Leroy gave it a name: **attention residue**. In her experiments, people who switched away from an unfinished task kept part of their attention on it, and they did worse on the next task than people who had been able to finish the first. Leroy proposed that a lack of closure on the first task is what leaves the residue. It is a measurable cost in lab studies, so don't picture a single glance wiping out your reading. The concern is how many switches add up, each leaving a little of your attention on the previous thing.
 
-Fragmented attention doesn't just feel unpleasant — it measurably costs
-you on the task you switch back to. Psychologist Sophie Leroy's research
-on **attention residue** found that when you switch away from an
-unfinished task, part of your attention stays stuck on it, and that
-residue actively interferes with performance on whatever you switch to
-next — even once the first task is technically "over." Critically, her
-work found that finishing a task isn't enough to prevent this if you
-don't feel a sense of closure on it; an abrupt switch (like glancing at a
-notification mid-thought) leaves residue behind even for a task you were
-almost done with.
+So in the chapter, each check leaves part of your mind on the feed while you reread the paragraph you were on. Both mechanisms feed each other: the feed pulls you out, and the residue makes the way back slower.
 
-This is exactly the loop short-form content and notifications create:
-check phone, switch back to what you were reading or writing, carry
-residue from the check, repeat. Each individual interruption feels tiny.
-The cumulative effect, especially on something like reading a technical
-topic or working through a hard problem, is a steady tax on how much of
-it actually sticks.
+## What does the research support?
 
-## What the "dopamine detox" trend gets right
+The "dopamine detox" trend traces to psychologist Cameron Sepah's "dopamine fasting", a cognitive-behavioral technique for compulsive habits that he said was not meant literally. The useful core is **stimulus control**: change the environment so the trigger is not there, instead of resisting it with willpower. Three changes follow from the two mechanisms.
 
-The term traces back to psychologist Dr. Cameron Sepah, whose original
-proposal was a set of cognitive-behavioral techniques for reducing
-compulsive behavior by changing your environment — a well-studied
-approach called **stimulus control**. The idea: instead of relying on
-willpower to resist a trigger, remove the trigger. Turn off non-essential
-notifications. Leave your phone in another room while doing focused work.
-Log out of an app instead of trusting yourself not to open it. It works by
-cutting off the variable-reward loop at the source, so there's nothing
-intermittently reinforcing to keep checking — and this part is
-evidence-backed.
+- **Remove the trigger.** Turn off notifications that are not urgent. Log out of an app instead of trusting yourself not to open it. A study by Adrian Ward and colleagues found that a phone on the desk lowered scores on a working-memory test (how much you can hold in mind at once) compared with leaving it in another room. Direct replications have mostly found no effect, and a later review of the studies found only a small one, so treat it as a sensible default, not a proven effect. Leaving the phone in another room costs almost nothing, and that is the better reason to do it.
+- **Leave a stopping note.** If you must stop partway through the chapter, write one line on where you are and what comes next. Research on unfinished goals, by Masicampo and Baumeister, found that making a concrete plan for the goal reduced its intrusion into later tasks. Leroy and Glomb later found a similar benefit for writing a plan to resume. That gives your attention something to put down.
+- **Protect a block.** Decide in advance on a stretch, say 30 to 60 minutes, during which you will not switch. Nothing special about those numbers; the point is that fewer switches mean less residue to clear.
 
-## What else helps
+None of this assumes your brain is broken. It is responding in a normal way to an environment that is unusually good at producing unpredictable rewards. The fix is mostly to change the environment and how you hand off between tasks, rather than to push harder against it.
 
-- **Protect longer, uninterrupted blocks of time**, and batch similar
-  kinds of work together. Attention-residue research found that short,
-  fragmented work periods produce the worst outcome on both ends — too
-  shallow to engage deeply, and still leaving residue behind when
-  interrupted. Some related work suggests switching between similar tasks
-  (two kinds of writing, say) also leaves less residue than switching
-  between very different modes of thinking (writing, then a quick social
-  check, then writing again), though that specific comparison is more
-  tentative than the residue finding itself.
-- **Give yourself an explicit stopping point**, not just an interruption.
-  Closure is the specific thing that reduces residue — jotting down
-  "here's exactly where I left off and what's next" before switching
-  tasks gives your attention something concrete to let go of, rather than
-  an unfinished thread it keeps quietly chewing on.
-- **Use stimulus control deliberately**, per the evidence above:
-  remove the trigger rather than relying on in-the-moment willpower.
-  Phone in another room, notifications off, one browser tab — not a
-  vague intention to "be more disciplined."
-
-None of this requires believing you're broken, or that you need to reset
-some chemical. Your brain is responding completely normally to an
-environment that's unusually good at generating unpredictable rewards —
-the fix is changing the environment and the handoff between tasks, not
-punishing yourself for having a brain that works the way brains work.
+**Rule of thumb.** If you want to hold your attention on something hard, take away the thing that interrupts you, and leave a note before you stop, so you don't need willpower to stay with the task or to return to it.

@@ -18,26 +18,8 @@ import { CATALOG_WORD_BUDGET } from '@/lib/reading-time';
  *   body's last block, or, in systems-and-infrastructure, the last block
  *   before `## Where you'll meet this`.
  *
- * Topics not yet rewritten to the standard are on `PENDING` and skipped. The
- * list can only shrink: an entry naming no topic fails, and so does an entry
- * whose topic already passes every check. Each content batch removes the
- * entries it rewrites; the last batch deletes the list and its handling.
+ * Every topic must pass every check; there are no exceptions.
  */
-
-/** Every `section/slug` not yet on the catalog standard. Only ever remove
- * entries from this list. */
-const PENDING: string[] = [
-  'coding-agents/context-is-a-budget',
-  'coding-agents/documentation-vs-skill-vs-hook',
-  'coding-agents/keeping-ai-native-docs-from-going-stale',
-  'coding-agents/triaging-ai-code-review',
-  'engineering-practices/git-rebase-vs-merge',
-  'engineering-practices/numbers-every-engineer-should-know',
-  'engineering-practices/plan-before-you-build',
-  'engineering-practices/technical-debt-vs-time-to-market',
-  'engineering-practices/testing-pyramid',
-  'focus-and-attention/why-you-cant-focus-anymore',
-];
 
 const SYSTEMS = 'systems-and-infrastructure';
 const WHERE = "Where you'll meet this";
@@ -119,19 +101,6 @@ function structureProblems({ section, title, body }: TopicSource): string[] {
     ...titleProblems(title),
     ...ruleProblems(section, body),
   ];
-}
-
-/** Problems with the `pending` list itself against `topics` (keyed
- * `section/slug`): an entry naming no topic, or naming a topic that already
- * passes every check. */
-function pendingProblems(pending: string[], topics: Map<string, TopicSource>): string[] {
-  return pending.flatMap((path) => {
-    const topic = topics.get(path);
-    if (!topic) return [`${path} is on PENDING but no such topic exists`];
-    return structureProblems(topic).length === 0
-      ? [`${path} is on PENDING but already passes every check; remove it`]
-      : [];
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -291,39 +260,6 @@ describe('the topic-structure check itself (catalog-standard criterion 2)', () =
 });
 
 // ---------------------------------------------------------------------------
-// Criterion 3: the PENDING list's own rules, on planted lists.
-// ---------------------------------------------------------------------------
-
-describe('the PENDING rules (catalog-standard criterion 3)', () => {
-  const PASSING: TopicSource = {
-    section: 'security',
-    title: 'Caching',
-    body: 'A cache keeps hot data close.\n\n**Rule of thumb.** Cache what is read often.',
-  };
-  const FAILING: TopicSource = { ...PASSING, body: 'A cache keeps hot data close.' };
-  const TOPICS_BY_PATH = new Map([
-    ['security/passing', PASSING],
-    ['security/failing', FAILING],
-  ]);
-
-  it('accepts an entry whose topic still fails a check', () => {
-    expect(pendingProblems(['security/failing'], TOPICS_BY_PATH)).toEqual([]);
-  });
-
-  it('fails an entry naming no topic, naming it', () => {
-    expect(
-      pendingProblems(['security/gone', 'security/failing'], TOPICS_BY_PATH),
-    ).toEqual([expect.stringContaining('security/gone')]);
-  });
-
-  it('fails an entry whose topic already passes every check, naming it', () => {
-    expect(
-      pendingProblems(['security/passing', 'security/failing'], TOPICS_BY_PATH),
-    ).toEqual([expect.stringContaining('security/passing')]);
-  });
-});
-
-// ---------------------------------------------------------------------------
 // Criterion 3: the real topics.
 // ---------------------------------------------------------------------------
 
@@ -344,18 +280,9 @@ describe('the real topics (catalog-standard criterion 3)', () => {
     for (const [key, topic] of topics) expect(topic.body, key).toBeTypeOf('string');
   });
 
-  it('lists no path twice on PENDING', () => {
-    expect(PENDING.filter((p, i) => PENDING.indexOf(p) !== i)).toEqual([]);
-  });
-
-  it('keeps PENDING honest: every entry is a topic that still fails a check', () => {
-    expect(pendingProblems(PENDING, topics)).toEqual([]);
-  });
-
-  it('passes every check for every topic not on PENDING', () => {
+  it('passes every check for every topic', () => {
     const failing = Object.fromEntries(
       [...topics]
-        .filter(([key]) => !PENDING.includes(key))
         .map(([key, topic]) => [key, structureProblems(topic)] as const)
         .filter(([, problems]) => problems.length > 0),
     );

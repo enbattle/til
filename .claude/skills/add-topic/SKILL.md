@@ -26,10 +26,8 @@ directly). Don't stretch this skill to cover code changes.
 **Rewrite mode.** Rewriting an existing topic to the catalog standard also
 follows this skill, with the same stages. Treat the old text as research notes,
 not a draft to trim: keep what's true and teaches the idea, and rebuild it
-around one running example. The topic keeps its file and slug, and the rewrite
-removes its entry from `PENDING` in `src/content/topic-structure.test.ts` in
-the same change (docs/content.md, "The catalog standard and its rollout"). A
-merge folds one topic into another and deletes the old file; a move changes a
+around one running example. The topic keeps its file and slug (docs/content.md, "The catalog standard").
+A merge folds one topic into another and deletes the old file; a move changes a
 topic's section or slug. Both follow docs/content.md's "Moving, merging or
 renaming a topic" (`git mv`, repointed links, a `REDIRECTS` entry).
 
@@ -81,7 +79,7 @@ npm run verify
 ```
 
 `content.test.ts`, `registry.test.ts`, `topic-structure.test.ts` (the catalog
-standard, and `PENDING` entries that should be gone), `redirects.test.ts` (a
+standard), `redirects.test.ts` (a
 move or merge), `system-design.test.ts` (a dead
 link from a case study), `catalog-gaps.test.ts` (which also fails on a dead
 link in any topic or case-study body) and `where-youll-meet-this.test.ts` already
@@ -111,17 +109,14 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   thumb that follows from the body, and a title in the pattern; (4) in rewrite
   mode, nothing true and needed from the old version (or a merged-away topic)
   was lost, and no claim was made false by compression.
-- **Commit**: the topic and its link edits (in rewrite mode, its `PENDING`
-  removal and any redirect), with the log row.
+- **Commit**: the topic and its link edits (and any redirect), with the log
+  row.
 
 ## Batch mode
 
 Several topics can be added or rewritten at once. A drafter's Stage 2 is
-`npx vitest run src/content src/lib/catalog-gaps.test.ts` and Prettier on its
-files. Plan merges and moves before drafting so no two drafters edit the same
-file; one drafter owns each merge. The integration step removes the batch's
-`PENDING` entries and adds its `REDIRECTS` entries, once for the batch, since
-every drafter would otherwise edit those two files. Until then,
-`topic-structure.test.ts` fails on a rewritten topic's own `PENDING` entry
-("already passes every check"), which is expected and the only failure a
-drafter may leave.
+`npx vitest run src` (tests outside `src/content` also pin topic titles,
+headings and body words) and Prettier on its files. Plan merges and moves before drafting so no two drafters edit the same
+file; one drafter owns each merge. The integration step adds the batch's `REDIRECTS`
+entries, once for the batch, since every drafter would otherwise edit that
+file.
