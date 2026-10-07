@@ -44,18 +44,26 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-06 | Harness follow-ups: /feature Stages 1 and 5, PowerShell-write hook                | 4    | 0    | 0         | SR-01, 05, 07, 17; run at Stage 5 by the new rule.           |
 | 2026-10-07 | Catalog standard: add-topic rewrite and batch modes, content-audit exclusion      | 5    | 0    | 0         | SR-02, 04, 06, 11, 16 at Stage 5.                            |
 | 2026-10-07 | Catalog batch 9: add-topic loses PENDING steps, batch drafters run all of `src`   | 4    | 0    | 0         | SR-02, 04, 06, 11; SR-06 prompt refreshed.                   |
+| 2026-10-07 | Docs audit after the catalog rewrite: add-topic, add-dsa-entry, the SDLC hook     | 5    | 0    | 0         | SR-02, 04, 14, 18, 20.                                       |
 
-## Latest run: 2026-10-07, catalog batch 9
+## Latest run: 2026-10-07, docs audit after the catalog rewrite
 
 - **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
-- **Trigger:** branch content/catalog-batch-9 deleted the `PENDING` list. It removed `add-topic`'s steps for it, and its batch-mode drafter self-check is now `npx vitest run src`, not only `src/content`. The skill's description is unchanged. docs/content.md and docs/writing-standard.md lost their rollout sentences.
-- **Scope:** the scenarios that route to or around `add-topic`. SR-06's prompt quoted caching prose that the rewrite changed, so it now quotes the current sentence.
+- **Trigger:** branch docs/audit-after-catalog made these edits:
+  - `add-topic` and `add-dsa-entry` bodies: dead-link coverage, no step count for new sections, a dropped citation;
+  - `nudge-sdlc.js`'s reminder now routes rewriting a topic to add-topic;
+  - `feature-review-eval`'s Stage 0 now also checks real-content premises.
 
-| ID    | Routing decision                                                    | Reasoning (one line)                              | Grade |
-| ----- | ------------------------------------------------------------------- | ------------------------------------------------- | ----- |
-| SR-02 | `add-topic`                                                         | A new topic in an existing section.               | PASS  |
-| SR-04 | direct "Adding a new section", then `add-topic` for the first topic | add-topic excludes new sections.                  | PASS  |
-| SR-06 | direct                                                              | A few words in one existing sentence.             | PASS  |
-| SR-11 | `content-audit`                                                     | A sweep of everything published, not one rewrite. | PASS  |
+  No skill description changed.
 
-**Note:** SR-04 now names add-topic for the section's first topic, which is consistent with its scope note: the section itself still goes through the direct process.
+- **Scope:** the scenarios that route to or around these three skills and the hook.
+
+| ID    | Routing decision                                                    | Reasoning (one line)                                    | Grade |
+| ----- | ------------------------------------------------------------------- | ------------------------------------------------------- | ----- |
+| SR-02 | `add-topic`                                                         | A new topic in an existing section.                     | PASS  |
+| SR-04 | direct "Adding a new section", then `add-topic` for the first topic | add-topic excludes new sections.                        | PASS  |
+| SR-14 | `feature-review-eval`                                               | Checks whether the Stage 4 reviewer still catches bugs. | PASS  |
+| SR-18 | `add-dsa-entry`                                                     | A new DSA entry with tested code.                       | PASS  |
+| SR-20 | `add-dsa-entry`                                                     | Merging entries is in its description.                  | PASS  |
+
+**Note:** nothing surprising; the hook's wider wording didn't pull SR-04's section work into add-topic.

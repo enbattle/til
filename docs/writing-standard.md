@@ -56,8 +56,8 @@ where case studies and DSA entries send a reader for more. It gets more room
 than those pages, but not unlimited room: a reader should finish it in one
 sitting.
 
-- **Five minutes at most.** At most 1,000 words of prose, which the
-  reading-time label shows as 5 min; aim for 600–900 (3 or 4 min). Words count as in the section below (tables count; code blocks and
+- **Five minutes at most.** At most 1,000 words of prose, about 5
+  minutes at 230 words a minute; aim for 600–900 (3 or 4 min). Words count as in the section below (tables count; code blocks and
   frontmatter don't). In code, `src/lib/reading-time.ts` owns the number as
   `CATALOG_WORD_BUDGET`, which `src/content/topic-structure.test.ts` imports.
 - **The lecturer voice and one running example**, exactly as the section

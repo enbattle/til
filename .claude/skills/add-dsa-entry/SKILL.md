@@ -95,7 +95,7 @@ sets the five-minute budget and the voice.
    - **Complexity** and **Operations and costs** give time and space with the
      reason, not just the answer, and every figure is checked.
    - Link a catalog topic where the prose uses it, as `[text](/<section>/<slug>)`
-     (`ls src/content/*/`); nothing checks these links, so confirm each one.
+     (`ls src/content/*/`); `src/lib/catalog-gaps.test.ts` fails on a dead one.
    - Claims about a language or library (what `bisect_left` returns, Java's
      default load factor) are verified, not remembered.
 

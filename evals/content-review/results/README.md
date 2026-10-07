@@ -21,29 +21,33 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-05 | Five-minute content standard; CS and DS fixtures rewritten       | 12   | 0    | 0         | All scenarios, CS-04 new; CS-03 and CS-04 re-run after a base fix.         |
 | 2026-10-06 | Stage 3 now points at every Writing Standard bullet              | 12   | 0    | 0         | Full run; controls drew only true findings.                                |
 | 2026-10-07 | Catalog standard in the Writing Standard and add-topic checklist | 5    | 0    | 0         | CR-* only; fixtures now lag the standard (follow-up).                      |
+| 2026-10-07 | CR-01..05 fixtures brought to the catalog standard               | 5    | 0    | 0         | CR-01 and CR-05 re-run once; CR-01 plant caught but ranked third.          |
 
-## Latest run: 2026-10-07, catalog standard
+## Latest run: 2026-10-07, CR fixtures brought to the catalog standard
 
-- **Run by:** Claude (the orchestrating session).
-  - A builder assembled the CR packets in shuffled, neutral folders, with add-topic's checklist read fresh, including the new catalog-standard item.
-  - One fresh reviewer per packet.
-- **Trigger:** branch feat/catalog-standard.
-  - The Writing Standard gained "Catalog topics": a 1,000-word cap, the lecturer voice, one running example, a closing **Rule of thumb.**, and the title rule.
-  - add-topic's checklist now holds that standard.
-  - CR-01..05 each gained a closing rule of thumb.
-- **Scope:** CR-* only, since the change touches add-topic, not the case-study or DSA review.
+- **Run by:** Claude (the orchestrating session). Each scenario got one fresh `general-purpose` reviewer with the Stage 3 instruction from docs/content-review.md, filled in for add-topic. The draft was extracted to a scratch file, so no reviewer read `evals/`.
+- **Trigger:** the follow-up from #87. CR-01..05 were rewritten to the catalog standard: title pattern, one running example, the lecturer voice, a closing rule of thumb, and 600–900 words. Each planted passage was kept verbatim.
+- **Scope:** CR-01..05. CR-01 and CR-05 were re-run after the first round's polish.
 
-| ID    | Planted violation                        | Caught?                                                                    | Grade |
-| ----- | ---------------------------------------- | -------------------------------------------------------------------------- | ----- |
-| CR-01 | "hash function" never defined            | Yes: named among the undefined terms (finding 4 of 7)                      | PASS  |
-| CR-02 | AI-patterned tone                        | Yes: the stacked intensifiers, "not just X — it's Y" and "the real X"      | PASS  |
-| CR-03 | over-explained figurative phrase         | Yes: the top finding                                                       | PASS  |
-| CR-04 | temperature 0 called fully deterministic | Yes: the top finding, critical                                             | PASS  |
-| CR-05 | none (control)                           | One Medium true of the text (the running example drops halfway), plus Lows | PASS  |
+| ID    | Planted violation                        | Caught                                                                                      | Grade |
+| ----- | ---------------------------------------- | ------------------------------------------------------------------------------------------- | ----- |
+| CR-01 | "hash function" undefined                | Yes. In round 1 it ranked third, behind two true fixture findings; in round 2, third again. | PASS  |
+| CR-02 | AI-patterned tone                        | Yes, all three parts (closer, intensifiers, uniform list), ranked first.                    | PASS  |
+| CR-03 | over-explained analogy                   | Yes, as a High, ranked first.                                                               | PASS  |
+| CR-04 | temperature 0 called fully deterministic | Yes, as a High, ranked first.                                                               | PASS  |
+| CR-05 | none (control)                           | No false findings in either round; only true Lows.                                          | PASS  |
 
 **Notes:**
 
-- **The fixtures lag the new standard.** CR-01..04 are ~250-word drafts with no running example and no lecturer voice. Under the new catalog standard, each now draws several true findings besides its planted one. Every planted violation was still named, but no longer always first: CR-01's was 4th of 7.
-- **The control isn't clean.** CR-05 drew a Medium because its example drops halfway.
-- **Follow-up:** upgrade CR-01..05 to the catalog standard (600–900 words, one running example, the voice), so each planted violation is again the only problem.
-- **CR-02's "release flag" wording** drew an undefined-term finding, as the spec's known limitations predicted.
+- **CR-01 fixture changes.** Round 1 rightly said a data structure belongs in `systems-and-infrastructure`, not `engineering-practices`, so the scenario moved there and gained a "Where you'll meet this" section. Round 2 then flagged two more true issues, and both were fixed afterwards:
+  - a third system named from outside the fixed set;
+  - an unconditional "definitely not" in a setup with per-server copies.
+
+  CR-01 was not run a third time.
+
+- **Ranking.** The plant was caught every time but ranked behind other true findings. Expect that pattern until a clean run shows the plant first.
+- **True Lows from round 1, fixed in the fixtures:**
+  - CR-02: an overstated propagation time, and two terms left unglossed;
+  - CR-04: three paragraphs out of the lecturer voice, and an overstated probability;
+  - CR-05: a heading restated, "range" never introduced, and two unglossed terms.
+- **CR-05 round 2.** It drew the Dependabot sentence (wording introduced by the round 1 fix), a Python aside under the npm heading, and a header restated. All were fixed. CR-05 wasn't re-run after this last polish.

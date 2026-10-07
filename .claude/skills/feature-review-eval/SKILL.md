@@ -23,8 +23,9 @@ moved, a quoted line is gone or reads differently), update the diff's context
 and hunk headers to the current code, keeping the same planted defect, before
 running. A diff that still applies can drift too, when the code gains what it
 adds (FR-04 duplicated `reading-time.ts` once that landed): read each diff
-against the current code, not only `git apply --check`. A drifted control is
-worse than none.
+against the current code, not only `git apply --check`. Besides the diffs,
+check that any real-content premise a scenario's evidence cites (a summary
+that contains `vs. `, say) still holds. A drifted control is worse than none.
 
 ## Stage 1 — Run each scenario, twice
 

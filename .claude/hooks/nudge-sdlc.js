@@ -5,8 +5,9 @@
 // Edit/Write call.
 const ROUTING_REMINDER =
   'Reminder (CLAUDE.md): for a nontrivial app-code change, use the /feature ' +
-  'skill (spec -> TDD -> implementation -> review). For adding a new topic ' +
-  'markdown file to an existing section under src/content/, use the add-topic ' +
+  'skill (spec -> TDD -> implementation -> review). For adding or rewriting a ' +
+  'topic (including merging or moving one) in an existing section under ' +
+  'src/content/, use the add-topic ' +
   'skill; for a System Design case study under src/system-design/case-studies/ ' +
   '(and its diagrams), use the add-case-study skill; for a DSA entry under ' +
   'src/dsa/entries/ (and its code), use the add-dsa-entry skill. Genuinely small, ' +

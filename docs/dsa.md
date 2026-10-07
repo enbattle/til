@@ -220,8 +220,8 @@ that import `DSA_ENTRIES` catch it; `vite build` alone doesn't run that code,
 but `verify` still fails because `test:run` comes before `build`.
 
 Link a catalog topic where the prose uses it, as `[text](/<section>/<slug>)`.
-Nothing checks catalog links or see-also `/dsa/` links in DSA entries, so
-confirm each target exists (`ls src/content/*/`, `ls src/dsa/entries/`).
+`src/lib/catalog-gaps.test.ts` fails on a dead link in any DSA body, catalog
+or `/dsa/` alike ([content.md](content.md#moving-merging-or-renaming-a-topic)).
 Catalog topics and case studies don't link back.
 
 ## Scope
