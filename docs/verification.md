@@ -46,7 +46,8 @@ proves text clears WCAG AA (4.5:1) on the surfaces it sits on, in both themes;
 script in `package.json`; `check:pipeline-log` proves every row of
 `docs/pipeline-log.md` has its header's eight columns in their format, and that
 a run with gate failures or findings doesn't close with a bare "nothing to
-change" retro. For rows dated after 2026-10-06 it also fails a content row
+change" retro. For rows dated after `KINDS_AND_ROUNDS_ALLOWED_UNTIL` (in
+`scripts/check-pipeline-log.mjs`) it also fails a content row
 (`add-topic`, `add-case-study`, `add-dsa-entry`) with findings whose Retro
 doesn't name them as `kinds: a, b` from the script's `KINDS` list, and any row
 with a fix round but no gate failure, finding or `pre:N` to cause it.

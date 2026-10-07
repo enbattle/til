@@ -2,8 +2,9 @@ import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TOPICS, loadAllTopicBodies } from '@/lib/content';
+import { parseFrontmatter } from '@/lib/frontmatter';
 import { CASE_STUDIES, getCaseStudy } from '@/lib/system-design';
-import { bodyOnlyWord } from '@/test/content';
+import { bodyOnlyWord, rawTopic } from '@/test/content';
 import { escapeRegExp, renderDialog } from '@/test/render';
 
 // The dialog's search module is swapped for one whose index is built fresh for
@@ -31,7 +32,13 @@ const LOADING = 'Loading full-text search…';
 // Read from the topic's file, not pinned (docs/specs/harness-follow-ups.md,
 // criterion 9).
 const BODY_ONLY_PHRASE = bodyOnlyWord('engineering-practices', 'plan-before-you-build');
-const BODY_ONLY_TOPIC = /Plan Before You Build/i;
+const BODY_ONLY_TOPIC = new RegExp(
+  escapeRegExp(
+    parseFrontmatter(rawTopic('engineering-practices', 'plan-before-you-build')).data
+      .title,
+  ),
+  'i',
+);
 const CASE_STUDY_BODY_WORD = 'zanzibarquokkatron';
 
 let bodies: Map<string, string>;

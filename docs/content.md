@@ -103,7 +103,9 @@ external link never breaks.
    the surviving one and delete the old file in the same change.
 2. Repoint every link to the old path across `src/content`, `src/system-design`
    and `src/dsa` (`git grep -n "/<section>/<old-slug>"`).
-   `src/lib/catalog-gaps.test.ts` fails on any dead link it misses.
+   `src/lib/catalog-gaps.test.ts` fails on a dead internal link (to a topic,
+   case study or DSA entry) in any topic, case-study or DSA body, so it
+   catches any link this step misses.
 3. Add an entry to `REDIRECTS` in `src/content/redirects.ts`, from the old
    `section/slug` to the new one. `TopicPage` checks it before falling back to
    /not-found and replaces the old URL with the new one; a hard load reaches it

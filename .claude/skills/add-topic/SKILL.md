@@ -81,8 +81,9 @@ npm run verify
 `content.test.ts`, `registry.test.ts`, `topic-structure.test.ts` (the catalog
 standard), `redirects.test.ts` (a
 move or merge), `system-design.test.ts` (a dead
-link from a case study), `catalog-gaps.test.ts` (which also fails on a dead
-link in any topic, case-study or DSA body) and `where-youll-meet-this.test.ts` already
+link from a case study), `catalog-gaps.test.ts` (dead links; docs/content.md's
+"Moving, merging or renaming a topic" says what it covers) and
+`where-youll-meet-this.test.ts` already
 catch structural problems (missing frontmatter field, section/registry
 mismatch, a systems topic without its closing "Where you'll meet this"
 section) — this stage is just confirming
@@ -106,7 +107,9 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   only, every sentence is true of the generic system, and it doesn't re-teach
   the topic; (3) the Writing Standard's "Catalog topics" section holds: one
   running example carried through, the lecturer voice, a closing rule of
-  thumb that follows from the body, and a title in the pattern; (4) in rewrite
+  thumb that follows from the body and holds for every example in it; every
+  figure follows from the running example's stated numbers, and a title in
+  the pattern; (4) in rewrite
   mode, nothing true and needed from the old version (or a merged-away topic)
   was lost, and no claim was made false by compression.
 - **Commit**: the topic and its link edits (and any redirect), with the log
@@ -114,9 +117,9 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 
 ## Batch mode
 
-Several topics can be added or rewritten at once. A drafter's Stage 2 is
-`npx vitest run src` (tests outside `src/content` also pin topic titles,
-headings and body words) and Prettier on its files. Plan merges and moves before drafting so no two drafters edit the same
+Several topics can be added or rewritten at once. A drafter's Stage 2 is the
+self-check in docs/content-review.md's "Batch mode", with nothing added. Plan
+merges and moves before drafting so no two drafters edit the same
 file; one drafter owns each merge. The integration step adds the batch's `REDIRECTS`
 entries, once for the batch, since every drafter would otherwise edit that
 file.

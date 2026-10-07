@@ -22,8 +22,10 @@ depends on it. Say which you're running and why.
 ## Stage 1 — Run each in-scope scenario
 
 **The instruction below is the single source of truth for the list of valid
-routing targets.** When a skill is added or removed, change it here only;
-nothing else repeats the list, since copies of it went stale twice.
+routing targets.** When a skill is added or removed, change it here; the full
+list lives only here, since copies of it went stale twice. The SDLC reminder
+hook (`.claude/hooks/nudge-sdlc.js`) names the content skills for its own
+reminder, so check it too when a content skill changes.
 
 For each scenario, spawn a **fresh** `general-purpose` agent (never `fork`:
 it must not inherit this session's context or its guess at the answer). Give
