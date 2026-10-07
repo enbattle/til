@@ -4,7 +4,7 @@ summary: Finding stored items by closeness in meaning rather than exact match, a
 date: 2026-09-14
 ---
 
-Say you run a support site with a million past tickets, and a customer types "my card keeps getting declined." The ticket that solves their problem is titled "Payment failed at checkout." Those two strings share almost no words, so a keyword lookup misses it. **Vector search** finds stored items that are closest to a query in _meaning_, even when nothing matches exactly. It is the usual retrieval step behind [retrieval-augmented generation](/ai-and-ml/what-is-rag), where a model is handed the best-matching documents before it answers. How do you measure "closest in meaning"?
+Say you run a support site with a million past tickets, and a customer types "my card keeps getting declined." The ticket that solves their problem is titled "Payment failed at checkout." Those two strings share almost no words, so a [keyword lookup](/ai-and-ml/hybrid-search-and-reranking) misses it. **Vector search** finds stored items that are closest to a query in _meaning_, even when nothing matches exactly. It is the usual retrieval step behind [retrieval-augmented generation](/ai-and-ml/what-is-rag), where a model is handed the best-matching documents before it answers. How do you measure "closest in meaning"?
 
 ## Turning meaning into numbers
 
