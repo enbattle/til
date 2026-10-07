@@ -38,16 +38,21 @@ pass on denser subjects, not assumed on the first read. Concretely:
   the design uses a topic, it says what that choice buys and costs here, in
   this design's numbers, then links. Its estimates are worked arithmetic that
   follows from its stated requirements, every key decision names the
-  alternative it turns down, and it describes a plausible design ("a URL
-  shortener like TinyURL"), never how a specific company built theirs.
+  alternative it turns down, and it describes a plausible design, not a
+  specific company's (see "Named companies" below).
 - A systems topic's `Where you'll meet this` section says what the topic does
   in a kind of system, in terms of what the topic just taught; it doesn't
-  re-teach the mechanism. It makes claims about generic systems only, never
-  about how a specific company builds something, because every claim has to be
-  verifiable.
+  re-teach the mechanism. It makes claims about generic systems only (see
+  "Named companies" below).
 - Every substantive technical claim is independently verified against
   real knowledge of the subject before publishing, not assumed correct
   because it reads confidently.
+- **Named companies.** This rule covers every published page. A product may
+  be named as a familiar example ("a URL shortener like TinyURL"), for its
+  documented public behavior (a "Log in with Google" button uses OpenID
+  Connect), or as an example of a category of tool. Never describe how a
+  specific company builds its systems or runs its teams internally: that can't
+  be verified from outside, and it goes stale without anyone noticing.
 
 ## Catalog topics
 

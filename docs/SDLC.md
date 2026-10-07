@@ -167,7 +167,7 @@ content skills' Stage 3; `feature-review`, for
 `evals/README.md`. All are run
 manually/periodically, not on every commit — after the changes the table in
 `evals/README.md` names (the canonical list of which eval each change
-calls for); `.claude/hooks/nudge-sdlc.js` reminds a session about most of
+calls for); `.claude/hooks/nudge-sdlc.js` reminds a session about some of
 them.
 
 ## Completeness audit, after a large effort

@@ -70,7 +70,7 @@ docs/writing-standard.md exactly:
   `## Where you'll meet this` section**, after the rule-of-thumb paragraph.
   docs/content.md has the convention, the reference systems and the rules;
   `src/content/where-youll-meet-this.test.ts` fails without it. General claims
-  only: never how a specific company builds something.
+  only (the Writing Standard's "Named companies" rule).
 
 If anything about scope or angle is genuinely ambiguous (which section it
 belongs in, how deep to go), ask the user — don't guess on something only

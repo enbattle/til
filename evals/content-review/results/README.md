@@ -25,14 +25,21 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | add-topic checklist (3) sharpened: rule holds for every example, figures follow from the example | 5    | 0    | 0         | All plants caught; CR-01 now first; CR-05 clean.                           |
 | 2026-10-07 | add-topic checklist (4) gains inbound links (`links:inbound`)                                    | 5    | 0    | 0         | All plants caught and ranked first; CR-05 clean.                           |
 | 2026-10-07 | Friction fixes: drafter rule-of-thumb self-check before Stage 3, batch fix confirmation          | 2    | 0    | 0         | CR-01 and the CR-05 control.                                               |
+| 2026-10-07 | Writing Standard: one general Named companies rule                                               | 3    | 0    | 0         | Controls only: CR-05, CS-03, DS-03; CS base order moved 17 to 99.          |
 
-## Latest run: 2026-10-07, friction fixes from the 203-row aggregation
+## Latest run: 2026-10-07, the Named companies rule
 
-- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` reviewer per scenario, given the Stage 3 instruction from docs/content-review.md filled in for add-topic and the draft as a neutrally named scratch file.
-- **Trigger:** branch chore/friction-fixes-203 edited docs/content-review.md: a rule-of-thumb self-check by the drafter before Stage 3, and batch mode's fix confirmation. The reviewer instruction itself is unchanged.
-- **Scope:** CR-01 (a plant) and CR-05 (the control), since the instruction didn't change.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` reviewer per scenario, given the Stage 3 instruction from docs/content-review.md filled in for the reviewing skill and the draft as neutrally named scratch files.
+- **Trigger:** the Writing Standard gained one general "Named companies" rule for every published page, replacing two narrower clauses (case studies, and "Where you'll meet this"); add-topic, add-case-study and its checklist now point to it.
+- **Scope:** the three controls, CR-05, CS-03 and DS-03, since a broader rule's risk is a false flag on an innocent product mention; no planted problem involves a company.
 
-| ID    | Planted violation         | Caught                                                  | Grade |
-| ----- | ------------------------- | ------------------------------------------------------- | ----- |
-| CR-01 | "hash function" undefined | Yes, ranked first (Moderate).                           | PASS  |
-| CR-05 | none (control)            | Nothing blocking; two low notes, both true of the text. | PASS  |
+| ID    | Planted violation | Caught                                                                                                                      | Grade |
+| ----- | ----------------- | --------------------------------------------------------------------------------------------------------------------------- | ----- |
+| CR-05 | none (control)    | Nothing substantive; applied the new rule and allowed Dependabot as an example of a kind of tool.                           | PASS  |
+| CS-03 | none (control)    | Pastebin.com allowed as a familiar example. Top finding true: the fixture's `order: 17` now clashed with a real case study. | PASS  |
+| DS-03 | none (control)    | Nothing blocking; notes true of the draft ("subarray" undefined, a Python line that mirrors the TypeScript).                | PASS  |
+
+**Notes:**
+
+- **CS-03 found fixture drift.** The base draft's `order: 17` collided with docs-qa-assistant (#103), so a real review would flag it. The base now uses `order: 99`, with a note in the scenario intro.
+- **CS-03's other findings** (the expiry decision skipping the lifecycle-rule alternative, the ID decision not saying why random beats the URL shortener's ranges) are true of the fabricated draft and don't affect the grade.

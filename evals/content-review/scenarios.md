@@ -670,7 +670,9 @@ These test `add-case-study`'s Stage 3 review instead of `add-topic`'s. They
 share one fabricated base draft, a Pastebin case study written to the
 five-minute case-study template (docs/case-studies.md, "The template is
 enforced"), so that each scenario differs from the clean control by exactly
-the planted problem. Build a scenario's draft by taking the base draft below
+the planted problem. Its `order` is 99, above every real case study's, so a
+reviewer's uniqueness check stays quiet (it once shared 17 with a real one).
+Build a scenario's draft by taking the base draft below
 and applying that scenario's replacement verbatim; give the reviewer the
 result, plus the base diagram source, exactly as `add-case-study` Stage 3
 would give a real draft and its `.d2` files. These are fixtures for this eval
@@ -701,7 +703,7 @@ near-duplicate check, as the skill does.
 title: Design a Pastebin (like Pastebin.com)
 summary: A year of text snippets behind links too long to guess in practice, with the text in an object store and expiry checked on every read.
 date: 2026-09-28
-order: 17
+order: 99
 ---
 
 You paste a log excerpt and get back a link like `https://paste.example/aZ3kQ9xT2m`.

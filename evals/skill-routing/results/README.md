@@ -49,14 +49,15 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Drift and rewrite guards: add-topic names `links:inbound`, eval skills name `check:eval-premises`, hook rule | 5    | 0    | 0         | SR-02, 06, 10, 12, 14 at Stage 5.                            |
 | 2026-10-07 | Docs audit after #107: docs-audit gate, eval skills' final step, hook header                                 | 4    | 0    | 0         | SR-09, 10, 12, 14.                                           |
 | 2026-10-07 | Friction fixes: /feature guard steps, content-review.md self-check and batch confirmation                    | 2    | 0    | 0         | SR-01 and SR-02.                                             |
+| 2026-10-07 | Named companies rule: add-topic and add-case-study point to the Writing Standard                             | 2    | 0    | 0         | SR-02 and SR-15.                                             |
 
-## Latest run: 2026-10-07, friction fixes from the 203-row aggregation
+## Latest run: 2026-10-07, the Named companies rule
 
 - **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
-- **Trigger:** branch chore/friction-fixes-203 edited `/feature`'s Stage 1 guard bullet and Stage 4a step 1, and docs/content-review.md (a rule-of-thumb check before Stage 3, and batch mode's fix confirmation).
-- **Scope:** SR-01 and SR-02, the scenarios that route to `/feature` and add-topic.
+- **Trigger:** add-topic's Stage 1 and add-case-study's Stage 1 and checklist now point to the Writing Standard's "Named companies" rule instead of restating it.
+- **Scope:** SR-02 and SR-15, the scenarios that route to those two skills.
 
-| ID    | Routing decision | Reasoning (one line)                                  | Grade |
-| ----- | ---------------- | ----------------------------------------------------- | ----- |
-| SR-01 | `/feature`       | New UI behavior in the search dialog, needing a spec. | PASS  |
-| SR-02 | `add-topic`      | A new topic in an existing section, no app code.      | PASS  |
+| ID    | Routing decision | Reasoning (one line)                             | Grade |
+| ----- | ---------------- | ------------------------------------------------ | ----- |
+| SR-02 | `add-topic`      | A new topic in an existing section, no app code. | PASS  |
+| SR-15 | `add-case-study` | A new case study with its architecture diagram.  | PASS  |
