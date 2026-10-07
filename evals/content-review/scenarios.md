@@ -31,6 +31,9 @@ backticks because the draft holds a code block.
 
 ### CR-01 — undefined jargon (trap for "define terms before using them")
 
+<!-- premise: src/content/systems-and-infrastructure/bloom-filters.md missing -->
+<!-- premise: src/content/systems-and-infrastructure/bloom-filter.md missing -->
+
 **Section:** `systems-and-infrastructure`, where a data structure belongs (a
 reviewer rightly flagged the earlier `engineering-practices` placement on
 2026-10-06). Until then the draft avoided this section because its closing
@@ -147,6 +150,9 @@ definition.
 
 ### CR-02 — AI-patterned tone
 
+<!-- premise: src/content/engineering-practices/feature-flags.md missing -->
+<!-- premise: src/content/engineering-practices/feature-flag.md missing -->
+
 **Section:** `engineering-practices`
 **Planted violation:** a stock "not just X — it's Y" closer, filler
 intensifiers stacked without adding information, and a bullet list where
@@ -261,6 +267,8 @@ one of the three tells without naming the pattern as a tone problem.
 ---
 
 ### CR-03 — over-explained figurative language
+
+<!-- premise: src/content/engineering-practices/rubber-duck-debugging.md missing -->
 
 **Section:** `engineering-practices`
 **Planted violation:** introduces "rubber duck debugging" casually and
@@ -378,6 +386,10 @@ metaphor's presence itself rather than its over-explanation.
 ---
 
 ### CR-04 — unverified/inaccurate technical claim
+
+<!-- premise: src/content/ai-and-ml/temperature-and-sampling.md missing -->
+<!-- premise: src/content/ai-and-ml/llm-temperature.md missing -->
+<!-- premise: src/content/ai-and-ml/sampling.md missing -->
 
 **Section:** `ai-and-ml`
 **Planted violation:** states, confidently and without qualification,
@@ -503,6 +515,9 @@ claim itself.
 ---
 
 ### CR-05 — clean baseline (false-positive control)
+
+<!-- premise: src/content/engineering-practices/semantic-versioning.md missing -->
+<!-- premise: src/content/engineering-practices/semver.md missing -->
 
 **Section:** `engineering-practices`
 **Planted violation:** none — this is a control. The draft defines its
@@ -1031,9 +1046,13 @@ the `.ts` files), and the entry's prose, outside code fences and frontmatter,
 is 962 words.
 
 There's no **Section**: give the reviewer the titles and slugs of the real
-entries in `src/dsa/entries/` for its near-duplicate check, as the skill does.
+entries in `src/dsa/entries/` for its near-duplicate check, as the skill does,
+leaving out the published Prefix Sums entry. It shares the base's slug, so tell
+the reviewer the draft is a rewrite of it and not to open the published file
+(content-review-eval Stage 1 says why).
 
 <!-- premise: src/dsa/entries/hash-map.md exists -->
+<!-- premise: src/dsa/entries/prefix-sums.md exists -->
 
 ### Base entry (the DS-03 control, verbatim)
 
