@@ -82,18 +82,9 @@ they'd know.
 npm run verify
 ```
 
-`content.test.ts`, `registry.test.ts`, `topic-structure.test.ts` (the catalog
-standard), `redirects.test.ts` (a
-move or merge), `system-design.test.ts` (a dead
-link from a case study), `catalog-gaps.test.ts` (dead links; docs/content.md's
-"Moving, merging or renaming a topic" says what it covers) and
-`where-youll-meet-this.test.ts` already
-catch structural problems (missing frontmatter field, section/registry
-mismatch, a systems topic without its closing "Where you'll meet this"
-section) — this stage is just confirming
-those still pass, not
-writing new tests. A topic file
-never needs its own test.
+`verify` already runs the structural tests (docs/content.md names each one and
+what it catches), so this stage confirms they still pass; it never writes new
+tests. A topic file never needs its own test.
 
 ## Stages 3–4 — Review and final gate
 

@@ -83,7 +83,7 @@ holds its vectors.
 
 `npm run check:eval-premises` proves the eval scenarios still rest on true
 facts: each `<!-- premise: … -->` comment in `evals/*/scenarios.md` holds
-(`contains`/`lacks "<text>"`, `exists`, `missing`; the forms are in
+(the forms are in
 [evals/README.md](../evals/README.md)), no `premise:` comment is malformed, and
 every `diff` block in `evals/feature-review/scenarios.md` passes
 `git apply --check`. It parses the scenarios with `markdownParser()`, so a

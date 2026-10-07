@@ -51,15 +51,16 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Friction fixes: /feature guard steps, content-review.md self-check and batch confirmation                    | 2    | 0    | 0         | SR-01 and SR-02.                                             |
 | 2026-10-07 | Named companies rule: add-topic and add-case-study point to the Writing Standard                             | 2    | 0    | 0         | SR-02 and SR-15.                                             |
 | 2026-10-07 | SDLC.md's eval section cut to a pointer to evals/README.md                                                   | 3    | 0    | 0         | SR-10, 12, 14.                                               |
+| 2026-10-07 | Content skills' Stage 2 points to their docs; verification.md links the premise forms                        | 3    | 0    | 0         | SR-02, 15, 18.                                               |
 
-## Latest run: 2026-10-07, SDLC.md's eval section cut to a pointer
+## Latest run: 2026-10-07, content skills' Stage 2 points to their docs
 
 - **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
-- **Trigger:** docs/SDLC.md's "Verifying the process itself" section, which restated what evals/README.md owns (what each eval checks, the skills that run them, when to run them), is now a short pointer to evals/README.md.
-- **Scope:** SR-10, SR-12 and SR-14, the scenarios that route to the three eval skills the removed text described.
+- **Trigger:** add-topic, add-case-study and add-dsa-entry no longer list their structural tests in Stage 2; each points to its doc (content.md, case-studies.md, dsa.md), which now names every test the skill used to. docs/verification.md points to evals/README.md for the premise forms instead of repeating them.
+- **Scope:** SR-02, SR-15 and SR-18, the scenarios that route to those three skills.
 
-| ID    | Routing decision      | Reasoning (one line)                                        | Grade |
-| ----- | --------------------- | ----------------------------------------------------------- | ----- |
-| SR-10 | `skill-routing-eval`  | Named directly.                                             | PASS  |
-| SR-12 | `content-review-eval` | Whether add-topic's review still catches a planted problem. | PASS  |
-| SR-14 | `feature-review-eval` | Whether Stage 4's reviewer still catches planted defects.   | PASS  |
+| ID    | Routing decision | Reasoning (one line)                                    | Grade |
+| ----- | ---------------- | ------------------------------------------------------- | ----- |
+| SR-02 | `add-topic`      | A new topic in an existing section, no app code.        | PASS  |
+| SR-15 | `add-case-study` | A new case study with its architecture diagram.         | PASS  |
+| SR-18 | `add-dsa-entry`  | A new DSA entry with tested Python and TypeScript code. | PASS  |
