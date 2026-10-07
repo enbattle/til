@@ -87,4 +87,5 @@ plants the same kind of defect before running, and include it.
 Summarize for the user: the grades, disagreements between the two runs of a
 scenario, and anything surprising (a finding that names the defect for the
 wrong reason, a severity that undersells it). Run `npm run format:check` on
-the results file. Ask before committing.
+the results file, and `npm run check:eval-premises` if you added or edited a
+scenario or rotated a diff. Ask before committing.
