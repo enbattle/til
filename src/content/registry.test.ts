@@ -52,6 +52,7 @@ describe('section labels and slugs (catalog-standard criterion 5)', () => {
 
   it('keeps every slug and its order, with coding-agents added after ai-and-ml', () => {
     expect(SECTIONS.map((s) => s.slug)).toEqual([
+      'computing-fundamentals',
       'engineering-practices',
       'ai-and-ml',
       'coding-agents',
@@ -63,6 +64,7 @@ describe('section labels and slugs (catalog-standard criterion 5)', () => {
 
   it('spells the renamed labels with "and"', () => {
     expect(Object.fromEntries(SECTIONS.map((s) => [s.slug, s.label]))).toEqual({
+      'computing-fundamentals': 'Computing Fundamentals',
       'engineering-practices': 'Engineering Practices',
       'ai-and-ml': 'AI and Machine Learning',
       'coding-agents': 'Working with Coding Agents',

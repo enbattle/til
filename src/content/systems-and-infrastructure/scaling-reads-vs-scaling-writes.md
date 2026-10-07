@@ -14,7 +14,7 @@ A read doesn't need the one true copy of the data. Any copy that is close enough
 
 - **A cache** keeps recently used results in fast memory, so many reads never reach the database. If 95% of those 20,000 photo opens hit the cache, the database sees 1,000 reads a second instead. See [Caching](/systems-and-infrastructure/caching) for where caches sit, and [Cache Invalidation](/systems-and-infrastructure/cache-invalidation) for keeping them from serving old data.
 - **Read replicas** are read-only copies of the database that follow the **primary**, the machine that takes writes. Spread the reads across five replicas and each handles a fifth. See [Read Replicas and Replication Lag](/systems-and-infrastructure/read-replicas).
-- **A CDN** (content delivery network) keeps copies of files that look the same to every viewer, such as the photos themselves, on servers near the readers, so they don't all travel to your servers.
+- **A [CDN](/computing-fundamentals/load-balancers-and-cdns)** (content delivery network) keeps copies of files that look the same to every viewer, such as the photos themselves, on servers near the readers, so they don't all travel to your servers.
 
 What does a copy cost you? It can be out of date. A replica may trail the primary by a moment, and a cache entry may outlive the change it should have reflected. You accept that on purpose, photo by photo, where a stale answer is harmless.
 
