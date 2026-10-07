@@ -39,6 +39,11 @@ const call = (command, project, tool = 'PowerShell') =>
     tool_input: { command },
   });
 
+// The timing bound covers starting a node process as well as the hook's own
+// parse. Under a full-suite run a spawn alone has taken over a second, while a
+// runaway parse (catastrophic backtracking) would take far longer than this.
+const DECIDE_MS = 5000;
+
 function runCommand(command, tool) {
   const project = tempDir();
   return hook(call(command(project), project, tool), project);
@@ -556,10 +561,10 @@ describe('block-powershell-writes', () => {
       expect(stdout).toBe('');
     });
 
-    it('decides the incident command in under a second', () => {
+    it('decides the incident command without a runaway parse', () => {
       const { stdout, ms } = runCommand(() => INCIDENT);
       expect(stdout).toContain('deny');
-      expect(ms).toBeLessThan(1000);
+      expect(ms).toBeLessThan(DECIDE_MS);
     });
   });
 
@@ -589,11 +594,11 @@ describe('block-powershell-writes', () => {
     expect(stderr).toBe('');
   });
 
-  it('decides in under a second', () => {
+  it('decides without a runaway parse', () => {
     const deny = runCommand(() => 'Set-Content docs\\x.md "a"');
     const allow = runCommand(() => 'Get-Content README.md');
     expect(deny.stdout).toContain('deny');
-    expect(deny.ms).toBeLessThan(1000);
-    expect(allow.ms).toBeLessThan(1000);
+    expect(deny.ms).toBeLessThan(DECIDE_MS);
+    expect(allow.ms).toBeLessThan(DECIDE_MS);
   });
 });
