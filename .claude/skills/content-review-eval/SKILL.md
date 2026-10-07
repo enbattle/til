@@ -21,6 +21,11 @@ Stage 3 instruction in `docs/content-review.md`. An edit to one skill's
 checklist needs only that skill's scenarios; a Writing Standard edit that only
 touches tone needs only `CR-02`. Say which you're running and why.
 
+The drafts are fabricated, but a scenario can still rely on live content (a
+case study the draft links to, no published item with the draft's slug).
+Declare each such fact as a `<!-- premise: … -->` comment in `scenarios.md`;
+`npm run check:eval-premises` (part of `verify`) fails when one stops holding.
+
 ## Stage 1 — Run each in-scope scenario
 
 The reviewer instruction is never stored in the eval: a snapshot would test a

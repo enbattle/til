@@ -64,6 +64,17 @@ something to run on every commit. Each category runs through its own skill
 (`skill-routing-eval`, `content-review-eval`, `feature-review-eval`), which
 holds its whole procedure; each folder here holds the scenarios and results.
 
+**Premises are checked on every verify.** Scenarios quote live content (a
+sentence in a topic, an entry that mustn't exist yet, a diff against real
+code), and that content changes under them. A scenario states each such fact
+as an HTML comment in its `scenarios.md`, in one of four forms:
+`<!-- premise: <path> contains "<text>" -->`, `… lacks "<text>"`,
+`<!-- premise: <path> exists -->` or `… missing`, with `<path>` relative to
+the repository root. `npm run check:eval-premises` (in `verify`) fails when
+one stops holding, when a `premise:` comment matches no form, and when a
+`diff` block in `feature-review/scenarios.md` no longer passes
+`git apply --check`. Fix the scenario, not the check.
+
 **Re-run whenever it matters**, not on a fixed schedule: after any change
 the table below names; `.claude/hooks/nudge-sdlc.js` reminds a session
 about most of them.

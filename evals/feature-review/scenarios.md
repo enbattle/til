@@ -14,6 +14,11 @@ Stage 4's reviewer instruction is edited, rotate at least one scenario's
 planted defect** (same file, different bug), so the instruction can't drift
 toward the specific bugs listed here.
 
+Each fenced `diff` block must apply to the current code, and each scenario
+states the other real-code facts it relies on as `<!-- premise: … -->`
+comments; `npm run check:eval-premises` (in `verify`) checks both. When a
+check fails, update the scenario so it tests what it says it tests.
+
 ---
 
 ### FR-01 — correctness: a quoted value with a trailing comment
@@ -200,6 +205,9 @@ closes the dialog.
 
 ### FR-05 — subtle: a disclosure the focus trap skips
 
+<!-- premise: src/components/SearchDialog.tsx contains "useFocusTrap(true, panelRef);" -->
+<!-- premise: src/hooks/useFocusTrap.ts lacks "summary" -->
+
 **Planted defect:** the new "Search tips" `<summary>` is never reached by
 Tab, and Tab from it (once a click has focused it) leaves the dialog, so
 criterion 3 can't be met. The cause isn't in the diff, which never mentions
@@ -296,6 +304,8 @@ only at medium severity or labels it theoretical.
 
 ### FR-08 — non-negotiable: a sticky strip that hides focus
 
+<!-- premise: src/index.css contains "scroll-padding-top: calc(var(--header-height, 8rem) + 0.75rem);" -->
+
 **Planted defect:** from `xl` the new strip is sticky 2.5rem tall directly
 under the header, but the root's `scroll-padding-top` (`src/index.css`, the
 `min-width: 80rem` rule) still leaves room for the header alone. An "On this
@@ -350,6 +360,8 @@ for in-page jumps, without focus, is AMBIGUOUS.
 ---
 
 ### FR-04 — clean control
+
+<!-- premise: src/lib/content.ts lacks "topicCountLabel" -->
 
 **Planted defect:** none. The diff is correct and complete. A review passes
 if it reports nothing worth flagging, or only findings that are true of the
@@ -501,6 +513,10 @@ a spec, a diff and one review finding (procedure in the skill's Stage 1).
 
 ### FR-06 — triage: a reachable finding
 
+<!-- premise: src/content/systems-and-infrastructure/latency-vs-throughput.md contains "title: Latency vs. Throughput" -->
+<!-- premise: src/content/systems-and-infrastructure/sql-vs-nosql.md contains "title: SQL vs. NoSQL" -->
+<!-- premise: src/content/engineering-practices/git-rebase-vs-merge.md contains "title: Git Rebase vs. Merge" -->
+
 **Spec:**
 
 > Add `firstSentence(text)` to `src/lib/content.ts` for the topic page's meta
@@ -539,6 +555,9 @@ becomes "SQL vs.", and `src/content/engineering-practices/git-rebase-vs-merge.md
 theoretical, Known limitation or Reject.
 
 ### FR-07 — triage: a theoretical finding
+
+<!-- premise: src/lib/content.ts contains "for (const field of ['title', 'summary', 'date'] as const)" -->
+<!-- premise: src/lib/system-design.ts contains "for (const field of ['title', 'summary', 'date', 'order'] as const)" -->
 
 **Spec:**
 

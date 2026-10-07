@@ -19,6 +19,12 @@ scenarios plausibly affected** when the trigger is narrower: if only
 `add-topic`'s `SKILL.md` changed, only scenarios whose Expected answer
 depends on it. Say which you're running and why.
 
+A prompt that names real content (a topic, a sentence, an entry that must or
+mustn't exist) declares that as a `<!-- premise: … -->` comment in
+`scenarios.md`, and `npm run check:eval-premises` (part of `verify`) fails
+when it stops holding. Add one when a new or refreshed prompt relies on live
+content, and refresh the prompt when the check fails.
+
 ## Stage 1 — Run each in-scope scenario
 
 **The instruction below is the single source of truth for the list of valid

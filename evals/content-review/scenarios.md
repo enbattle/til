@@ -673,6 +673,12 @@ There's no **Section** here: give the reviewer the titles and slugs of the
 real case studies in `src/system-design/case-studies/` for its
 near-duplicate check, as the skill does.
 
+<!-- premise: src/system-design/case-studies/pastebin.md missing -->
+<!-- premise: src/system-design/case-studies/url-shortener.md exists -->
+<!-- premise: src/content/systems-and-infrastructure/caching.md exists -->
+<!-- premise: src/content/systems-and-infrastructure/rate-limiting.md exists -->
+<!-- premise: src/content/systems-and-infrastructure/database-indexing.md exists -->
+
 ### Base draft (the CS-03 control, verbatim)
 
 ````markdown
@@ -1026,6 +1032,8 @@ is 962 words.
 
 There's no **Section**: give the reviewer the titles and slugs of the real
 entries in `src/dsa/entries/` for its near-duplicate check, as the skill does.
+
+<!-- premise: src/dsa/entries/hash-map.md exists -->
 
 ### Base entry (the DS-03 control, verbatim)
 

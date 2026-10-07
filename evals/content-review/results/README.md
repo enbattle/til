@@ -23,22 +23,23 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Catalog standard in the Writing Standard and add-topic checklist                                 | 5    | 0    | 0         | CR-* only; fixtures now lag the standard (follow-up).                      |
 | 2026-10-07 | CR-01..05 fixtures brought to the catalog standard                                               | 5    | 0    | 0         | CR-01 and CR-05 re-run once; CR-01 plant caught but ranked third.          |
 | 2026-10-07 | add-topic checklist (3) sharpened: rule holds for every example, figures follow from the example | 5    | 0    | 0         | All plants caught; CR-01 now first; CR-05 clean.                           |
+| 2026-10-07 | add-topic checklist (4) gains inbound links (`links:inbound`)                                    | 5    | 0    | 0         | All plants caught and ranked first; CR-05 clean.                           |
 
-## Latest run: 2026-10-07, add-topic checklist item (3) sharpened
+## Latest run: 2026-10-07, drift and rewrite guards
 
-- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` reviewer per scenario. Each reviewer got the Stage 3 instruction from docs/content-review.md, filled in for add-topic, and the draft as a scratch file.
-- **Trigger:** a friction-aggregation proposal the user approved. add-topic's checklist item (3) now asks that the rule of thumb hold for every example in the body, and that every figure follow from the running example's stated numbers.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` reviewer per scenario. Each reviewer got the Stage 3 instruction from docs/content-review.md, filled in for add-topic, and the draft as a neutrally named scratch file in a shuffled folder.
+- **Trigger:** branch feat/drift-and-rewrite-guards. add-topic's checklist item (4) now also asks that nothing an inbound link relies on (`npm run links:inbound`) was cut or renamed. The CR drafts are new topics, so item (4) was "none" for each, as in a real run.
 - **Scope:** CR-01..05.
 
-| ID    | Planted violation                        | Caught                                                                              | Grade |
-| ----- | ---------------------------------------- | ----------------------------------------------------------------------------------- | ----- |
-| CR-01 | "hash function" undefined                | Yes. It was the only real finding, rated Minor; the one other note was theoretical. | PASS  |
-| CR-02 | AI-patterned tone                        | Yes, all three parts, ranked first.                                                 | PASS  |
-| CR-03 | over-explained analogy                   | Yes, as a High, ranked first.                                                       | PASS  |
-| CR-04 | temperature 0 called fully deterministic | Yes, as a blocking finding, ranked first.                                           | PASS  |
-| CR-05 | none (control)                           | Nothing flagged.                                                                    | PASS  |
+| ID    | Planted violation                        | Caught                                                            | Grade |
+| ----- | ---------------------------------------- | ----------------------------------------------------------------- | ----- |
+| CR-01 | "hash function" undefined                | Yes, ranked first (Medium-low); the other notes were Low or nits. | PASS  |
+| CR-02 | AI-patterned tone                        | Yes, all three parts, as three Highs ranked first.                | PASS  |
+| CR-03 | over-explained analogy                   | Yes, as a must-fix, ranked first.                                 | PASS  |
+| CR-04 | temperature 0 called fully deterministic | Yes, as a blocking finding, ranked first.                         | PASS  |
+| CR-05 | none (control)                           | Nothing blocking; three minor notes, each true of the text.       | PASS  |
 
 **Notes:**
 
-- **The new wording found true issues.** CR-02 drew a figure not from the running example (ten flags and a 5% bucket, where the example has one flag and a 1% step), and CR-03 drew a rule of thumb that doesn't cover its writing and pairing cases. Both are fixture flaws. The CR-02 figures are fixed. CR-03's is left, since its draft's only plant is the analogy and the rule's gap ranks below it.
-- **CR-01 is ranked first.** Its earlier fixture fixes (section, fixed-set systems, shared filter) mean the plant now outranks every other finding.
+- **CR-01 drew a second, true finding:** the draft says app servers "must" share one filter, then says the database's uniqueness check catches a wrong "definitely not" anyway. It ranks below the plant.
+- **CR-05's notes are polish:** `^0.0.3` is the one figure not taken from the running example, "resolves" is undefined, and the Dependabot claim is slightly broad. None is a false claim.

@@ -21,10 +21,15 @@ subagent on every turn, so it stays a router and detail lives in the docs it
 links; raise the limit only deliberately, like a size budget.
 
 The scripts that walk the tree (`check:colors`, `check:npm-refs`,
-`check:raw-html`, `check:diagrams`, `check:bundle`, `npm run diagrams`) list
+`check:raw-html`, `check:diagrams`, `check:bundle`, `check:eval-premises`,
+`npm run diagrams`, `links:inbound`) list
 files with `listFiles` in `scripts/lib.mjs` (`git ls-files -co
---exclude-standard`), so an ignored file is never read and there's no
-per-script skip list; `ROOT` and `escapeRegExp` live there too.
+--exclude-standard`), so an ignored file is never listed and there's no
+per-script skip list; `ROOT` and `escapeRegExp` live there too. Two of them
+also read paths they're given rather than listed: `check:eval-premises` reads
+each premise's target and runs `git apply --check` against the working tree,
+and `links:inbound` checks its topic argument against the working tree, so
+those reads don't go through the ignore rules.
 `check:raw-html` scans `.js`, `.jsx`, `.mjs`, `.ts` and `.tsx` under `src/`
 (minus tests), and `check:colors` scans `.ts`, `.tsx`, `.mjs` and `.css`;
 `.mjs` counts because `src/lib/markdown.mjs` ships to the browser.
@@ -63,10 +68,31 @@ the real gate; `.claude/hooks/block-powershell-writes.js` only saves the redo,
 denying a PowerShell command that writes a file inside the project
 (`Set-Content`, `Add-Content`, `Out-File`, `Tee-Object` and their aliases
 `sc`, `ac`, `tee`; a `>`/`>>`/`2>`/`*>` redirection; `[IO.File]::Write*`/`Append*`)
-and pointing to the Edit or Write tool or a Node script. It matches command
+and pointing to the Edit or Write tool or a script file that reads its input
+from a file. It also denies an inline `node -e` or `python -c` script that
+writes a file when the command hands it text through a command-line argument,
+wherever the file is, because native-argument quoting can truncate or alter
+that text. That argument is a `$var` not assigned a quoted literal, a `$(...)`,
+a parenthesized `( … )` expression, or literal text holding a `"` or a newline
+(PowerShell 5.1 strips an embedded `"`), whether quoted, a here-string or held
+in a literal-assigned `$var`; or a double-quoted script that expands computed
+text into itself. It matches command
 text, not a full parse, so it fails open on whatever it can't resolve (the
 hook's header lists these limits). `scripts/block-powershell-writes.test.mjs`
 holds its vectors.
+
+`npm run check:eval-premises` proves the eval scenarios still rest on true
+facts: each `<!-- premise: … -->` comment in `evals/*/scenarios.md` holds
+(`contains`/`lacks "<text>"`, `exists`, `missing`; the forms are in
+[evals/README.md](../evals/README.md)), no `premise:` comment is malformed, and
+every `diff` block in `evals/feature-review/scenarios.md` passes
+`git apply --check`. It parses the scenarios with `markdownParser()`, so a
+premise shown in a code block isn't checked.
+
+`npm run links:inbound -- <section>/<slug>` is a tool, not a check: it lists
+every link to a topic from topics, case studies and DSA entries (old paths in
+`REDIRECTS` included), with the anchor and the sentence around each.
+`add-topic`'s rewrite mode runs it before drafting.
 
 `npm run test:py` (`scripts/test-python.mjs`) runs pytest over the DSA
 entries' Python code in `src/dsa/code`, and fails with install instructions
