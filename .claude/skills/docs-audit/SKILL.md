@@ -31,7 +31,8 @@ risk) — re-glob at run time rather than trusting this list to have stayed
 complete, since a category being missing here is itself exactly the kind
 of staleness this skill exists to catch:
 
-- `CLAUDE.md`, `README.md`
+- `CLAUDE.md`, `README.md` (its intro line needs no check against
+  `package.json`'s description: `scripts/site-description.test.mjs` checks it)
 - everything under `docs/`
 - everything under `evals/` (`README.md`, every scenario file, and the
   `results/` logs)
@@ -46,10 +47,6 @@ of staleness this skill exists to catch:
 - explanatory comments in `.github/workflows/*.yml` and
   `.github/dependabot.yml` — these describe _why_ a CI/CD choice was
   made, which goes stale exactly like prose documentation does
-- the site description: `package.json`'s `description` is the source (the
-  build fills `index.html`'s meta tags from it, and the home page imports
-  it), so check that `README.md`'s intro line, the one hand-written copy,
-  still agrees with it
 
 ## Stage 2 — Independent audit
 

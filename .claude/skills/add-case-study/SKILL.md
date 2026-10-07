@@ -122,7 +122,7 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **Commit**: the `.md`, the `.d2` sources, the rendered SVGs and
   `public/diagrams/manifest.json`, with the log row.
 - **Batch mode**: each drafter stays within the word budget
-  (docs/writing-standard.md). A drafter's Stage 2 is `npm run diagrams`, `npm run check:diagrams`,
-  `npx vitest run src/system-design src/lib/system-design.test.ts`, and
-  Prettier on its files. The integration step is `npm run diagrams`, run once for the batch
+  (docs/writing-standard.md). A drafter's Stage 2 is the self-check in
+  docs/content-review.md's "Batch mode", after `npm run diagrams` and
+  `npm run check:diagrams`. The integration step is `npm run diagrams`, run once for the batch
   ([docs/case-studies.md](../../../docs/case-studies.md) has the file rules).

@@ -1,5 +1,5 @@
 ---
-title: Plan Before You Build
+title: Planning Before Building
 summary: A one-page written plan, reviewed before coding starts, is the cheapest place to find out an approach is wrong.
 date: 2026-09-13
 ---

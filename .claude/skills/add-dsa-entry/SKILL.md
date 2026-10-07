@@ -95,7 +95,8 @@ sets the five-minute budget and the voice.
    - **Complexity** and **Operations and costs** give time and space with the
      reason, not just the answer, and every figure is checked.
    - Link a catalog topic where the prose uses it, as `[text](/<section>/<slug>)`
-     (`ls src/content/*/`); `src/lib/catalog-gaps.test.ts` fails on a dead one.
+     (`ls src/content/*/`); docs/content.md ("Moving, merging or renaming a
+     topic") says what the dead-link check covers.
    - Claims about a language or library (what `bisect_left` returns, Java's
      default load factor) are verified, not remembered.
 
@@ -149,9 +150,9 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   prints nothing (an entry never edits a topic or a case study).
 - **Commit**: the `.md` and the four code files, with the log row.
 - **Batch mode**: several entries can be added at once. A drafter's
-  Stage 2 is `npm run typecheck`, `npm run test:py`,
-  `npx vitest run src/dsa/code/<slug> src/dsa/dsa-structure.test.ts src/dsa/dsa-code-chunks.test.ts src/lib/dsa.test.ts`,
-  and Prettier and `oxlint --deny-warnings` on its files. A drafter whose entry needs another
+  Stage 2 is the self-check in docs/content-review.md's "Batch mode", plus
+  `npm run typecheck`, `npm run test:py` and `oxlint --deny-warnings` on its
+  files. A drafter whose entry needs another
   entry from the same batch gets that entry's slug and title and links to it;
   `dsa.test.ts` then fails on the unknown prerequisite until integration,
   which is expected and the only failure it may leave. Prerequisites can't form a cycle (`dsa.test.ts` checks), so plan

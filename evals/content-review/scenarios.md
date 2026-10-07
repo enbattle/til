@@ -199,9 +199,9 @@ every day, but `new-checkout` is off, so customers keep seeing the old page.
 The new code is in production and nobody can reach it yet.
 
 Why pass `user` in? Because the flag doesn't have to be all-or-nothing. The
-flag service stores a rule, such as "on for staff accounts" or "on for 5% of
+flag service stores a rule, such as "on for staff accounts" or "on for 1% of
 customers." For a percentage, it turns each user's ID into a number from 0 to
-99 and switches the flag on for users below 5. The same user always gets the
+99 and switches the flag on for users below 1. The same user always gets the
 same number, so a customer doesn't flip between checkouts on every page load.
 
 That split unlocks a few real, actually useful patterns:
@@ -229,8 +229,9 @@ with it. You fix the button, and try 1% again, then 10%, then everyone.
 
 So why not put everything behind a flag? Because every flag is an `if` with
 two sides, and both sides have to keep working. While `new-checkout` exists,
-you have two checkouts to test and maintain. Ten flags that can each be on or
-off make 1,024 combinations, and nobody tests all of them.
+you have two checkouts to test and maintain. Add a flag for the new search and
+one for the new cart, and three flags that can each be on or off already make
+eight combinations to test, and each new flag doubles that.
 
 That's why it helps to sort flags by how long they're meant to live. A
 **release flag**, like `new-checkout`, exists only to roll out one change: once
@@ -661,8 +662,8 @@ would give a real draft and its `.d2` files. These are fixtures for this eval
 only: never write them into `src/system-design/`.
 
 The base is a full-length case study for the template: about 1,130 words of
-prose against the 1,150-word budget (words outside code blocks and image alt
-text, frontmatter excluded), with three decisions of about 135–145 words each.
+prose, just under the word budget (`WORD_BUDGET` in `src/lib/reading-time.ts`;
+words outside code blocks and image alt text, frontmatter excluded), with three decisions of about 135–145 words each.
 Each replacement changes one decision or one bullet, so every scenario stays
 inside the budget. A reviewer's true observations about what a five-minute
 page leaves out on purpose (a sequence diagram, database failover detail) go

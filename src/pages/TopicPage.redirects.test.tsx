@@ -6,6 +6,8 @@ import App from '@/App';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { TOPICS } from '@/lib/content';
+import { headingId } from '@/lib/headings';
+import { rawTopic } from '@/test/content';
 import { LocationDisplay, renderAt } from '@/test/render';
 import { TopicPage } from './TopicPage';
 
@@ -26,6 +28,13 @@ function titleOf(slug: string): string {
   const topic = TOPICS.find((t) => t.slug === slug);
   if (!topic) throw new Error(`no topic ${slug}`);
   return topic.title;
+}
+
+/** The text of the moved topic's first `## ` heading, read from its file. */
+function firstH2Of(slug: string): string {
+  const heading = rawTopic('coding-agents', slug).match(/^## (.+)$/m)?.[1];
+  if (!heading) throw new Error(`no ## heading in ${slug}`);
+  return heading.trim();
 }
 
 function Back() {
@@ -99,8 +108,10 @@ describe('TopicPage redirects (catalog-standard criterion 6)', () => {
 
   it("keeps the old URL's ?query and #hash on a hard load", async () => {
     const [slug] = MOVED;
+    const heading = firstH2Of(slug);
+    const id = headingId(heading);
     render(
-      <MemoryRouter initialEntries={[`/ai-and-ml/${slug}?q=1#keeping-it-lean`]}>
+      <MemoryRouter initialEntries={[`/ai-and-ml/${slug}?q=1#${id}`]}>
         <App />
         <FullLocation />
       </MemoryRouter>,
@@ -108,10 +119,10 @@ describe('TopicPage redirects (catalog-standard criterion 6)', () => {
     await screen.findByRole('heading', { level: 1, name: titleOf(slug) });
     // The fragment is a real heading on the moved page.
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'Keeping it lean' }),
-    ).toHaveAttribute('id', 'keeping-it-lean');
+      await screen.findByRole('heading', { level: 2, name: heading }),
+    ).toHaveAttribute('id', id);
     expect(screen.getByTestId('full-location').textContent).toBe(
-      `/coding-agents/${slug}?q=1#keeping-it-lean`,
+      `/coding-agents/${slug}?q=1#${id}`,
     );
   });
 

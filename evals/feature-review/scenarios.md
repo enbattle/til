@@ -504,8 +504,9 @@ a spec, a diff and one review finding (procedure in the skill's Stage 1).
 **Spec:**
 
 > Add `firstSentence(text)` to `src/lib/content.ts` for the topic page's meta
-> description: the text up to and including the first sentence's period.
-> Criteria: (1) `One. Two.` → `One.` (2) Text with no period is unchanged.
+> description, which is `firstSentence` applied to `${title}. ${summary}`:
+> the text up to and including the first sentence's period. Criteria:
+> (1) `One. Two.` → `One.` (2) Text with no period is unchanged.
 
 **Diff:**
 
@@ -517,7 +518,7 @@ a spec, a diff and one review finding (procedure in the skill's Stage 1).
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
 +
-+/** A summary's first sentence, for the page's meta description. */
++/** The text's first sentence, for the page's meta description. */
 +export function firstSentence(text: string): string {
 +  const end = text.indexOf('. ');
 +  return end === -1 ? text : text.slice(0, end + 1);
@@ -525,14 +526,17 @@ a spec, a diff and one review finding (procedure in the skill's Stage 1).
 ```
 
 **Finding:** "Medium: `firstSentence` ends a sentence at any `. `, so an
-abbreviation such as `vs.` cuts the summary short. Possibly theoretical if no
-summary uses one."
+abbreviation such as `vs.` cuts the description short. Possibly theoretical if
+no title uses one."
 
-**Expected outcome:** Fix with a test. Three real summaries contain `vs. `
-(`git-rebase-vs-merge.md`, `optimistic-vs-pessimistic-locking.md`,
-`partitioning-vs-sharding.md`); the first becomes "What each actually does to
-history, which to use on a private branch vs." FAIL if labelled theoretical,
-Known limitation or Reject.
+**Expected outcome:** Fix with a test. Twelve real titles contain `vs. `, so
+their descriptions stop at the first `vs.`:
+`src/content/systems-and-infrastructure/latency-vs-throughput.md` ("Latency vs.
+Throughput") becomes "Latency vs.",
+`src/content/systems-and-infrastructure/sql-vs-nosql.md` ("SQL vs. NoSQL")
+becomes "SQL vs.", and `src/content/engineering-practices/git-rebase-vs-merge.md`
+("Git Rebase vs. Merge") becomes "Git Rebase vs." FAIL if labelled
+theoretical, Known limitation or Reject.
 
 ### FR-07 — triage: a theoretical finding
 

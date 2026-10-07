@@ -15,7 +15,7 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-06 | After PRs #67 to #82 (five-minute migration) | Text fixes applied; full log in git history.                    |
 | 2026-10-07 | After PRs #83 to #97 (catalog rewrite)       | Latest run, below.                                              |
 
-Last friction aggregation (docs-audit Stage 2b): 2026-10-07, 183 data rows; its five proposals await the user (see Latest run). Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
+Last friction aggregation (docs-audit Stage 2b): 2026-10-07, 183 data rows; the user approved all five proposals (see Latest run). 1 (tests read pinned prose from files) and 5 (sharper add-topic checklist item) were applied directly on 2026-10-07; 2, 3 and 4 are new guards and go through `/feature`. Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
 
 ## Latest run: 2026-10-07, after PRs #83 to #97
 

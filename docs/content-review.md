@@ -75,9 +75,10 @@ integration step of its own.
 
 1. One drafter agent per item, in parallel, each in its own worktree
    (`isolation: "worktree"`), runs the skill's Stages 0–2 only, with Stage 2
-   replaced by the checks the skill's batch-mode bullet lists: several
-   `npm run verify` runs at once overload the machine, and step 4 runs it
-   once. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
+   replaced by `npx vitest run src` (tests outside each content folder also
+   pin titles, headings and body words) and Prettier on its files, plus any
+   extra check the skill's batch-mode bullet adds: several `npm run verify`
+   runs at once overload the machine, and step 4 runs it once. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
    out of the skill and its doc; reviewers run on Opus (`model: "opus"`),
    because catching a wrong claim is the step that needs the stronger model.
    Five Sonnet-drafted DSA batches drew review findings comparable to the Opus

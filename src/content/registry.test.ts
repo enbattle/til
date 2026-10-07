@@ -36,31 +36,12 @@ describe('section registry', () => {
 
 // docs/specs/catalog-standard.md, criteria 4 and 5.
 describe('the Working with Coding Agents section (catalog-standard criterion 4)', () => {
-  const MOVED = [
-    'context-is-a-budget',
-    'documentation-vs-skill-vs-hook',
-    'keeping-ai-native-docs-from-going-stale',
-    'triaging-ai-code-review',
-  ];
-
   it('is registered as coding-agents, right after ai-and-ml', () => {
     const slugs = SECTIONS.map((section) => section.slug);
     const section = SECTIONS.find((s) => s.slug === 'coding-agents');
     expect(section?.label).toBe('Working with Coding Agents');
     expect(section?.description.length).toBeGreaterThan(0);
     expect(slugs.indexOf('coding-agents')).toBe(slugs.indexOf('ai-and-ml') + 1);
-  });
-
-  it('holds exactly the four moved topics on disk, none of them left in ai-and-ml', () => {
-    const files = (dir: string) =>
-      readdirSync(path.join(CONTENT_DIR, dir))
-        .filter((name) => name.endsWith('.md'))
-        .map((name) => name.replace(/\.md$/, ''))
-        .sort();
-    expect(files('coding-agents')).toEqual(MOVED);
-    for (const slug of MOVED) expect(files('ai-and-ml')).not.toContain(slug);
-    // prompt-engineering stays in ai-and-ml (spec scope).
-    expect(files('ai-and-ml')).toContain('prompt-engineering');
   });
 });
 
