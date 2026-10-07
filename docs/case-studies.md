@@ -24,7 +24,8 @@ Case studies live outside `src/content/` on purpose: everything under
 registry entry per folder there. They have their own loader
 (`src/lib/system-design.ts`) and are not registered in `SECTIONS`. Like topics,
 frontmatter is eager (`?meta`) and the body is its own lazy chunk
-(`loadCaseStudyBody`, through the same `createBodyStore`); the prose word count
+(`loadCaseStudyBody`, through the same `createBodyStore`; `npm run check:bundle`
+fails if a body lands in the main chunk); the prose word count
 is eager too (the build-time `?words` view, `proseWordCount` in
 `src/lib/markdown.mjs`), so the page's "N min read" label (`readingMinutes` in
 `src/lib/reading-time.ts`, at the reading speed in the
@@ -45,7 +46,8 @@ order: 1
 - **`order`** is a positive integer, unique across case studies; they are
   listed, numbered and linked prev/next in ascending `order`. `parseCaseStudy`
   throws at load time, naming the file and field, if any of the four fields is
-  missing or `order` isn't a positive integer.
+  missing or `order` isn't a positive integer, and `src/lib/system-design.test.ts`
+  fails a duplicate `order`.
 - **These four keys and no others.** `case-study-structure.test.ts` fails a
   case study whose frontmatter has any other key, or lacks one of the four,
   naming the file and the key.

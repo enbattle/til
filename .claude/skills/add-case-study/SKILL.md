@@ -84,13 +84,9 @@ to assume, which three decisions matter most), ask the user rather than guess.
 npm run verify
 ```
 
-`case-study-structure.test.ts` (the template, and the word budget, as
-[docs/case-studies.md](../../../docs/case-studies.md) lists them),
-`system-design.test.ts` (frontmatter, unique `order`,
-dead links), `check:diagrams` (sources rendered, SVGs and tokens current,
-SVGs safe, no color named and no file imported in a `.d2`, every referenced diagram present) and
-`check:bundle` (the body stays out of the main chunk) catch the structural
-problems. A case study never needs its own test.
+`verify` already runs the structural checks
+([docs/case-studies.md](../../../docs/case-studies.md) names each one and what it
+catches, `check:diagrams` included). A case study never needs its own test.
 
 ## Stages 3–4 — Review and final gate
 

@@ -33,7 +33,8 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
   frontmatter.
 - **Slug** is the filename without `.md` (kebab-case).
 - **`title`, `summary`, and `date` are required** — `src/lib/content.ts`
-  throws at load time if any is missing.
+  throws at load time if any is missing, so `src/lib/content.test.ts`, which
+  loads every topic, fails.
 - **Frontmatter is eager, bodies are lazy.** `content.ts` reads each file's
   frontmatter at load through a `?meta` Vite query (the `markdownMeta` plugin
   in `vite.config.ts`), so `TOPICS` is metadata only and `Topic` has no `body`.
@@ -105,7 +106,8 @@ external link never breaks.
    and `src/dsa` (`git grep -n "/<section>/<old-slug>"`).
    `src/lib/catalog-gaps.test.ts` fails on a dead internal link (to a topic,
    case study or DSA entry) in any topic, case-study or DSA body, so it
-   catches any link this step misses.
+   catches any link this step misses; `src/lib/system-design.test.ts` also
+   fails a case study's link to a topic that no longer exists.
 3. Add an entry to `REDIRECTS` in `src/content/redirects.ts`, from the old
    `section/slug` to the new one. `TopicPage` checks it before falling back to
    /not-found and replaces the old URL with the new one; a hard load reaches it

@@ -109,12 +109,9 @@ shape), ask the user rather than guess.
 npm run verify
 ```
 
-`dsa-structure.test.ts` (the template, and the word budget, as [docs/dsa.md](../../../docs/dsa.md) lists them),
-`dsa-code-chunks.test.ts` (the chunks
-equal the code files), `dsa.test.ts` (frontmatter, prerequisites that exist
-and form no cycle), the entry's own vitest and pytest files, and
-`check:bundle` (the body stays out of the main chunk) catch the structural
-problems. An entry never needs a new test outside its own code folder, with
+`verify` already runs the structural tests and the entry's own vitest and
+pytest files ([docs/dsa.md](../../../docs/dsa.md) names each test and what it
+catches). An entry never needs a new test outside its own code folder, with
 one exception: a prerequisite of a later kind (a data structure that needs an
 algorithm, say) lands after its dependent, and `dsa.test.ts` fails until the
 pinned list of such links is extended. Don't extend it yourself; ask the user
