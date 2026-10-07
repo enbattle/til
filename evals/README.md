@@ -83,8 +83,8 @@ Which eval to run depends on what changed:
 ## Grading philosophy
 
 Not every scenario has exactly one right answer — `evals/skill-routing/scenarios.md`
-marks some as **ambiguous by design** (e.g., a new section where `docs/content.md` itself allows either
-the plain 3-step process or the full pipeline). Grade those against
+marks some as **ambiguous by design** (e.g., a new section, where `add-topic`'s description itself allows either
+the plain "Adding a new section" steps or the full pipeline). Grade those against
 whether the session's reasoning was defensible, not against a single
 fixed string. A useful eval scenario set includes real judgment calls,
 not only cases with an unambiguous correct answer — otherwise it only

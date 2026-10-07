@@ -5,7 +5,8 @@ frontmatter and body, exactly as if it were about to be added via its skill — 
 **exactly one** deliberately planted problem. These drafts are fixtures
 for this eval only: never write them into `src/content/`. Give a
 scenario's draft, verbatim, to a fresh reviewer agent along with
-`add-topic`'s real Stage 3 instruction (built fresh at run time) and record
+the real Stage 3 instruction from `docs/content-review.md`, filled in for
+the draft's skill (built fresh at run time), and record
 whether the review actually catches the planted problem. The
 `content-review-eval` skill has the full procedure and grading, and
 `../README.md` this repo's general eval philosophy.
@@ -18,14 +19,24 @@ near-duplicate check the same way a real `add-topic` review would.
 after them test `add-case-study`'s and `add-dsa-entry`'s reviews the same
 way, with a case-study draft or a DSA entry and its code instead.
 
+On 2026-10-07 the five `CR-*` drafts were brought to the catalog standard
+(docs/writing-standard.md, "Catalog topics"): 600–900 words of prose, one
+running example carried through, the lecturer voice, every term defined, and
+a closing rule of thumb, so that each planted violation is again the draft's
+only real problem and CR-05 is again clean. Their planted violations kept
+their original wording; CR-02 and CR-03 now fence the draft with four
+backticks because the draft holds a code block.
+
 ---
 
 ### CR-01 — undefined jargon (trap for "define terms before using them")
 
-**Section:** `engineering-practices` (not `systems-and-infrastructure`, whose
-structural rules, a closing "Where you'll meet this" section and a System
-Design link, drew real findings that outranked the planted one on
-2026-09-24)
+**Section:** `systems-and-infrastructure`, where a data structure belongs (a
+reviewer rightly flagged the earlier `engineering-practices` placement on
+2026-10-06). Until then the draft avoided this section because its closing
+"Where you'll meet this" rule drew real findings that outranked the planted
+one on 2026-09-24; the draft now ends with that section, naming only systems
+from docs/content.md's fixed set, so the section's rules are met.
 **Planted violation (the only one; the rest of the draft was corrected on
 2026-09-24 so this one stands out):** never defines "hash function" before
 relying on it as load-bearing vocabulary — a reader with zero background has no way
@@ -39,31 +50,89 @@ summary: A space-efficient way to check "definitely not present" instantly, at t
 date: 2026-09-16
 ---
 
-A Bloom filter answers one question fast and cheaply: "have I possibly
-seen this before?" It can never wrongly say no, but it can wrongly say
-yes — that's the tradeoff that makes it useful for things like checking
-whether a URL might be malicious before doing a slower lookup, or
-whether a username is already taken before hitting the database.
+Say you run a sign-up page, and as someone types a username you check whether
+it's already taken. You have 10 million accounts, and each check is a database
+query that takes a few milliseconds. Most names people try are new, so most of
+those queries come back empty. Could you skip the empty ones?
 
-Under the hood, a Bloom filter is just a bit array, all zeros to start.
-To add an item, you hash the item with several different hash functions
-and set the resulting bit positions to 1. To check membership, you hash
-the item the same way and check whether all those bit positions are
-already 1 — if any of them are 0, the item was definitely never added;
-if they're all 1, it probably was.
+A **Bloom filter** lets you. It's a small structure kept in memory, in front of
+the database, that answers one question: "could this name already exist?" It
+gives one of two answers. "Definitely not" is always right, so you can tell the
+user the name is free without touching the database. "Possibly" can be wrong,
+so you go and ask the database. The filter never wrongly says no, but it
+sometimes wrongly says yes, and a wrong yes is called a **false positive**.
 
-The false-positive rate depends on how full the bit array gets and how
-many hash functions you use. A larger array lowers it at the cost of
-memory. The number of hashes has a sweet spot for a given array size and
-item count: too few and each item marks too little of the array to be
-told apart, too many and the array fills up quickly. Databases such as
-Cassandra keep a Bloom filter per data file for exactly this
-"cheap definitely-not versus probably-yes" check, so most lookups for a key
-that isn't there never touch the disk.
+## How it works
+
+The filter is a **bit array**: a long row of bits, each 0 or 1, all 0 to start.
+Ours has 100 million of them, which is 12.5 MB.
+
+To add a username, you hash the item with several different hash functions,
+say seven, and each one gives you a position in the array. You set those seven
+bits to 1. Adding `alice` might set bits 3, 41206, 9880112 and four others.
+Every new account goes into the filter this way as it's created, and the filter
+must see every one, so with several app servers they share one filter. (If
+each server kept its own copy, a name registered a moment ago on another
+server could get a wrong "definitely not" here.)
+
+To check a name, you hash it the same way and look at the same seven positions.
+If any of them is 0, the name was never added, because adding it would have set
+that bit. If all seven are 1, the name was probably added.
+
+Why only "probably"? Because the bits are shared. Ten million names have each
+set seven bits, and a name nobody has registered can land on seven bits that
+other names happened to set. The filter says "possibly," you query the
+database, and it comes back empty. That wasted query is the whole cost of a
+false positive: a wrong answer from the filter never reaches the user, because
+the database has the last word. (It has the last word on a "definitely not"
+too: the uniqueness check in the database still runs when the account is
+actually saved, in case two people grab the same free name at once.)
+
+## How wrong, and how big?
+
+So how often does a free name get a "possibly"? It depends on how many bits the
+filter has per item and how many hash functions it uses. Our filter has 10 bits
+per name. With seven hash functions, about 1 in 120 checks for an unused name
+is a false positive, under 1%. Squeeze the same 10 million names into half the
+memory, 5 bits each, and the best you can do is about 1 in 11.
+
+Why seven, and not one or fifty? Too few, and each name marks only a bit or
+two, so an unused name has to match very little to slip through. Too many, and
+every name sets so many bits that the array fills up with 1s and nearly
+everything matches. The sweet spot is about 0.7 times the bits per item, which
+for our 10 bits is seven.
+
+Now compare the obvious alternative: keep the set of usernames itself in
+memory. Ten million names at 10 to 20 bytes each is 100 to 200 MB before any
+overhead, against the filter's 12.5 MB. The filter is smaller because it never
+stores the names, only bits they touched. You give up exact answers to hold a
+fraction of the data.
+
+## What it can't do
+
+Since it never stored the names, a Bloom filter can't list them. It also can't
+forget one. When a user deletes their account, clearing their seven bits could
+clear a bit that some other name relies on, and the filter would start saying
+"definitely not" about a name that exists, the one mistake it promised never to
+make. So a standard filter only grows. If you need deletes, a variant called a
+**counting Bloom filter** keeps a small counter at each position instead of a
+single bit, at several times the memory.
+
+It also gets worse as it fills. The 1-in-120 figure holds for 10 million names;
+at 20 million in the same array, the false-positive rate climbs to roughly
+1 in 7. Size the filter for the count you expect, and rebuild it bigger when
+the sign-ups head past that.
 
 **Rule of thumb.** Put a Bloom filter in front of a slow lookup when most
 queries are for things that aren't there and an occasional wasted lookup is
 acceptable.
+
+## Where you'll meet this
+
+A URL shortener that generates random short codes can keep a filter of every
+code issued, so most new codes, which are unused, skip the lookup for a clash. A
+notification pipeline can keep one of message IDs already sent, and look up
+only the "possibly" answers before dropping a duplicate.
 ```
 
 **Expected finding:** flags that "hash function" (and "hash the item")
@@ -84,31 +153,92 @@ intensifiers stacked without adding information, and a bullet list where
 every single item follows an identical bolded-lead-in-plus-dash rhythm
 with zero variation.
 
-```markdown
+````markdown
 ---
 title: Feature Flags
 summary: A way to ship code to production without releasing it to users yet, decoupling deploy from release.
 date: 2026-09-16
 ---
 
+Say your team sells concert tickets online, and you're rebuilding the checkout
+page. The new version will take three weeks. Meanwhile everyone else keeps
+merging into the main line of the code's history, the **trunk**, and the
+trunk is deployed to production, the servers customers use, every day. What
+do you do with three weeks of half-finished checkout code?
+
+You could keep it on a separate **branch**, your own copy of the history, until
+it's done. But for three weeks the trunk moves on without you, and on the day
+you merge, you're reconciling three weeks of everyone else's changes with
+yours, under pressure, in the most important page on the site. You'd rather
+merge small pieces every day. Doing that without showing customers a
+half-built checkout is what feature flags are for.
+
+## A conditional you can change at runtime
+
 A feature flag is a conditional check in your code that decides whether
 a piece of functionality is active, controlled by a value you can change
-without redeploying — usually a config service, a database row, or a
-third-party flag provider. This genuinely, actually decouples two things
+without redeploying — usually a config service (a small internal service
+your servers read settings from), a database row, or a third-party flag
+provider (a company that hosts the flags for you). This genuinely, actually decouples two things
 that normally happen together: deploying code (getting it onto
 production servers) and releasing a feature (making it visible to
 users).
+
+In the checkout code, it looks like this:
+
+```js
+if (flags.isOn('new-checkout', user)) {
+  renderNewCheckout(cart);
+} else {
+  renderOldCheckout(cart);
+}
+```
+
+Your team merges new-checkout work into the trunk every day, and it's deployed
+every day, but `new-checkout` is off, so customers keep seeing the old page.
+The new code is in production and nobody can reach it yet.
+
+Why pass `user` in? Because the flag doesn't have to be all-or-nothing. The
+flag service stores a rule, such as "on for staff accounts" or "on for 5% of
+customers." For a percentage, it turns each user's ID into a number from 0 to
+99 and switches the flag on for users below 5. The same user always gets the
+same number, so a customer doesn't flip between checkouts on every page load.
 
 That split unlocks a few real, actually useful patterns:
 
 - **Gradual rollout**: turn a flag on for 1% of users, watch metrics,
   then dial it up — catching a bad change before it reaches everyone.
 - **Kill switch**: turn a risky feature off instantly if it's causing
-  problems, without waiting on a full deploy and rollback.
+  problems, without waiting on a redeploy of the old version.
 - **A/B testing**: show two different flag states to two user segments
   and compare outcomes.
 - **Trunk-based development**: merge unfinished work behind a flag so
   it's off in production, avoiding long-lived feature branches.
+
+## Rolling out the new checkout
+
+When the new checkout is finished, you turn it on for staff first and buy
+tickets yourselves. Then 1% of customers. You watch the completed-purchase
+rate on the dashboard. Suppose it drops for that 1%: a payment button doesn't
+respond on one older browser. You switch the flag off, and within seconds to
+a minute, depending on how the flag service pushes changes, every customer is back on the old checkout. There's no emergency redeploy of
+the previous version, which would also undo every other change that went out
+with it. You fix the button, and try 1% again, then 10%, then everyone.
+
+## What flags cost
+
+So why not put everything behind a flag? Because every flag is an `if` with
+two sides, and both sides have to keep working. While `new-checkout` exists,
+you have two checkouts to test and maintain. Ten flags that can each be on or
+off make 1,024 combinations, and nobody tests all of them.
+
+That's why it helps to sort flags by how long they're meant to live. A
+**release flag**, like `new-checkout`, exists only to roll out one change: once
+the new checkout is on for everyone, you delete the flag and the old checkout
+code with it. A long-lived flag stays on purpose, such as a kill switch around
+a feature that leans on a slow outside service. Release flags that nobody
+deletes are where flags go wrong. A year later, nobody remembers whether
+turning one off is safe.
 
 It's not just a toggle in your code — it's a deployment strategy in
 disguise, letting you separate "is this code live" from "is this code
@@ -117,7 +247,7 @@ of feature flags.
 
 **Rule of thumb.** Put a change behind a flag when you want to be able to
 turn it off without a deploy, and remove a release flag once it's fully rolled out.
-```
+````
 
 **Expected finding:** flags the "not just X — it's Y" closer, the
 stacked filler intensifiers ("genuinely, actually," "real, actually
@@ -136,24 +266,59 @@ one of the three tells without naming the pattern as a tone problem.
 correctly, then spends a passage literally defending the term against a
 misreading no reader would actually have.
 
-```markdown
+````markdown
 ---
 title: Rubber Duck Debugging
 summary: Explaining your code line-by-line to an inanimate object, so the act of articulating it out loud surfaces the bug yourself.
 date: 2026-09-16
 ---
 
+Say you've written a small function for a recipe site that averages a recipe's
+star ratings:
+
+```python
+def average_rating(ratings):
+    total = 0
+    for i in range(1, len(ratings)):
+        total += ratings[i]
+    return total / len(ratings)
+```
+
+A recipe rated 5, 3 and 4 should average 4.0. Yours shows 2.33. You've read
+the function five times and it looks fine every time. What now?
+
 Rubber duck debugging is explaining your code, out loud, line by line,
 to something that can't talk back — traditionally a rubber duck sitting
 on your desk. Partway through the explanation, you frequently spot the
 bug yourself, before your listener says a word.
 
+The name comes from _The Pragmatic Programmer_, a 1999 book by Andrew Hunt
+and David Thomas, which tells of a programmer who carried a rubber duck around
+and debugged by explaining code to it.
+
+## Trying it on the average
+
+So you pick up the duck and start talking. "`total` starts at zero. Then for
+each position in the list, I add the rating at that position to the total."
+Which positions, exactly? You have to say it out loud. "From `range(1,
+len(ratings))`, so position 1, then 2." And there it is: Python numbers list
+positions from 0, so the rating at position 0, the 5, never gets added. The
+loop sums 3 and 4, gets 7, and divides by 3.
+
+Nothing about the code changed between your fifth silent reading and your
+first spoken one. What changed is that you had to say what each line does,
+in order, in words specific enough to be wrong.
+
+## Why explaining finds what reading misses
+
 It works because the bug is usually already visible to you; you just
 haven't been forced to slow down and state your assumptions explicitly.
-Talking through code activates a different kind of processing than
-silently reading it — you have to commit to what each line is
-_supposed_ to do, out loud, in order, which is exactly the step most
-silent debugging skips.
+When you reread your own code, you read what you meant to write. Your eye
+lands on the loop, you recognize "add up the ratings," and you move on.
+Explaining it to someone who knows nothing takes that shortcut away. You
+can't say "and here it adds them up"; you have to say which ones. That
+forces you to commit to what each line is _supposed_ to do, out loud, in
+order, which is exactly the step most silent debugging skips.
 
 To be clear, the duck itself has no debugging ability and doesn't need
 to be a literal rubber duck — a real duck isn't required, and neither is
@@ -162,15 +327,46 @@ works identically, since the mechanism was never about the duck having
 any special property, biological or otherwise. The point isn't the duck;
 it's forcing verbalization.
 
-The technique scales down to solo work and up to pair programming, where
-your pair effectively plays the duck's role while also being able to ask
-a real follow-up question.
+## Doing it well
+
+Does it matter how you explain? It does. Explain the code you have, line by
+line, rather than the plan in your head. The plan was right; the code is where
+the bug is. In the ratings function, "it averages the ratings" is the plan,
+and it's true of the function you meant to write. "It loops from 1" is the
+code, and it's where the 5 went missing.
+
+Say what you expect at each step, with real values. "With 5, 3 and 4, after
+the loop, `total` should be 12." When you can't predict a value, that's the
+line to print the value at and look.
+
+Writing works too. Many programmers have drafted a long question to a
+colleague, described the function, what it should return and what it returns
+instead, and found the bug before sending it. The question has to make sense
+to someone with none of your context, which is the same constraint the duck
+imposes.
+
+## When the duck can't help
+
+So when should you stop talking and ask a person? When the bug isn't in your
+code's logic but in something you don't know. Suppose `average_rating` were
+fixed and a popular recipe still showed the wrong average, because the library
+that loads ratings returns only the first 20 unless you ask for more. You
+could explain your code perfectly and never find it, because your explanation
+would repeat the same wrong assumption. Talking through your code checks your
+reasoning against your code. It can't check it against facts you don't have.
+
+That's where a colleague earns their place over the duck. In **pair
+programming**, two people write code together at one machine, one typing and
+one reviewing as they go. Your pair plays the duck's role, since you're
+explaining as you go anyway, and can also ask a follow-up question or point out
+the fact you were missing.
 
 **Rule of thumb.** When you're stuck, explain the code aloud, line by line,
 before asking anyone for help.
-```
+````
 
-**Expected finding:** flags the third paragraph as over-explaining a
+**Expected finding:** flags the paragraph that opens "To be clear, the duck
+itself has no debugging ability" as over-explaining a
 casual, widely-understood figurative term — defending "rubber duck
 debugging" against a literal misreading ("the duck itself has no
 debugging ability... biological or otherwise") that no reader would
@@ -198,21 +394,88 @@ summary: How temperature and top-p shape which token an LLM picks next, and why 
 date: 2026-09-16
 ---
 
-When an LLM generates text, it doesn't pick the next word directly — it
-produces a probability distribution over its entire vocabulary for what
-token could come next, and then a sampling step picks one. Temperature
-controls how sharply that distribution gets skewed toward the highest-
-probability tokens before sampling: a low temperature makes the model
-overwhelmingly likely to pick the top candidate every time, while a high
-temperature flattens the distribution so less-likely tokens get picked
-more often, producing more varied (and more error-prone) output.
+Ask a large language model (LLM), the kind of model behind a chatbot, to
+finish the sentence "My favorite fruit is" twice, and you may get "apple" once
+and "mango" the next time. Why would the same model, given the same words,
+answer differently? Because it doesn't pick its answer outright. It weighs the
+options and then draws one, and two settings, temperature and top-p, decide
+how that draw works.
 
-Top-p (nucleus sampling) is a related but different control: instead of
-reshaping the whole distribution, it restricts sampling to the smallest
-set of tokens whose cumulative probability crosses a threshold p, then
-samples only from that shortlist. Temperature and top-p are commonly
-used together — temperature shapes the distribution, top-p trims which
-part of it is eligible to be sampled from at all.
+## A distribution, then a draw
+
+An LLM writes text one **token** at a time, where a token is a chunk of text:
+a short word, or a piece of a longer one. The model has a fixed **vocabulary**
+of every token it knows, typically tens of thousands to a couple of hundred
+thousand of them.
+
+At the end of "My favorite fruit is", the model gives you a probability for
+every token in its vocabulary, and they add up to 1; that full list is a
+**probability distribution**. Your next token comes from **sampling** it:
+drawing one token at random, weighted by those probabilities, so a token at
+0.3 comes up about three times in ten.
+
+Suppose that, to keep the arithmetic small, the model's whole distribution
+after "My favorite fruit is" falls on four tokens:
+
+| Token  | Probability |
+| ------ | ----------- |
+| apple  | 0.50        |
+| mango  | 0.30        |
+| banana | 0.15        |
+| kiwi   | 0.05        |
+
+Sampling from this picks "apple" half the time, "mango" 30% of the time, and
+"kiwi" once in twenty tries. That's why your two runs differed.
+
+## Temperature reshapes the distribution
+
+Temperature is a number you set on the request, and it reshapes the fruit
+table before the draw, deciding how strongly the odds lean toward apple. Each
+probability is raised to the power 1/temperature, and the results are rescaled
+to add up to 1 again. At temperature 1, nothing changes.
+
+What happens at 0.5? Each probability is squared. Apple's 0.50 becomes 0.25
+and kiwi's 0.05 becomes 0.0025, a hundred times smaller, where before it was
+ten times smaller. After rescaling, apple is about 0.68, mango 0.25, banana
+0.06 and kiwi under 0.01. The favorite gets more favored.
+
+And at 2? Each probability is replaced by its square root, which pulls them
+together: apple about 0.38, mango 0.29, banana 0.21, kiwi 0.12. Kiwi now comes
+up more than one time in ten.
+
+So a low temperature shifts probability toward the top candidate, and near 0
+it is almost always picked, while a high temperature flattens the distribution so
+less-likely tokens get picked more often, producing more varied (and more
+error-prone) output. For a fruit, variety is harmless. For the next token of a
+date or a line of code, an unlikely token is usually a wrong one.
+
+## Top-p trims the shortlist
+
+Top-p, also called **nucleus sampling**, is a second setting you can pass,
+and it shortens the list you draw from instead of changing the odds. You pick
+a threshold p, keep the most likely tokens until their probabilities add up to
+at least p, and draw only from that shortlist.
+
+Take the fruit table at temperature 1 and p = 0.9. Go down the list, adding up
+as you go: apple brings the total to 0.50, mango to 0.80, banana to 0.95. That
+crosses 0.9, so the shortlist is apple, mango and banana. Kiwi can't be picked
+at all. The three survivors are rescaled to add up to 1 (apple about 0.53,
+mango 0.32, banana 0.16), and the draw happens among them.
+
+How is that different from a low temperature? Temperature changes the odds of
+every token but rules none out. Top-p leaves the odds among the shortlisted
+tokens in proportion and cuts off the long tail of unlikely ones, which in a
+real vocabulary means many thousands of tokens that each have a tiny chance.
+Both can be set on the same request; in most implementations temperature
+reshapes the distribution first and top-p trims it after. Some providers
+recommend adjusting one and leaving the other at its default, since both
+control how varied the output is.
+
+## Temperature 0
+
+What about turning temperature all the way down? Raising to the power 1/0
+isn't defined, so implementations treat temperature 0 as a special case: skip
+the draw and take the most likely token, which for our fruit is apple.
 
 Setting temperature to 0 makes an LLM's output fully deterministic on
 any provider, since it always just picks the single highest-probability
@@ -273,11 +536,14 @@ date: 2026-09-28
 
 Most projects are built on **dependencies**: libraries, meaning code someone
 else wrote and published, that your project calls. A **package manager**
-such as npm (for JavaScript) or pip (for Python) downloads them for you. Each
-library keeps publishing new versions, and every time it does you face the
-same question: can I take this update without anything breaking? A version
-number like `4.17.21` can't answer that on its own, unless the library's
-authors have agreed on what the numbers mean.
+such as npm, for JavaScript, downloads them for you. Say
+your project formats dates with a small library, call it `datelib`, at version
+`1.4.2`. Its authors keep publishing new versions, and every time they do you
+face the same question: can I take this update without anything breaking? A
+version number can't answer that on its own, unless the library's authors have
+agreed on what the numbers mean.
+
+## What the three numbers promise
 
 Semantic Versioning, or SemVer, is that agreement, written down as a
 short specification at semver.org (the current version is 2.0.0). A version
@@ -296,57 +562,69 @@ Compared with the release before it:
 Raising one number resets the numbers to its right to zero, so the release
 after `1.4.2` is `1.4.3`, `1.5.0` or `2.0.0`.
 
-Take a date-formatting library at `1.4.2`. Its `formatDate` function prints
-the wrong month for December dates; the fix ships as `1.4.3`. Next, the
-authors add `formatRelative`, which turns a date into text like "3 days ago".
-Nothing that existed changed, so that's `1.5.0`. Then they rename
-`formatDate` to `format` and drop the old name. Every project calling
-`formatDate` would now fail, so that release has to be `2.0.0`.
+Watch `datelib` go through all three. Its `formatDate` function prints the
+wrong month for December dates; the fix ships as `1.4.3`. Next, the authors
+add `formatRelative`, which turns a date into text like "3 days ago". Nothing
+that existed changed, so that's `1.5.0`. Then they rename `formatDate` to
+`format` and drop the old name. Your project calls `formatDate`, so it would
+now fail, and that release has to be `2.0.0`.
 
-Versions below `1.0.0` are a special case. The specification treats `0.y.z`
-as initial development, where anything may change at any time, and `1.0.0`
-is the release where the authors commit to a public API.
+What about versions below `1.0.0`? The specification treats `0.y.z` as initial
+development, where anything may change at any time, and `1.0.0` is the release
+where the authors commit to a public API.
 
 ## How npm uses it
 
-npm leans on these numbers directly. (Not every ecosystem does: Python's
-tools follow their own rules, PEP 440, instead.) A JavaScript project
-lists its dependencies in a `package.json` file at its root, and because the
-numbers carry meaning, it can say which versions of each it accepts instead
-of **pinning** one, that is, naming a single exact version such as `1.4.2`.
-`^1.4.2` (a caret) accepts anything from `1.4.2` up to but not including
-`2.0.0`: later fixes and additions, but no breaking changes. `~1.4.2` (a
+A JavaScript project lists its dependencies in a
+`package.json` file at its root, and because the numbers carry meaning, it can
+say which versions of each it accepts, a **version range**, instead of
+**pinning** one, that is, naming a single exact version such as `1.4.2`.
+
+Your `package.json` might say `"datelib": "^1.4.2"`. The caret accepts
+anything from `1.4.2` up to but not including `2.0.0`: the December fix and
+`formatRelative`, but not the rename that would break your calls. `~1.4.2` (a
 tilde) is stricter and accepts only patches, from `1.4.2` up to but not
-including `1.5.0`. When you add a package with `npm install <name>`, npm
-records it with a caret by default.
+including `1.5.0`, so `1.4.3` but not `1.5.0`. When you add a package with
+`npm install <name>`, npm records it with a caret by default.
 
-Below `1.0.0`, where the specification promises nothing, npm adds a
-convention of its own: the caret treats a change to the leftmost nonzero
-number as breaking. So `^0.3.1` accepts later `0.3` patches but not `0.4.0`,
-treating a new `0.y` as a breaking release, and `^0.0.3` accepts only `0.0.3`
-itself.
+Below `1.0.0`, where the specification promises nothing, npm adds a convention
+of its own: the caret treats a change to the leftmost nonzero number as
+breaking. Had `datelib` still been at `0.3.1`, `^0.3.1` would accept later
+`0.3` patches but not `0.4.0`, and `^0.0.3` accepts only `0.0.3` itself.
 
-With ranges alone, every install resolves them again, usually to the newest version each one accepts, so two machines
-installing a week apart can end up running different code. And the promise
-is only as good as the people making it: a bug fix can break a project that
-relied on the bug, and authors sometimes misjudge what counts as breaking.
+## Why ranges aren't enough
+
+With ranges alone, every install
+resolves them again, usually to the newest version each one accepts. Install
+the day `1.4.3` comes out and you get `1.4.3`; a teammate who installs a week
+later, after `1.5.0` is out, gets `1.5.0`. Two machines now run different code.
+
+And the promise is only as good as the people making it. If your code had
+worked around the December bug by correcting the month itself, the `1.4.3`
+fix breaks your dates, patch or not. Authors also sometimes misjudge what
+counts as breaking.
 
 So npm also writes a **lockfile**, `package-lock.json`, recording the exact
 version of every package it installed, including the dependencies of your
-dependencies. With the lockfile committed, a plain `npm install` on another
-machine installs those locked versions, as long as they still satisfy the
-ranges in `package.json`. `npm ci`, meant for automated builds, is stricter:
-it deletes any installed packages (the `node_modules` folder) first, fails if
-the lockfile and `package.json` disagree, and never rewrites the lockfile.
+dependencies. Your lockfile says `datelib` is `1.4.3`. With it committed, your
+teammate's plain `npm install` installs `1.4.3` too, as long as it still
+satisfies the range in `package.json`. `npm ci`, meant for automated builds, is
+stricter: it deletes any installed packages (the `node_modules` folder) first,
+fails if the lockfile and `package.json` disagree, and never rewrites the
+lockfile.
 
-A dependency then changes version when someone changes the lockfile: by
-running `npm update`, which moves each package to the newest version its
-range allows, by installing a specific version with
-`npm install <name>@<version>`, or by editing a range in `package.json` and
-reinstalling (the locked version only moves if it no longer fits the new
-range). Dependency bots such as Dependabot open pull requests, proposed
-changes for someone to review, that do the same. Each route shows up as a
-change to `package-lock.json`, so an upgrade becomes a
+## Taking an update on purpose
+
+How does `datelib` ever move, then? Someone changes the lockfile. Running
+`npm update` moves each package to the newest version its range allows, so
+`datelib` goes to `1.5.0`, never `2.0.0`. Installing a specific version with
+`npm install <name>@<version>` works too. To take `2.0.0`, you edit the range
+to `^2.0.0`, rename your `formatDate` calls, and reinstall (the locked version
+only moves if it no longer fits the new range). Dependency bots such as
+Dependabot open pull requests (proposed changes for someone to review) that
+change the range and the lockfile for you; fixing the calls is still yours.
+
+Each route shows up as a change to `package-lock.json`, so an upgrade becomes a
 deliberate change that can be reviewed and tested like any other, instead of
 something that arrives unnoticed on the next install.
 

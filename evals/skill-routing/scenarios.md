@@ -52,7 +52,7 @@ for.
 
 > Add a new section for book recommendations, with one topic to start.
 
-**Expected:** Either the plain 3-step "Adding a new section" process
+**Expected:** Either the plain "Adding a new section" process
 from `docs/content.md`, done directly, **or** `/feature` if the session wants
 full review — both acceptable.
 **Why:** `docs/content.md` documents new-section creation as its own

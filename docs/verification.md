@@ -62,22 +62,10 @@ the real gate; `.claude/hooks/block-powershell-writes.js` only saves the redo,
 denying a PowerShell command that writes a file inside the project
 (`Set-Content`, `Add-Content`, `Out-File`, `Tee-Object` and their aliases
 `sc`, `ac`, `tee`; a `>`/`>>`/`2>`/`*>` redirection; `[IO.File]::Write*`/`Append*`)
-and pointing to the Edit or Write tool or a Node script. It resolves
-`$env:X`/`${env:X}` and a variable assigned a quoted literal earlier in the
-same command, taking the assignment in force where each write runs (a write
-before any assignment, or through a variable last assigned anything but a
-quoted literal, fails open); assignment-looking text inside a quoted string is
-ignored. It matches command text, not a full parse, so it fails open: writes
-outside the project, `$null`, a path starting with an unknown variable and
-unparseable input are allowed, a variable chain (`$f="$root\docs\a.md"`) fails
-open, and typed (`[string]$f=`) and scoped (`$script:f`) assignments,
-`Set-Variable`, a parenthesised `($f)` and `$(...)` subexpressions aren't
-recognized. It reads text order, not run order, so a script block or function
-defined before the assignment it reads resolves against the assignments above
-it. It doesn't track a `cd` inside the command, recognize dot-sourcing a write
-cmdlet (`. Set-Content ...`) or check `New-Item -Value`, `Export-Csv` or
-`Start-Transcript` (the hook's header lists these limits). `scripts/block-powershell-writes.test.mjs` holds
-its vectors.
+and pointing to the Edit or Write tool or a Node script. It matches command
+text, not a full parse, so it fails open on whatever it can't resolve (the
+hook's header lists these limits). `scripts/block-powershell-writes.test.mjs`
+holds its vectors.
 
 `npm run test:py` (`scripts/test-python.mjs`) runs pytest over the DSA
 entries' Python code in `src/dsa/code`, and fails with install instructions

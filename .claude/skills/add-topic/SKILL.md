@@ -19,14 +19,14 @@ gets this lighter process, are in
 This skill is for a topic file in an **existing** section only. If the
 request also needs a new section (a `registry.ts` change), a change to
 `content.ts`/`frontmatter.ts`, or any other app code, stop — that's a
-`/feature`-shaped change (or, if it's genuinely just the 3-step "Adding a
+`/feature`-shaped change (or, if it's genuinely just the "Adding a
 new section" process in docs/content.md with no ambiguity, just do that
 directly). Don't stretch this skill to cover code changes.
 
 **Rewrite mode.** Rewriting an existing topic to the catalog standard also
 follows this skill, with the same stages. Treat the old text as research notes,
 not a draft to trim: keep what's true and teaches the idea, and rebuild it
-around one running example. The topic keeps its file and slug (docs/content.md, "The catalog standard").
+around one running example. The topic keeps its file and slug.
 A merge folds one topic into another and deletes the old file; a move changes a
 topic's section or slug. Both follow docs/content.md's "Moving, merging or
 renaming a topic" (`git mv`, repointed links, a `REDIRECTS` entry).
@@ -82,7 +82,7 @@ npm run verify
 standard), `redirects.test.ts` (a
 move or merge), `system-design.test.ts` (a dead
 link from a case study), `catalog-gaps.test.ts` (which also fails on a dead
-link in any topic or case-study body) and `where-youll-meet-this.test.ts` already
+link in any topic, case-study or DSA body) and `where-youll-meet-this.test.ts` already
 catch structural problems (missing frontmatter field, section/registry
 mismatch, a systems topic without its closing "Where you'll meet this"
 section) — this stage is just confirming
