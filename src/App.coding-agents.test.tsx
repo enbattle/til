@@ -1,13 +1,16 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { SECTIONS } from '@/content/registry';
 import { getTopic } from '@/lib/content';
 import { renderAt } from '@/test/render';
 
 // docs/specs/catalog-standard.md, criterion 4: the "Working with Coding
 // Agents" section shows on the home page and in the sidebar right after AI
 // and Machine Learning, holds the four moved topics, and its topics' prev/next
-// stays inside it. Labels and slugs are pinned here, not read from the
-// registry, so a missing section fails these tests rather than passing them.
+// stays inside it. The section order and labels are pinned in
+// registry.test.ts (which also pins this section right after AI and Machine
+// Learning); these tests check the pages render the registry's order, so a
+// new section needs no edit here.
 
 const LABEL = 'Working with Coding Agents';
 const MOVED = [
@@ -16,23 +19,8 @@ const MOVED = [
   'keeping-ai-native-docs-from-going-stale',
   'triaging-ai-code-review',
 ];
-const ORDER = [
-  'engineering-practices',
-  'ai-and-ml',
-  'coding-agents',
-  'focus-and-attention',
-  'security',
-  'systems-and-infrastructure',
-];
-const LABELS = [
-  'Computing Fundamentals',
-  'Engineering Practices',
-  'AI and Machine Learning',
-  LABEL,
-  'Focus and Attention',
-  'Security',
-  'Systems and Infrastructure',
-];
+const ORDER = SECTIONS.map((s) => s.slug);
+const LABELS = SECTIONS.map((s) => s.label);
 
 describe('the Working with Coding Agents section (catalog-standard criterion 4)', () => {
   it('has each moved topic under coding-agents and none under ai-and-ml', () => {

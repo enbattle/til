@@ -16,7 +16,7 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | After PRs #83 to #97 (catalog rewrite)         | Text fixes applied; full log in git history.                    |
 | 2026-10-07 | After PRs #99 to #107 (Computing Fundamentals) | Latest run, below.                                              |
 
-Last friction aggregation (docs-audit Stage 2b): 2026-10-07, 203 data rows; five proposals (see Latest run) await the user's decision. Before that 2026-10-07, 183 rows, all five approved and applied (#99, and as new guards in #100). Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
+Last friction aggregation (docs-audit Stage 2b): 2026-10-07, 203 data rows; the user approved proposals 1 to 4 (see Latest run), applied in chore/friction-fixes-203 after a process-edit read narrowed them. Declined: 5 (drop the timing assertion), since #106's looser bound already stopped the flake and the test still catches a runaway parse. Before that 2026-10-07, 183 rows, all five approved and applied (#99, and as new guards in #100). Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
 
 ## Latest run: 2026-10-07, after PRs #99 to #107
 
@@ -64,7 +64,7 @@ Last friction aggregation (docs-audit Stage 2b): 2026-10-07, 203 data rows; five
   1. **Guard specs keep missing vectors, found in review** (6 rows, up to 21 agents). Proposed: the first review lists every vector it can build as planted-case rows, fixed in one round, instead of asking the spec to list them all.
   2. **Drafts contradict their own examples, most often in the rule of thumb** (inconsistency in 14 of the last 21 rows). Proposed: the batch self-check quotes add-topic's checklist item (3) and tests the rule against each example before handoff.
   3. **Batch gates fail on tests outside `src/content` that pin content** (3 rows). Proposed: derive `App.coding-agents.test.tsx`'s labels from `SECTIONS`.
-  4. **Fix-round edits create new errors, and some fixes ship without re-review** (7 rows, nothing escaped). Proposed: at the cap, send the changed sentences back to the same reviewer by SendMessage instead of skipping the check.
+  4. **Some fixes ship without re-review** (nothing escaped). The process-edit read corrected the evidence: the real case is batch mode's single round (a High fixed with the reviewer's wording, not re-reviewed); the other cited errors were caught by review. Applied as: after batch mode's fixes, send each changed paragraph back to the same reviewer by SendMessage to confirm.
   5. **Wall-clock test bounds flake** (2 rows). Proposed: drop the timing assertion rather than loosen it.
 
 **Evals:** skill-routing SR-09, 10, 12 and 14 (the edited skills and hook), at Stage 3.
