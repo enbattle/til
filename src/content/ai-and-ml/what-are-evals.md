@@ -28,7 +28,7 @@ Because the bot's output varies from run to run, a single run on one case tells 
 
 ## What to measure depends on the system
 
-There is no universal metric, because different systems fail differently. Your support bot might read the policy documents from a search step first, which makes it a [retrieval-augmented system](/ai-and-ml/what-is-rag). That adds two separate failure points. It can retrieve the wrong document. Or it can retrieve the right one and still state something the document doesn't say. The second is a **faithfulness** failure: the answer isn't grounded in the retrieved text. Score the two separately, or a bad answer won't tell you which half to fix.
+There is no universal metric, because different systems fail differently. Your support bot might read the policy documents from a search step first, which makes it a [retrieval-augmented system](/ai-and-ml/what-is-rag). That adds two separate failure points. It can retrieve the wrong document. Or it can retrieve the right one and still state something the document doesn't say. The second is a **faithfulness** failure: the answer isn't grounded in the retrieved text. [Score the two separately](/ai-and-ml/rag-evaluation), or a bad answer won't tell you which half to fix.
 
 If you later let the bot issue refunds itself, it becomes an [agent](/ai-and-ml/what-are-ai-agents) that calls tools. Now an eval should check which tool it chose, and whether the final state is right (the refund went to the right order, once), not only whether the conversation sounded good. An agent can finish all its steps and still miss the goal.
 

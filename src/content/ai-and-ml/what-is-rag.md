@@ -40,8 +40,8 @@ closest few chunks. This finds meaning, not just shared words: a chunk titled
 "Resolving permission problems when downloading a report" can match "export
 fails" even though they share almost no vocabulary. The same property cuts the
 other way, since an exact string like "4012" can be a weak signal to an
-embedding. Many systems therefore combine embeddings with ordinary keyword
-search, which would catch the chunk that contains "4012" literally.
+embedding. Many systems therefore combine embeddings with [ordinary keyword
+search](/ai-and-ml/hybrid-search-and-reranking), which would catch the chunk that contains "4012" literally.
 
 Then the prompt is assembled: an instruction ("answer only from the passages
 below; say so if they don't cover it"), the retrieved chunks, and the
@@ -59,7 +59,7 @@ chunk or ignore your instruction. The larger risk is in retrieval: if the
 search returns the wrong chunks, the model is handed confident-looking
 material about the wrong thing and will often answer from it anyway. So when
 a RAG system gives bad answers, check what was retrieved before you blame the
-model. Measuring retrieval and answers separately is the job of
+model. [Measuring retrieval and answers separately](/ai-and-ml/rag-evaluation) is the job of
 [evals](/ai-and-ml/what-are-evals).
 
 Retrieved text is also content someone else wrote. If a help page, or a
