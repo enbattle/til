@@ -67,7 +67,8 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   code matches parsed syntax (an AST), not a regex, as content checks use
   `markdownParser()`. Its vectors cover each route code can take to the sink,
   not only spellings (`scripts/check-raw-html.mjs`'s header lists the routes
-  found so far).
+  found so far). List the ones known at the start; the spec needn't foresee
+  all of them, since Stage 4 tries every way past the guard.
 - A change to a script that is already locked (`docs/verification.md` lists
   them, e.g. `scripts/lib.mjs`) is assigned to the Stage 2 test-writer, which
   writes its planted cases first. A change that widens the lock shows its new
@@ -318,7 +319,11 @@ Up to **2 rounds**, each in this order:
    the test-writer adds the planted case to that guard's test file (Stage 2's
    instruction says which file), shows it failing, then edits the script, and the gate accepts the script in
    `--verify`. These runs don't count against Stage 2's caps and aren't
-   logged.
+   logged. For a guard, the test-writer plants every vector triage rated Fix
+   in one pass. If the guard enforces more than one rule and its test file
+   lacks a case that one of them accepts or rejects, it adds that case too;
+   those cases needn't fail, since they exist so a fix to one rule can't
+   quietly break another.
 2. A **fresh** `general-purpose` fixer (not the Stage 3 agent) gets the
    findings, the spec and any new tests: "Fix these findings. Do not edit,
    delete or add any locked file (the same list as Stage 3's instruction)."

@@ -24,22 +24,15 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | CR-01..05 fixtures brought to the catalog standard                                               | 5    | 0    | 0         | CR-01 and CR-05 re-run once; CR-01 plant caught but ranked third.          |
 | 2026-10-07 | add-topic checklist (3) sharpened: rule holds for every example, figures follow from the example | 5    | 0    | 0         | All plants caught; CR-01 now first; CR-05 clean.                           |
 | 2026-10-07 | add-topic checklist (4) gains inbound links (`links:inbound`)                                    | 5    | 0    | 0         | All plants caught and ranked first; CR-05 clean.                           |
+| 2026-10-07 | Friction fixes: drafter rule-of-thumb self-check before Stage 3, batch fix confirmation          | 2    | 0    | 0         | CR-01 and the CR-05 control.                                               |
 
-## Latest run: 2026-10-07, drift and rewrite guards
+## Latest run: 2026-10-07, friction fixes from the 203-row aggregation
 
-- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` reviewer per scenario. Each reviewer got the Stage 3 instruction from docs/content-review.md, filled in for add-topic, and the draft as a neutrally named scratch file in a shuffled folder.
-- **Trigger:** branch feat/drift-and-rewrite-guards. add-topic's checklist item (4) now also asks that nothing an inbound link relies on (`npm run links:inbound`) was cut or renamed. The CR drafts are new topics, so item (4) was "none" for each, as in a real run.
-- **Scope:** CR-01..05.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` reviewer per scenario, given the Stage 3 instruction from docs/content-review.md filled in for add-topic and the draft as a neutrally named scratch file.
+- **Trigger:** branch chore/friction-fixes-203 edited docs/content-review.md: a rule-of-thumb self-check by the drafter before Stage 3, and batch mode's fix confirmation. The reviewer instruction itself is unchanged.
+- **Scope:** CR-01 (a plant) and CR-05 (the control), since the instruction didn't change.
 
-| ID    | Planted violation                        | Caught                                                            | Grade |
-| ----- | ---------------------------------------- | ----------------------------------------------------------------- | ----- |
-| CR-01 | "hash function" undefined                | Yes, ranked first (Medium-low); the other notes were Low or nits. | PASS  |
-| CR-02 | AI-patterned tone                        | Yes, all three parts, as three Highs ranked first.                | PASS  |
-| CR-03 | over-explained analogy                   | Yes, as a must-fix, ranked first.                                 | PASS  |
-| CR-04 | temperature 0 called fully deterministic | Yes, as a blocking finding, ranked first.                         | PASS  |
-| CR-05 | none (control)                           | Nothing blocking; three minor notes, each true of the text.       | PASS  |
-
-**Notes:**
-
-- **CR-01 drew a second, true finding:** the draft says app servers "must" share one filter, then says the database's uniqueness check catches a wrong "definitely not" anyway. It ranks below the plant.
-- **CR-05's notes are polish:** `^0.0.3` is the one figure not taken from the running example, "resolves" is undefined, and the Dependabot claim is slightly broad. None is a false claim.
+| ID    | Planted violation         | Caught                                                  | Grade |
+| ----- | ------------------------- | ------------------------------------------------------- | ----- |
+| CR-01 | "hash function" undefined | Yes, ranked first (Moderate).                           | PASS  |
+| CR-05 | none (control)            | Nothing blocking; two low notes, both true of the text. | PASS  |

@@ -15,6 +15,11 @@ and doesn't spend a separate agent.
 
 ## Stage 3 — Independent review
 
+First, whoever drafted (you, or a batch drafter) tests the closing rule of
+thumb, and in a case study each decision's rule, against every example on the
+page; a rule that fails the page's own example is the finding reviews raise
+most often.
+
 Spawn a **fresh** `general-purpose` agent (never `fork`: it must not inherit
 your own read of the draft). Give it what the skill's **Files** lists,
 `docs/writing-standard.md`, the path of `docs/NON_NEGOTIABLES.md`, the titles
@@ -78,7 +83,8 @@ integration step of its own.
    replaced by `npx vitest run src` (tests outside each content folder also
    pin titles, headings and body words) and Prettier on its files, plus any
    extra check the skill's batch-mode bullet adds: several `npm run verify`
-   runs at once overload the machine, and step 4 runs it once. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
+   runs at once overload the machine, and step 4 runs it once. Before
+   reporting, the drafter also runs Stage 3's rule-of-thumb check on its page. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
    out of the skill and its doc; reviewers run on Opus (`model: "opus"`),
    because catching a wrong claim is the step that needs the stronger model.
    Five Sonnet-drafted DSA batches drew review findings comparable to the Opus
@@ -95,8 +101,11 @@ integration step of its own.
    batch-mates' titles and slugs, and it also gets the drafts of any
    batch-mate the item links to.
 3. Its findings go through Stage 3's triage. You apply the fixes once, with no
-   re-review of that round (Fix rounds `1`); a High found then goes to the
-   user.
+   full re-review (Fix rounds `1`), then send them back to the same reviewer
+   by `SendMessage`: each changed paragraph, before and after. It confirms
+   each fix holds or names what the fix broke, raising nothing new, and needs
+   no new agent. A broken fix gets one more fix and confirmation; one still
+   broken, or a High from the review, goes to the user.
 4. Integrate: copy each item's files from its worktree and run the skill's
    integration step, then run Stage 4 once for the batch (pre-gate steps,
    `npm run verify`, the scope check), with one pipeline-log row per item.

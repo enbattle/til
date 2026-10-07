@@ -48,18 +48,15 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Audit decisions: batch self-check moved to content-review.md, five skills point to it                        | 5    | 0    | 0         | SR-02, 09, 10, 15, 18.                                       |
 | 2026-10-07 | Drift and rewrite guards: add-topic names `links:inbound`, eval skills name `check:eval-premises`, hook rule | 5    | 0    | 0         | SR-02, 06, 10, 12, 14 at Stage 5.                            |
 | 2026-10-07 | Docs audit after #107: docs-audit gate, eval skills' final step, hook header                                 | 4    | 0    | 0         | SR-09, 10, 12, 14.                                           |
+| 2026-10-07 | Friction fixes: /feature guard steps, content-review.md self-check and batch confirmation                    | 2    | 0    | 0         | SR-01 and SR-02.                                             |
 
-## Latest run: 2026-10-07, docs audit after #107
+## Latest run: 2026-10-07, friction fixes from the 203-row aggregation
 
 - **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
-- **Trigger:** the docs audit after #99 to #107 edited the docs-audit skill's gate, the final step of the three eval skills, two SR **Why** lines and the PowerShell hook's header comment.
-- **Scope:** SR-09, SR-10, SR-12 and SR-14, the scenarios routing to the edited skills.
+- **Trigger:** branch chore/friction-fixes-203 edited `/feature`'s Stage 1 guard bullet and Stage 4a step 1, and docs/content-review.md (a rule-of-thumb check before Stage 3, and batch mode's fix confirmation).
+- **Scope:** SR-01 and SR-02, the scenarios that route to `/feature` and add-topic.
 
-| ID    | Routing decision      | Reasoning (one line)                                        | Grade |
-| ----- | --------------------- | ----------------------------------------------------------- | ----- |
-| SR-09 | `docs-audit`          | Doc staleness after a batch of changes.                     | PASS  |
-| SR-10 | `skill-routing-eval`  | Named directly; SKILL.md edits trigger it.                  | PASS  |
-| SR-12 | `content-review-eval` | Whether add-topic's review still catches a planted problem. | PASS  |
-| SR-14 | `feature-review-eval` | Whether Stage 4's reviewer still catches planted defects.   | PASS  |
-
-**Note:** SR-09's first run used a paraphrased prompt by mistake; it was re-run with the scenario's exact wording, and that is the graded result.
+| ID    | Routing decision | Reasoning (one line)                                  | Grade |
+| ----- | ---------------- | ----------------------------------------------------- | ----- |
+| SR-01 | `/feature`       | New UI behavior in the search dialog, needing a spec. | PASS  |
+| SR-02 | `add-topic`      | A new topic in an existing section, no app code.      | PASS  |
