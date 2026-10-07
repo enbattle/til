@@ -25,6 +25,7 @@ const ORDER = [
   'systems-and-infrastructure',
 ];
 const LABELS = [
+  'Computing Fundamentals',
   'Engineering Practices',
   'AI and Machine Learning',
   LABEL,

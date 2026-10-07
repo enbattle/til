@@ -22,7 +22,7 @@ Releasing takes care too. Before deleting the key, the holder checks that the st
 
 ## The lease can expire while you work
 
-Here is the part that surprises people. Machine A takes the lock for invoice 42 and starts the refund. Then a long garbage-collection pause (the runtime freezing your program while it reclaims memory) stalls A for 45 seconds. At 30 seconds the lease expires. Machine B takes the lock and starts the same refund. At 45 seconds A wakes up. It never noticed the time pass, still believes it holds the lock, and finishes its refund. The customer is refunded twice.
+Here is the part that surprises people. Machine A takes the lock for invoice 42 and starts the refund. Then a long [garbage-collection](/computing-fundamentals/stack-heap-and-garbage-collection#tracing-garbage-collection) pause (the runtime freezing your program while it reclaims memory) stalls A for 45 seconds. At 30 seconds the lease expires. Machine B takes the lock and starts the same refund. At 45 seconds A wakes up. It never noticed the time pass, still believes it holds the lock, and finishes its refund. The customer is refunded twice.
 
 Can you fix this with a longer lease, say 10 minutes? A longer lease only moves the failure out. A pause, a slow disk or a stalled network call can be longer than any number you pick, and a long lease also makes every crash cost you that many minutes of waiting. Can A check "do I still hold the lock?" just before it writes? That check can pass and the lease can expire a moment later, before the write lands, so the gap is shorter but still there.
 

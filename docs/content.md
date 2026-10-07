@@ -125,7 +125,8 @@ entry in the same change, since the path is live again and
    "&".
 3. Add the new slug, in its place, to the pinned slug order in
    `src/content/registry.test.ts`, and its label to the pinned slug-to-label
-   map there.
+   map there. `src/App.coding-agents.test.tsx` also pins the home page's
+   section labels in order; add the label there too.
 4. Add at least one topic file into the new folder.
 
 `registry.test.ts` fails if the folder and the registry entry don't match

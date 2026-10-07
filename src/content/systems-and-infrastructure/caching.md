@@ -26,7 +26,7 @@ answer and the less work for every layer behind it.
   instructed by the `Cache-Control` header the server sends. Reusing a copy
   needs no network request at all, but it belongs to one user on one device,
   and the server has no dependable way to reach in and delete it.
-- A **CDN** (content delivery network) is a set of servers around the world
+- A **[CDN](/computing-fundamentals/load-balancers-and-cdns)** (content delivery network) is a set of servers around the world
   that keep copies of responses, so a reader in Sydney gets the cover image
   from a nearby machine instead of one in Virginia. It suits responses that
   are identical for everyone.

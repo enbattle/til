@@ -12,6 +12,12 @@ export interface Section {
  */
 export const SECTIONS: Section[] = [
   {
+    slug: 'computing-fundamentals',
+    label: 'Computing Fundamentals',
+    description:
+      'How code runs, how data is stored and how machines talk over a network: refreshers on the basics the rest of the catalog builds on.',
+  },
+  {
     slug: 'engineering-practices',
     label: 'Engineering Practices',
     description:

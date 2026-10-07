@@ -51,7 +51,7 @@ behave this way, such as a coordination service that stores cluster
 configuration. An
 **AP** system, available over consistent, has West sell the pair anyway and
 sort out the conflict once the link heals, perhaps by apologizing to the
-second customer. DNS works like this: servers keep answering from cached
+second customer. [DNS](/computing-fundamentals/ip-tcp-udp-and-dns#dns) works like this: servers keep answering from cached
 records, even stale ones, when they can't reach the source.
 
 The choice is per operation, not per product: a shop can be AP when showing
