@@ -27,6 +27,10 @@ directly). Don't stretch this skill to cover code changes.
 follows this skill, with the same stages. Treat the old text as research notes,
 not a draft to trim: keep what's true and teaches the idea, and rebuild it
 around one running example. The topic keeps its file and slug.
+Before drafting, run `npm run links:inbound -- <section>/<slug>` (for a merge,
+on each topic). It lists every page that links to the topic, with the anchor
+and the sentence around each link. Keep every anchor those links name and
+every term their sentences rely on.
 A merge folds one topic into another and deletes the old file; a move changes a
 topic's section or slug. Both follow docs/content.md's "Moving, merging or
 renaming a topic" (`git mv`, repointed links, a `REDIRECTS` entry).
@@ -100,7 +104,8 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **Files**: the topic in full; the `git diff` of each case study or topic
   Stage 1 linked to it; for a `systems-and-infrastructure` topic, the "Where
   you'll meet this" rules in docs/content.md; in rewrite mode, the old version
-  (`git show HEAD:<path>`) of each rewritten or merged topic.
+  (`git show HEAD:<path>`) of each rewritten or merged topic, and the
+  `npm run links:inbound` output for each.
 - **`<checklist>`**: (1) each link added from a case study or another topic
   sits where that text uses the concept, and its diff is link-only; (2) the
   closing "Where you'll meet this" section names general kinds of systems
@@ -111,7 +116,9 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   figure follows from the running example's stated numbers, and a title in
   the pattern; (4) in rewrite
   mode, nothing true and needed from the old version (or a merged-away topic)
-  was lost, and no claim was made false by compression.
+  was lost, no claim was made false by compression, and nothing an inbound
+  link relies on (`npm run links:inbound`: an anchor, a defined term) was cut
+  or renamed.
 - **Commit**: the topic and its link edits (and any redirect), with the log
   row.
 

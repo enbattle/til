@@ -18,14 +18,15 @@ instruction or to `docs/NON_NEGOTIABLES.md`. Before running after such an
 edit, rotate one scenario's planted defect as `scenarios.md` asks, and say
 which.
 
-The diffs quote real code. If a file they touch has changed (the function
-moved, a quoted line is gone or reads differently), update the diff's context
-and hunk headers to the current code, keeping the same planted defect, before
-running. A diff that still applies can drift too, when the code gains what it
-adds (FR-04 duplicated `reading-time.ts` once that landed): read each diff
-against the current code, not only `git apply --check`. Besides the diffs,
-check that any real-content premise a scenario's evidence cites (a summary
-that contains `vs. `, say) still holds. A drifted control is worse than none.
+The diffs quote real code. `npm run check:eval-premises` (part of `verify`)
+runs `git apply --check` on every diff and checks each scenario's
+`<!-- premise: … -->` comments, the real-code facts it relies on (titles that
+contain `vs. `, say). When it fails, update the diff's context and hunk
+headers, or the premise, to the current code, keeping the same planted
+defect. A diff that still applies can drift too, when the code gains what it
+adds (FR-04 duplicated `reading-time.ts` once that landed), so read each diff
+against the current code as well. When a scenario comes to rely on a new fact,
+declare it as a premise comment. A drifted control is worse than none.
 
 ## Stage 1 — Run each scenario, twice
 

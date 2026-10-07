@@ -7,9 +7,16 @@ work — and compare against **Expected**. The `skill-routing-eval` skill has
 the procedure, and `../README.md` the grading philosophy (some of these are
 ambiguous by design).
 
+A prompt that names real content states what it relies on as
+`<!-- premise: … -->` comments, which `npm run check:eval-premises` (in
+`verify`) checks. When one fails, refresh the prompt so it still asks what
+the scenario means to ask.
+
 ---
 
 ### SR-01 — new interactive feature
+
+<!-- premise: src/lib/search.ts contains "limit = 8" -->
 
 > Add pagination to the search results in the search dialog so it
 > doesn't show more than 8 at once without a way to see more.
@@ -25,6 +32,13 @@ active/focused result) and accessibility implications — squarely
 ---
 
 ### SR-02 — new topic, existing section
+
+<!-- premise: src/content/ai-and-ml/embeddings.md missing -->
+<!-- premise: src/content/ai-and-ml/vector-embeddings.md missing -->
+<!-- premise: src/content/ai-and-ml/what-are-embeddings.md missing -->
+<!-- premise: src/content/ai-and-ml/how-embeddings-work.md missing -->
+<!-- premise: src/content/ai-and-ml/how-vector-embeddings-work.md missing -->
+<!-- premise: src/content/ai-and-ml/text-embeddings.md missing -->
 
 > Add a topic to the ai-and-ml section about how vector embeddings work.
 
@@ -88,6 +102,9 @@ the rule was added to Stage 0 in response.)
 
 ### SR-06 — editing existing content, not adding new (trap)
 
+<!-- premise: src/content/systems-and-infrastructure/caching.md contains "Redis, for one, lets you choose between them." -->
+<!-- premise: src/content/systems-and-infrastructure/caching.md lacks "maxmemory-policy" -->
+
 > In the caching topic, the eviction-policy paragraph ends "Redis, for one,
 > lets you choose between them" without saying how. Add a few words noting it's the
 > `maxmemory-policy` setting (for example `allkeys-lru` or `allkeys-lfu`).
@@ -105,6 +122,9 @@ its stated purpose) or `/feature` (no app behavior involved).
 ---
 
 ### SR-07 — new feature, multi-file
+
+<!-- premise: src/components/TopicCard.tsx lacks "readingMinutes" -->
+<!-- premise: src/pages/TopicPage.tsx lacks "readingMinutes" -->
 
 > Add a "reading time" estimate (e.g., "5 min read") shown on each
 > topic's card on the section/home pages and on the topic page itself.
@@ -246,6 +266,12 @@ review catches anything.
 
 ### SR-15 — new System Design case study
 
+<!-- premise: src/system-design/case-studies/collaborative-editor.md missing -->
+<!-- premise: src/system-design/case-studies/collaborative-editing.md missing -->
+<!-- premise: src/system-design/case-studies/document-editor.md missing -->
+<!-- premise: src/system-design/case-studies/collaborative-document-editor.md missing -->
+<!-- premise: src/system-design/case-studies/google-docs.md missing -->
+
 > Write a System Design case study for a collaborative document editor like
 > Google Docs, with the usual architecture diagram.
 
@@ -270,6 +296,8 @@ wrong estimate or a one-sided decision.
 
 ### SR-16 — improving an existing case study's prose (trap)
 
+<!-- premise: src/system-design/case-studies/url-shortener.md exists -->
+
 > The URL shortener case study reads a bit stiff in places and I'm not sure
 > every claim in it holds up. Can you go over it and tighten the writing?
 
@@ -289,6 +317,8 @@ polishing a published one in place) or `/feature`
 
 ### SR-17 — changing the case-study page or diagram tooling (trap)
 
+<!-- premise: src/pages/CaseStudyPage.tsx lacks "clipboard" -->
+
 > On a case study page, add a "copy link" button beside each section heading,
 > and have the diagram check fail when a diagram has more than 12 boxes in it.
 
@@ -306,6 +336,8 @@ direct edit (a layout change plus a new guard is not a one-line fix).
 ---
 
 ### SR-18 — new DSA entry
+
+<!-- premise: src/dsa/entries/lru-cache.md missing -->
 
 > Add an LRU cache entry to DSA.
 
@@ -338,6 +370,9 @@ The ID is kept so past results under `results/` still line up; don't reuse it.
 ---
 
 ### SR-20 — merging DSA entries (trap)
+
+<!-- premise: src/dsa/entries/binary-tree.md exists -->
+<!-- premise: src/dsa/entries/binary-search-tree.md exists -->
 
 > Merge the binary tree and binary search tree entries in DSA into one.
 

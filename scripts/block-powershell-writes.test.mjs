@@ -245,6 +245,324 @@ describe('block-powershell-writes', () => {
     expect(output.permissionDecisionReason).toMatch(/\bEdit\b/);
   });
 
+  // docs/specs/drift-and-rewrite-guards.md, re-review finding 1: a path in a
+  // variable assigned a double-quoted string that expands a computed $var or a
+  // $(...) subexpression still resolves to its literal part, so a write to it
+  // inside the project is denied.
+  it.each([
+    [
+      'a path expanding a computed $var',
+      () => `$c = Get-Date -Format yyyy; $f = "docs\\$c.md"; Set-Content $f 'x'`,
+    ],
+    [
+      'a path expanding a $(...) subexpression',
+      () => `$f = "docs\\$(Get-Date -Format yyyy).md"; Set-Content $f 'x'`,
+    ],
+    [
+      'a path expanding $(...), written with a > redirection',
+      () => `$f = "src\\content\\$(1+1).md"; 'x' > $f`,
+    ],
+    [
+      'a path expanding a computed $var, written with Out-File',
+      () =>
+        `$n = (Get-ChildItem docs).Count; $f = "docs\\report-$n.md"; 'x' | Out-File $f`,
+    ],
+    [
+      'a topic path built from a computed slug',
+      () =>
+        `$name = $title.ToLower() -replace ' ','-'; $f = "src\\content\\ai-and-ml\\$name.md"; Set-Content $f $body`,
+    ],
+  ])('denies %s', (_label, command) => {
+    const { status, stdout, stderr } = runCommand(command);
+    expect(status, stderr).toBe(0);
+    expect(stdout, 'expected a deny decision').not.toBe('');
+    const output = JSON.parse(stdout).hookSpecificOutput;
+    expect(output.permissionDecision).toBe('deny');
+    expect(output.permissionDecisionReason).toMatch(/\bEdit\b/);
+    expect(output.permissionDecisionReason).toMatch(/\bWrite\b/);
+  });
+
+  it.each([
+    [
+      'a path outside the project expanding a computed $var',
+      () =>
+        `$c = Get-Date -Format yyyy; $f = "${elsewhere('report')}-$c.md"; Set-Content $f 'x'`,
+    ],
+    [
+      'a path under $env:TEMP expanding a $(...) subexpression',
+      () => `$f = "$env:TEMP\\$(Get-Date -Format yyyy).md"; Set-Content $f 'x'`,
+    ],
+  ])('allows %s', (_label, command) => {
+    const { status, stdout, stderr } = runCommand(command);
+    expect(status).toBe(0);
+    expect(stdout).toBe('');
+    expect(stderr).toBe('');
+  });
+
+  // docs/specs/drift-and-rewrite-guards.md, criteria 8 and 9: an inline
+  // interpreter script that writes a file, handed text through a command-line
+  // argument. Native-argument quoting can truncate or alter that text, wherever
+  // the file is, so the target path isn't checked.
+  describe('an inline write script given a content argument', () => {
+    const NODE_WRITE = `"require('fs').writeFileSync(process.argv[1], process.argv[2])"`;
+    // The 2026-10-07 incident, exactly as it was run.
+    const INCIDENT =
+      `$f='src/content/x/y.md'; $c=[IO.File]::ReadAllText($f); $n=$c.Replace('a','b'); ` +
+      `if ($n -ne $c) { node -e "require('fs').writeFileSync(process.argv[1], process.argv[2])" $f $n }`;
+
+    it.each([
+      ['the 2026-10-07 incident command', () => INCIDENT],
+      [
+        'node --eval with a computed $var',
+        () =>
+          `$n = (Get-Content -Raw docs\\a.md) -replace 'x','y'; node --eval "require('fs').writeFileSync('docs/a.md', process.argv[1])" $n`,
+      ],
+      [
+        'node -p with appendFileSync and a computed $var inside a double-quoted word',
+        () =>
+          `$n = Get-Content -Raw a.md; node -p "require('fs').appendFileSync('a.md', process.argv[1])" "$n"`,
+      ],
+      [
+        'node -e with createWriteStream and a computed $var',
+        () =>
+          `$n = Get-Content -Raw a.md; node -e "require('fs').createWriteStream('a.md').end(process.argv[1])" $n`,
+      ],
+      [
+        'node -e with writeFile and a computed $var, outside the project',
+        () =>
+          `$n = Get-Content -Raw a.md; node -e "require('fs').writeFile(process.argv[1], process.argv[2], () => {})" C:\\Users\\u\\AppData\\Local\\Temp\\a.md $n`,
+      ],
+      [
+        "python -c with open(..., 'w') and a computed $var",
+        () =>
+          `$t = Get-Content -Raw a.md; python -c "import sys; open(sys.argv[1], 'w').write(sys.argv[2])" a.md $t`,
+      ],
+      [
+        "python3 -c with open(..., 'a') and a computed $var",
+        () =>
+          `$t = (Get-Content -Raw a.md).Trim(); python3 -c "import sys; open('a.md', 'a').write(sys.argv[1])" $t`,
+      ],
+      [
+        'py -c with .write_text( and a computed $var',
+        () =>
+          `$t = Get-Content -Raw a.md; py -c "import pathlib, sys; pathlib.Path('a.md').write_text(sys.argv[1])" $t`,
+      ],
+      [
+        'python -c with .write_bytes( and a computed $var',
+        () =>
+          `$t = Get-Content -Raw a.md; python -c "import pathlib, sys; pathlib.Path('a.md').write_bytes(sys.argv[1].encode())" $t`,
+      ],
+      [
+        'a $(Get-Content -Raw x) argument',
+        () => `node -e ${NODE_WRITE} a.md $(Get-Content -Raw x)`,
+      ],
+      [
+        'a $(...) argument to python -c',
+        () =>
+          `python -c "import sys; open('a.md', 'w').write(sys.argv[1])" $(Get-Content -Raw x)`,
+      ],
+      [
+        'a variable reassigned from a literal to a computed value before the call',
+        () => `$n='safe'; $n = Get-Content -Raw a.md; node -e ${NODE_WRITE} a.md $n`,
+      ],
+    ])('denies %s', (_label, command) => {
+      const { status, stdout, stderr } = runCommand(command);
+      expect(status, stderr).toBe(0);
+      expect(stdout, 'expected a deny decision').not.toBe('');
+      const output = JSON.parse(stdout).hookSpecificOutput;
+      expect(output.hookEventName).toBe('PreToolUse');
+      expect(output.permissionDecision).toBe('deny');
+      // The reason names the shape, and what to use instead.
+      expect(output.permissionDecisionReason).toMatch(/command-line argument/);
+      expect(output.permissionDecisionReason).toMatch(/\bEdit\b/);
+    });
+
+    it.each([
+      [
+        'an inline write script whose only $var argument was literal-assigned (a scratchpad path)',
+        () =>
+          `$s='C:\\Users\\u\\AppData\\Local\\Temp\\claude\\C--x\\0f9e\\scratchpad'; node -e "require('fs').writeFileSync(process.argv[1], 'rows')" "$s\\rows.txt"`,
+      ],
+      [
+        'an inline write script whose $var arguments were all literal-assigned',
+        () => `$p='a.md'; $q="b.md"; node -e ${NODE_WRITE} $p $q`,
+      ],
+      [
+        'an inline python write script with a literal-assigned $var',
+        () =>
+          `$p='out.txt'; python -c "import sys; open(sys.argv[1], 'w').write('x')" $p`,
+      ],
+      ['node script.mjs $n', () => `$n = Get-Content -Raw a.md; node script.mjs $n`],
+      [
+        'node with a script file and a $(...) argument',
+        () => `node scripts/x.mjs $(Get-Content -Raw a.md)`,
+      ],
+      [
+        'node -e "console.log(1)" $n',
+        () => `$n = Get-Content -Raw a.md; node -e "console.log(1)" $n`,
+      ],
+      [
+        'an inline python script that only reads',
+        () =>
+          `$n = Get-Content -Raw a.md; python -c "import sys; print(open(sys.argv[1]).read())" $n`,
+      ],
+      [
+        'an inline write script with no variable argument',
+        () => `node -e "require('fs').writeFileSync('out.txt', 'x')"`,
+      ],
+    ])('allows %s', (_label, command) => {
+      const { status, stdout, stderr } = runCommand(command);
+      expect(status).toBe(0);
+      expect(stdout).toBe('');
+      expect(stderr).toBe('');
+    });
+
+    // Review decisions, round 1 (findings 1a, 1b, 1d and 1f): content that
+    // reaches the write script by another route than a bare computed `$var`.
+    const COMPUTED = `$c = Get-Content -Raw a.md; `;
+    it.each([
+      // 1a: a parenthesized expression argument.
+      [
+        'a (Get-Content -Raw ...) argument',
+        () => `node -e ${NODE_WRITE} a.md (Get-Content -Raw a.md)`,
+      ],
+      [
+        'a ([IO.File]::ReadAllText(...)) argument',
+        () => `$f='a.md'; node -e ${NODE_WRITE} $f ([IO.File]::ReadAllText($f))`,
+      ],
+      [
+        "a ($c.Replace('a','b')) argument",
+        () => `${COMPUTED}node -e ${NODE_WRITE} a.md ($c.Replace('a','b'))`,
+      ],
+      [
+        'the 2026-10-07 incident with the replacement inlined in parentheses',
+        () =>
+          `$f='src/content/x/y.md'; $c=[IO.File]::ReadAllText($f); ` +
+          `if ($c.Contains('x')) { node -e ${NODE_WRITE} $f ($c.Replace('x','y')) }`,
+      ],
+      // 1b: a double-quoted assignment that expands computed content.
+      [
+        'a $var assigned a double-quoted string expanding a computed $var',
+        () => `${COMPUTED}$n = "$c\`n- a new row"; node -e ${NODE_WRITE} a.md $n`,
+      ],
+      [
+        'a $var assigned a double-quoted string with a $(...) subexpression',
+        () => `${COMPUTED}$n = "$($c.Trim())"; node -e ${NODE_WRITE} a.md $n`,
+      ],
+      // 1d: a computed $var expanded into the double-quoted script itself.
+      [
+        'a computed $var interpolated into a double-quoted write script',
+        () => `${COMPUTED}node -e "require('fs').writeFileSync('a.md', '$c')"`,
+      ],
+      // 1f: other flag spellings.
+      [
+        'node --eval=<script> with a computed $var',
+        () => `$n = Get-Content -Raw a.md; node --eval=${NODE_WRITE} a.md $n`,
+      ],
+      [
+        'node -pe with a computed $var',
+        () => `$n = Get-Content -Raw a.md; node -pe ${NODE_WRITE} a.md $n`,
+      ],
+    ])('denies %s', (_label, command) => {
+      const { status, stdout, stderr } = runCommand(command);
+      expect(status, stderr).toBe(0);
+      expect(stdout, 'expected a deny decision').not.toBe('');
+      const output = JSON.parse(stdout).hookSpecificOutput;
+      expect(output.permissionDecision).toBe('deny');
+      expect(output.permissionDecisionReason).toMatch(/command-line argument/);
+      expect(output.permissionDecisionReason).toMatch(/\bEdit\b/);
+    });
+
+    it.each([
+      [
+        'a $var assigned a double-quoted string with nothing to expand',
+        () => `$n = "hello"; node -e ${NODE_WRITE} a.md $n`,
+      ],
+      [
+        'a $var assigned a double-quoted string expanding only a literal-assigned $var',
+        () =>
+          `$s='C:\\x'; $p="$s\\rows.txt"; node -e "require('fs').writeFileSync(process.argv[1], 'rows')" $p`,
+      ],
+      [
+        'a single-quoted write script holding $c (no expansion)',
+        () => `${COMPUTED}node -e 'require("fs").writeFileSync("a.md", "$c")'`,
+      ],
+      [
+        'a double-quoted write script expanding only a literal-assigned $var',
+        () => `$p='out.txt'; node -e "require('fs').writeFileSync('$p', 'x')"`,
+      ],
+    ])('allows %s', (_label, command) => {
+      const { status, stdout, stderr } = runCommand(command);
+      expect(status).toBe(0);
+      expect(stdout).toBe('');
+      expect(stderr).toBe('');
+    });
+
+    // Re-review finding 2: PowerShell 5.1 strips embedded double quotes from
+    // a native argument, so literal text holding a double quote or a newline
+    // is altered on the way in too.
+    it.each([
+      [
+        'a here-string argument holding a double quote',
+        () => `node -e ${NODE_WRITE} a.md @'\nline one\nHe said "hi"\n'@`,
+      ],
+      [
+        'a single-quoted argument holding a double quote',
+        () => `node -e ${NODE_WRITE} a.md 'He said "hi"'`,
+      ],
+      [
+        'a literal-assigned $var holding a double quote',
+        () => `$n = 'He said "hi"'; node -e ${NODE_WRITE} a.md $n`,
+      ],
+      [
+        'a single-quoted argument holding a newline',
+        () => `node -e ${NODE_WRITE} a.md 'line one\nline two'`,
+      ],
+    ])('denies %s', (_label, command) => {
+      const { status, stdout, stderr } = runCommand(command);
+      expect(status, stderr).toBe(0);
+      expect(stdout, 'expected a deny decision').not.toBe('');
+      const output = JSON.parse(stdout).hookSpecificOutput;
+      expect(output.permissionDecision).toBe('deny');
+      expect(output.permissionDecisionReason).toMatch(/command-line argument/);
+      expect(output.permissionDecisionReason).toMatch(/\bEdit\b/);
+    });
+
+    it.each([
+      [
+        'a single-quoted path-like argument',
+        () => `node -e ${NODE_WRITE} a.md 'C:\\x\\rows.txt'`,
+      ],
+      [
+        'a double-quoted path expanding a literal-assigned $var',
+        () => `$s='C:\\x'; node -e ${NODE_WRITE} a.md "$s\\rows.txt"`,
+      ],
+      ['a -- argument', () => `node -e ${NODE_WRITE} -- a.md b.md`],
+      [
+        'a foreach loop variable (fails open)',
+        () =>
+          `$f='a.md'; foreach ($line in 'a b;', 'c') { node -e ${NODE_WRITE} $f $line }`,
+      ],
+    ])('allows %s', (_label, command) => {
+      const { status, stdout, stderr } = runCommand(command);
+      expect(status).toBe(0);
+      expect(stdout).toBe('');
+      expect(stderr).toBe('');
+    });
+
+    it('allows the incident command from the Bash tool', () => {
+      const { status, stdout } = runCommand(() => INCIDENT, 'Bash');
+      expect(status).toBe(0);
+      expect(stdout).toBe('');
+    });
+
+    it('decides the incident command in under a second', () => {
+      const { stdout, ms } = runCommand(() => INCIDENT);
+      expect(stdout).toContain('deny');
+      expect(ms).toBeLessThan(1000);
+    });
+  });
+
   it('allows a Bash tool call, even one that writes', () => {
     const { status, stdout } = runCommand(() => 'echo a > docs/z.md', 'Bash');
     expect(status).toBe(0);
