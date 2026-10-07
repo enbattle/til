@@ -82,9 +82,10 @@ between them open.
 different servers, so a mutex in your application code protects nothing. The
 cheapest fix is to move the check into the write, so the database does both in
 one statement: subtract one from the stock only where the stock is at least
-one, then treat "zero rows changed" as "sold out." Databases typically lock a row they
-change until the transaction commits, so a second buyer's update waits, then
-checks against the new stock. A unique constraint does the same
+one, then treat "zero rows changed" as "sold out." At the default isolation level,
+the first update holds the row until it commits, so a second buyer's update
+[waits and rechecks](/systems-and-infrastructure/optimistic-vs-pessimistic-locking#do-you-need-either-one).
+A unique constraint does the same
 for "create it if it doesn't exist": the second insert fails instead of
 producing a duplicate. When the logic is too involved for one statement, see
 [Optimistic vs. Pessimistic Locking](/systems-and-infrastructure/optimistic-vs-pessimistic-locking).

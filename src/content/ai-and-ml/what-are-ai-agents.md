@@ -41,7 +41,7 @@ Our checkout agent shows the main failures. It might chase the wrong lead for te
 
 - **Cap the loop.** Set a maximum number of passes and a time limit, so a confused agent stops instead of running up a bill.
 - **Limit what it can touch.** Give the log-reading agent read-only tools. If it never needs to restart a service, don't let it.
-- **Keep a human at the irreversible steps.** Let it investigate freely, but if it ever needs to change something, require approval first, given in your app by a person on a summary your code builds from the real arguments, so the model can't approve its own action.
+- **Keep a human at the irreversible steps.** Let it investigate freely, but require a person's approval before it changes anything. [Tool Use and Function Calling](/ai-and-ml/tool-use-function-calling#what-if-the-model-asks-for-something-dangerous) covers how to build that approval so the model can't grant it to itself.
 - **Distrust what tools return.** Log lines and web pages are text that anyone may have written, and the model reads them as part of its input, so planted instructions in a result can steer the next step. Telling the model to be careful is unreliable, so distrust has to mean limiting what it can reach; [Prompt Injection](/ai-and-ml/prompt-injection) covers that attack.
 
 You also can't judge an agent from one good run, because its steps differ from run to run. You measure it across many tasks, which is the job of [evals](/ai-and-ml/what-are-evals).
