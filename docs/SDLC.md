@@ -154,21 +154,10 @@ were weighed to get there).
 
 ## Verifying the process itself
 
-None of the above checks that sessions keep following it; a session can
+None of the above checks that sessions keep following it: a session can
 build something well with the wrong process, and that drift stays invisible
-until checked. `evals/` holds scenario-based checks for it: given a task
-description, does a fresh session route it to the skill this document and
-`CLAUDE.md` intend, or a direct edit (`skill-routing`) — and, once the
-right skill runs, does its review step actually catch what it's supposed
-to catch instead of rubber-stamping the work (`content-review`, for the
-content skills' Stage 3; `feature-review`, for
-`/feature`'s Stage 4)? Run via the `skill-routing-eval`,
-`content-review-eval` and `feature-review-eval` skills — see
-`evals/README.md`. All are run
-manually/periodically, not on every commit — after the changes the table in
-`evals/README.md` names (the canonical list of which eval each change
-calls for); `.claude/hooks/nudge-sdlc.js` reminds a session about some of
-them.
+until checked. The scenario evals in `evals/` check it; `evals/README.md`
+says what each one checks and which change calls for which.
 
 ## Completeness audit, after a large effort
 
