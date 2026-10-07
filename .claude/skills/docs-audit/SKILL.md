@@ -134,6 +134,8 @@ npm run format:check
 npm run check:tokens
 npm run check:npm-refs
 npm run check:claude-md
+npm run check:eval-premises
+npm run check:pipeline-log
 ```
 
 The latter two are exactly this skill's own failure mode caught

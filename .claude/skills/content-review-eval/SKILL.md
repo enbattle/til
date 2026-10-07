@@ -90,5 +90,5 @@ speculative ones.
 Summarize for the user: which scenarios ran, the grades, and anything
 surprising (a violation caught for the wrong reason, a near-miss, a sign the
 Stage 3 prompt itself needs tightening; report that as a finding, don't patch
-it mid-eval). Run `npm run format:check` on the results file. Ask before
+it mid-eval). Run `npm run format:check` on the results file, and `npm run check:eval-premises` if you added or edited a scenario. Ask before
 committing.

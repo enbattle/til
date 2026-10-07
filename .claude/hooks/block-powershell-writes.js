@@ -18,7 +18,7 @@
 // scratchpad, $env:TEMP), $null and Out-Null are allowed.
 //
 // It matches on the command text, not a full PowerShell parse, so it can miss
-// a write (docs/specs/harness-follow-ups.md lists the vectors it covers). It
+// a write (scripts/block-powershell-writes.test.mjs holds the vectors it covers). It
 // fails open: unparseable input, a path it can't resolve or any error allows
 // the command. Known limitations, where text-encoding.test.ts stays the gate:
 // - a `cd` inside the command isn't tracked, so a relative path resolves
@@ -64,7 +64,6 @@
 //   ($script:n) and a typed one ([string]$n = ...);
 // - an indirect launch (cmd /c node ..., & 'node' ..., Start-Process node
 //   -ArgumentList ..., iex "node -e ...");
-// - a backtick line continuation followed by CRLF;
 // - a compound assignment ($n = ''; $n += Get-Content ...) after a literal;
 // - script text held in a variable (node -e $js);
 // - captured output ($out = node -e ..., $null = node -e ...), since the

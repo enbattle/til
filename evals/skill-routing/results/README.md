@@ -47,22 +47,19 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Docs audit after the catalog rewrite: add-topic, add-dsa-entry, the SDLC hook                                | 5    | 0    | 0         | SR-02, 04, 14, 18, 20.                                       |
 | 2026-10-07 | Audit decisions: batch self-check moved to content-review.md, five skills point to it                        | 5    | 0    | 0         | SR-02, 09, 10, 15, 18.                                       |
 | 2026-10-07 | Drift and rewrite guards: add-topic names `links:inbound`, eval skills name `check:eval-premises`, hook rule | 5    | 0    | 0         | SR-02, 06, 10, 12, 14 at Stage 5.                            |
+| 2026-10-07 | Docs audit after #107: docs-audit gate, eval skills' final step, hook header                                 | 4    | 0    | 0         | SR-09, 10, 12, 14.                                           |
 
-## Latest run: 2026-10-07, drift and rewrite guards
+## Latest run: 2026-10-07, docs audit after #107
 
-- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario, at `/feature` Stage 5.
-- **Trigger:** branch feat/drift-and-rewrite-guards:
-  - add-topic's rewrite mode, Stage 3 **Files** and checklist item (4) now name `npm run links:inbound`;
-  - the three eval skills now point to `check:eval-premises`;
-  - the PowerShell-write hook gained a content-argument rule.
-- **Scope:** SR-02, SR-06, SR-10, SR-12 and SR-14, the scenarios that route to or around the edited skills.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
+- **Trigger:** the docs audit after #99 to #107 edited the docs-audit skill's gate, the final step of the three eval skills, two SR **Why** lines and the PowerShell hook's header comment.
+- **Scope:** SR-09, SR-10, SR-12 and SR-14, the scenarios routing to the edited skills.
 
 | ID    | Routing decision      | Reasoning (one line)                                        | Grade |
 | ----- | --------------------- | ----------------------------------------------------------- | ----- |
-| SR-02 | `add-topic`           | A new topic in an existing section, no app code.            | PASS  |
-| SR-06 | Direct                | A few words added to one sentence of an existing topic.     | PASS  |
+| SR-09 | `docs-audit`          | Doc staleness after a batch of changes.                     | PASS  |
 | SR-10 | `skill-routing-eval`  | Named directly; SKILL.md edits trigger it.                  | PASS  |
 | SR-12 | `content-review-eval` | Whether add-topic's review still catches a planted problem. | PASS  |
 | SR-14 | `feature-review-eval` | Whether Stage 4's reviewer still catches planted defects.   | PASS  |
 
-**Note:** SR-02's session again noticed that vector-search already covers embeddings and said to scope the new topic against it. The scenario's new premises rule out slug variants, not that overlap (a recorded known limitation in the spec).
+**Note:** SR-09's first run used a paraphrased prompt by mistake; it was re-run with the scenario's exact wording, and that is the graded result.

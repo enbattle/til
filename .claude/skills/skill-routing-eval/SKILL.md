@@ -82,5 +82,5 @@ from something that actually happened beats several hypothetical ones.
 
 Summarize for the user: which scenarios ran, the grades, and anything
 surprising (a near-miss, reasoning that shows the rule wasn't applied even
-though the label matched). Run `npm run format:check` on the results file.
+though the label matched). Run `npm run format:check` on the results file, and `npm run check:eval-premises` if you added or edited a scenario.
 Ask before committing.

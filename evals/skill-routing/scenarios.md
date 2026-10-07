@@ -113,9 +113,9 @@ the rule was added to Stage 0 in response.)
 removed in PR #26. Keep it pointing at prose that exists.)
 
 **Expected:** Direct, no skill
-**Why:** `add-topic` is explicitly scoped to _new_ topic files, not
-editing existing ones; a small, accurate addition to existing prose is exactly
-`CLAUDE.md`'s "small, unambiguous" carve-out.
+**Why:** `add-topic` covers new topics and full rewrites, merges or moves to
+the catalog standard, not a few-word addition; a small, accurate addition to
+existing prose is exactly `CLAUDE.md`'s "small, unambiguous" carve-out.
 **Fails if:** routed through `add-topic` (scope creep of a skill beyond
 its stated purpose) or `/feature` (no app behavior involved).
 
@@ -205,7 +205,7 @@ published content, which is a different axis from its neighbors:
 `docs-audit` covers meta-documentation (`CLAUDE.md`, `docs/`, `evals/`,
 `SKILL.md` files) staleness against current repo state, not the prose
 quality of published content; `add-topic`, `add-case-study` and
-`add-dsa-entry` each review exactly one new item as part of writing it, not the entire existing corpus.
+`add-dsa-entry` each review the items they are writing or rewriting, not the entire existing corpus.
 **Fails if:** routed to `docs-audit` (wrong scope — meta-docs staleness,
 not topic-content quality), routed to `add-topic` (that skill's review
 pass covers a single new topic it's writing, not a sweep of everything

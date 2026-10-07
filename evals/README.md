@@ -77,7 +77,8 @@ one stops holding, when a `premise:` comment matches no form, and when a
 
 **Re-run whenever it matters**, not on a fixed schedule: after any change
 the table below names; `.claude/hooks/nudge-sdlc.js` reminds a session
-about most of them.
+about some of them (CLAUDE.md, the skills, the hooks and the process docs it
+names), but not edits to docs such as content.md or verification.md.
 Drift here is invisible until someone actually checks, so the point of
 running it isn't ceremony — it's catching the case where a documentation
 edit that read fine on its own quietly made the routing rule worse.
