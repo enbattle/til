@@ -75,10 +75,13 @@ describe('the Working with Coding Agents section (catalog-standard criterion 4)'
     async (slug) => {
       expect(getTopic('coding-agents', slug), slug).toBeDefined();
       renderAt(`/coding-agents/${slug}`);
+      // The pager renders only after the topic's lazy body chunk loads, which
+      // took over 5 s twice during full-suite runs. 10 s stays under
+      // vite.config.ts's 15 s testTimeout, so a missing pager still fails here.
       const pager = await screen.findByRole(
         'navigation',
         { name: `More in ${LABEL}` },
-        { timeout: 5000 },
+        { timeout: 10000 },
       );
       const hrefs = within(pager)
         .getAllByRole('link')
