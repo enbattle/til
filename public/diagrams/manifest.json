@@ -32,6 +32,15 @@
       "dark": "f4e94daac90be7df7a7ed23081d88f8d8f11d5995705e7b19f4319d681b25b0b"
     }
   },
+  "docs-qa-assistant/architecture.d2": {
+    "sha256": "2d85b805133c8d68f8f8e80f6b547ed8cb7cff0645d85261401cd067d19cdeb0",
+    "width": 874,
+    "height": 1244,
+    "svgs": {
+      "light": "07525c96c134d95e026ed7fa88439fb6763399ca0a5fe326535b870635c5b2e5",
+      "dark": "098ac2bf66b67e73ffd32d54f03459864c61cf02d5d949a4ca61e1f7c2bded13"
+    }
+  },
   "ecommerce-checkout/architecture.d2": {
     "sha256": "5c66ea1cafe0124e85198573c0a26b66eb1e82384e57907ce947f5406ad8ba8b",
     "width": 958,
