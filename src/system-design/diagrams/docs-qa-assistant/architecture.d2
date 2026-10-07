@@ -1,0 +1,46 @@
+# High-level architecture of the docs Q&A assistant: the answer service drives
+# the question path (cache, two searches, reranker, one of two models), and the
+# indexing path keeps search and cache current when a help page changes.
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+direction: down
+
+widget: Chat widget
+answer: Answer service {
+  style.multiple: true
+}
+cache: Answer cache {
+  shape: stored_data
+}
+search: Search {
+  keyword: Keyword index {
+    shape: cylinder
+  }
+  vector: Vector index {
+    shape: cylinder
+  }
+}
+reranker: Reranker
+models: Models {
+  small: Small model
+  large: Large model
+}
+docs: Help center
+indexer: Indexer
+
+widget -> answer: "POST /ask, streamed answer"
+answer -> cache: "check first"
+answer -> search: "top 25 each"
+answer -> reranker: "rerank 50"
+answer -> models: "top 5 in prompt"
+# Invisible edges only stack the three stages vertically, in the order the
+# answer service calls them, so the diagram fits the content column.
+search -> reranker: {style.opacity: 0}
+reranker -> models: {style.opacity: 0}
+
+docs -> indexer: "page changed"
+indexer -> search: "re-index page"
+indexer -> cache: "delete answers citing it"
