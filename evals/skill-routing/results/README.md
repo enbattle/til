@@ -50,14 +50,16 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Docs audit after #107: docs-audit gate, eval skills' final step, hook header                                 | 4    | 0    | 0         | SR-09, 10, 12, 14.                                           |
 | 2026-10-07 | Friction fixes: /feature guard steps, content-review.md self-check and batch confirmation                    | 2    | 0    | 0         | SR-01 and SR-02.                                             |
 | 2026-10-07 | Named companies rule: add-topic and add-case-study point to the Writing Standard                             | 2    | 0    | 0         | SR-02 and SR-15.                                             |
+| 2026-10-07 | SDLC.md's eval section cut to a pointer to evals/README.md                                                   | 3    | 0    | 0         | SR-10, 12, 14.                                               |
 
-## Latest run: 2026-10-07, the Named companies rule
+## Latest run: 2026-10-07, SDLC.md's eval section cut to a pointer
 
 - **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
-- **Trigger:** add-topic's Stage 1 and add-case-study's Stage 1 and checklist now point to the Writing Standard's "Named companies" rule instead of restating it.
-- **Scope:** SR-02 and SR-15, the scenarios that route to those two skills.
+- **Trigger:** docs/SDLC.md's "Verifying the process itself" section, which restated what evals/README.md owns (what each eval checks, the skills that run them, when to run them), is now a short pointer to evals/README.md.
+- **Scope:** SR-10, SR-12 and SR-14, the scenarios that route to the three eval skills the removed text described.
 
-| ID    | Routing decision | Reasoning (one line)                             | Grade |
-| ----- | ---------------- | ------------------------------------------------ | ----- |
-| SR-02 | `add-topic`      | A new topic in an existing section, no app code. | PASS  |
-| SR-15 | `add-case-study` | A new case study with its architecture diagram.  | PASS  |
+| ID    | Routing decision      | Reasoning (one line)                                        | Grade |
+| ----- | --------------------- | ----------------------------------------------------------- | ----- |
+| SR-10 | `skill-routing-eval`  | Named directly.                                             | PASS  |
+| SR-12 | `content-review-eval` | Whether add-topic's review still catches a planted problem. | PASS  |
+| SR-14 | `feature-review-eval` | Whether Stage 4's reviewer still catches planted defects.   | PASS  |
