@@ -39,8 +39,8 @@ cut an exception or a second alternative before cutting a decision's reason.
    name matches the prose and the alt text exactly. A diagram costs no words,
    so let it carry the structure the prose would otherwise describe.
 5. **Product claims.** State documented public behavior only when sure, scoped
-   ("some providers"), and never describe how a named company builds its
-   system. Facts reviewers caught:
+   ("some providers"), under the Writing Standard's "Named companies" rule.
+   Facts reviewers caught:
    - Redis sorted-set scores are doubles (exact only to 2^53).
    - JSON numbers above 2^53 lose precision, so send large IDs as strings.
    - A presigned PUT signs an exact size.

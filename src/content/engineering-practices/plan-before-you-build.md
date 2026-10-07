@@ -19,7 +19,7 @@ Companies give this document different names: a **design doc**, an **RFC** (Requ
 
 5. **How will we know it works?** "Export the largest account in staging and time it." The [testing pyramid](/engineering-practices/testing-pyramid) helps decide which checks to plan for.
 
-Keep it short on purpose: long enough to think clearly, short enough that a teammate reads all of it. Some companies decide in writing as a matter of course. Amazon is the best-known case: a narrative memo of up to six pages, read silently at the start of the meeting, replaces slides.
+Keep it short on purpose: long enough to think clearly, short enough that a teammate reads all of it. Some teams decide in writing as a matter of course: a narrative memo of a few pages, read silently at the start of the meeting, replaces slides.
 
 ## Get it read before you build
 

@@ -59,8 +59,8 @@ the voice.
   `[text](/<section>/<slug>)` to a topic that exists
   (`ls src/content/*/`). Don't re-teach a topic's mechanism; say what it buys
   and costs here and link. There's no requirement to link every topic.
-- **Claims** describe a plausible design ("like TinyURL"), never how a
-  specific company builds its system.
+- **Claims** describe a plausible design ("like TinyURL"), under the Writing
+  Standard's "Named companies" rule.
 - **Diagrams**: at least one in `High-level architecture`; add a
   `shape: sequence_diagram` diagram where a request flow is the point. One
   diagram per file at `src/system-design/diagrams/<slug>/<name>.d2`, sized by
