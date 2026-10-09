@@ -2,11 +2,17 @@ import type { Topic } from '@/types';
 import { SECTIONS, type Section } from '@/content/registry';
 import { parseFrontmatter } from './frontmatter';
 
-// Frontmatter only, eagerly: enough for the sidebar, cards, sort order and
-// search results without shipping any topic body in the main bundle. The
-// `?meta` query is served by the `markdownMeta` plugin in `vite.config.ts`.
+// Frontmatter and word counts only, eagerly: enough for the sidebar, cards,
+// sort order, search results and the read-time label without shipping any
+// topic body in the main bundle. The queries are served by the `markdownMeta`
+// plugin in `vite.config.ts`.
 const metaFiles = import.meta.glob<Record<string, string>>('/src/content/**/*.md', {
   query: '?meta',
+  import: 'default',
+  eager: true,
+});
+const wordFiles = import.meta.glob<number>('/src/content/**/*.md', {
+  query: '?words',
   import: 'default',
   eager: true,
 });
@@ -20,11 +26,15 @@ const bodyFiles = import.meta.glob<string>('/src/content/**/*.md', {
 const PATH_PATTERN = /^\/src\/content\/([^/]+)\/([^/]+)\.md$/;
 
 /**
- * Turns one file's path and parsed frontmatter into a `Topic`. Exported so the
+ * Turns one file's path and parsed frontmatter into a `Topic`, less the body's
+ * `words` (the loader adds those from the `?words` view). Exported so the
  * frontmatter contract can be unit-tested against fixtures instead of only the
  * real files.
  */
-export function parseTopicMeta(filePath: string, data: Record<string, string>): Topic {
+export function parseTopicMeta(
+  filePath: string,
+  data: Record<string, string>,
+): Omit<Topic, 'words'> {
   const match = PATH_PATTERN.exec(filePath);
   if (!match) {
     throw new Error(
@@ -150,7 +160,10 @@ export function createCollection<T>({
 const topics = createCollection({
   meta: metaFiles,
   bodies: bodyFiles,
-  parse: parseTopicMeta,
+  parse: (filePath, data): Topic => ({
+    ...parseTopicMeta(filePath, data),
+    words: wordFiles[filePath],
+  }),
   key: (filePath) => {
     const match = PATH_PATTERN.exec(filePath);
     return match ? `${match[1]}/${match[2]}` : undefined;

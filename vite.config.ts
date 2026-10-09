@@ -31,7 +31,7 @@ import {
  *   "Before this" links.
  * - `import words from './case.md?words'` resolves to the number of words a
  *   reader reads in the body (`proseWordCount` in `src/lib/markdown.mjs`), so
- *   case-study and DSA pages show "N min read" before their body loads.
+ *   topic, case-study and DSA pages show "N min read" before their body loads.
  *
  * Each view is one entry below, keyed by its query name; adding a view is
  * adding an entry. Vitest reuses these plugins, so tests see the same modules.

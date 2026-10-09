@@ -8,6 +8,7 @@ import { getSection } from '@/content/registry';
 import { TOPICS, getTopic } from '@/lib/content';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { h2Headings } from '@/lib/headings';
+import { readingMinutes } from '@/lib/reading-time';
 import { rawTopic } from '@/test/content';
 import { caseStudiesForTopic } from '@/lib/system-design';
 import App from '@/App';
@@ -65,6 +66,20 @@ function renderTopic(path: string) {
   );
 }
 
+/** The meta line a topic's header shows (docs/specs/topic-read-time.md,
+ * criteria 4–5): `<date> · <N> min read`, N = readingMinutes(words). */
+function expectedMeta(topic: { date: string; words: number }): string {
+  return `${topic.date} · ${readingMinutes(topic.words)} min read`;
+}
+
+/** The text of the meta line: the paragraph right under the page's h1. */
+function metaLine(title: string): string {
+  const h1 = screen.getByRole('heading', { level: 1, name: title });
+  const meta = h1.nextElementSibling;
+  expect(meta?.tagName).toBe('P');
+  return (meta?.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
 function deferred() {
   let resolve!: (body: string) => void;
   const promise = new Promise<string>((r) => {
@@ -92,7 +107,7 @@ describe('TopicPage body loading (criterion 9)', () => {
       'href',
       `/${SECTION}`,
     );
-    expect(screen.getByText(getTopic(SECTION, SLUG)!.date)).toBeInTheDocument();
+    expect(metaLine(TITLE)).toBe(expectedMeta(getTopic(SECTION, SLUG)!));
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
   });
 
@@ -216,7 +231,7 @@ describe('TopicPage layout while the body loads', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: topic.title }),
     ).toBeInTheDocument();
-    expect(screen.getByText(topic.date)).toBeInTheDocument();
+    expect(metaLine(topic.title)).toBe(expectedMeta(topic));
     expect(screen.queryByRole('navigation', { name: BACKLINKS })).not.toBeInTheDocument();
     expect(screen.queryByText('Used in these case studies:')).not.toBeInTheDocument();
     expect(screen.queryAllByRole('navigation')).toHaveLength(0);
@@ -411,7 +426,7 @@ describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)'
     ]);
   });
 
-  it('keeps the back link, the one h1 and the date in the shared header', async () => {
+  it('keeps the back link, the one h1 and the date · read-time line in the shared header', async () => {
     const topic = getTopic(SECTION, SLUG)!;
     await renderLoaded(topic);
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
@@ -422,7 +437,7 @@ describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)'
       'href',
       `/${SECTION}`,
     );
-    expect(screen.getByText(topic.date)).toBeInTheDocument();
+    expect(metaLine(topic.title)).toBe(expectedMeta(topic));
   });
 
   it('shows only "next" on the first topic of a section and only "prev" on the last, in title order', async () => {
@@ -463,4 +478,46 @@ describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)'
       screen.queryByRole('navigation', { name: `More in ${labelOf(only!)}` }),
     ).not.toBeInTheDocument();
   });
+});
+
+// docs/specs/topic-read-time.md, criteria 4 and 5: the line under the h1 reads
+// `<date> · <N> min read`, N = readingMinutes(topic.words), while the body is
+// still loading and again after it loads, with the one h1 and the back link
+// still in the header. One real topic per distinct read time.
+describe('topic read time (read-time criteria 4–5)', () => {
+  const PICKS = [
+    ...new Map(TOPICS.map((t) => [readingMinutes(t.words), t] as const)).values(),
+  ];
+
+  it('has topics with a positive integer word count to show', () => {
+    expect(PICKS.length).toBeGreaterThan(0);
+    for (const topic of PICKS) {
+      expect(Number.isInteger(topic.words), topic.slug).toBe(true);
+      expect(topic.words, topic.slug).toBeGreaterThan(0);
+    }
+  });
+
+  it.each(PICKS.map((t) => [`${t.section}/${t.slug}`, t] as const))(
+    'shows "<date> · <N> min read" for %s before and after the body loads',
+    async (_id, topic) => {
+      const { promise, resolve } = deferred();
+      state.override = () => promise;
+      renderTopic(`/${topic.section}/${topic.slug}`);
+      const expected = `${topic.date} · ${Math.max(1, Math.ceil(topic.words / 230))} min read`;
+
+      // Before: the body is pending, so no prose has rendered yet.
+      expect(metaLine(topic.title)).toBe(expected);
+      expect(screen.queryByText('Read-time sentinel paragraph.')).not.toBeInTheDocument();
+
+      resolve('Read-time sentinel paragraph.\n');
+      await screen.findByText('Read-time sentinel paragraph.');
+
+      // After: same line, one h1, and the back link to the section.
+      expect(metaLine(topic.title)).toBe(expected);
+      expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+      expect(
+        screen.getByRole('link', { name: `← ${getSection(topic.section)!.label}` }),
+      ).toHaveAttribute('href', `/${topic.section}`);
+    },
+  );
 });

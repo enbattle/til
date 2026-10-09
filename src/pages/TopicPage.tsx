@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PrevNextNav } from '@/components/PrevNextNav';
 import { h2Headings } from '@/lib/headings';
 import { neighbours } from '@/lib/neighbours';
+import { readingMinutes } from '@/lib/reading-time';
 import { caseStudiesForTopic } from '@/lib/system-design';
 
 export function TopicPage() {
@@ -34,7 +35,7 @@ export function TopicPage() {
       <PageHeader
         back={{ to: `/${section.slug}`, label: section.label }}
         title={topic.title}
-        meta={topic.date}
+        meta={`${topic.date} · ${readingMinutes(topic.words)} min read`}
       />
 
       {/* Keyed so moving between topics starts a fresh load instead of
