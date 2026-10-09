@@ -123,7 +123,7 @@ checks every page's external links.
 ```diff
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
-@@ -72,6 +72,13 @@ export function TopicPage() {
+@@ -79,6 +79,13 @@ export function TopicPage() {
                prev={prev && { to: `/${section.slug}/${prev.slug}`, title: prev.title }}
                next={next && { to: `/${section.slug}/${next.slug}`, title: next.title }}
              />
@@ -335,11 +335,11 @@ panel and height hid focused elements, fixed by `docs/specs/focus-not-obscured.m
 ```diff
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
-@@ -28,7 +28,13 @@ export function TopicPage() {
+@@ -35,7 +35,13 @@ export function TopicPage() {
        <PageHeader
          back={{ to: `/${section.slug}`, label: section.label }}
          title={topic.title}
-         meta={topic.date}
+         meta={`${topic.date} · ${readingMinutes(topic.words)} min read`}
        />
 +      <div
 +        aria-hidden="true"
@@ -391,7 +391,7 @@ section page's header or lists `content.ts`'s exports.
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -195,3 +195,8 @@ export function getTopic(section: string, slug: string): Topic | undefined {
+@@ -208,3 +208,8 @@ export function getTopic(section: string, slug: string): Topic | undefined {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -529,7 +529,7 @@ a spec, a diff and one review finding (procedure in the skill's Stage 1).
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -195,3 +195,9 @@ export function getTopic(section: string, slug: string): Topic | undefined {
+@@ -208,3 +208,9 @@ export function getTopic(section: string, slug: string): Topic | undefined {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }

@@ -124,19 +124,26 @@ its stated purpose) or `/feature` (no app behavior involved).
 ### SR-07 — new feature, multi-file
 
 <!-- premise: src/components/TopicCard.tsx lacks "readingMinutes" -->
-<!-- premise: src/pages/TopicPage.tsx lacks "readingMinutes" -->
+<!-- premise: src/components/NumberedCardList.tsx lacks "readingMinutes" -->
 
-> Add a "reading time" estimate (e.g., "5 min read") shown on each
-> topic's card on the section/home pages and on the topic page itself.
+> Add a "reading time" estimate (e.g., "5 min read") to the topic cards on
+> the home and section pages, and to the case-study and DSA cards on their
+> landing pages.
 
 **Expected:** `/feature`
-**Why:** Case studies and DSA entries already show the label
-(`readingMinutes`, the build-time `?words` view), but topics don't: this
-wires the count into the topic loader, `TopicCard.tsx` and `TopicPage.tsx`,
-with a real design decision (cards that render without a body, the search
-index) and new behavior across several files.
+**Why:** Topic, case-study and DSA entry pages already show the label
+(`readingMinutes`, the build-time `?words` view), but no card does: this
+wires the count into `TopicCard.tsx` and `NumberedCardList.tsx` across the
+home, section and landing pages, with real design decisions (where the label
+sits on a card, how it reads at phone width, whether it's worth the space on
+every card) and new behavior across several files.
 **Fails if:** implemented directly with no spec, given the multi-file
-surface and the judgment call embedded in the estimate itself.
+surface and the judgment calls about the cards' layout.
+
+History: until 2026-10-09 this asked for the label on topic cards and the
+topic page. The `topic-read-time` change (docs/specs/topic-read-time.md)
+built the topic page's label, so the scenario was narrowed to the cards,
+which still lack it.
 
 ---
 

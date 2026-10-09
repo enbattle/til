@@ -37,7 +37,9 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
   loads every topic, fails.
 - **Frontmatter is eager, bodies are lazy.** `content.ts` reads each file's
   frontmatter at load through a `?meta` Vite query (the `markdownMeta` plugin
-  in `vite.config.ts`), so `TOPICS` is metadata only and `Topic` has no `body`.
+  in `vite.config.ts`), and each body's prose word count through a `?words`
+  query (the read-time label), so `TOPICS` is metadata only and `Topic` has no
+  `body`.
   A body is fetched as its own small chunk by `loadTopicBody(section, slug)`
   (topic page) or `loadAllTopicBodies()` (full-text search, which starts
   loading when the search dialog opens). Case studies and DSA entries work the

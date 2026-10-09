@@ -21,6 +21,7 @@ const TOPIC: Topic = {
   title: 'Aardvark Migration Patterns',
   summary: 'How nocturnal mammals relocate across savannas.',
   date: '2026-01-01',
+  words: 1,
 };
 
 const CASE_STUDY: CaseStudy = {

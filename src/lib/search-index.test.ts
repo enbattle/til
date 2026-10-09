@@ -11,6 +11,7 @@ const TOPIC_A: Topic = {
   title: 'Aardvark Migration Patterns',
   summary: 'How nocturnal mammals relocate across savannas.',
   date: '2026-01-01',
+  words: 1,
 };
 
 const TOPIC_B: Topic = {
@@ -19,6 +20,7 @@ const TOPIC_B: Topic = {
   title: 'Bioluminescent Squid',
   summary: 'Cephalopods that glow in the deep.',
   date: '2026-01-02',
+  words: 1,
 };
 
 // Case studies are metadata only, like topics: the body comes from

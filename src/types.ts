@@ -13,6 +13,9 @@ export interface Topic {
   summary: string;
   /** ISO date (`YYYY-MM-DD`) the topic was written. */
   date: string;
+  /** Words a reader reads in the body (`proseWordCount`), counted at build
+   * time; drives the "N min read" label. */
+  words: number;
 }
 
 /**

@@ -52,15 +52,14 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Named companies rule: add-topic and add-case-study point to the Writing Standard                             | 2    | 0    | 0         | SR-02 and SR-15.                                             |
 | 2026-10-07 | SDLC.md's eval section cut to a pointer to evals/README.md                                                   | 3    | 0    | 0         | SR-10, 12, 14.                                               |
 | 2026-10-07 | Content skills' Stage 2 points to their docs; verification.md links the premise forms                        | 3    | 0    | 0         | SR-02, 15, 18.                                               |
+| 2026-10-09 | SR-07 narrowed to the cards (topic-read-time built the topic page's label)                                   | 1    | 0    | 0         | SR-07 only; still routes to `/feature`.                      |
 
-## Latest run: 2026-10-07, content skills' Stage 2 points to their docs
+## Latest run: 2026-10-09, SR-07 narrowed to the cards
 
-- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent per scenario.
-- **Trigger:** add-topic, add-case-study and add-dsa-entry no longer list their structural tests in Stage 2; each points to its doc (content.md, case-studies.md, dsa.md), which now names every test the skill used to. docs/verification.md points to evals/README.md for the premise forms instead of repeating them.
-- **Scope:** SR-02, SR-15 and SR-18, the scenarios that route to those three skills.
+- **Run by:** Claude (the orchestrating session), with one fresh `general-purpose` agent.
+- **Trigger:** the `topic-read-time` change (docs/specs/topic-read-time.md) added the "N min read" label to topic pages, so SR-07's prompt now asks only for the label on the topic, case-study and DSA cards.
+- **Scope:** SR-07, the only scenario whose prompt changed.
 
-| ID    | Routing decision | Reasoning (one line)                                    | Grade |
-| ----- | ---------------- | ------------------------------------------------------- | ----- |
-| SR-02 | `add-topic`      | A new topic in an existing section, no app code.        | PASS  |
-| SR-15 | `add-case-study` | A new case study with its architecture diagram.         | PASS  |
-| SR-18 | `add-dsa-entry`  | A new DSA entry with tested Python and TypeScript code. | PASS  |
+| ID    | Routing decision | Reasoning (one line)                                                                   | Grade |
+| ----- | ---------------- | -------------------------------------------------------------------------------------- | ----- |
+| SR-07 | `/feature`       | A nontrivial app change across the loaders and the card UI on four pages, not content. | PASS  |

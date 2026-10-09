@@ -8,6 +8,8 @@ import {
   parseTopicMeta,
 } from './content';
 import { parseFrontmatter } from './frontmatter';
+import { proseWordCount } from './markdown.mjs';
+import { readingMinutes } from './reading-time';
 import { RAW_TOPICS as RAW, rawTopic as rawFor } from '@/test/content';
 
 const VALID = {
@@ -17,7 +19,7 @@ const VALID = {
 };
 
 describe('TOPICS is metadata only (criterion 1)', () => {
-  it('gives every entry exactly section, slug, title, summary and date, and no body', () => {
+  it('gives every entry exactly section, slug, title, summary, date and words, and no body (read-time criterion 1)', () => {
     expect(TOPICS.length).toBeGreaterThan(0);
     for (const topic of TOPICS) {
       expect(topic).not.toHaveProperty('body');
@@ -27,7 +29,28 @@ describe('TOPICS is metadata only (criterion 1)', () => {
         'slug',
         'summary',
         'title',
+        'words',
       ]);
+    }
+  });
+
+  // docs/specs/topic-read-time.md, criteria 2 and 3: the count comes from the
+  // build-time `?words` view; the test checks it against its own raw view.
+  it('gives every topic a positive integer words: its body’s prose word count (read-time criterion 2)', () => {
+    for (const topic of TOPICS) {
+      const id = `${topic.section}/${topic.slug}`;
+      expect(Number.isInteger(topic.words), id).toBe(true);
+      expect(topic.words, id).toBeGreaterThan(0);
+      expect(topic.words, id).toBe(
+        proseWordCount(parseFrontmatter(rawFor(topic.section, topic.slug)).content),
+      );
+    }
+  });
+
+  it('makes every topic a read of five minutes or less (read-time criterion 3)', () => {
+    for (const topic of TOPICS) {
+      const id = `${topic.section}/${topic.slug}`;
+      expect(readingMinutes(topic.words), id).toBeLessThanOrEqual(5);
     }
   });
 
@@ -49,6 +72,8 @@ describe('TOPICS is metadata only (criterion 1)', () => {
 });
 
 describe('parseTopicMeta (criterion 2)', () => {
+  // Also read-time criterion 6: still exactly these five fields; `words` is
+  // merged in by the loader, never parsed from frontmatter.
   it('returns section, slug and frontmatter fields from a valid path and data', () => {
     const topic = parseTopicMeta('/src/content/alpha/some-topic.md', VALID);
     expect(topic).toEqual({

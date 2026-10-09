@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
-/** The top of a case study or DSA entry page: a link back to its landing
- * page, the title as the page's one `h1`, and a meta line under it. */
+/** The top of a topic, case study or DSA entry page: a link back to its
+ * section or landing page, the title as the page's one `h1`, and a meta line
+ * under it. */
 export function PageHeader({
   back,
   title,
