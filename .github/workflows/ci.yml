@@ -1,8 +1,8 @@
 name: CI
 
+# Pull requests only: a push to main runs the same `npm run verify` in deploy.yml
+# before it deploys, so a CI run on main would repeat that job.
 on:
-  push:
-    branches: [main]
   pull_request:
 
 # Cancels a run still in progress for the same branch/PR when a new commit lands on it — otherwise

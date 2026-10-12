@@ -33,7 +33,10 @@ of staleness this skill exists to catch:
 
 - `CLAUDE.md`, `README.md` (its intro line needs no check against
   `package.json`'s description: `scripts/site-description.test.mjs` checks it)
-- everything under `docs/`
+- everything under `docs/` except `docs/specs/` and `docs/pipeline-log.md`.
+  Both are records of past decisions and runs, thousands of lines that would
+  dominate the read, and a record isn't stale for describing the past.
+  Stage 2b reads the log, as a set, when it is due.
 - everything under `evals/` (`README.md`, every scenario file, and the
   `results/` logs)
 - every file under `.claude/skills/` (each `SKILL.md` and any file beside
@@ -81,10 +84,9 @@ Stage 1 and this instruction, close to verbatim:
 > ranked by how misleading they'd be to someone reading the doc cold, or
 > say explicitly you found nothing worth flagging.
 >
-> `docs/specs/*.md` are records of what was decided at a point in time, and
-> `evals/*/results/*.md` (a trend table plus the latest run) and the rows of
-> `docs/pipeline-log.md` record past runs: don't flag them for describing the past, but do flag one that states something as a present-tense rule that is
-> now wrong.
+> `evals/*/results/*.md` (a trend table plus the latest run) record past
+> runs: don't flag them for describing the past, but do flag one that states
+> something as a present-tense rule that is now wrong.
 >
 > Files to audit: <Stage 1's list>
 

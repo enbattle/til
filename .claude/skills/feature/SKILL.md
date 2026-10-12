@@ -404,7 +404,6 @@ in the feature's commit if it isn't made yet, else a commit of its own. Until
 then the Stage 5 handoff carries the row's draft, so a later session can
 append it. The Retro cell records that decision (applied, or declined with its
 reason), never a pending proposal (`check:pipeline-log` rejects one). No
-independent read; run
-`npx prettier --write docs/pipeline-log.md`, `npm run check:pipeline-log` and
+independent read; run `npm run check:pipeline-log` and
 `npm run format:check`. A bug this run fixed that an earlier approved run
 introduced is friction for this retro.
