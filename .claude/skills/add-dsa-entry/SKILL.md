@@ -45,8 +45,8 @@ Python tests never ran.
 
 ## Stage 1 — Draft the code, its tests, then the entry
 
-Write it yourself, directly, as `add-topic` does. Read the reference entry
-first (docs/dsa.md's "Templates" names it), with its code files: it sets the
+Write it yourself, directly, as `add-topic` does. Read the reference entries
+first (docs/dsa.md's "Templates" names them), with its code files: it sets the
 length, the voice and how comments carry the reasons.
 Read the Writing Standard's "Case studies and DSA entries" section too: it
 sets the five-minute budget and the voice.
@@ -112,7 +112,8 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 
 - **`<kind>`**: DSA entry and its code.
 - **Existing items**: the entries in `src/dsa/entries/`.
-- **Files**: the entry and its four code files, in full. An empty
+- **Files**: the entry and its four code files, in full, plus
+  `src/dsa/code/heap/heap.ts` when the `.ts` imports `MinHeap`. An empty
   `region=<name>` fence shows the text between that region's markers in the
   code file ([docs/dsa.md](../../../docs/dsa.md) has the rule).
 - **`<checklist>`**: (1) the code is correct in both languages: trace it
@@ -140,7 +141,7 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **Commit**: the `.md` and the four code files, with the log row.
 - **Batch mode**: several entries can be added at once. A drafter's
   Stage 2 is the self-check in docs/content-review.md's "Batch mode", plus
-  `npm run typecheck`, `npm run test:py` and `oxlint --deny-warnings` on its
+  `npm run typecheck`, `npm run test:py` and `npx oxlint --deny-warnings` on its
   files. A drafter whose entry needs another
   entry from the same batch gets that entry's slug and title and links to it;
   `dsa.test.ts` then fails on the unknown prerequisite until integration,

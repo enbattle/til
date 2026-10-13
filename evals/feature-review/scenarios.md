@@ -607,8 +607,8 @@ a spec, a diff and one review finding (procedure in the skill's Stage 1).
 abbreviation such as `vs.` cuts the description short. Possibly theoretical if
 no title uses one."
 
-**Expected outcome:** Fix with a test. Twelve real titles contain `vs. `, so
-their descriptions stop at the first `vs.`:
+**Expected outcome:** Fix with a test. Every real title containing `vs. ` (13 on 2026-10-13)
+has its description stop at the first `vs.`:
 `src/content/systems-and-infrastructure/latency-vs-throughput.md` ("Latency vs.
 Throughput") becomes "Latency vs.",
 `src/content/systems-and-infrastructure/sql-vs-nosql.md` ("SQL vs. NoSQL")
