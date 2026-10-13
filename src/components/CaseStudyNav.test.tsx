@@ -4,43 +4,37 @@ import { describe, expect, it, vi } from 'vitest';
 import { CASE_STUDIES } from '@/lib/system-design';
 import { renderAt } from '@/test/render';
 import { CaseStudyNav } from './CaseStudyNav';
+import { DsaNav } from './DsaNav';
 
-function renderNav(
-  initialPath = '/system-design',
-  extra: { onNavigate?: () => void; className?: string } = {},
-) {
-  return renderAt(initialPath, <CaseStudyNav {...extra} />);
-}
+// CaseStudyNav's own data and order (criterion 9). The behaviour it shares with
+// DsaNav (landmark, aria-current, onNavigate, className, nothing current on the
+// landing page) is tested once in OrderedNav.test.tsx (docs/specs/ui-dedupe.md,
+// design item 6). OrderedNav.test.tsx can't see whether each wrapper forwards
+// className and onNavigate to it, so the last block here checks that for both
+// CaseStudyNav and DsaNav; App.tabs.test.tsx checks that App and MobileNav pass
+// them in.
 
 function nav() {
   return screen.getByRole('navigation', { name: 'Case studies' });
 }
 
 describe('CaseStudyNav (criterion 9)', () => {
-  it('is a navigation landmark named Case studies', () => {
-    renderNav();
-    expect(nav()).toBeInTheDocument();
-  });
-
-  it('lists exactly one link per case study, in order, each to its page', () => {
-    renderNav();
+  // docs/specs/ui-dedupe.md, criterion 2: each link is the case study's path.
+  it('lists exactly one link per case study, in order, each to its path', () => {
+    renderAt('/system-design', <CaseStudyNav />);
     const links = within(nav()).getAllByRole('link');
+    expect(CASE_STUDIES.length).toBeGreaterThan(0);
     expect(links.map((a) => a.getAttribute('href'))).toEqual(
-      CASE_STUDIES.map((c) => `/system-design/${c.slug}`),
+      CASE_STUDIES.map((c) => c.path),
     );
     CASE_STUDIES.forEach((caseStudy, i) => {
       expect(links[i]).toHaveTextContent(caseStudy.title);
     });
   });
 
-  it('is a flat list with no disclosure buttons', () => {
-    renderNav('/system-design/url-shortener');
-    expect(within(nav()).queryAllByRole('button')).toHaveLength(0);
-  });
-
   // docs/specs/dsa-kind-groups.md, criterion 5: grouping is DSA-only.
-  it('renders one flat numbered list, 1..N, with no group labels', () => {
-    renderNav('/system-design/url-shortener');
+  it('renders one flat numbered list, 1..N, with no group labels and no disclosure buttons', () => {
+    renderAt('/system-design/url-shortener', <CaseStudyNav />);
     const lists = within(nav()).getAllByRole('list');
     expect(lists).toHaveLength(1);
     expect(lists[0].tagName).toBe('OL');
@@ -57,45 +51,29 @@ describe('CaseStudyNav (criterion 9)', () => {
         `${i + 1}.`,
       );
     });
+    expect(within(nav()).queryAllByRole('button')).toHaveLength(0);
   });
+});
 
-  it('marks no link current on the landing page', () => {
-    renderNav('/system-design');
-    for (const link of within(nav()).getAllByRole('link')) {
-      expect(link).not.toHaveAttribute('aria-current');
-    }
-  });
-
-  it.each(CASE_STUDIES.map((c) => [c.slug] as const))(
-    'marks only %s current (aria-current, bold, accent border) on its page',
-    (slug) => {
-      renderNav(`/system-design/${slug}`);
-      for (const link of within(nav()).getAllByRole('link')) {
-        if (link.getAttribute('href') === `/system-design/${slug}`) {
-          expect(link).toHaveAttribute('aria-current', 'page');
-          expect(link).toHaveClass('font-bold');
-          expect(link).toHaveClass('border-accent');
-        } else {
-          expect(link).not.toHaveAttribute('aria-current');
-        }
-      }
-    },
-  );
-
-  it('calls onNavigate and navigates when a link is clicked', async () => {
+// docs/specs/ui-dedupe.md, design item 6: each wrapper forwards the props
+// OrderedNav handles.
+describe.each([
+  {
+    name: 'CaseStudyNav',
+    Nav: CaseStudyNav,
+    label: 'Case studies',
+    path: '/system-design',
+  },
+  { name: 'DsaNav', Nav: DsaNav, label: 'DSA entries', path: '/dsa' },
+])('$name forwards className and onNavigate to OrderedNav', ({ Nav, label, path }) => {
+  it('puts the given className on the nav element and calls onNavigate on a link click', async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
-    const [first] = CASE_STUDIES;
-    renderNav('/system-design', { onNavigate });
-    await user.click(within(nav()).getAllByRole('link')[0]);
+    renderAt(path, <Nav className="given-class lg:block" onNavigate={onNavigate} />);
+    const navEl = screen.getByRole('navigation', { name: label });
+    expect(navEl.className).toBe('given-class lg:block');
+    expect(onNavigate).not.toHaveBeenCalled();
+    await user.click(within(navEl).getAllByRole('link')[0]);
     expect(onNavigate).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('location-display')).toHaveTextContent(
-      `/system-design/${first.slug}`,
-    );
-  });
-
-  it('applies the className it is given to the nav element', () => {
-    renderNav('/system-design', { className: 'my-custom-class' });
-    expect(nav()).toHaveClass('my-custom-class');
   });
 });

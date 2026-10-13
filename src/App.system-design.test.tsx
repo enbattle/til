@@ -13,6 +13,10 @@ import { caseStudyBody, chromeLinks } from '@/test/content';
 import { escapeRegExp, renderAt } from '@/test/render';
 
 // --- System Design: design case studies alongside the catalog ---
+// Shared across the three kinds of page (docs/specs/ui-dedupe.md, design item
+// 6): "On this page" is tested in App.on-this-page.test.tsx, Previous/Next and
+// not-found in App.page-kinds.test.tsx, and the sidebar choice in
+// App.tabs.test.tsx.
 
 function primaryNav() {
   return screen.getByRole('navigation', { name: 'Primary' });
@@ -35,15 +39,6 @@ async function openCaseStudy(slug = SLUG) {
   await waitFor(() => expect(main.querySelector('.prose')).not.toBeNull());
   return { caseStudy, main };
 }
-
-describe('unknown case-study slug', () => {
-  it('shows not-found for an unknown case-study slug', async () => {
-    renderAt('/system-design/does-not-exist');
-    expect(
-      await screen.findByRole('heading', { name: /page not found/i }),
-    ).toBeInTheDocument();
-  });
-});
 
 describe('header tabs on System Design routes', () => {
   it('switches tabs and sidebars when the Catalog tab is clicked from a case study', async () => {
@@ -124,55 +119,6 @@ describe('case study page (criterion 8)', () => {
     ).toBeInTheDocument();
   });
 
-  it('has an "On this page" nav outside <main> linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
-    const { main } = await openCaseStudy();
-    const expected = h2Headings(caseStudyBody(SLUG)).map((h) => h.text);
-    expect(expected.length).toBeGreaterThan(0);
-
-    const onThisPage = await waitFor(() => {
-      const navs = screen
-        .getAllByRole('navigation', { name: 'On this page' })
-        .filter((nav) => !main.contains(nav));
-      expect(navs).toHaveLength(1);
-      return navs[0];
-    });
-    expect(
-      screen.queryByRole('navigation', { name: 'Contents' }),
-    ).not.toBeInTheDocument();
-    const links = within(onThisPage).getAllByRole('link');
-    expect(links.map((a) => a.textContent?.trim())).toEqual(expected);
-
-    const prose = main.querySelector('.prose') as HTMLElement;
-    const ids = links.map((link) => {
-      const href = link.getAttribute('href') ?? '';
-      expect(href).toMatch(/#[^#]+$/);
-      const id = decodeURIComponent(href.slice(href.lastIndexOf('#') + 1));
-      const target = document.getElementById(id);
-      expect(target, `#${id}`).not.toBeNull();
-      expect(target!.tagName).toBe('H2');
-      expect(prose.contains(target)).toBe(true);
-      expect(target).toHaveTextContent(link.textContent!.trim());
-      return id;
-    });
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('places the "On this page" bar in <main> before the body', async () => {
-    const { main } = await openCaseStudy();
-    const onThisPage = await within(main).findByRole('navigation', {
-      name: 'On this page',
-    });
-    // docs/specs/on-this-page-bar.md: a bar with a disclosure button, no <details>.
-    expect(main.querySelector('details')).toBeNull();
-    expect(
-      within(onThisPage).getByRole('button', { name: /^On this page/ }),
-    ).toHaveAttribute('aria-expanded', 'false');
-    const prose = main.querySelector('.prose') as HTMLElement;
-    expect(
-      onThisPage.compareDocumentPosition(prose) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
   it('has a "Go deeper" h2 listing each topicsForCaseStudy topic once, with its summary', async () => {
     const { caseStudy, main } = await openCaseStudy();
     const heading = await within(main).findByRole('heading', {
@@ -197,28 +143,6 @@ describe('case study page (criterion 8)', () => {
     });
   });
 
-  // First, middle and last cover no-previous, both, and no-next.
-  const ADJACENCY_CASES = [
-    ...new Set([0, Math.floor(CASE_STUDIES.length / 2), CASE_STUDIES.length - 1]),
-  ].map((i) => [CASE_STUDIES[i].slug, i] as const);
-
-  it.each(ADJACENCY_CASES)(
-    '%s links to the adjacent case studies by order, only when they exist',
-    async (slug, index) => {
-      const { main } = await openCaseStudy(slug);
-      const adjacent = chromeLinks(main)
-        .map((a) => a.getAttribute('href'))
-        .filter(
-          (href): href is string =>
-            !!href && href.startsWith('/system-design/') && !href.includes('#'),
-        );
-      const expected = [CASE_STUDIES[index - 1], CASE_STUDIES[index + 1]]
-        .filter((c) => c !== undefined)
-        .map((c) => `/system-design/${c.slug}`);
-      expect(adjacent).toEqual(expected);
-    },
-  );
-
   it('routes a body link to its catalog topic page, with Catalog current', async () => {
     const user = userEvent.setup();
     const { caseStudy, main } = await openCaseStudy();
@@ -240,34 +164,6 @@ describe('case study page (criterion 8)', () => {
       'page',
     );
   });
-});
-
-describe('sidebar selection (criterion 9)', () => {
-  it.each(['/system-design', `/system-design/${SLUG}`])(
-    'shows Case studies, not Sections, in the persistent sidebar at %s',
-    async (path) => {
-      renderAt(path);
-      expect(
-        screen.getByRole('navigation', { name: 'Case studies' }),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole('navigation', { name: 'Sections' }),
-      ).not.toBeInTheDocument();
-      await screen.findByRole('heading', { level: 1 });
-    },
-  );
-
-  it.each(['/', '/ai-and-ml', '/ai-and-ml/prompt-engineering', '/not-found'])(
-    'shows Sections, not Case studies, in the persistent sidebar at %s',
-    async (path) => {
-      renderAt(path);
-      expect(screen.getByRole('navigation', { name: 'Sections' })).toBeInTheDocument();
-      expect(
-        screen.queryByRole('navigation', { name: 'Case studies' }),
-      ).not.toBeInTheDocument();
-      await screen.findByRole('heading', { level: 1 }).catch(() => undefined);
-    },
-  );
 });
 
 describe('topic page back-links (criterion 10)', () => {

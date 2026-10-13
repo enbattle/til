@@ -11,7 +11,6 @@ import {
   getDsaEntry,
   getDsaPrerequisites,
   groupDsaEntries,
-  isDsaPath,
   loadAllDsaBodies,
   loadDsaEntryBody,
   orderDsaEntries,
@@ -122,7 +121,16 @@ describe('parseDsaEntry (criterion 1)', () => {
 // --- Criterion 2: orderDsaEntries ---
 
 function entry(slug: string, kind: DsaKind, title: string): DsaEntry {
-  return { slug, title, summary: `${title}.`, date: '2026-09-30', kind, words: 1 };
+  return {
+    slug,
+    title,
+    summary: `${title}.`,
+    date: '2026-09-30',
+    kind,
+    words: 1,
+    path: `/dsa/${slug}`,
+    number: 0,
+  };
 }
 
 describe('orderDsaEntries (criterion 2)', () => {
@@ -413,17 +421,34 @@ describe('DSA_ENTRIES and getDsaEntry (criteria 2 and 4)', () => {
     }
   });
 
-  it('is metadata only: exactly slug, title, summary, date, kind and words (five-minute criterion 3)', () => {
+  // ui-dedupe criteria 2 and 3 add the page path and the running number.
+  it('is metadata only: exactly slug, title, summary, date, kind, words, path and number (five-minute criterion 3)', () => {
     for (const e of DSA_ENTRIES) {
       expect(Object.keys(e).sort()).toEqual([
         'date',
         'kind',
+        'number',
+        'path',
         'slug',
         'summary',
         'title',
         'words',
       ]);
     }
+  });
+
+  // docs/specs/ui-dedupe.md, criterion 2.
+  it('gives every entry its page route as path, /dsa/<slug>', () => {
+    for (const e of DSA_ENTRIES) expect(e.path, e.slug).toBe(`/dsa/${e.slug}`);
+  });
+
+  // docs/specs/ui-dedupe.md, criterion 3: the running number the landing page
+  // and the sidebar show, 1-based across the groups, in DSA_ENTRIES order.
+  it('numbers the entries 1..N in DSA_ENTRIES order, continuing across groups', () => {
+    expect(DSA_ENTRIES.map((e) => e.number)).toEqual(DSA_ENTRIES.map((_, i) => i + 1));
+    expect(DSA_GROUPS.flatMap((g) => g.entries.map((e) => e.number))).toEqual(
+      DSA_ENTRIES.map((_, i) => i + 1),
+    );
   });
 
   it('matches each file’s frontmatter', () => {
@@ -623,23 +648,6 @@ describe('dsaKindLabel', () => {
     expect(dsaKindLabel('data-structure')).toBe('Data structure');
     expect(dsaKindLabel('pattern')).toBe('Pattern');
     expect(dsaKindLabel('algorithm')).toBe('Algorithm');
-  });
-});
-
-describe('isDsaPath (criterion 5)', () => {
-  it.each(['/dsa', '/dsa/two-pointers', '/dsa/binary-search'])('is true for %s', (p) => {
-    expect(isDsaPath(p)).toBe(true);
-  });
-
-  it.each([
-    '/',
-    '/dsas',
-    '/dsa-notes',
-    '/ai-and-ml/dsa',
-    '/system-design',
-    '/system-design/url-shortener',
-  ])('is false for %s', (p) => {
-    expect(isDsaPath(p)).toBe(false);
   });
 });
 

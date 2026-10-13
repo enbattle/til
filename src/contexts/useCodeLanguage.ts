@@ -1,7 +1,9 @@
 import { createContext, useContext } from 'react';
 
-/** The languages a DSA code pair is written in. */
-export type CodeLanguage = 'python' | 'typescript';
+/** The languages a DSA code pair is written in, in tab order; the one
+ * definition. */
+export const CODE_LANGUAGES = ['python', 'typescript'] as const;
+export type CodeLanguage = (typeof CODE_LANGUAGES)[number];
 
 export interface CodeLanguageContextValue {
   language: CodeLanguage;

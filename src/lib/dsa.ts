@@ -58,16 +58,21 @@ function isKind(value: string): value is DsaKind {
   return (KINDS as readonly string[]).includes(value);
 }
 
+/** An entry before it has its running number, which depends on where it lands
+ * in `DSA_ENTRIES`. */
+type UnnumberedEntry = Omit<DsaEntry, 'number'>;
+
 /**
  * Turns one entry file's path and parsed frontmatter into a `DsaEntry`, less
- * the body's `words` (`createCollection` adds those from the `?words` view).
+ * the body's `words` (`createCollection` adds those from the `?words` view)
+ * and the running `number` (set once the entries are ordered, below).
  * Throws on a missing, empty or unknown field (`checkFields`). Exported so the frontmatter contract can be unit-tested against fixtures
  * instead of only the real files.
  */
 export function parseDsaEntry(
   filePath: string,
   data: Record<string, string>,
-): Omit<DsaEntry, 'words'> {
+): Omit<DsaEntry, 'words' | 'number'> {
   const match = PATH_PATTERN.exec(filePath);
   if (!match) {
     throw new Error(
@@ -85,12 +90,19 @@ export function parseDsaEntry(
     );
   }
 
-  return { slug, title: data.title, summary: data.summary, date: data.date, kind };
+  return {
+    slug,
+    title: data.title,
+    summary: data.summary,
+    date: data.date,
+    kind,
+    path: `/dsa/${slug}`,
+  };
 }
 
 /** Kind first (data structures, patterns, algorithms), then title, then slug
  * so the order never depends on the input. */
-function compareEntries(a: DsaEntry, b: DsaEntry): number {
+function compareEntries(a: UnnumberedEntry, b: UnnumberedEntry): number {
   return (
     KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) ||
     a.title.localeCompare(b.title) ||
@@ -106,10 +118,10 @@ function compareEntries(a: DsaEntry, b: DsaEntry): number {
  * An entry missing from `prereqs` has none. Throws, naming the entries, on a
  * self-link, a prerequisite that isn't an entry, or a cycle.
  */
-export function orderDsaEntries(
-  entries: DsaEntry[],
+export function orderDsaEntries<T extends UnnumberedEntry>(
+  entries: T[],
   prereqs: Record<string, string[]>,
-): DsaEntry[] {
+): T[] {
   const bySlug = new Map(entries.map((entry) => [entry.slug, entry]));
   const needs = new Map<string, Set<string>>();
   for (const entry of entries) {
@@ -128,7 +140,7 @@ export function orderDsaEntries(
   }
 
   const placed = new Set<string>();
-  const ordered: DsaEntry[] = [];
+  const ordered: T[] = [];
   let remaining = [...entries].sort(compareEntries);
   while (remaining.length > 0) {
     const next = remaining.find((entry) =>
@@ -152,7 +164,9 @@ export function orderDsaEntries(
  * order. A stable partition, so a prerequisite of the same kind still comes
  * first; one of another kind can come later.
  */
-export function groupDsaEntries(entries: DsaEntry[]): DsaGroup[] {
+export function groupDsaEntries<T extends UnnumberedEntry = DsaEntry>(
+  entries: T[],
+): (Omit<DsaGroup, 'entries'> & { entries: T[] })[] {
   return KINDS.map((kind) => ({
     kind,
     heading: KIND_HEADINGS[kind],
@@ -164,7 +178,7 @@ export function groupDsaEntries(entries: DsaEntry[]): DsaGroup[] {
  * Every remaining entry waits on another remaining one, so following those
  * links must come back to an entry already seen. */
 function findCycle(
-  remaining: DsaEntry[],
+  remaining: UnnumberedEntry[],
   needs: Map<string, Set<string>>,
   placed: Set<string>,
 ): string[] {
@@ -203,16 +217,33 @@ const entries = createCollection({
  * time on a bad file or a broken prerequisite, so the tests that import it
  * fail (and with them `verify`, where `test:run` runs before `build`); `vite
  * build` alone doesn't run this code. */
-export const DSA_GROUPS: DsaGroup[] = groupDsaEntries(
-  orderDsaEntries(entries.items, PREREQS),
+export const DSA_GROUPS: DsaGroup[] = numberGroups(
+  groupDsaEntries(orderDsaEntries(entries.items, PREREQS)),
 );
+
+/** `groups` with each entry's running `number` set: 1-based, continuing across
+ * the groups, so it matches the entry's place in `DSA_ENTRIES`. The one place
+ * the number is computed; the landing page and the sidebar read it. */
+function numberGroups(
+  groups: (Omit<DsaGroup, 'entries'> & { entries: UnnumberedEntry[] })[],
+): DsaGroup[] {
+  let number = 0;
+  return groups.map((group) => ({
+    ...group,
+    entries: group.entries.map((entry) => ({ ...entry, number: ++number })),
+  }));
+}
 
 /** Every DSA entry, group by group: the one sequence the landing page, the
  * sidebar, the numbering and Previous/Next share. */
 export const DSA_ENTRIES: DsaEntry[] = DSA_GROUPS.flatMap((group) => group.entries);
 
+// slug -> the numbered entry, so getDsaEntry hands back the same objects as
+// DSA_ENTRIES.
+const ENTRIES_BY_SLUG = new Map(DSA_ENTRIES.map((entry) => [entry.slug, entry]));
+
 export function getDsaEntry(slug: string): DsaEntry | undefined {
-  return entries.get(slug);
+  return ENTRIES_BY_SLUG.get(slug);
 }
 
 /** The entries `slug` lists under `## Prerequisites`, in the order it links
@@ -233,11 +264,4 @@ export function loadDsaEntryBody(slug: string): Promise<string> {
  * time; used by full-text search. */
 export function loadAllDsaBodies(): Promise<Map<string, string>> {
   return entries.loadAllBodies();
-}
-
-/** Whether `pathname` is the DSA landing page or one of its entry pages.
- * Shared by the header tabs and the sidebar so both switch on exactly the
- * same routes. */
-export function isDsaPath(pathname: string): boolean {
-  return pathname === '/dsa' || pathname.startsWith('/dsa/');
 }

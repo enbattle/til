@@ -46,7 +46,7 @@ export function DsaEntryPage() {
             {prereqs.map((prereq) => (
               <li key={prereq.slug}>
                 <Link
-                  to={`/dsa/${prereq.slug}`}
+                  to={prereq.path}
                   className="font-medium text-accent hover:text-accent-hover"
                 >
                   {prereq.title}
@@ -67,8 +67,8 @@ export function DsaEntryPage() {
             <MarkdownRenderer content={body} codeTabs />
             <PrevNextNav
               label="More DSA entries"
-              prev={prev && { to: `/dsa/${prev.slug}`, title: prev.title }}
-              next={next && { to: `/dsa/${next.slug}`, title: next.title }}
+              prev={prev && { to: prev.path, title: prev.title }}
+              next={next && { to: next.path, title: next.title }}
             />
           </>
         )}

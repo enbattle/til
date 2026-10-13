@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { readStoredChoice, writeStoredChoice } from '@/lib/stored-choice';
-import { ThemeContext, type ResolvedTheme, type ThemePreference } from './useTheme';
+import {
+  THEME_PREFERENCES,
+  ThemeContext,
+  type ResolvedTheme,
+  type ThemePreference,
+} from './useTheme';
 
 const STORAGE_KEY = 'til-theme';
 
@@ -10,7 +15,7 @@ function getSystemTheme(): ResolvedTheme {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(() =>
-    readStoredChoice(STORAGE_KEY, ['light', 'dark', 'system'], 'system'),
+    readStoredChoice(STORAGE_KEY, THEME_PREFERENCES, 'system'),
   );
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(getSystemTheme);
 

@@ -5,7 +5,7 @@ import { OrderedNav } from './OrderedNav';
  * `order`. */
 export function CaseStudyNav(props: { onNavigate?: () => void; className?: string }) {
   const items = CASE_STUDIES.map((caseStudy) => ({
-    to: `/system-design/${caseStudy.slug}`,
+    to: caseStudy.path,
     title: caseStudy.title,
     number: caseStudy.order,
   }));

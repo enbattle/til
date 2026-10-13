@@ -4,8 +4,8 @@ import { DSA_GROUPS } from '@/lib/dsa';
 
 export function DsaPage() {
   const idPrefix = useId();
-  // The numbers continue across groups, matching the sidebar and Previous/Next.
-  let number = 0;
+  // Each entry's number (set in dsa.ts) continues across the groups, matching
+  // the sidebar and Previous/Next.
 
   return (
     <div className="space-y-8">
@@ -31,8 +31,8 @@ export function DsaPage() {
             <div className="mt-4">
               <NumberedCardList
                 cards={group.entries.map((entry) => ({
-                  to: `/dsa/${entry.slug}`,
-                  number: ++number,
+                  to: entry.path,
+                  number: entry.number,
                   title: entry.title,
                   summary: entry.summary,
                 }))}

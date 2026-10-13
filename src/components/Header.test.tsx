@@ -47,4 +47,16 @@ describe('Header', () => {
       menuButton.compareDocumentPosition(logoLink) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
+
+  // Moved from Header.tabs.test.tsx (docs/specs/ui-dedupe.md, design item 6);
+  // the tabs themselves are checked per tab in App.tabs.test.tsx.
+  it('keeps the til logo linking to / on a System Design route', () => {
+    renderAt('/system-design', <Header onOpenSearch={vi.fn()} onOpenNav={vi.fn()} />);
+    expect(screen.getByRole('link', { name: 'til' })).toHaveAttribute('href', '/');
+  });
+
+  it('has exactly one landmark named Primary', () => {
+    renderHeader();
+    expect(screen.getAllByRole('navigation', { name: 'Primary' })).toHaveLength(1);
+  });
 });

@@ -55,7 +55,8 @@ notebook than a product. The UI follows that:
   so wrapped and single-line items read as one consistent list.
 - **Header tabs**: the header carries a `<nav aria-label="Primary">` with
   three links, **Catalog** (`/`), **System Design** (`/system-design`) and
-  **DSA** (`/dsa`).
+  **DSA** (`/dsa`), defined once as `TABS` in `src/lib/tabs.ts`, whose
+  `tabForPath` also picks the sidebar and `MobileNav` nav for a route.
   The active one has `aria-current="page"` plus a non-color signal — bold
   weight and an accent-colored bottom border, the same treatment the
   sidebar navs use for the current page — so it isn't marked by color
@@ -275,7 +276,12 @@ than a new one added ad hoc.
   screen reader never announces an unnamed "button".
 - **Keyboard reachability**: search opens via `Ctrl`/`Cmd`+K, closes via
   `Escape`, `Enter` in the box opens the first result, and every result is a
-  real `<button>` — reachable and activatable without a mouse. Code tabs move
+  real `<button>` — reachable and activatable without a mouse. Search and
+  `MobileNav` are modal dialogs built on one hook, `useModal`
+  (`src/hooks/useFocusTrap.ts`, which holds the one focusable-element
+  selector): on open focus moves inside (the search box; the first link),
+  Tab and Shift+Tab stay inside, `Escape` closes, and focus returns to the
+  button that opened it. A new modal uses the same hook. Code tabs move
   with the arrow keys and select with Enter or Space. A diagram or
   table that scrolls sideways is a focusable region, scrolled with the arrow
   keys. The narrow-view "On this page" bar's button opens and closes its

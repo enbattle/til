@@ -34,7 +34,7 @@ function currentSectionSlug(
   for (const { section, topics } of groups) {
     const sectionPath = `/${section.slug}`;
     if (pathname === sectionPath) return section.slug;
-    if (topics.some((topic) => pathname === `${sectionPath}/${topic.slug}`)) {
+    if (topics.some((topic) => pathname === topic.path)) {
       return section.slug;
     }
   }
@@ -62,9 +62,7 @@ export function SectionNav({ onNavigate, className }: SectionNavProps) {
       <ul className="space-y-6">
         {groups.map(({ section, topics }) => {
           const sectionPath = `/${section.slug}`;
-          const isTopicCurrent = topics.some(
-            (topic) => pathname === `${sectionPath}/${topic.slug}`,
-          );
+          const isTopicCurrent = topics.some((topic) => pathname === topic.path);
           const isSectionCurrent = pathname === sectionPath || isTopicCurrent;
           const isExpanded = isSectionExpanded(section.slug);
           const topicListId = `${idPrefix}-${section.slug}-topics`;
@@ -110,12 +108,11 @@ export function SectionNav({ onNavigate, className }: SectionNavProps) {
               </div>
               <ul id={topicListId} hidden={!isExpanded} className="mt-2 ml-3 space-y-2">
                 {topics.map((topic) => {
-                  const topicPath = `${sectionPath}/${topic.slug}`;
-                  const isCurrent = pathname === topicPath;
+                  const isCurrent = pathname === topic.path;
                   return (
                     <li key={topic.slug}>
                       <Link
-                        to={topicPath}
+                        to={topic.path}
                         onClick={onNavigate}
                         aria-current={isCurrent ? 'page' : undefined}
                         className={`block border-l-2 py-1 pl-3 text-sm leading-snug no-underline ${

@@ -18,12 +18,14 @@ const VALID = {
 };
 
 describe('TOPICS is metadata only (criterion 1)', () => {
-  it('gives every entry exactly section, slug, title, summary, date and words, and no body (read-time criterion 1)', () => {
+  // ui-dedupe criterion 2 adds the page path.
+  it('gives every entry exactly section, slug, title, summary, date, words and path, and no body (read-time criterion 1)', () => {
     expect(TOPICS.length).toBeGreaterThan(0);
     for (const topic of TOPICS) {
       expect(topic).not.toHaveProperty('body');
       expect(Object.keys(topic).sort()).toEqual([
         'date',
+        'path',
         'section',
         'slug',
         'summary',
@@ -62,9 +64,13 @@ describe('TOPICS is metadata only (criterion 1)', () => {
 
 describe('parseTopicMeta (criterion 2)', () => {
   // Also read-time criterion 6: still exactly these five fields; `words` is
-  // merged in by the loader, never parsed from frontmatter.
+  // merged in by the loader, never parsed from frontmatter. The page path
+  // (ui-dedupe criterion 2) may be set here or later by the loader; if it is
+  // set here, it's the topic's route.
   it('returns section, slug and frontmatter fields from a valid path and data', () => {
-    const topic = parseTopicMeta('/src/content/alpha/some-topic.md', VALID);
+    const parsed = parseTopicMeta('/src/content/alpha/some-topic.md', VALID);
+    const { path, ...topic } = parsed as typeof parsed & { path?: string };
+    if (path !== undefined) expect(path).toBe('/alpha/some-topic');
     expect(topic).toEqual({
       section: 'alpha',
       slug: 'some-topic',

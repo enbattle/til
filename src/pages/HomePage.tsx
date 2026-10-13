@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { SECTIONS, getSection } from '@/content/registry';
-import { TOPICS, recentTopics, topicsBySection } from '@/lib/content';
+import { TOPICS, recentTopics, topicsInSection } from '@/lib/content';
 import { TopicCard } from '@/components/TopicCard';
 // The site's one-line description; vite.config.ts fills index.html's meta tags
 // from the same field.
@@ -8,10 +8,8 @@ import { description } from '../../package.json';
 
 export function HomePage() {
   const recent = recentTopics(5);
-  const totalTopics = topicsBySection().reduce(
-    (sum, group) => sum + group.topics.length,
-    0,
-  );
+  // Every topic is in a registered section (registry.test.ts).
+  const totalTopics = TOPICS.length;
 
   return (
     <div className="space-y-12">
@@ -29,7 +27,7 @@ export function HomePage() {
         <h2 className="font-serif text-xl font-semibold text-text-primary">Sections</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {SECTIONS.map((section) => {
-            const count = TOPICS.filter((topic) => topic.section === section.slug).length;
+            const count = topicsInSection(section.slug).length;
             return (
               <Link
                 key={section.slug}
@@ -59,7 +57,7 @@ export function HomePage() {
           <div className="mt-4 space-y-3">
             {recent.map((topic) => (
               <TopicCard
-                key={`${topic.section}/${topic.slug}`}
+                key={topic.path}
                 topic={topic}
                 sectionLabel={getSection(topic.section)?.label}
               />

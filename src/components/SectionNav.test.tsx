@@ -280,3 +280,21 @@ describe('SectionNav', () => {
     expect(screen.getByRole('navigation', { name: 'Sections' })).toBeInTheDocument();
   });
 });
+
+// docs/specs/ui-dedupe.md, criterion 2: each topic link is the topic's path.
+describe('SectionNav topic links', () => {
+  it('link every topic, section by section, to its path', () => {
+    renderNav('/');
+    const nav = screen.getByRole('navigation', { name: 'Sections' });
+    const sectionHrefs = new Set(
+      topicsBySection().map(({ section }) => `/${section.slug}`),
+    );
+    // Collapsed sections' lists are hidden, so read the links from the DOM.
+    const topicHrefs = [...nav.querySelectorAll('a')]
+      .map((a) => a.getAttribute('href'))
+      .filter((href) => !sectionHrefs.has(href ?? ''));
+    expect(topicHrefs).toEqual(
+      topicsBySection().flatMap(({ topics }) => topics.map((t) => t.path)),
+    );
+  });
+});

@@ -68,3 +68,24 @@ describe('content loader', () => {
     }
   });
 });
+
+// docs/specs/ui-dedupe.md, criterion 2: each topic carries its page route.
+describe('Topic.path', () => {
+  it('is /<section>/<slug> for every topic, and getTopic returns the same item', () => {
+    expect(TOPICS.length).toBeGreaterThan(0);
+    for (const topic of TOPICS) {
+      expect(topic.path).toBe(`/${topic.section}/${topic.slug}`);
+      expect(getTopic(topic.section, topic.slug)).toBe(topic);
+    }
+  });
+
+  it('is the same on the topics topicsBySection and recentTopics hand back', () => {
+    for (const { topics } of topicsBySection()) {
+      for (const topic of topics)
+        expect(topic.path).toBe(`/${topic.section}/${topic.slug}`);
+    }
+    for (const topic of recentTopics(5)) {
+      expect(topic.path).toBe(`/${topic.section}/${topic.slug}`);
+    }
+  });
+});

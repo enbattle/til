@@ -1,6 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { readStoredChoice, writeStoredChoice } from '@/lib/stored-choice';
-import { CodeLanguageContext, type CodeLanguage } from './useCodeLanguage';
+import {
+  CODE_LANGUAGES,
+  CodeLanguageContext,
+  type CodeLanguage,
+} from './useCodeLanguage';
 
 const STORAGE_KEY = 'til-code-language';
 
@@ -12,7 +16,7 @@ const STORAGE_KEY = 'til-code-language';
  */
 export function CodeLanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<CodeLanguage>(() =>
-    readStoredChoice(STORAGE_KEY, ['python', 'typescript'], 'python'),
+    readStoredChoice(STORAGE_KEY, CODE_LANGUAGES, 'python'),
   );
 
   const value = useMemo(

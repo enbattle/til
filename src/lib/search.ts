@@ -117,7 +117,7 @@ const defaultIndex = createSearchIndex([
   {
     items: TOPICS.map((topic) => ({
       key: `${topic.section}/${topic.slug}`,
-      path: `/${topic.section}/${topic.slug}`,
+      path: topic.path,
       label: getSection(topic.section)?.label ?? topic.section,
       title: topic.title,
       summary: topic.summary,
@@ -128,7 +128,7 @@ const defaultIndex = createSearchIndex([
   {
     items: CASE_STUDIES.map((caseStudy) => ({
       key: `system-design/${caseStudy.slug}`,
-      path: `/system-design/${caseStudy.slug}`,
+      path: caseStudy.path,
       label: 'System Design',
       title: caseStudy.title,
       summary: caseStudy.summary,
@@ -139,7 +139,7 @@ const defaultIndex = createSearchIndex([
   {
     items: DSA_ENTRIES.map((entry) => ({
       key: `dsa/${entry.slug}`,
-      path: `/dsa/${entry.slug}`,
+      path: entry.path,
       label: 'DSA',
       title: entry.title,
       summary: entry.summary,

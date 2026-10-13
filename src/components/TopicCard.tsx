@@ -9,7 +9,7 @@ interface TopicCardProps {
 export function TopicCard({ topic, sectionLabel }: TopicCardProps) {
   return (
     <Link
-      to={`/${topic.section}/${topic.slug}`}
+      to={topic.path}
       className="block rounded-lg border border-border bg-bg-secondary px-4 py-3 no-underline transition-colors hover:border-accent"
     >
       <div className="font-serif text-base font-semibold text-text-primary">
