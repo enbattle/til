@@ -131,7 +131,6 @@ None expected. The run says so if a doc CLAUDE.md routes to changes.
 
 - Fixed in round 1: DsaNav's link titles had lost their only check in the consolidation; `expectGroupedLists` asserts each title (caught a title→summary mutation).
 - Fixed in round 2: nothing checked that CaseStudyNav/DsaNav forward `className`/`onNavigate` or that MobileNav passes `onNavigate={onClose}` to DsaNav; `App.tabs.test.tsx` now asserts the sidebar's `lg:block` and closes the mobile nav by clicking the current page's own link, and a `describe.each` over both navs checks forwarding (each of three mutations caught).
-
-## Resume here (paused 2026-10-13)
-
-Stage 4a round 2 is done through its test step (no fixer needed: the round's findings were test coverage only). Left: step 3, a fresh re-review on `npm run review:diff`; then Stage 5 (`check:test-lock -- --verify`, `verify`, `--clear`), the Stage 6 retro and pipeline-log row, and merge. Round 2 was the last within the cap, so any finding the re-review raises defaults to Known limitation unless it is High.
+- Known limitation, after the fix-round cap (theoretical): no test tells useModal's initialFocusRef apart from the first-focusable fallback, since the search input is its panel's first focusable element; a future modal whose chosen element isn't first would be unguarded.
+- Known limitation (theoretical): topicsInSection returns the shared per-section array, as topicsBySection already did; no caller mutates it.
+- Stage 5 list (already on main): evals/feature-review/scenarios.md FR-04 and FR-05 planted diffs no longer apply (git apply --check); check:eval-premises checks premises only. For the eval run.
