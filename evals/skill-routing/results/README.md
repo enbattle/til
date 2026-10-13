@@ -54,32 +54,18 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Content skills' Stage 2 points to their docs; verification.md links the premise forms                                                                        | 3    | 0    | 0         | SR-02, 15, 18.                                               |
 | 2026-10-09 | SR-07 narrowed to the cards (topic-read-time built the topic page's label)                                                                                   | 1    | 0    | 0         | SR-07 only; still routes to `/feature`.                      |
 | 2026-10-13 | Cleanup #117–#124 and docs dedupe: CLAUDE.md router trim, eval skills cut to their own parts, feature/add-dsa-entry/content-audit/add-topic/docs-audit edits | 18   | 0    | 0         | All live scenarios; no regression.                           |
+| 2026-10-13 | add-dsa-entry: rewrite mode in description and Stage 0, plain-code checklist item; SR-21 added                                                               | 5    | 0    | 0         | SR-11, 16, 18, 20, 21.                                       |
 
-## Latest run: 2026-10-13, after the cleanup and docs dedupe
+## Latest run: 2026-10-13, add-dsa-entry rewrite mode
 
-- **Run by:** Claude (the orchestrating session), with 18 fresh `general-purpose` agents in parallel.
-- **Trigger:** every SKILL.md and CLAUDE.md edit deferred since #117 (docs-audit scope, /feature Stages 1–3, add-topic and add-dsa-entry pointers), plus the docs-dedupe branch: CLAUDE.md's router trim, the three eval skills cut to their own parts with the shared procedure in evals/README.md, add-dsa-entry and content-audit pointing to their canonical docs.
-- **Scope:** all live scenarios (broad effect).
+- **Run by:** Claude (the orchestrating session), with 5 fresh `general-purpose` agents.
+- **Trigger:** `add-dsa-entry`'s description and Stage 0 now cover rewriting an existing entry's code to the current code rules; its checklist item (2) asks for plain, tutorial-style code. SR-21 added for the rewrite request (the user's own words).
+- **Scope:** the scenarios whose expected or wrong answers name `add-dsa-entry` or `content-audit`: SR-11, 16, 18, 20, plus the new SR-21.
 
-| ID    | Routing decision                     | Reasoning (one line)                                                             | Grade                    |
-| ----- | ------------------------------------ | -------------------------------------------------------------------------------- | ------------------------ |
-| SR-01 | `/feature`                           | New search-dialog UI behaviour with its own tests and design choices.            | PASS                     |
-| SR-02 | `add-topic`                          | New topic in the existing ai-and-ml section; noted vector-search.md to link.     | PASS                     |
-| SR-03 | Direct                               | CLAUDE.md's carve-out for a typo; still lands through a branch and PR.           | PASS                     |
-| SR-04 | Direct, "Adding a new section" steps | add-topic doesn't cover new sections; /feature if full review is wanted.         | PASS (acceptable answer) |
-| SR-05 | `/feature` Stage 0 triage            | Cause unknown; reproduce first, then route by size.                              | PASS                     |
-| SR-06 | Direct                               | A few words in one existing paragraph; not a rewrite.                            | PASS                     |
-| SR-07 | `/feature`                           | App change across three kinds of card; reuses the existing reading-time value.   | PASS                     |
-| SR-08 | Direct                               | CLAUDE.md: a dependency update is a direct change; verify and let CI decide.     | PASS                     |
-| SR-09 | `docs-audit`                         | Staleness of the repo's own docs, not content quality.                           | PASS                     |
-| SR-10 | `skill-routing-eval`                 | Asked by name.                                                                   | PASS                     |
-| SR-11 | `content-audit`                      | Corpus-wide sweep for AI tone, over-explained analogies, wrong claims.           | PASS                     |
-| SR-12 | `content-review-eval`                | Checks the review catches a planted violation, not routing.                      | PASS                     |
-| SR-14 | `feature-review-eval`                | Checks /feature's reviewer still catches planted defects.                        | PASS                     |
-| SR-15 | `add-case-study`                     | New "design X" write-up with its D2 diagram.                                     | PASS                     |
-| SR-16 | `content-audit` (one file)           | Quality check of a published case study.                                         | PASS                     |
-| SR-17 | `/feature`                           | Case-study page UI plus diagram tooling; add-case-study sends those to /feature. | PASS                     |
-| SR-18 | `add-dsa-entry`                      | New DSA entry; none exists yet.                                                  | PASS                     |
-| SR-20 | `add-dsa-entry`                      | Merging entries is add-dsa-entry's job.                                          | PASS                     |
-
-No near-misses. SR-02's agent added a useful cross-link note; SR-04 took the plain-steps answer, one of the two accepted.
+| ID    | Routing decision           | Reasoning (one line)                                              | Grade |
+| ----- | -------------------------- | ----------------------------------------------------------------- | ----- |
+| SR-11 | `content-audit`            | Corpus-wide sweep of published prose.                             | PASS  |
+| SR-16 | `content-audit` (one file) | Quality check of one published case study.                        | PASS  |
+| SR-18 | `add-dsa-entry`            | New entry; none exists.                                           | PASS  |
+| SR-20 | `add-dsa-entry`            | Merges are add-dsa-entry's; content-audit hands them back.        | PASS  |
+| SR-21 | `add-dsa-entry`            | The new rewrite clause; not content-audit (doesn't redraft code). | PASS  |

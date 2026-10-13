@@ -1138,10 +1138,8 @@ answer it.
 ```
 
 One pass, each total built from the one before it, and the example's table
-`[0, 3, 4, 8, 9, 14]` is done. (Python's
-`list(itertools.accumulate(nums, initial=0))` builds the same list in one
-call, and `Counter` is for the counting function below.) With the table built,
-a range question costs almost nothing.
+`[0, 3, 4, 8, 9, 14]` is done. With the table built, a range question costs
+almost nothing.
 
 ```python region=range-sum
 
@@ -1207,9 +1205,6 @@ is O(n²), even when the table makes each pair's sum O(1).
 
 ```python
 # region build-prefix
-from collections import Counter
-
-
 def build_prefix(nums: list[int]) -> list[int]:
     # One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
     # range that starts at 0 still has something to subtract.
@@ -1231,15 +1226,15 @@ def range_sum(prefix: list[int], left: int, right: int) -> int:
 # region count-subarrays-with-sum
 def count_subarrays_with_sum(nums: list[int], k: int) -> int:
     # The empty prefix: without it, a subarray that starts at 0 is never counted.
-    seen = Counter({0: 1})
+    seen = {0: 1}
     total = 0
     count = 0
     for value in nums:
         total += value
         # Look up before recording total, or total pairs with itself: an empty
         # subarray, counted once per element when k is 0.
-        count += seen[total - k]
-        seen[total] += 1
+        count += seen.get(total - k, 0)
+        seen[total] = seen.get(total, 0) + 1
     return count
 # endregion
 ```
@@ -1566,14 +1561,15 @@ brute-force sum and `itertools.accumulate`, and 50 seeded random counts against
 a brute-force count, with the seed and trial in each assertion's message. The
 complexity claims hold, a sliding window does fail once negative values are
 allowed, 2⁵³ is the limit of exact integers in a 64-bit float (larger ones
-round), `itertools.accumulate` takes `initial=` from Python 3.8, a `Counter`
-returns 0 for a missing key without inserting it, prefix XOR works because XOR
-undoes itself, and `/dsa/hash-map` exists.
+round), `itertools.accumulate` (used only in the tests) takes `initial=` from
+Python 3.8, `dict.get(key, 0)` returns 0 for a missing key without inserting
+it, prefix XOR works because XOR undoes itself, and `/dsa/hash-map` exists.
 **Expected finding:** no finding that is false of the entry. Real gaps are
 acceptable and go in the run's notes: the code is shorter than docs/dsa.md's
 30–60 line guide (about 20 lines of Python without comments), there's no test
-with duplicate values for `range_sum`, or the `Counter` import shows up in the
-first pair, before the function that uses it.
+with duplicate values for `range_sum`, "subarray" is used before the prose
+links it to "stretch", or the sliding-window aside says "positive" where
+"non-negative" is the sharper condition.
 **Fails if:** the review reports a defect that isn't true of the entry: a
 "bug" in correct code, a wrong figure that's right, a comment or paragraph
 called narration that does give a reason or connect a step, a missing

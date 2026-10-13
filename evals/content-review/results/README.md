@@ -27,30 +27,20 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Friction fixes: drafter rule-of-thumb self-check before Stage 3, batch fix confirmation                                                              | 2    | 0    | 0         | CR-01 and the CR-05 control.                                               |
 | 2026-10-07 | Writing Standard: one general Named companies rule                                                                                                   | 3    | 0    | 0         | Controls only: CR-05, CS-03, DS-03; CS base order moved 17 to 99.          |
 | 2026-10-13 | Docs dedupe (content-review.md, content-audit, add-dsa-entry pointers, Writing Standard line), NON_NEGOTIABLES #6, DS fixture moved to region fences | 12   | 0    | 0         | All scenarios; first run with region fences in the DS base.                |
+| 2026-10-13 | add-dsa-entry checklist item (2): plain tutorial-style code; DS base moved from Counter to dict                                                      | 3    | 0    | 0         | DS-01, DS-02, DS-03; the new item flagged the base's Counter, now fixed.   |
 
-## Latest run: 2026-10-13, after the cleanup and docs dedupe
+## Latest run: 2026-10-13, add-dsa-entry's plain-code checklist item
 
-- **Run by:** Claude (the orchestrating session). One helper agent assembled each reviewer's inputs into a neutrally named brief file (draft files, Writing Standard, the NON_NEGOTIABLES path, existing items, the filled Stage 3 instruction), then 12 fresh `general-purpose` reviewers ran in parallel, each given only its brief's path.
-- **Trigger:** the docs-dedupe branch (docs/content-review.md, content-audit pointing at the owning checklists, add-dsa-entry pointing at docs/dsa.md, the Writing Standard's topic-structure line), NON_NEGOTIABLES #6 from #119, and the DS base moved to region fences.
-- **Scope:** all scenarios.
+- **Run by:** Claude (the orchestrating session), with 3 fresh `general-purpose` reviewers given rebuilt briefs carrying the new checklist item.
+- **Trigger:** `add-dsa-entry` checklist item (2) now asks for code that reads like a good tutorial's, per docs/dsa.md's new code rules.
+- **Scope:** DS-* only (one skill's checklist).
 
-| ID    | Planted violation                                      | Caught?                                               | Grade |
-| ----- | ------------------------------------------------------ | ----------------------------------------------------- | ----- |
-| CR-01 | "hash function" used undefined                         | Yes, as its first finding (rated Minor)               | PASS  |
-| CR-02 | "not just X — it's Y" closer and stacked intensifiers  | Yes, High                                             | PASS  |
-| CR-03 | Over-explained "rubber duck" paragraph                 | Yes, must-fix                                         | PASS  |
-| CR-04 | Temperature 0 called fully deterministic               | Yes, blocking, with the floating-point/batching cause | PASS  |
-| CR-05 | None (control)                                         | Two optional nits, both true of the text              | PASS  |
-| CS-01 | Read rate off by ten                                   | Yes, High, recomputed                                 | PASS  |
-| CS-02 | A decision that names no losing alternative            | Yes, its first finding                                | PASS  |
-| CS-03 | None (control)                                         | Four Lows, all true of the draft                      | PASS  |
-| CS-04 | "nobody can ever guess a valid link"                   | Yes, High, with the page's own numbers                | PASS  |
-| DS-01 | TS `buildPrefix` drops the last element; tests miss it | Yes, blocking, with failing inputs and test fixes     | PASS  |
-| DS-02 | Walkthrough paragraph that only narrates               | Yes, Medium                                           | PASS  |
-| DS-03 | None (control)                                         | Six small findings, all true of the entry             | PASS  |
+| ID    | Planted violation                                      | Caught?                                                            | Grade |
+| ----- | ------------------------------------------------------ | ------------------------------------------------------------------ | ----- |
+| DS-01 | TS `buildPrefix` drops the last element; tests miss it | Yes, High, with failing inputs                                     | PASS  |
+| DS-02 | Walkthrough paragraph that only narrates               | Yes, High                                                          | PASS  |
+| DS-03 | None (control)                                         | Findings all true; top one the base's `Counter` under the new rule | PASS  |
 
 Notes:
 
-- CR-01's planted gap was caught but rated Minor; the grade asks only that it be named.
-- Several reviewers independently noticed the same real gaps in the shared bases (the CS base has no availability target and its per-address byte cap doesn't hold against its own botnet; the DS base uses "subarray" undefined and says "positive" where "non-negative" is meant). They are true of the drafts, so no control failed on them; worth fixing in the fixtures so they stop competing with the planted lines.
-- The region-fenced DS base worked: every DS reviewer read the code from the code files and mapped region fences without help.
+- All three reviewers applied the new item and flagged the base's `Counter` (outside the rule's library list, and its missing-key default is invisible to a beginner). True of the base, so DS-03 stays a pass; the base now uses a plain `dict` with `.get(key, 0)`, and its stale aside and control notes were updated, so the next run's control is clean of it.

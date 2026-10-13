@@ -392,3 +392,21 @@ the result.
 **Fails if:** routed to `content-audit` (it doesn't draft code or tests),
 to `/feature` (no change to the DSA pages or loader), or done directly with no
 independent review of the new code.
+
+### SR-21 — rewriting an entry's code to the current rules (trap)
+
+<!-- premise: src/dsa/entries/linked-list.md exists -->
+
+> The linked list entry in DSA uses things like Symbol.iterator that a
+> beginner wouldn't follow. Rewrite its code so it's plain, like a tutorial
+> would show.
+
+(Added 2026-10-13 with the plain-code rule; the request is the user's own.)
+
+**Expected:** `add-dsa-entry`
+**Why:** its description and Stage 0 cover rewriting an existing entry's code
+to the current code rules: the code, tests and the prose that walks through
+the code change together, and a fresh reviewer checks the whole entry.
+**Fails if:** routed to `content-audit` (it checks prose quality and doesn't
+redraft code or tests), to `/feature` (no change to the DSA pages or loader),
+or done directly with no independent review of the new code.
