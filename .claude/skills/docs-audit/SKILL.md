@@ -136,7 +136,8 @@ npm run check:eval-premises
 npm run check:pipeline-log
 ```
 
-The latter two are exactly this skill's own failure mode caught
+`check:tokens`, `check:npm-refs`, `check:claude-md` and
+`check:eval-premises` are exactly this skill's own failure mode caught
 mechanically — run them even though Stage 2 already checked by hand, the
 same reasoning `/feature`'s Stage 5 re-runs its full suite instead of
 trusting an earlier stage's self-report.

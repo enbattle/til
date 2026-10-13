@@ -132,7 +132,8 @@ exports and dependencies), not part of `verify` or CI and not a dependency
 (npx fetches it); run it after removing or moving code, and expect no output.
 `knip.json` holds its verified false positives: `.claude/hooks/*.js` are entry
 points (Claude Code runs them from `.claude/settings.json`, which knip doesn't
-read), `src/lib/markdown.d.mts` is used by tsc rather than imported, and
+read), `src/lib/markdown.d.mts` and `src/lib/code-regions.d.mts` are used by tsc
+rather than imported, and
 `d2` is an external binary, not an npm package. Why it isn't a CI gate is in
 [DEFERRED_PRACTICES.md](DEFERRED_PRACTICES.md).
 

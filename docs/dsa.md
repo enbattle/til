@@ -20,7 +20,7 @@ src/dsa/
   code/<slug>/<slug>.ts                # its TypeScript code (no imports but MinHeap)
   code/<slug>/<slug>.test.ts
   dsa-structure.test.ts                # the heading templates
-  dsa-code-chunks.test.ts              # the regions cover the code files
+  dsa-code-chunks.test.ts              # regions, the import rule, plain code, folder contents
 ```
 
 Like case studies, entries live outside `src/content/`, so they are not a
@@ -143,7 +143,7 @@ place. Fences elsewhere in the entry (a usage example, a `text` diagram in
 
 The code files:
 
-- `<slug_underscored>.py`: Python 3.11+ (CI pins its version in `ci.yml`), standard library only,
+- `<slug_underscored>.py`: Python 3.11+ (`ci.yml` and `deploy.yml` pin 3.12), standard library only,
   with type hints. `<slug>.ts`: exported functions or classes, and no imports
   except `import { MinHeap } from '../heap/heap';` in an entry that needs a
   priority queue (Python has `heapq`; TypeScript has none), which the entry
@@ -156,7 +156,8 @@ The code files:
   is used only where interviews expect it (`deque`, `heapq`, `dict`/`Map`,
   `set`/`Set`). Not used: generators and iterator protocols (`yield`,
   `Symbol.iterator`, `__iter__`), special methods (`__len__`, `__getitem__`,
-  `__contains__`, `__slots__`), generic type parameters (`Generic[T]`,
+  `__contains__`, `__slots__`, `__next__`), memo decorators
+  (`functools.cache`, `lru_cache`), generic type parameters (`Generic[T]`,
   `TypeVar`, `Protocol`, `class X<T>`), dataclasses, the walrus operator,
   typed arrays, `Math.clz32`/`Math.imul`, `??=`, side effects inside an
   expression (`arr[stack.pop()] = i`, a write inside `any()` or `.map()`),
@@ -276,7 +277,7 @@ beat many narrow ones: a variant someone would learn in the same sitting
 (fast and slow pointers, Bellman-Ford beside Dijkstra) is a section of the
 entry it varies, not an entry of its own.
 
-Interval DP and state-machine DP get a sentence each in "DP: common shapes",
+Interval DP and state-machine DP get a sentence each in "Dynamic Programming: Common Shapes",
 not entries. Segment trees and Fenwick trees are deliberately left out.
 Adding an entry is a scope decision for the user, not a gap; a new entry still
 goes through the `add-dsa-entry` skill.

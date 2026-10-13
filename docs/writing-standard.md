@@ -97,7 +97,7 @@ teach more depth, and they are where these pages send a reader for more.
   230 words a minute. Tables count; code blocks, diagrams and frontmatter
   don't. This is the canonical home for both numbers; in code,
   `src/lib/reading-time.ts` owns them as `WORDS_PER_MINUTE` and `WORD_BUDGET`
-  (five minutes' worth), which both structure tests import.
+  (five minutes' worth); both structure tests import `WORD_BUDGET`.
 - **Enough to reason, not everything.** An interview never covers every
   scenario, and a reader will be asked things no page mentions. Teach the few
   decisions that shape the answer and the reasoning behind each, well enough

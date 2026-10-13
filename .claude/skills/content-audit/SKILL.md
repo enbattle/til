@@ -97,7 +97,8 @@ and this instruction, close to verbatim, with each owning skill's Stage 3
 > systems from the reference set in docs/content.md. Read what an item needs: a case
 > study's `.d2` sources under `src/system-design/diagrams/` and the topics it
 > links; a DSA entry's whole code files and tests under
-> `src/dsa/code/<slug>/`, not only the regions it shows (an empty
+> `src/dsa/code/<slug>/` (plus `src/dsa/code/heap/heap.ts` when the
+> `.ts` imports `MinHeap`), not only the regions it shows (an empty
 > `region=<name>` fence shows the text between that region's markers;
 > docs/dsa.md has the rule).
 >

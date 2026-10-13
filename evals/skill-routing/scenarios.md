@@ -355,7 +355,7 @@ doesn't exist yet.)
 its Python and TypeScript code and tests under `src/dsa/code/lru-cache/`, drafted
 to the data-structure template, checked by `npm run verify` (including
 `npm run test:py`), then reviewed by a fresh agent against the Writing
-Standard and the DSA checklist (code correct and idiomatic in both languages,
+Standard and the DSA checklist (code correct and plain, tutorial-style, in both languages,
 tests that reach the edge cases, a walkthrough that explains why).
 **Fails if:** routed to `add-topic` (a DSA entry isn't a catalog topic, and
 that skill's review never looks at code or tests), routed to `/feature` (no
@@ -397,9 +397,8 @@ independent review of the new code.
 
 <!-- premise: src/dsa/entries/linked-list.md exists -->
 
-> The linked list entry in DSA uses things like Symbol.iterator that a
-> beginner wouldn't follow. Rewrite its code so it's plain, like a tutorial
-> would show.
+> Go through the linked list entry in DSA and rewrite any of its code a
+> beginner wouldn't follow, so it's plain, like a tutorial would show.
 
 (Added 2026-10-13 with the plain-code rule; the request is the user's own.)
 
