@@ -1,6 +1,6 @@
 ---
 name: add-dsa-entry
-description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add an LRU cache entry to DSA", "write up a difference-array entry", "add these three DSA entries"), or to merge several existing entries into one — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking the writing quality of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
+description: Add a new entry to the DSA tab of this til repo (a data structure, pattern or algorithm under src/dsa/entries/, with its Python and TypeScript code and tests under src/dsa/code/), with an independent review against the Writing Standard and a DSA checklist before it's considered done. Use when the user asks to add, write or draft a DSA entry ("add an LRU cache entry to DSA", "write up a difference-array entry", "add these three DSA entries"), or to merge several existing entries into one, or to rewrite an existing entry's code (and the prose that walks through it) to the current code rules — not for a catalog topic under src/content/ (that's add-topic), not for a System Design case study (add-case-study), not for checking the writing quality of an entry that already exists (content-audit), and not for changes to the DSA pages, loader, code tabs or test tooling (that's app code: /feature).
 ---
 
 # Add a DSA entry
@@ -9,7 +9,7 @@ A DSA entry is content, like a topic or a case study, so it gets the same
 treatment as [`add-case-study`](../add-case-study/SKILL.md): no spec or TDD
 of the app (there's no app behavior to pin down), but an independent review
 before it's done. It gets its own skill because it has more ways to be wrong
-than a topic: code that has to be correct and idiomatic in two languages,
+than a topic: code that has to be correct, and plain enough for a beginner, in two languages,
 tests that have to reach the edge cases, a walkthrough that has to explain
 _why_ each line is written that way, complexity claims that have to hold, and
 prerequisites that have to be real. The review below checks each of those.
@@ -35,7 +35,9 @@ belongs (a link from an older entry's `## Prerequisites` would make the older
 entry depend on the newer one, so it goes elsewhere in the body).
 
 Merging several entries into one also follows this skill; docs/dsa.md's
-"Scope" has what a merge does.
+"Scope" has what a merge does. So does rewriting an existing entry's code
+(and the prose that describes it) to the current code rules: the entry keeps
+its slug, and Stage 3 reviews the whole entry.
 
 `npm run test:py` needs Python and pytest (docs/dsa.md has the version). If
 they aren't installed, say so and give the install command from docs/dsa.md; don't finish an entry whose
@@ -116,8 +118,9 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **`<checklist>`**: (1) the code is correct in both languages: trace it
   by hand on the entry's worked example and on the edge cases (empty input,
   one element, duplicates, the boundaries), and flag any input it gets wrong;
-  (2) the code is idiomatic in each language rather than a transliteration of
-  the other; (3) the tests reach the edge cases, not just the happy path: name
+  (2) the code reads like a good tutorial's to someone meeting the idea for
+  the first time, with no construct docs/dsa.md's code rules exclude: name any
+  line a reader would need language expertise to follow; (3) the tests reach the edge cases, not just the happy path: name
   any realistic bug (an off-by-one, a missed empty case) the tests would not
   catch; (4) every line where the obvious alternative would break has a
   comment giving the reason, in both languages; flag a comment or paragraph

@@ -207,11 +207,117 @@ describe('DSA code files (criterion 12)', () => {
     );
   });
 
-  it.each(SLUGS)('%s code files are self-contained (no TS imports)', (slug) => {
-    const ts = CODE[codePath(slug, 'typescript')];
-    expect(ts, slug).toBeDefined();
-    expect(ts).not.toMatch(/^\s*import\s/m);
-    expect(ts).not.toMatch(/\brequire\(/);
+  it.each(SLUGS)(
+    '%s code files are self-contained (no TS imports but MinHeap)',
+    (slug) => {
+      const ts = CODE[codePath(slug, 'typescript')];
+      expect(ts, slug).toBeDefined();
+      // The one allowed import: the Heap entry's MinHeap, for entries that
+      // need a priority queue (docs/dsa.md, "The code files").
+      const imports = ts.match(/^\s*import\s.*$/gm) ?? [];
+      for (const line of imports) {
+        expect(line.trim(), slug).toBe("import { MinHeap } from '../heap/heap';");
+      }
+      expect(ts).not.toMatch(/\brequire\(/);
+    },
+  );
+});
+
+// Entries whose code predates docs/dsa.md's plain-code rule. Shrink-only:
+// each rewrite batch removes its entries, and the list goes when it's empty.
+const PENDING_PLAIN = new Set([
+  'arrays-and-strings',
+  'backtracking',
+  'binary-search',
+  'binary-search-tree',
+  'binary-tree',
+  'bit-manipulation',
+  'breadth-first-search',
+  'depth-first-search',
+  'dynamic-programming',
+  'dynamic-programming-shapes',
+  'graph',
+  'greedy',
+  'hash-map',
+  'heap',
+  'heap-patterns',
+  'intervals',
+  'linked-list',
+  'monotonic-stack',
+  'prefix-sums',
+  'prim-kruskal',
+  'shortest-paths',
+  'sliding-window',
+  'sorting',
+  'stacks-and-queues',
+  'topological-sort',
+  'trie',
+  'two-pointers',
+  'union-find',
+]);
+
+// The constructs docs/dsa.md's plain-code rule names, as they're spelled in
+// code. Comments are stripped first, so a comment may name one.
+const NOT_PLAIN: Record<Language, [string, RegExp][]> = {
+  python: [
+    ['a generator (yield)', /\byield\b/],
+    ['a special method', /\bdef __(iter|len|getitem|contains|next)__\b/],
+    ['__slots__', /\b__slots__\b/],
+    ['a generic type parameter', /\b(Generic\[|TypeVar\(|Protocol\b)/],
+    ['a dataclass', /@dataclass\b/],
+    ['the walrus operator', /:=/],
+    ['functools.cache', /@(functools\.)?(cache|lru_cache)\b/],
+  ],
+  typescript: [
+    ['a generator', /\bfunction\s*\*|\byield\b/],
+    ['Symbol.iterator', /Symbol\.iterator/],
+    ['a generic type parameter', /\b(class|function)\s+\w+\s*</],
+    ['a typed array', /\b(Int|Uint|Float)(8|16|32|64)(Clamped)?Array\b/],
+    ['Math.clz32 or Math.imul', /Math\.(clz32|imul)\b/],
+    ['??=', /\?\?=/],
+  ],
+};
+
+/** `source` with its comments removed (line comments and block comments). */
+function withoutComments(source: string, language: Language): string {
+  return language === 'python'
+    ? source.replace(/#.*$/gm, '')
+    : source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+}
+
+describe("DSA code follows docs/dsa.md's plain-code rule", () => {
+  it('lists only entries that exist (PENDING_PLAIN only shrinks)', () => {
+    expect([...PENDING_PLAIN].filter((slug) => !SLUGS.includes(slug))).toEqual([]);
+  });
+
+  it.each(SLUGS.filter((slug) => !PENDING_PLAIN.has(slug)))(
+    '%s uses none of the constructs the rule excludes',
+    (slug) => {
+      for (const language of LANGUAGES) {
+        const code = withoutComments(CODE[codePath(slug, language)], language);
+        const found = NOT_PLAIN[language]
+          .filter(([, pattern]) => pattern.test(code))
+          .map(([name]) => name);
+        expect(found, `${slug} (${language})`).toEqual([]);
+      }
+    },
+  );
+
+  it.each([
+    [
+      'python',
+      'def __iter__(self):\n    yield 1',
+      ['a generator (yield)', 'a special method'],
+    ],
+    ['typescript', '*[Symbol.iterator]() {}', ['Symbol.iterator']],
+    ['typescript', 'export class MinHeap<T> {}', ['a generic type parameter']],
+    ['python', '# a comment may say yield or __iter__\nx = 1', []],
+  ] as const)('the check itself: %s %j', (language, code, expected) => {
+    const stripped = withoutComments(code, language);
+    const found = NOT_PLAIN[language]
+      .filter(([, pattern]) => pattern.test(stripped))
+      .map(([name]) => name);
+    expect(found).toEqual(expected);
   });
 });
 

@@ -17,7 +17,7 @@ src/dsa/
   entries/<slug>.md                    # one entry
   code/<slug>/<slug_underscored>.py    # its Python code (stdlib only)
   code/<slug>/test_<slug_underscored>.py
-  code/<slug>/<slug>.ts                # its TypeScript code (no imports)
+  code/<slug>/<slug>.ts                # its TypeScript code (no imports but MinHeap)
   code/<slug>/<slug>.test.ts
   dsa-structure.test.ts                # the heading templates
   dsa-code-chunks.test.ts              # the regions cover the code files
@@ -144,9 +144,25 @@ place. Fences elsewhere in the entry (a usage example, a `text` diagram in
 The code files:
 
 - `<slug_underscored>.py`: Python 3.11+ (CI pins its version in `ci.yml`), standard library only,
-  with type hints. `<slug>.ts`: no imports, exported functions or classes.
-  Both idiomatic for their language rather than a transliteration of each
-  other; the APIs match in shape (`lower_bound` / `lowerBound`).
+  with type hints. `<slug>.ts`: exported functions or classes, and no imports
+  except `import { MinHeap } from '../heap/heap';` in an entry that needs a
+  priority queue (Python has `heapq`; TypeScript has none), which the entry
+  says it uses rather than showing again. The APIs match in shape
+  (`lower_bound` / `lowerBound`).
+- Written the way a good tutorial writes it, for someone meeting the idea for
+  the first time, so a reader who knows only basic Python or TypeScript can
+  follow it: plain loops and conditionals, concrete types, ordinary method
+  names, one step per line, and the same steps in both languages. A library
+  is used only where interviews expect it (`deque`, `heapq`, `dict`/`Map`,
+  `set`/`Set`). Not used: generators and iterator protocols (`yield`,
+  `Symbol.iterator`, `__iter__`), special methods (`__len__`, `__getitem__`,
+  `__contains__`, `__slots__`), generic type parameters (`Generic[T]`,
+  `TypeVar`, `Protocol`, `class X<T>`), dataclasses, the walrus operator,
+  typed arrays, `Math.clz32`/`Math.imul`, `??=`, side effects inside an
+  expression (`arr[stack.pop()] = i`, a write inside `any()` or `.map()`),
+  and checks or comments that exist only because of a language quirk. Bit
+  tricks belong to the bit-manipulation entry, where they're the subject.
+  `src/dsa/dsa-code-chunks.test.ts` fails the constructs it can name.
 - One core implementation per entry, about 30–60 lines per language not
   counting comments. An entry that covers several shapes (the DP shapes, the
   heap patterns) gives each its own short function; a variant that changes
