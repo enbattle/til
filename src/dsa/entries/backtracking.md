@@ -153,15 +153,16 @@ k. Raising the target to 161 (twice the depth) takes 441 calls to 1,681.
 
 ## Pitfalls
 
-- **Recording `chosen` itself.** `result.append(chosen)` stores the one shared
-  list, which is empty by the time the search ends, so the result is a row of
-  empty lists. The `.copy()` is what freezes each answer.
-- **Forgetting an undo.** Drop `used[i] = False` and the first full path leaves
+- **Recording `chosen` itself.** `result.append(chosen)` (`result.push(chosen)` in
+  TypeScript) stores the one shared list, which is empty by the time the search
+  ends, so the result is a row of empty lists. The copy (`.copy()` or
+  `[...chosen]`) freezes each answer.
+- **Forgetting an undo.** Drop `used[i] = False` (`false` in TypeScript) and the first full path leaves
   every flag set, so `[2, 3, 5]` returns one permutation instead of six.
 - **The wrong index in the recursive call.** In `subsets`, `start + 1` adds
   repeats and reversals such as `[3, 3]` and `[5, 3]`, and `i` would take 2
   again forever. In `combination_sum`, `i + 1` forbids reuse, so `[2, 3, 5]`
   with target 8 returns only `[[3, 5]]`.
-- **Pruning with `break` on unsorted candidates.** Without the `sorted`, a big
+- **Pruning with `break` on unsorted candidates.** Without `sorted` (`.sort` in TypeScript), a big
   candidate ahead of a small one ends the loop early: `[8, 3]` with a target of
   3 returns `[]`, though `[3]` fits.

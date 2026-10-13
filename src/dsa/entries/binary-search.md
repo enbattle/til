@@ -79,11 +79,11 @@ this idea at scale
 You'll write the loop over any yes/no question first, so a search over an
 array and a search over an answer share every line.
 
-```python region=first-true
+```python region=first-true-setup
 
 ```
 
-```typescript region=first-true
+```typescript region=first-true-setup
 
 ```
 
@@ -91,11 +91,11 @@ The range starts as every candidate, and the loop runs while one is left.
 `mid` rounds down, so it is always at least `lo` and below `hi`, which means
 `ok(mid)` is never asked about the excluded end.
 
-```python region=part-2
+```python region=first-true-narrow
 
 ```
 
-```typescript region=part-2
+```typescript region=first-true-narrow
 
 ```
 

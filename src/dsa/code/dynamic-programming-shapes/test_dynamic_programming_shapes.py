@@ -268,9 +268,8 @@ def test_edit_distance_known_cases():
     assert edit_distance("abc", "abc") == 0
 
 
-def test_edit_distance_is_symmetric_and_works_on_lists():
+def test_edit_distance_is_symmetric():
     assert edit_distance("abc", "yabd") == edit_distance("yabd", "abc")
-    assert edit_distance(["a", "b"], ["a", "c", "b"]) == 1
 
 
 def test_edit_distance_matches_brute_force():

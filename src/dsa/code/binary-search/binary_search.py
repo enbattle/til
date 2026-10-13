@@ -1,13 +1,14 @@
-# region first-true
+# region first-true-setup
 from collections.abc import Callable
+
 
 def first_true(lo: int, hi: int, ok: Callable[[int], bool]) -> int:
     """Smallest x in [lo, hi) with ok(x) true, or hi if none; ok goes False then True."""
     while lo < hi:
-        # Not (lo + hi) // 2: in a fixed-width language that sum can overflow.
+        # Not (lo + hi) // 2: in Java or C++ that sum can overflow a 32-bit int.
         mid = lo + (hi - lo) // 2
 # endregion
-        # region part-2
+        # region first-true-narrow
         if ok(mid):
             hi = mid  # mid may be the answer, so it has to stay in range
         else:
@@ -29,14 +30,23 @@ def min_capacity(weights: list[int], days: int) -> int:
     """Least truck capacity that ships the packages, in order, within `days`."""
 
     def enough(cap: int) -> bool:
-        used, load = 1, 0
+        used = 1
+        load = 0
         for w in weights:
             if load + w > cap:
-                used, load = used + 1, 0
+                used += 1
+                load = 0
             load += w
         return used <= days
 
-    # Below max(weights) the heaviest package fits on no day, yet enough() can
-    # still say yes, so the search must not start lower. sum(weights) always works.
-    return first_true(max(weights, default=0), sum(weights), enough)
+    heaviest = 0
+    total = 0
+    for w in weights:
+        if w > heaviest:
+            heaviest = w
+        total += w
+
+    # Below the heaviest package, enough() can still say yes (that package just
+    # gets its own day), so the search must not start lower. The total always works.
+    return first_true(heaviest, total, enough)
 # endregion

@@ -8,11 +8,10 @@ export function robMemo(nums: number[]): number {
     // >=, not ===: robbing the last house jumps to nums.length + 1.
     if (i >= nums.length) return 0;
     // Compare with undefined, not truthiness: a stored 0 is a real answer.
-    let best = memo.get(i);
-    if (best === undefined) {
-      best = Math.max(bestFrom(i + 1), nums[i] + bestFrom(i + 2));
-      memo.set(i, best);
-    }
+    const saved = memo.get(i);
+    if (saved !== undefined) return saved;
+    const best = Math.max(bestFrom(i + 1), nums[i] + bestFrom(i + 2));
+    memo.set(i, best);
     return best;
   };
   // One stack frame per house: past several thousand houses (the exact
@@ -62,9 +61,10 @@ export function rob(nums: number[]): number {
   let next1 = 0;
   let next2 = 0;
   for (let i = nums.length - 1; i >= 0; i--) {
-    // One assignment: both right-hand sides use the old next1. Two
-    // statements would overwrite next1 before next2 copies it.
-    [next1, next2] = [Math.max(next1, nums[i] + next2), next1];
+    const current = Math.max(next1, nums[i] + next2);
+    // Slide left: next2 must take the old next1 before next1 changes.
+    next2 = next1;
+    next1 = current;
   }
   return next1;
 }

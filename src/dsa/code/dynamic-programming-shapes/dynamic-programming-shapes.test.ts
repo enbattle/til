@@ -302,9 +302,8 @@ describe('editDistance', () => {
     expect(editDistance('abc', 'abc')).toBe(0);
   });
 
-  it('is symmetric and works on arrays of tokens', () => {
+  it('is symmetric', () => {
     expect(editDistance('abc', 'yabd')).toBe(editDistance('yabd', 'abc'));
-    expect(editDistance(['a', 'b'], ['a', 'c', 'b'])).toBe(1);
   });
 
   it('matches brute force on seeded random strings', () => {
@@ -332,6 +331,7 @@ describe('editDistance', () => {
     const budget = new Budget(4 * n * n);
     const a = counting(new Array<string>(n).fill('a'), budget);
     const b = counting(new Array<string>(n).fill('b'), budget);
-    expect(editDistance(a, b)).toBe(n);
+    // The proxies stand in for strings: the code only reads .length and [i].
+    expect(editDistance(a as unknown as string, b as unknown as string)).toBe(n);
   });
 });

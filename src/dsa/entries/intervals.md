@@ -90,11 +90,11 @@ instead of re-sorting each time.
 
 ## Walkthrough
 
-```python region=part-1
+```python region=merge-intervals
 
 ```
 
-```typescript region=part-1
+```typescript region=merge-intervals
 
 ```
 
@@ -143,7 +143,7 @@ time and space, with no sort.
   puts `[10, 12]` before `[2, 3]`, which breaks the one-comparison argument.
   The `(a, b) => a[0] - b[0]` in `mergeIntervals` fixes it.
 - **The wrong comparison for the convention.** With inclusive ends, merging on
-  `start <= last[1]` joins `[1, 3]` and `[3, 5]`, and `<` leaves them apart. With
+  `start <= merged[-1][1]` joins `[1, 3]` and `[3, 5]`, and `<` leaves them apart. With
   half-open ranges like `[1, 3)`, where the end is excluded, both flip: merge
   on `<`, and in the sweep let `<=` retire an end at the same coordinate.
 - **Keeping the end of a nested interval.** Assigning `end` instead of

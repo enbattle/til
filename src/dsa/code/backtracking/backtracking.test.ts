@@ -190,6 +190,10 @@ describe('combinationSum (TypeScript)', () => {
     ]);
   });
 
+  it('orders candidates as numbers, not as text', () => {
+    expect(combinationSum([10, 9], 9)).toEqual([[9]]);
+  });
+
   it('sorts and de-duplicates the candidates', () => {
     expect(combinationSum([3, 2, 3], 6)).toEqual([
       [2, 2, 2],

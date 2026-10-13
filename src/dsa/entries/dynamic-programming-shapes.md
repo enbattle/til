@@ -83,7 +83,7 @@ On the example the row ends as `[6, 8, 7]`, the last row of the table above. The
 
 ```
 
-```typescript region=knapsack01
+```typescript region=knapsack-01
 
 ```
 
@@ -120,4 +120,4 @@ Every shape does constant work per state, so the time is the number of states. T
 - **Sweeping `knapsack_01` upward.** With `range(weight, capacity + 1)` the example returns 8, not 6: the first item is reused four times, because `best[c - weight]` has already been updated.
 - **Sweeping `min_coins` downward.** The example returns -1, because every cell reads an amount this coin hasn't reached yet, so no coin ever repeats.
 - **Starting the grid row at zeros.** With `[0] * cols` instead of `inf` the example returns 3, not 7: the top row sees a free cell above it and ignores its left neighbor's cost. Without the `c == 0` test, Python's `row[c - 1]` wraps to the last column.
-- **Leaving the edit-distance borders at zero.** Without `table[0] = list(range(len(b) + 1))`, `"abc"` to `"yabd"` returns 1, as if building a string from nothing were free.
+- **Leaving the edit-distance borders at zero.** Without the `table[0][j] = j` loop, `"abc"` to `"yabd"` returns 1, as if building a string from nothing were free.

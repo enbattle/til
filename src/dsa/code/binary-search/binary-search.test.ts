@@ -90,6 +90,18 @@ describe('lowerBound', () => {
 });
 
 describe('firstTrue', () => {
+  it('asks logarithmically many questions', () => {
+    for (const answer of [0, 1, 499, 500, 999, 1000]) {
+      let asked = 0;
+      firstTrue(0, 1000, (x) => {
+        asked += 1;
+        return x >= answer;
+      });
+      // floor(log2(1000)) + 1 = 10: a scan would ask hundreds.
+      expect(asked, `answer ${answer}`).toBeLessThanOrEqual(10);
+    }
+  });
+
   it('covers an empty range, no true value, and all true', () => {
     expect(firstTrue(3, 3, () => true)).toBe(3);
     expect(firstTrue(0, 10, () => false)).toBe(10);

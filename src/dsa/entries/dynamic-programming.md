@@ -162,6 +162,6 @@ one O(n) walk. `rob` is O(n) time and O(1) space.
   every `best[i + 1]` it reads is still 0, so each entry becomes its own
   house's money and `[3, 4, 3, 1]` returns 3 with no error. Fill an entry only
   after everything it reads.
-- **Updating the two variables one at a time.** Writing `next1 = ...` and then
-  `next2 = next1` copies the new value, not the old one, and `[3, 4, 3, 1]`
-  returns 11, as if every house were robbed.
+- **Sliding the two variables in the wrong order.** Setting `next1 = current`
+  before `next2 = next1` copies the new value, not the old one, and
+  `[3, 4, 3, 1]` returns 11, as if every house were robbed.
