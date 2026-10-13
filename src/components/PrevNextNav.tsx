@@ -5,9 +5,9 @@ interface Neighbour {
   title: string;
 }
 
-/** Links to the previous and next page in an ordered list (case studies, DSA
- * entries), each shown only when it exists; nothing at all when neither
- * does. */
+/** Links to the previous and next page in an ordered list (a section's topics,
+ * case studies, DSA entries), each shown only when it exists; nothing at all
+ * when neither does. */
 export function PrevNextNav({
   label,
   prev,

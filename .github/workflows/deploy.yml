@@ -37,6 +37,7 @@ jobs:
       # The full chain CI runs (it includes the build), on the exact commit being deployed.
       # Every change lands through a PR whose CI must pass, but a direct push to main
       # (an admin bypass) skips that, so a red commit is caught here before it goes live.
+      # This is also main's only verify run: ci.yml runs on pull requests only.
       - run: npm run verify
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0

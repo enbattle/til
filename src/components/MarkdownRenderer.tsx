@@ -95,10 +95,10 @@ function extractText(node: ReactNode): string {
  * re-added across versions) is the version-stable way to tell them apart.
  */
 const components: Components = {
-  // TopicPage renders its own page-level <h1> (the topic title); a body that
-  // opens with a markdown `# heading` would otherwise produce a second one.
-  // Demoting it to <h2> keeps every page to exactly one <h1> regardless of
-  // how a topic happens to be written, rather than relying on a writing
+  // Each content page renders its own page-level <h1> (the title, in
+  // PageHeader); a body that opens with a markdown `# heading` would otherwise
+  // produce a second one. Demoting it to <h2> keeps every page to exactly one
+  // <h1> regardless of how a file happens to be written, rather than relying on a writing
   // convention nobody's forced to follow.
   h1({ id, children }) {
     return <h2 id={id}>{children}</h2>;

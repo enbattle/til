@@ -5,8 +5,8 @@
 // self-graded retro would otherwise break silently, nor with a proposal still
 // "pending" (from 2026-10-05). From 2026-10-07, a content row with findings
 // names their kinds (every one from KINDS), and no row logs a fix round with
-// nothing to fix. Rows are parsed by cell
-// because Prettier re-pads the table whenever a row is added.
+// nothing to fix. Rows are parsed by cell, so a padded row reads the same as
+// an unpadded one (.prettierignore leaves the log unpadded, to keep it small).
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
