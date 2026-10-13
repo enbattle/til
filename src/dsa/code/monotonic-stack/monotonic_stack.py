@@ -4,11 +4,12 @@ def next_greater(nums: list[int]) -> list[int]:
     answer = [-1] * len(nums)
     # Indices, not values: the answer is a position, and equal values repeat.
     stack: list[int] = []
-    for i, value in enumerate(nums):
+    for i in range(len(nums)):
         # while, not if: one new value can answer several waiting positions.
         # <, not <=: an equal value isn't larger, so it keeps waiting.
-        while stack and nums[stack[-1]] < value:
-            answer[stack.pop()] = i
+        while stack and nums[stack[-1]] < nums[i]:
+            waiting = stack.pop()
+            answer[waiting] = i
         stack.append(i)
     return answer
 # endregion
@@ -17,8 +18,13 @@ def next_greater(nums: list[int]) -> list[int]:
 # region days-until-warmer
 def days_until_warmer(temps: list[int]) -> list[int]:
     """For each day, how many days until a strictly warmer one; 0 if never."""
-    # The -1 check matters: without it a day with no answer gets -1 - i.
-    return [0 if j == -1 else j - i for i, j in enumerate(next_greater(temps))]
+    warmer_day = next_greater(temps)
+    days = [0] * len(temps)
+    for i in range(len(temps)):
+        # The -1 check matters: without it a day with no answer gets -1 - i.
+        if warmer_day[i] != -1:
+            days[i] = warmer_day[i] - i
+    return days
 # endregion
 
 
@@ -30,15 +36,21 @@ def largest_rectangle(heights: list[int]) -> int:
     # One extra step with height 0 pops every bar still waiting; without it
     # the bars left on the stack at the end are never measured.
     for i in range(len(heights) + 1):
-        h = heights[i] if i < len(heights) else 0
+        current = 0
+        if i < len(heights):
+            current = heights[i]
 # endregion
-        # region part-4
-        while stack and heights[stack[-1]] >= h:
-            height = heights[stack.pop()]
+        # region measure-popped-bars
+        while stack and heights[stack[-1]] >= current:
+            popped = stack.pop()
+            height = heights[popped]
             # The new top is the nearest shorter bar on the left, not the
             # popped index: bars between them were popped earlier, as taller.
-            left = stack[-1] if stack else -1
-            best = max(best, height * (i - left - 1))
+            left = -1
+            if stack:
+                left = stack[-1]
+            width = i - left - 1
+            best = max(best, height * width)
         stack.append(i)
     return best
         # endregion

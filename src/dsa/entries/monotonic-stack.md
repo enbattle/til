@@ -77,11 +77,11 @@ Given bar heights, find the area of the largest rectangle that fits under the ba
 
 A bar popped at step `i` was blocked by bar `i`, so its right edge is just before `i`; its left edge comes from the next entry down.
 
-```python region=part-4
+```python region=measure-popped-bars
 
 ```
 
-```typescript region=part-4
+```typescript region=measure-popped-bars
 
 ```
 
@@ -108,5 +108,5 @@ The extra space is O(n): the stack reaches n entries when nothing ever pops, as 
 
 - **`<=` in `next_greater`.** An equal value is treated as larger, so `[2, 2, 3]` returns `[1, 2, -1]` instead of `[2, 2, -1]`: the first 2 reports the second 2 as its answer. Flip it deliberately for the "larger or equal" version, not by accident.
 - **`if` instead of `while`.** One new value answers only the top waiting position. On `[2, 1, 2, 4, 3]` the 4 pops index 2 and leaves index 0 behind, so position 0 keeps `-1` instead of 3.
-- **Dropping the sentinel in `largest_rectangle`.** Bars still on the stack at the end are never measured. The loop stops after popping the 2 and the 4, and returns 4, not 6.
+- **Dropping the extra height-0 step in `largest_rectangle`.** Bars still on the stack at the end are never measured. The loop stops after popping the 2 and the 4, and returns 4, not 6.
 - **Taking `left` from the popped bar.** Using the popped index instead of the new top ignores the taller bars between them, which were popped earlier. A rectangle can reach back over them, so the width comes out too small: `[2, 1, 2, 4, 3]` returns 4, not 6.

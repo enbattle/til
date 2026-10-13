@@ -226,16 +226,9 @@ describe('DSA code files (criterion 12)', () => {
 // Entries whose code predates docs/dsa.md's plain-code rule. Shrink-only:
 // each rewrite batch removes its entries, and the list goes when it's empty.
 const PENDING_PLAIN = new Set([
-  'backtracking',
-  'binary-search',
   'breadth-first-search',
   'depth-first-search',
-  'dynamic-programming',
-  'dynamic-programming-shapes',
-  'greedy',
   'heap-patterns',
-  'intervals',
-  'monotonic-stack',
   'prim-kruskal',
   'shortest-paths',
   'sorting',

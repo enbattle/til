@@ -8,7 +8,9 @@ export function nextGreater(nums: number[]): number[] {
     // while, not if: one new value can answer several waiting positions.
     // <, not <=: an equal value isn't larger, so it keeps waiting.
     while (stack.length > 0 && nums[stack[stack.length - 1]] < nums[i]) {
-      answer[stack.pop()!] = i;
+      const waiting = stack[stack.length - 1];
+      stack.pop();
+      answer[waiting] = i;
     }
     stack.push(i);
   }
@@ -19,8 +21,15 @@ export function nextGreater(nums: number[]): number[] {
 // #region days-until-warmer
 /** For each day, how many days until a strictly warmer one; 0 if never. */
 export function daysUntilWarmer(temps: number[]): number[] {
-  // The -1 check matters: without it a day with no answer gets -1 - i.
-  return nextGreater(temps).map((j, i) => (j === -1 ? 0 : j - i));
+  const warmerDay = nextGreater(temps);
+  const days: number[] = new Array(temps.length).fill(0);
+  for (let i = 0; i < temps.length; i++) {
+    // The -1 check matters: without it a day with no answer gets -1 - i.
+    if (warmerDay[i] !== -1) {
+      days[i] = warmerDay[i] - i;
+    }
+  }
+  return days;
 }
 // #endregion
 
@@ -32,15 +41,24 @@ export function largestRectangle(heights: number[]): number {
   // One extra step with height 0 pops every bar still waiting; without it
   // the bars left on the stack at the end are never measured.
   for (let i = 0; i <= heights.length; i++) {
-    const h = i < heights.length ? heights[i] : 0;
+    let current = 0;
+    if (i < heights.length) {
+      current = heights[i];
+    }
     // #endregion
-    // #region part-4
-    while (stack.length > 0 && heights[stack[stack.length - 1]] >= h) {
-      const height = heights[stack.pop()!];
+    // #region measure-popped-bars
+    while (stack.length > 0 && heights[stack[stack.length - 1]] >= current) {
+      const popped = stack[stack.length - 1];
+      stack.pop();
+      const height = heights[popped];
       // The new top is the nearest shorter bar on the left, not the
       // popped index: bars between them were popped earlier, as taller.
-      const left = stack.length > 0 ? stack[stack.length - 1] : -1;
-      best = Math.max(best, height * (i - left - 1));
+      let left = -1;
+      if (stack.length > 0) {
+        left = stack[stack.length - 1];
+      }
+      const width = i - left - 1;
+      best = Math.max(best, height * width);
     }
     stack.push(i);
   }

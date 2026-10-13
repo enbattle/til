@@ -1,4 +1,4 @@
-// #region part-1
+// #region select-intervals
 /** [start, end], half-open: (1, 4) and (4, 6) don't overlap. */
 export type Interval = [number, number];
 
@@ -10,10 +10,9 @@ export function selectIntervals(intervals: Interval[]): Interval[] {
   // Copy first: sort changes the array it is called on.
   const byEnd = [...intervals].sort((a, b) => a[1] - b[1]);
   for (const [start, end] of byEnd) {
-    const last = chosen[chosen.length - 1];
-    // Sorted by end, last ends last of everything taken, so one comparison
-    // covers them all. >=, not >: touching intervals both fit.
-    if (last === undefined || start >= last[1]) {
+    // Sorted by end, chosen's last interval ends last of everything taken, so
+    // one comparison covers them all. >=, not >: touching intervals both fit.
+    if (chosen.length === 0 || start >= chosen[chosen.length - 1][1]) {
       chosen.push([start, end]);
     }
   }
@@ -50,7 +49,7 @@ export function greedyCoinCount(coins: number[], amount: number): number | null 
   // Largest first is the rule itself; the caller's order isn't trusted.
   for (const coin of [...coins].sort((a, b) => b - a)) {
     // A coin can repeat, and one bigger than amount adds 0: no guard needed.
-    // Math.floor: / on numbers gives a fraction.
+    // / alone gives a fraction (7 / 3 is 2.33); Math.floor keeps whole coins.
     count += Math.floor(amount / coin);
     amount %= coin;
   }

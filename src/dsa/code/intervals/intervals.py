@@ -1,11 +1,11 @@
-# region part-1
+# region merge-intervals
 Interval = tuple[int, int]  # (start, end), both ends included
 
 
 def merge_intervals(intervals: list[Interval]) -> list[Interval]:
     """Merge intervals that share at least one point; result sorted, disjoint."""
     merged: list[Interval] = []
-    # Sorted by start: that order is what lets one look at merged[-1] decide.
+    # Sorted by start (on a copy): that order is what lets the last merged one decide.
     for start, end in sorted(intervals):
         # <=, not <: with inclusive ends, [2, 6] and [6, 7] share the point 6.
         if merged and start <= merged[-1][1]:
@@ -21,11 +21,17 @@ def merge_intervals(intervals: list[Interval]) -> list[Interval]:
 def max_overlap(intervals: list[Interval]) -> int:
     """The most intervals that contain one common point (0 for no intervals)."""
     # Sorted apart: which end belongs to which start never matters for counting.
-    starts = sorted(start for start, _ in intervals)
-    ends = sorted(end for _, end in intervals)
+    starts: list[int] = []
+    ends: list[int] = []
+    for start, end in intervals:
+        starts.append(start)
+        ends.append(end)
+    starts.sort()
+    ends.sort()
     best = 0
     finished = 0
-    for i, start in enumerate(starts):
+    for i in range(len(starts)):
+        start = starts[i]
         # <, not <=: an end equal to this start still contains the point.
         # finished never moves back, since later starts are no smaller.
         while ends[finished] < start:

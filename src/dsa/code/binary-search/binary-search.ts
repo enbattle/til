@@ -1,11 +1,11 @@
-// #region first-true
+// #region first-true-setup
 /** Smallest x in [lo, hi) with ok(x) true, or hi if none; ok goes false then true. */
 export function firstTrue(lo: number, hi: number, ok: (x: number) => boolean): number {
   while (lo < hi) {
-    // Not Math.floor((lo + hi) / 2): in a fixed-width language that sum can overflow.
+    // Not (lo + hi) / 2: in Java or C++ that sum can overflow a 32-bit int.
     const mid = lo + Math.floor((hi - lo) / 2);
     // #endregion
-    // #region part-2
+    // #region first-true-narrow
     if (ok(mid)) {
       hi = mid; // mid may be the answer, so it has to stay in range
     } else {
@@ -39,9 +39,18 @@ export function minCapacity(weights: number[], days: number): number {
     }
     return used <= days;
   };
-  // Below max(weights) the heaviest package fits on no day, yet enough() can
-  // still say yes, so the search must not start lower. sum(weights) always works.
-  const total = weights.reduce((a, b) => a + b, 0);
-  return firstTrue(Math.max(0, ...weights), total, enough);
+
+  let heaviest = 0;
+  let total = 0;
+  for (const w of weights) {
+    if (w > heaviest) {
+      heaviest = w;
+    }
+    total += w;
+  }
+
+  // Below the heaviest package, enough() can still say yes (that package just
+  // gets its own day), so the search must not start lower. The total always works.
+  return firstTrue(heaviest, total, enough);
 }
 // #endregion

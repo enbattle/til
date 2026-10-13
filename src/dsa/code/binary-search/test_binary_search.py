@@ -74,6 +74,19 @@ def test_lower_bound_reads_logarithmically_many_elements():
         assert nums.reads <= 10, (target, nums.reads)
 
 
+def test_first_true_asks_logarithmically_many_questions():
+    for answer in (0, 1, 499, 500, 999, 1000):
+        asked = []
+
+        def ok(x):
+            asked.append(x)
+            return x >= answer
+
+        first_true(0, 1000, ok)
+        # floor(log2(1000)) + 1 = 10: a scan would ask hundreds.
+        assert len(asked) <= 10, (answer, len(asked))
+
+
 def test_first_true_range_and_none_case():
     assert first_true(3, 3, lambda x: True) == 3
     assert first_true(0, 10, lambda x: False) == 10
@@ -83,7 +96,12 @@ def test_first_true_range_and_none_case():
 
 def test_first_true_asks_about_the_only_index_of_a_range_of_one():
     calls = []
-    first_true(0, 1, lambda x: calls.append(x) or False)
+
+    def ok(x):
+        calls.append(x)
+        return False
+
+    first_true(0, 1, ok)
     assert calls == [0]
 
 

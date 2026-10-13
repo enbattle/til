@@ -82,11 +82,11 @@ which is [dynamic programming](/dsa/dynamic-programming).
 
 ## Walkthrough
 
-```python region=part-1
+```python region=select-intervals
 
 ```
 
-```typescript region=part-1
+```typescript region=select-intervals
 
 ```
 

@@ -121,6 +121,10 @@ def test_combination_sum_classic_example():
     assert combination_sum([2, 3, 5], 8) == [[2, 2, 2, 2], [2, 3, 3], [3, 5]]
 
 
+def test_combination_sum_orders_candidates_as_numbers():
+    assert combination_sum([10, 9], 9) == [[9]]
+
+
 def test_combination_sum_unsorted_and_repeated_candidates():
     assert combination_sum([3, 2, 3], 6) == [[2, 2, 2], [3, 3]]
 

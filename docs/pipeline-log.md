@@ -280,3 +280,10 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
 | 2026-10-13 | add-dsa-entry src/dsa/entries/two-pointers.md | 0 | 0/0/2 | 0 | 2 | kinds: wrong-claim |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/sliding-window.md | 0 | 0/0/0 | 0 | 2 | n/a |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/prefix-sums.md | 0 | 0/0/2 | 0 | 2 | kinds: test-gap, narration |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/binary-search.md | 0 | 0/2/0 | 1 | 2 | kinds: test-gap, no-alternative |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/monotonic-stack.md | 0 | 0/0/1 | 0 | 2 | kinds: estimate |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/intervals.md | 0 | 0/1/0 | 1 | 2 | kinds: inconsistency |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/greedy.md | 0 | 0/0/1 | 1 | 2 | kinds: narration |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/backtracking.md | 0 | 0/2/2 | 1 | 2 | kinds: no-alternative, test-gap, structure, inconsistency |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/dynamic-programming.md | 0 | 0/1/0 | 1 | 2 | kinds: wrong-claim |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/dynamic-programming-shapes.md | 0 | 0/0/2 | 1 | 2 | kinds: inconsistency |  |

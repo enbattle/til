@@ -1,4 +1,4 @@
-# region part-1
+# region select-intervals
 Interval = tuple[int, int]  # half-open: (1, 4) and (4, 6) don't overlap
 
 
@@ -23,13 +23,13 @@ def can_reach_end(jumps: list[int]) -> bool:
     if not jumps:
         return False
     farthest = 0
-    for i, length in enumerate(jumps):
+    for i in range(len(jumps)):
         # Check before updating, so a gap stops the walk. > and not >=:
         # index farthest itself is reachable (>= rejects index 0).
         if i > farthest:
             return False
         # max, not assignment: a later index can reach less far than an earlier.
-        farthest = max(farthest, i + length)
+        farthest = max(farthest, i + jumps[i])
     return True
 # endregion
 

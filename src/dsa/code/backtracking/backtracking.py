@@ -52,7 +52,8 @@ def permutations(values: list[int]) -> list[list[int]]:
 def combination_sum(candidates: list[int], target: int) -> list[list[int]]:
     """Every combination of positive candidates, each reusable, adding to target."""
     # A set: a repeated candidate would be two choices and double the answers.
-    options = sorted(set(candidates))
+    unique = set(candidates)
+    options = sorted(unique)
     # Zero never shrinks remaining and a negative grows it: no end to the walk.
     if options and options[0] <= 0:
         raise ValueError("candidates must be positive")
