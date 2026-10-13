@@ -3,7 +3,7 @@ import { checkFields } from './frontmatter';
 
 // docs/specs/content-dedupe.md, design item 1 and criterion 1:
 // `checkFields(name, data, { required, allowed })` is the one required- and
-// allowed-field check the three loaders share. It throws for the first missing
+// allowed-field check the two loaders share. It throws for the first missing
 // or empty required field, in `required` order, and for any key not in
 // `allowed`; otherwise it returns without a value.
 

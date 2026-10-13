@@ -23,8 +23,6 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
-// Vitest runs from the repository root.
-export const REPO = resolve('.');
 const temps = [];
 export function tempDir() {
   const dir = mkdtempSync(join(tmpdir(), 'til-checks-'));
@@ -38,7 +36,7 @@ export function cleanTemps() {
 
 // The scripts list their inputs through `git ls-files` (so .gitignore is
 // respected), so a throwaway root must be a git repository.
-export function gitInit(root) {
+function gitInit(root) {
   execFileSync('git', ['init', '-q', '--template='], { cwd: root });
 }
 

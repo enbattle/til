@@ -56,30 +56,18 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-13 | Cleanup #117–#124 and docs dedupe: CLAUDE.md router trim, eval skills cut to their own parts, feature/add-dsa-entry/content-audit/add-topic/docs-audit edits | 18   | 0    | 0         | All live scenarios; no regression.                           |
 | 2026-10-13 | add-dsa-entry: rewrite mode in description and Stage 0, plain-code checklist item; SR-21 added                                                               | 5    | 0    | 0         | SR-11, 16, 18, 20, 21.                                       |
 | 2026-10-13 | DSA tab removed (docs/specs/remove-dsa-tab.md), all scenarios                                                                                                | 17   | 0    | 0         | Full run; SR-18/20/21 retired.                               |
+| 2026-10-13 | Cleanup after the DSA removal: /feature Stages 1-2 guard and mutation rules, content-audit asides                                                            | 5    | 0    | 0         | Scoped run.                                                  |
 
-## Latest run: 2026-10-13, DSA tab removed
+## Latest run: 2026-10-13, cleanup after the DSA removal
 
-- **Run by:** Claude (the orchestrating session), with 17 fresh `general-purpose` agents.
-- **Trigger:** `docs/specs/remove-dsa-tab.md` deleted the `add-dsa-entry` skill and edited CLAUDE.md, the add-topic, content-audit, content-review-eval, docs-audit, feature and skill-routing-eval skills, and the `nudge-sdlc.js` reminder. SR-18, SR-20 and SR-21 are retired.
-- **Scope:** every live scenario (SR-01 to SR-12, SR-14 to SR-17), since CLAUDE.md's framing changed.
+- **Run by:** Claude (the orchestrating session), with 5 fresh `general-purpose` agents.
+- **Trigger:** branch chore/cleanup-after-dsa edited `/feature`'s Stage 1 guard clause and Stage 2 test-writer instruction, and deleted two history asides from content-audit. Neither skill's description changed.
+- **Scope:** the scenarios whose expected or wrong answer names `/feature` or `content-audit`: SR-01, SR-05, SR-11, SR-16, SR-17.
 
-| ID    | Routing decision                        | Reasoning (one line)                                                     | Grade |
-| ----- | --------------------------------------- | ------------------------------------------------------------------------ | ----- |
-| SR-01 | `/feature`                              | Paging the search dialog is new UI behaviour with design choices.        | PASS  |
-| SR-02 | `add-topic`                             | New topic in an existing section.                                        | PASS  |
-| SR-03 | Direct                                  | A typo in a meta-doc; CLAUDE.md's small-change carve-out.                | PASS  |
-| SR-04 | Direct (new-section steps), `add-topic` | add-topic excludes new sections; the starter topic then goes through it. | PASS  |
-| SR-05 | Triage first (`/feature` Stage 0)       | Reproduce and find the cause, then route by what's found.                | PASS  |
-| SR-06 | Direct                                  | A one-clause factual addition to a published topic.                      | PASS  |
-| SR-07 | `/feature`                              | Reading time on cards is multi-file UI work.                             | PASS  |
-| SR-08 | Direct, then `npm run verify`           | CLAUDE.md: a dependency update is a direct change.                       | PASS  |
-| SR-09 | `docs-audit`                            | Staleness of meta-docs.                                                  | PASS  |
-| SR-10 | `skill-routing-eval`                    | Asked by name.                                                           | PASS  |
-| SR-11 | `content-audit`                         | Corpus-wide sweep of published prose.                                    | PASS  |
-| SR-12 | `content-review-eval`                   | Does the review still catch a planted violation.                         | PASS  |
-| SR-14 | `feature-review-eval`                   | Does the reviewer still catch planted defects.                           | PASS  |
-| SR-15 | `add-case-study`                        | New case study with its diagram.                                         | PASS  |
-| SR-16 | `content-audit` (one file)              | Quality check of one published case study.                               | PASS  |
-| SR-17 | `/feature`                              | Case-study page UI and diagram tooling are app code.                     | PASS  |
-
-No agent mentioned `add-dsa-entry` or DSA, and none hesitated over the shorter option list.
+| ID    | Routing decision                  | Reasoning (one line)                                      | Grade |
+| ----- | --------------------------------- | --------------------------------------------------------- | ----- |
+| SR-01 | `/feature`                        | Paging the search dialog is new UI behaviour.             | PASS  |
+| SR-05 | Triage first (`/feature` Stage 0) | Reproduce and find the cause, then route by what's found. | PASS  |
+| SR-11 | `content-audit`                   | Corpus-wide sweep of published prose.                     | PASS  |
+| SR-16 | `content-audit` (one file)        | Quality check of one published case study.                | PASS  |
+| SR-17 | `/feature`                        | Case-study page UI and diagram tooling are app code.      | PASS  |

@@ -380,7 +380,7 @@ describe('TopicPage load that rejects with a falsy value', () => {
 // from the shared PageHeader and PrevNextNav. It renders as before, except that
 // the prev/next nav now has an accessible name, "More in <section label>".
 // Which neighbours the first, a middle and the last topic of a section link to,
-// and "unknown slug → not found", are tested for all three kinds of page in
+// and "unknown slug → not found", are tested for both kinds of page in
 // App.page-kinds.test.tsx (docs/specs/ui-dedupe.md, design item 6).
 describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)', () => {
   const BACKLINKS = 'Case studies this topic is used in';

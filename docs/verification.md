@@ -20,10 +20,8 @@ file that doesn't exist. `CLAUDE.md` is loaded into every session and
 subagent on every turn, so it stays a router and detail lives in the docs it
 links; raise the limit only deliberately, like a size budget.
 
-The scripts that walk the tree (`check:colors`, `check:npm-refs`,
-`check:raw-html`, `check:diagrams`, `check:bundle`, `check:eval-premises`,
-`npm run diagrams`, `links:inbound`) list
-files with `listFiles` in `scripts/lib.mjs` (`git ls-files -co
+Every script that walks the tree, except `check:test-lock` (which runs its own
+`git ls-files` to see ignored files too), lists files with `listFiles` in `scripts/lib.mjs` (`git ls-files -co
 --exclude-standard`), so an ignored file is never listed and there's no
 per-script skip list; `ROOT` and `escapeRegExp` live there too. Two of them
 also read paths they're given rather than listed: `check:eval-premises` reads
@@ -42,8 +40,7 @@ It decodes escapes first, so `\u0069nnerHTML` fails too.
 
 Each check script named here exports its logic as a function that takes the root it
 checks (default: the repository, `ROOT`) and returns its problems as strings
-(`diagramProblems`, `rawHtmlProblems`, `bundleProblems`, `hexColorProblems`,
-`npmRefProblems`, `checkEvalPremises`; `pipelineLogProblems` takes the log's text), and runs its
+(`check-pipeline-log.mjs` takes the log's text instead), and runs its
 command-line part only under `if (isMain(import.meta.url))` (`scripts/lib.mjs`).
 Its tests call the function in-process on throwaway fixtures
 (`src/test/guard-helpers.mjs`), with one spawned run of the script on the real
@@ -119,7 +116,9 @@ exports and dependencies), not part of `verify` or CI and not a dependency
 `knip.json` holds its verified false positives: `.claude/hooks/*.js` are entry
 points (Claude Code runs them from `.claude/settings.json`, which knip doesn't
 read), `src/lib/markdown.d.mts` is used by tsc rather than imported, and
-`d2` is an external binary, not an npm package. Why it isn't a CI gate is in
+`d2` is an external binary, not an npm package. An export read only by
+dynamic import carries a `@public` tag instead (`REDIRECTS` in
+`src/content/redirects.ts`). Why it isn't a CI gate is in
 [DEFERRED_PRACTICES.md](DEFERRED_PRACTICES.md).
 
 `npm run check:diagrams` needs no d2: it proves the committed SVGs and
