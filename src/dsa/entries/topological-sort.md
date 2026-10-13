@@ -46,25 +46,25 @@ Python's `graphlib.TopologicalSorter` does this for you; in an interview you wri
 
 ## Walkthrough
 
-```python region=part-1
+```python region=kahn
 
 ```
 
-```typescript region=part-1
+```typescript region=kahn
 
 ```
 
 On the example the queue holds 0, then 1 and 2, then 3, then 4, as the table shows, and the order comes out `0, 1, 2, 3, 4`. With 4→1 added, `order` stops at `[0, 2]`, two of five, and the function returns `None`. Kahn's queue also hands you the tasks that are ready together, which the DFS method can't. Now the same answer from the other direction.
 
-```python region=part-2
+```python region=dfs-order
 
 ```
 
-```typescript region=part-2
+```typescript region=dfs-order
 
 ```
 
-This is the DFS entry's `has_cycle` with three changes: `finished.append` records each vertex on exit, `visit` returns `True` when no cycle was found, where `has_cycle` returned `True` on finding one, and the list is reversed at the end. Where Kahn gave `0, 1, 2, 3, 4`, this gives `0, 2, 1, 3, 4`, as worked above. Note that the recursion is as deep as the longest path, so a chain of about a thousand vertices overflows Python's default limit and a chain of a million overflows Node's call stack. Kahn's never recurses.
+This is the DFS entry's `has_cycle`, with `finished` passed in as one more argument, and three changes: `finished.append` records each vertex on exit, `visit` returns `True` when no cycle was found, where `has_cycle` returned `True` on finding one, and the list is reversed at the end. Where Kahn gave `0, 1, 2, 3, 4`, this gives `0, 2, 1, 3, 4`, as worked above. Note that the recursion is as deep as the longest path, so a chain of about a thousand vertices overflows Python's default limit and a chain of about ten thousand overflows Node's call stack. Kahn's never recurses.
 
 ```python region=course-order
 
@@ -85,4 +85,4 @@ With V vertices and E edges, both methods take O(V + E) time. Kahn's counts in-d
 - **Skipping the length check.** Without `len(order) == len(adj)`, the example with 4→1 returns `[0, 2]` as though it were an answer.
 - **Pointing the arrows backward in `course_order`.** With `adj[course].append(prerequisite)` the example returns `[4, 3, 1, 2, 0]`: a valid order of the reversed graph, with every prerequisite last.
 - **Recording a vertex when you enter it.** Moving `finished.append(u)` up to just after `state[u] = ON_PATH` records the order of entry, and reversing that gives `[2, 4, 3, 1, 0]` for the example, with 2 ahead of its prerequisite 0. Only on exit is everything the vertex points at already in the list.
-- **Forgetting to reverse.** Without `[::-1]`, the DFS method returns `[4, 3, 1, 2, 0]`, where every arrow points backward.
+- **Forgetting to reverse.** Without `finished.reverse()`, the DFS method returns `[4, 3, 1, 2, 0]`, where every arrow points backward.

@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MinHeap, mergeSorted, runningMedians, topKLargest } from './heap-patterns';
+import { MinHeap } from '../heap/heap';
+import { mergeSorted, runningMedians, topKLargest } from './heap-patterns';
 
-// The heap-patterns entry's TypeScript code. API: `topKLargest(items, k, less)`
-// (largest first), `mergeSorted(lists, less)` and `runningMedians(stream)`.
+// The heap-patterns entry's TypeScript code. API: `topKLargest(items, k)`
+// (largest first), `mergeSorted(lists)` and `runningMedians(stream)`.
 
 /** A small seeded generator (mulberry32), so a failing case can be replayed. */
 function rng(seed: number): () => number {
@@ -16,19 +17,31 @@ function rng(seed: number): () => number {
   };
 }
 
-const less = (a: number, b: number) => a < b;
 const randInt = (r: () => number, lo: number, hi: number) =>
   lo + Math.floor(r() * (hi - lo + 1));
 const ascending = (xs: number[]) => [...xs].sort((a, b) => a - b);
 
-/** A comparison that counts how often it is called. */
-function counting() {
-  const c = { n: 0, less: (a: number, b: number) => (c.n++, a < b) };
-  return c;
+/** Run fn, returning the largest size any MinHeap reached (measured after each push). */
+function largestHeap(fn: () => void): number {
+  let largest = 0;
+  const realPush = MinHeap.prototype.push;
+  const push = vi.spyOn(MinHeap.prototype, 'push').mockImplementation(function (
+    this: MinHeap,
+    item: number[],
+  ) {
+    realPush.call(this, item);
+    largest = Math.max(largest, this.size());
+  });
+  try {
+    fn();
+  } finally {
+    push.mockRestore();
+  }
+  return largest;
 }
 
 /** Reading an array past its length is a bug in the code under test: fail fast. */
-function strict<T>(xs: T[]): T[] {
+function strict(xs: number[]): number[] {
   return new Proxy(xs, {
     get(target, prop, receiver) {
       if (
@@ -43,46 +56,24 @@ function strict<T>(xs: T[]): T[] {
   });
 }
 
-describe('MinHeap', () => {
-  it('pops in order, duplicates included', () => {
-    const h = new MinHeap(less);
-    for (const x of [5, 3, 8, 3, 1, 9, 1, 0]) h.push(x);
-    expect(h.size).toBe(8);
-    const out: number[] = [];
-    while (h.size > 0) out.push(h.pop());
-    expect(out).toEqual([0, 1, 1, 3, 3, 5, 8, 9]);
-  });
-
-  it('handles one item', () => {
-    const h = new MinHeap(less);
-    h.push(7);
-    expect([h.peek(), h.pop(), h.size]).toEqual([7, 7, 0]);
-  });
-});
-
 describe('topKLargest', () => {
   it('finds the running example', () => {
-    expect(topKLargest([4, 1, 7, 3, 8, 5], 3, less)).toEqual([8, 7, 5]);
+    expect(topKLargest([4, 1, 7, 3, 8, 5], 3)).toEqual([8, 7, 5]);
   });
 
   it('handles the edges', () => {
-    expect(topKLargest([], 3, less)).toEqual([]);
-    expect(topKLargest([5], 1, less)).toEqual([5]);
-    expect(topKLargest([5, 6], 5, less)).toEqual([6, 5]);
-    expect(topKLargest([5, 6], 0, less)).toEqual([]);
-    expect(topKLargest([5, 6], -1, less)).toEqual([]);
+    expect(topKLargest([], 3)).toEqual([]);
+    expect(topKLargest([5], 1)).toEqual([5]);
+    expect(topKLargest([5, 6], 5)).toEqual([6, 5]);
+    expect(topKLargest([5, 6], 0)).toEqual([]);
+    expect(topKLargest([5, 6], -1)).toEqual([]);
   });
 
-  it('handles duplicates and does not change its input', () => {
+  it('handles duplicates, negatives and does not change its input', () => {
     const nums = [3, 3, 3, 1];
-    expect(topKLargest(nums, 2, less)).toEqual([3, 3]);
+    expect(topKLargest(nums, 2)).toEqual([3, 3]);
     expect(nums).toEqual([3, 3, 3, 1]);
-  });
-
-  it('works on other types with a custom order', () => {
-    const words = ['pear', 'fig', 'banana', 'kiwi'];
-    const shorter = (a: string, b: string) => a.length < b.length;
-    expect(topKLargest(words, 2, shorter)).toEqual(['banana', 'pear']);
+    expect(topKLargest([-4, -1, -9], 2)).toEqual([-1, -4]);
   });
 
   it('matches sorting on random input', () => {
@@ -92,59 +83,61 @@ describe('topKLargest', () => {
       const nums = Array.from({ length: randInt(r, 0, 30) }, () => randInt(r, -20, 20));
       const k = randInt(r, 0, 35);
       const want = ascending(nums).reverse().slice(0, k);
-      expect(
-        topKLargest(nums, k, less),
-        `seed=${seed} trial=${trial} ${nums} ${k}`,
-      ).toEqual(want);
+      expect(topKLargest(nums, k), `seed=${seed} trial=${trial} ${nums} ${k}`).toEqual(
+        want,
+      );
     }
   });
 
-  it('does about one comparison per item, not a sort', () => {
-    // On shuffled input nearly every item loses to the root in one comparison, so
-    // the total is near n; sorting everything costs about n log2 n (~19,000).
+  it('keeps a heap and replaces rarely on shuffled input, not a sort', () => {
+    // Sorting never pops a heap's array. On shuffled input the root is replaced
+    // about k ln(n / k) times (~30 here), then the final drain pops k more.
     const r = rng(5);
     const nums = Array.from({ length: 2000 }, (_, i) => i);
     for (let i = nums.length - 1; i > 0; i--) {
       const j = randInt(r, 0, i);
       [nums[i], nums[j]] = [nums[j], nums[i]];
     }
-    const c = counting();
-    topKLargest(nums, 5, c.less);
-    expect(c.n).toBeLessThan(3 * nums.length);
-    // Every item past the first k is compared with the root at least once.
-    expect(c.n).toBeGreaterThanOrEqual(nums.length - 5);
+    const pop = vi.spyOn(Array.prototype, 'pop');
+    try {
+      topKLargest(nums, 5);
+      expect(pop.mock.calls.length).toBeGreaterThanOrEqual(5);
+      expect(pop.mock.calls.length).toBeLessThan(200);
+    } finally {
+      pop.mockRestore();
+    }
+    // Pushing every item and popping k would pass the pop bound, so cap the size.
+    expect(largestHeap(() => topKLargest(nums, 5))).toBe(5);
   });
 });
 
 describe('mergeSorted', () => {
   it('merges the running example', () => {
-    expect(mergeSorted([[1, 4, 7], [3, 8], [5]], less)).toEqual([1, 3, 4, 5, 7, 8]);
+    expect(mergeSorted([[1, 4, 7], [3, 8], [5]])).toEqual([1, 3, 4, 5, 7, 8]);
   });
 
   it('handles the edges', () => {
-    expect(mergeSorted([], less)).toEqual([]);
-    expect(mergeSorted([[]], less)).toEqual([]);
-    expect(mergeSorted([[], [], []], less)).toEqual([]);
-    expect(mergeSorted([[2, 4]], less)).toEqual([2, 4]);
-    expect(mergeSorted([[], [1], []], less)).toEqual([1]);
-    expect(mergeSorted([[5], [1, 2, 3, 4]], less)).toEqual([1, 2, 3, 4, 5]);
+    expect(mergeSorted([])).toEqual([]);
+    expect(mergeSorted([[]])).toEqual([]);
+    expect(mergeSorted([[], [], []])).toEqual([]);
+    expect(mergeSorted([[2, 4]])).toEqual([2, 4]);
+    expect(mergeSorted([[], [1], []])).toEqual([1]);
+    expect(mergeSorted([[5], [1, 2, 3, 4]])).toEqual([1, 2, 3, 4, 5]);
   });
 
-  it('keeps duplicates, in list order', () => {
-    expect(mergeSorted([[2, 2], [2], [2, 2]], less)).toEqual([2, 2, 2, 2, 2]);
-    const byTens = (a: number, b: number) => Math.floor(a / 10) < Math.floor(b / 10);
-    expect(mergeSorted([[11, 20], [12], [10, 13]], byTens)).toEqual([11, 12, 10, 13, 20]);
+  it('keeps duplicates', () => {
+    expect(mergeSorted([[2, 2], [2], [2, 2]])).toEqual([2, 2, 2, 2, 2]);
   });
 
   it('does not change its input', () => {
     const lists = [[1, 4], [2]];
-    mergeSorted(lists, less);
+    mergeSorted(lists);
     expect(lists).toEqual([[1, 4], [2]]);
   });
 
   it('never reads past the end of a list', () => {
     const lists = [strict([1, 4]), strict([]), strict([2, 3])];
-    expect(mergeSorted(lists, less)).toEqual([1, 2, 3, 4]);
+    expect(mergeSorted(lists)).toEqual([1, 2, 3, 4]);
   });
 
   it('matches sorting on random lists', () => {
@@ -156,31 +149,28 @@ describe('mergeSorted', () => {
       );
       const want = ascending(lists.flat());
       expect(
-        mergeSorted(lists, less),
+        mergeSorted(lists),
         `seed=${seed} trial=${trial} ${JSON.stringify(lists)}`,
       ).toEqual(want);
     }
   });
 
-  it('compares about log k per item, not every head', () => {
-    // Scanning all 50 heads for each item costs 49 comparisons per item (49,000
-    // here); a heap costs at most about 2 log2 50 (~12). A ceiling of 16 separates them.
+  it('pops a heap once per item, not a concatenate-and-sort', () => {
+    // Concatenate-and-sort never pops a heap's array; the real merge pops once per item.
     const lists = Array.from({ length: 50 }, (_, i) =>
       Array.from({ length: 20 }, (_, j) => i + 50 * j),
     );
-    const c = counting();
-    // Concatenate-and-sort is cheap here too (the engine's sort merges runs) but
-    // never pops a heap's array; the real merge pops once per item.
     const pop = vi.spyOn(Array.prototype, 'pop');
     try {
-      const merged = mergeSorted(lists, c.less);
+      const merged = mergeSorted(lists);
       const pops = pop.mock.calls.length;
       expect(merged).toEqual(ascending(lists.flat()));
-      expect(c.n).toBeLessThan(16 * merged.length);
       expect(pops).toBe(merged.length);
     } finally {
       pop.mockRestore();
     }
+    // Pushing every item up front would also pop once per item, so cap the size.
+    expect(largestHeap(() => mergeSorted(lists))).toBe(lists.length);
   });
 });
 
@@ -209,8 +199,8 @@ describe('runningMedians', () => {
       const stream = Array.from({ length: randInt(r, 0, 25) }, () => randInt(r, -15, 15));
       const want = stream.map((_, i) => {
         const s = ascending(stream.slice(0, i + 1));
-        const m = s.length >> 1;
-        return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+        const m = Math.floor(s.length / 2);
+        return s.length % 2 === 1 ? s[m] : (s[m - 1] + s[m]) / 2;
       });
       expect(runningMedians(stream), `seed=${seed} trial=${trial} ${stream}`).toEqual(
         want,

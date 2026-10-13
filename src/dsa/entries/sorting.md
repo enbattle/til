@@ -30,11 +30,11 @@ The merge can also count **inversions**, pairs where an earlier item is larger t
 
 **Quickselect** answers "what is the k-th smallest?", counting k from 0. Pick a random item as the **pivot** and **partition**: smaller values to its left, equal ones in the middle, larger to the right. Say the first pivot drawn is a 4. The array becomes `[2, 1, 4, 4, 4, 9, 7]`, and the three 4s are in their final places. For `k = 5`, index 5 is past the middle, so only `[9, 7]` can hold the answer. One or two more rounds leave 7 at index 5, and the rest is never touched again. Recursing into both outer zones instead of one is quicksort: expected O(n log n), in place, not stable.
 
-**Counting sort** skips comparing. When keys are integers in a small known range 0 to `m`, tally each key in an array of size `m + 1` and write the keys back out in order; the example's tallies for 1, 2, 4, 7, 9 are 1, 1, 3, 1, 1. To carry records along, turn the tallies into running totals that give each key its first slot, then place records in input order, which keeps it stable. It costs O(n + m), under the floor for sorts that only compare: about log2(n!) comparisons, so 13 for these 7 items. Radix sort applies it one digit at a time to bigger integers; bucket sort spreads evenly distributed numbers over buckets. There's no code here.
+**Counting sort** skips comparing. When keys are integers in a small known range 0 to `m`, tally each key in an array of size `m + 1` and write the keys back out in order. To carry records along, turn the tallies into running totals that give each key its first slot, then place records in input order, which keeps it stable. It costs O(n + m), under the floor for sorts that only compare: about log2(n!) comparisons, so 13 for these 7 items. Radix sort applies it one digit at a time to bigger integers; bucket sort spreads evenly distributed numbers over buckets. There's no code here.
 
 ## When to use it
 
-Call the built-in first. Python's `sorted` and `list.sort` are guaranteed stable and use Timsort, a merge sort that exploits runs already in order; they take `key=` and `reverse=`. JavaScript's `Array.prototype.sort` has had to be stable since ES2019. Pass it a comparator like `(a, b) => a - b`, because the default compares as strings: `[10, 9, 1].sort()` gives `[1, 10, 9]`. Write the algorithms yourself when:
+Call the built-in first. Python's `sorted` and `list.sort` are guaranteed stable and use Timsort, a merge sort that exploits runs already in order; they take `key=`. JavaScript's `Array.prototype.sort` has had to be stable since ES2019. Pass it a comparator like `(a, b) => a - b`, because the default compares as strings: `[10, 9, 1].sort()` gives `[1, 10, 9]`. Write the algorithms yourself when:
 
 - The data is a linked list (merging needs no random access) or too big for memory: sort chunks, then merge them as streams.
 - The statement counts or reasons about out-of-order pairs: merge with a count.
@@ -45,25 +45,25 @@ Call the built-in first. Python's `sorted` and `list.sort` are guaranteed stable
 
 ## Walkthrough
 
-```python region=part-1
+```python region=split
 
 ```
 
-```typescript region=merge-sort
+```typescript region=split
 
 ```
 
-`mid` rounded down leaves both halves non-empty and shorter, so the recursion ends. Next comes the merge itself.
+`key` picks what to compare; `key=abs` makes -2 and 2 tie, showing whether equal values keep their order. `mid` rounded down leaves both halves non-empty and shorter, so the recursion ends. Next comes the merge itself.
 
-```python region=part-2
-
-```
-
-```typescript region=part-2
+```python region=merge
 
 ```
 
-On the example this loop runs the table above and stops at step 6 with `[9]` left over, which `extend` appends. Counting inversions adds `inversions += len(left) - i` in the `else` branch. Quickselect needs a different tool, the partition.
+```typescript region=merge
+
+```
+
+On the example this loop runs the table above and stops at step 6 with `[9]` left over, which the last loop appends. Counting inversions adds `inversions += len(left) - i` in the `else` branch. Quickselect needs a different tool, the partition.
 
 ```python region=partition
 
@@ -100,7 +100,7 @@ Quickselect's rounds cost the size of the range, and a random pivot shrinks it b
 
 ## Pitfalls
 
-- **`<` where merge has `<=`.** The sort still sorts, so numbers alone never show it, but `[("a", 2), ("c", 2)]` by number comes out `[("c", 2), ("a", 2)]`.
-- **Dropping the two `extend` lines.** The loop ends when one side empties, and without them the other side's items vanish: `merge_sort([4, 7, 2, 4, 9, 1, 4])` returns `[1]`.
+- **`<` where merge has `<=`.** The sort still sorts, so numbers alone never show it, but `merge_sort([-2, 2], key=abs)` comes out `[2, -2]`.
+- **Dropping the two leftover loops.** The main loop ends when one side empties, and without them the other side's items vanish: `merge_sort([4, 7, 2, 4, 9, 1, 4])` returns `[1]`.
 - **Advancing `i` after swapping a larger value.** The item swapped in from `gt` is unexamined. With `i += 1` there, `partition` on the example around 4 returns `lt = 1` and `gt = 5`, leaving a stray 1 inside the equal zone, and `quickselect(nums, 1)` can return 1 or 4 instead of 2, depending on the pivot drawn.
 - **Taking the first item as the pivot.** Reversed input makes it the maximum every round. For the median of a reversed 1,000 items that is about 376,000 comparisons against about 5,000 with a random pivot; sorted input costs about 53,000.

@@ -55,17 +55,27 @@ Which one? Kruskal takes a plain edge list and pays for a sort. Prim needs an ad
 
 ## Walkthrough
 
-Python has `heapq`, so it needs only the edge type. JavaScript has no heap, so the TypeScript carries the [heap entry's](/dsa/heap) `MinHeap`, trimmed.
+Python has `heapq`; the TypeScript imports the [heap entry's](/dsa/heap) `MinHeap`, whose items are number arrays ordered like Python tuples. An edge is `(u, v, weight)`.
 
-```python region=part-1
-
-```
-
-```typescript region=part-1
+```python region=edge-type
 
 ```
 
-Kruskal first. It's the [union-find](/dsa/union-find) entry's structure on bare arrays, except `find` uses path halving: one pass that points every other node on the path at its grandparent, instead of that entry's two-pass compression.
+```typescript region=edge-type
+
+```
+
+Kruskal needs "are these two already connected?", so it carries a small [union-find](/dsa/union-find) on bare arrays. `find` uses path halving: one pass that points every other node on the path at its grandparent, instead of that entry's two-pass compression.
+
+```python region=find
+
+```
+
+```typescript region=find
+
+```
+
+`find` follows `parent` up to the root.
 
 ```python region=kruskal
 
@@ -77,21 +87,21 @@ Kruskal first. It's the [union-find](/dsa/union-find) entry's structure on bare 
 
 The loop is the table above; the early `break` is why `(2,3,8)` was never looked at.
 
-```python region=prim
+```python region=adjacency-list
 
 ```
 
-```typescript region=prim
+```typescript region=adjacency-list
 
 ```
 
 Prim needs "which edges leave this vertex?", so the edge list becomes an adjacency list.
 
-```python region=part-4
+```python region=prim-loop
 
 ```
 
-```typescript region=part-4
+```typescript region=prim-loop
 
 ```
 

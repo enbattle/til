@@ -9,30 +9,29 @@ edges of its longest path. ``adj[u]`` lists the neighbors of u.
 
 import random
 import sys
-from dataclasses import dataclass
 
 import pytest
 
-from depth_first_search import count_components, diameter, explore, has_cycle, has_path_sum
-
-
-@dataclass(eq=False)
-class Node:
-    value: int
-    left: "Node | None" = None
-    right: "Node | None" = None
+from depth_first_search import (
+    TreeNode,
+    count_components,
+    diameter,
+    explore,
+    has_cycle,
+    has_path_sum,
+)
 
 
 def build(values):
     """A tree from its level order, where None marks a missing child."""
     if not values or values[0] is None:
         return None
-    root = Node(values[0])
+    root = TreeNode(values[0])
     waiting, i = [root], 1
     for node in waiting:
         for side in ("left", "right"):
             if i < len(values) and values[i] is not None:
-                setattr(node, side, Node(values[i]))
+                setattr(node, side, TreeNode(values[i]))
                 waiting.append(getattr(node, side))
             i += 1
     return root
@@ -58,18 +57,16 @@ EXAMPLE = [5, 4, 8, 11, None, 13, 4, 7, 2, None, None, 5, 1]
 DIAMOND = [(0, 1), (0, 2), (1, 3), (2, 3)]
 
 
-class CountingRow(list):
-    """A neighbor list that counts how many times it is scanned."""
+class CountingAdj(list):
+    """An adjacency list that counts how many times each row is read."""
 
-    scans = 0
+    def __init__(self, rows):
+        super().__init__(rows)
+        self.scans = [0] * len(rows)
 
-    def __iter__(self):
-        self.scans += 1
-        return super().__iter__()
-
-    def __reversed__(self):
-        self.scans += 1
-        return super().__reversed__()
+    def __getitem__(self, u):
+        self.scans[u] += 1
+        return super().__getitem__(u)
 
 
 class OrderedSet(set):
@@ -85,10 +82,10 @@ class OrderedSet(set):
 
 
 def counted(adj):
-    return [CountingRow(row) for row in adj]
+    return CountingAdj(adj)
 
 
-class CountingNode(Node):
+class CountingNode(TreeNode):
     """A node that counts reads of its left child."""
 
     reads = 0
@@ -145,7 +142,7 @@ def test_explore_scans_each_vertex_once():
     # Triangle plus a diamond: marking on pop would scan a vertex twice.
     adj = counted(undirected(5, [(0, 1), (0, 2), (1, 2), (2, 3), (1, 3), (3, 4)]))
     assert count_components(adj) == 1
-    assert [row.scans for row in adj] == [1] * 5
+    assert adj.scans == [1] * 5
 
 
 def test_components_scans_every_row_exactly_once():
@@ -155,7 +152,7 @@ def test_components_scans_every_row_exactly_once():
         edges = [(rng.randrange(n), rng.randrange(n)) for _ in range(rng.randint(0, 14))] if n else []
         adj = counted(undirected(n, edges))
         count_components(adj)
-        assert [row.scans for row in adj] == [1] * n, f"seed 7 trial {trial}"
+        assert adj.scans == [1] * n, f"seed 7 trial {trial}"
 
 
 def test_components_beat_the_recursion_limit():
@@ -207,7 +204,7 @@ def test_cycle_scans_each_vertex_once():
     n, edges = chain_of_diamonds(20)
     adj = counted(directed(n, edges))
     assert has_cycle(adj) is False
-    assert [row.scans for row in adj] == [1] * n
+    assert adj.scans == [1] * n
 
 
 def test_cycle_matches_peeling_sinks():
@@ -297,7 +294,7 @@ def test_diameter_matches_pairwise_distances():
         size = rng.randint(1, 13)
         levels = [0] + [0 if rng.random() < 0.75 else None for _ in range(size - 1)]
         root = build(levels)
-        links: dict[Node, list[Node]] = {}
+        links: dict[TreeNode, list[TreeNode]] = {}
         stack = [root]
         while stack:
             node = stack.pop()

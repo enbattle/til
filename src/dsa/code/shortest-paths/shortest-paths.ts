@@ -1,43 +1,8 @@
-// #region min-heap
-/** heap.ts's MinHeap without heapify, peek or empty checks: callers test `size` first. */
-export class MinHeap<T> {
-  private readonly items: T[] = [];
-
-  constructor(private readonly less: (a: T, b: T) => boolean) {}
-
-  get size(): number {
-    return this.items.length;
-  }
-
-  push(item: T): void {
-    const a = this.items;
-    a.push(item);
-    for (let i = a.length - 1; i > 0;) {
-      const parent = (i - 1) >> 1;
-      if (!this.less(a[i], a[parent])) return;
-      [a[i], a[parent]] = [a[parent], a[i]];
-      i = parent;
-    }
-  }
-
-  pop(): T {
-    const a = this.items;
-    const top = a[0];
-    const last = a.pop() as T;
-    if (a.length === 0) return top; // a[0] = last would refill the emptied array
-    a[0] = last;
-    for (let i = 0, c = 1; c < a.length; c = 2 * i + 1) {
-      if (c + 1 < a.length && this.less(a[c + 1], a[c])) c++; // the smaller child
-      if (!this.less(a[c], a[i])) break;
-      [a[i], a[c]] = [a[c], a[i]];
-      i = c;
-    }
-    return top;
-  }
-}
+// #region graph
+import { MinHeap } from '../heap/heap';
 
 /** graph[u] holds a [v, weight] pair per edge. */
-export type Graph = [number, number][][];
+export type Graph = number[][][];
 // #endregion
 
 // #region dijkstra
@@ -46,9 +11,9 @@ export type Graph = [number, number][][];
 export function dijkstra(graph: Graph, source: number): number[] {
   const dist = new Array<number>(graph.length).fill(Infinity);
   dist[source] = 0;
-  const heap = new MinHeap<[number, number]>((a, b) => a[0] < b[0]);
+  const heap = new MinHeap();
   heap.push([0, source]);
-  while (heap.size > 0) {
+  while (heap.size() > 0) {
     const [d, u] = heap.pop();
     // A heap can't lower an entry in place, so an improved vertex is pushed
     // again and its older, higher entry is skipped when it surfaces.

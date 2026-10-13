@@ -287,3 +287,10 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
 | 2026-10-13 | add-dsa-entry src/dsa/entries/backtracking.md | 0 | 0/2/2 | 1 | 2 | kinds: no-alternative, test-gap, structure, inconsistency |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/dynamic-programming.md | 0 | 0/1/0 | 1 | 2 | kinds: wrong-claim |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/dynamic-programming-shapes.md | 0 | 0/0/2 | 1 | 2 | kinds: inconsistency |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/sorting.md | 0 | 0/1/0 | 1 | 2 | kinds: structure |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/breadth-first-search.md | 0 | 0/3/1 | 1 | 2 | kinds: inconsistency, narration |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/depth-first-search.md | 0 | 0/1/0 | 1 | 2 | kinds: structure |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/topological-sort.md | 0 | 0/0/0, pre:1 | 2 | 2 | kinds: estimate, inconsistency |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/heap-patterns.md | 0 | 0/2/0 | 1 | 2 | kinds: test-gap |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/prim-kruskal.md | 0 | 0/0/2 | 0 | 2 | kinds: narration, no-alternative |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/shortest-paths.md | 0 | 0/0/1 | 0 | 2 | kinds: inconsistency |  |

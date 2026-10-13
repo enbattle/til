@@ -31,23 +31,23 @@ All three shapes keep a heap small, so its smallest item is always the one you n
 
 ## Walkthrough
 
-Python's `heapq` works on a plain list with `heappush`, `heappop` and `heapreplace` (a pop and push in one sift), all min-heap.
+Python's `heapq` works on a plain list with `heappush` and `heappop`, both min-heap.
 
-```python region=part-1
-
-```
-
-```typescript region=min-heap
+```python region=imports
 
 ```
 
-JavaScript has no built-in heap, so this is the [heap](/dsa/heap) entry's class, trimmed: no heapify, and no empty checks, since every caller tests `size` first.
+```typescript region=imports
+
+```
+
+JavaScript has no built-in heap, so the TypeScript imports the [heap](/dsa/heap) entry's `MinHeap`. Its items are arrays of numbers, compared like Python tuples: the first number, then the next on a tie. A plain number goes in as `[x]`.
 
 ```python region=top-k-largest
 
 ```
 
-```typescript region=part-2
+```typescript region=top-k-largest
 
 ```
 
@@ -71,7 +71,7 @@ On `[[1, 4, 7], [3, 8], [5]]` the heap starts as `(1, 0, 0)`, `(3, 1, 0)`, `(5, 
 
 ```
 
-Python's `heapq` is min-heap only, so `low` stores negatives. (Python 3.14 adds public max-heap functions; negation works on any version.) TypeScript flips the comparison instead. On the example, the third value, 7, goes into `low`, comes out as its largest and lands in `high`, which now outnumbers `low` 2 to 1, so 4 moves back: `low` is `{1, 4}`, `high` is `{7}`, and the median is 4.
+Both heaps are min-heaps, so `low` stores negatives. (Python 3.14 adds public max-heap functions; negation works on any version.) On the example, the third value, 7, goes into `low`, comes out as its largest and lands in `high`, which now outnumbers `low` 2 to 1, so 4 moves back: `low` is `{1, 4}`, `high` is `{7}`, and the median is 4.
 
 ## Complexity
 
@@ -80,6 +80,6 @@ With n items and a heap of k: top k is O(n log k) time and O(k) space, against O
 ## Pitfalls
 
 - **A max-heap for the k largest.** In `top_k_largest`, the heap must be a min-heap, so `heap[0]` is the keeper to beat. With the best item at the root, you can't tell which keeper to evict without scanning all k.
-- **Leaving a drained list in the heap.** In `merge_sorted`, `heappop` removes an entry whose list is exhausted. Skipping it leaves the same head at the root, so the loop adds it forever. Reading `lists[i][pos + 1]` without the length check fails too: Python raises `IndexError`, while JavaScript reads `undefined` and pushes it into the heap.
+- **Pushing the next entry of a drained list.** In `merge_sorted`, the `pos + 1 < len(lists[i])` check keeps an exhausted list out of the heap. Without it, reading `lists[i][pos + 1]` fails: Python raises `IndexError`, while JavaScript reads `undefined` and pushes it into the heap.
 - **Routing a value to a half by guessing.** Pushing each value straight into whichever heap is smaller (`low` on a tie) breaks the rule that nothing in `low` exceeds anything in `high`. On `4, 1, 7` it puts 7 into `low` next to 4, and reads the median as 7, not 4. Pushing through `low` first makes the two halves ordered, wherever the value belongs.
-- **Forgetting a sign.** In `running_medians`, `low[0]` is the negative of the largest small value. Returning it without `-` gives -4 for the first median of the running example, where 4 is right.
+- **Forgetting a sign.** In `running_medians`, `low[0]` (`low.peek()[0]` in TypeScript) is the negative of the largest small value. Returning it without `-` gives -4 for the first median of the running example, where 4 is right.

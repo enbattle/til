@@ -154,6 +154,24 @@ describe('shortestPath (TypeScript)', () => {
     expect(shortestPath([[1], [2], [0]], 0, 2)).toEqual([0, 1, 2]);
   });
 
+  it('handles a long chain', () => {
+    const n = 1001;
+    const adj = Array.from({ length: n }, (_, v) => (v + 1 < n ? [v + 1] : []));
+    expect(shortestPath(adj, 0, 1000)).toEqual(Array.from({ length: n }, (_, v) => v));
+  });
+
+  it('rejects vertices outside the graph', () => {
+    for (const [source, target] of [
+      [0, 2],
+      [2, 0],
+      [-1, 0],
+      [0, -1],
+    ]) {
+      expect(() => shortestPath([[1], [0]], source, target)).toThrow(RangeError);
+    }
+    expect(() => shortestPath([], 0, 0)).toThrow(RangeError);
+  });
+
   it('matches brute force on 50 seeded random graphs', () => {
     const seed = 11;
     const random = rng(seed);
