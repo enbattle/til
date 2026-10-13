@@ -1,3 +1,4 @@
+# region pair-with-sum
 def pair_with_sum(nums: list[int], target: int) -> tuple[int, int] | None:
     """Indices (i, j), i < j, of two values in sorted nums that add up to target."""
     left, right = 0, len(nums) - 1
@@ -6,6 +7,8 @@ def pair_with_sum(nums: list[int], target: int) -> tuple[int, int] | None:
         total = nums[left] + nums[right]
         if total == target:
             return left, right
+# endregion
+        # region part-2
         # Too small: nums[left] is too small even beside the largest value still
         # in play, so no pair uses it. Too big: nums[right] fails the same way
         # beside the smallest. Either move rules one element out for good.
@@ -14,8 +17,10 @@ def pair_with_sum(nums: list[int], target: int) -> tuple[int, int] | None:
         else:
             right -= 1
     return None
+        # endregion
 
 
+# region list-node
 class ListNode:
     """One node of a singly linked list: a value and a link to the next node."""
 
@@ -30,6 +35,8 @@ def has_cycle(head: ListNode | None) -> bool:
     # Test fast and fast.next: fast.next.next reads the next of nothing when
     # an odd-length list leaves fast on its last node.
     while fast is not None and fast.next is not None:
+# endregion
+        # region part-4
         slow = slow.next
         fast = fast.next.next
         # After moving, not before: both start at head, so before always matches.
@@ -37,3 +44,4 @@ def has_cycle(head: ListNode | None) -> bool:
         if slow is fast:
             return True
     return False
+        # endregion

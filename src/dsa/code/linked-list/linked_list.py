@@ -1,8 +1,8 @@
+# region part-1
 from collections.abc import Iterator
 from typing import Generic, TypeVar
 
 T = TypeVar("T")
-
 
 class Node(Generic[T]):
     """One link: a value and the next node, or None at the end."""
@@ -13,7 +13,6 @@ class Node(Generic[T]):
     def __init__(self, value: T) -> None:
         self.value = value
         self.next: Node[T] | None = None
-
 
 class LinkedList(Generic[T]):
     """A singly linked list that keeps pointers to both ends."""
@@ -27,7 +26,9 @@ class LinkedList(Generic[T]):
         while node is not None:
             yield node.value
             node = node.next
+# endregion
 
+    # region push-front
     def push_front(self, value: T) -> None:
         node = Node(value)
         # Aim the new node at the old head before moving head. The other order
@@ -45,7 +46,9 @@ class LinkedList(Generic[T]):
             # Through the tail; walking from head to find it would cost O(n).
             self.tail.next = node
         self.tail = node
+    # endregion
 
+    # region pop-front
     def pop_front(self) -> T:
         node = self.head
         if node is None:
@@ -56,7 +59,9 @@ class LinkedList(Generic[T]):
             # links after it, so head never gets set.
             self.tail = None
         return node.value
+    # endregion
 
+    # region remove
     def remove(self, value: T) -> bool:
         # A node can't say who points at it, so carry that node along.
         prev: Node[T] | None = None
@@ -73,7 +78,9 @@ class LinkedList(Generic[T]):
             # Left alone, push_back would link after a node that's gone.
             self.tail = prev
         return True
+    # endregion
 
+    # region reverse
     def reverse(self) -> None:
         prev: Node[T] | None = None
         node = self.head
@@ -85,3 +92,4 @@ class LinkedList(Generic[T]):
             node.next = prev
             prev, node = node, following
         self.head = prev
+    # endregion

@@ -33,169 +33,42 @@ All three shapes keep a heap small, so its smallest item is always the one you n
 
 Python's `heapq` works on a plain list with `heappush`, `heappop` and `heapreplace` (a pop and push in one sift), all min-heap.
 
-```python
-import heapq
-from collections.abc import Iterable
+```python region=part-1
+
 ```
 
-```typescript
-/** heap.ts's MinHeap without heapify or empty checks: callers test `size` first. */
-export class MinHeap<T> {
-  private readonly items: T[] = [];
+```typescript region=min-heap
 
-  constructor(private readonly less: (a: T, b: T) => boolean) {}
-
-  get size(): number {
-    return this.items.length;
-  }
-
-  peek(): T {
-    return this.items[0];
-  }
-
-  push(item: T): void {
-    const a = this.items;
-    a.push(item);
-    for (let i = a.length - 1; i > 0;) {
-      const parent = (i - 1) >> 1;
-      if (!this.less(a[i], a[parent])) return;
-      [a[i], a[parent]] = [a[parent], a[i]];
-      i = parent;
-    }
-  }
-
-  pop(): T {
-    const a = this.items;
-    const top = a[0];
-    const last = a.pop() as T;
-    if (a.length === 0) return top; // a[0] = last would refill the emptied array
-    a[0] = last;
-    for (let i = 0, c = 1; c < a.length; c = 2 * i + 1) {
-      if (c + 1 < a.length && this.less(a[c + 1], a[c])) c++; // the smaller child
-      if (!this.less(a[c], a[i])) break;
-      [a[i], a[c]] = [a[c], a[i]];
-      i = c;
-    }
-    return top;
-  }
-}
 ```
 
 JavaScript has no built-in heap, so this is the [heap](/dsa/heap) entry's class, trimmed: no heapify, and no empty checks, since every caller tests `size` first.
 
-```python
-def top_k_largest(items: Iterable[int], k: int) -> list[int]:
-    """The k largest items, largest first; all of them if there are fewer."""
-    if k <= 0:  # heap[0] below would raise on an empty heap
-        return []
-    heap: list[int] = []
-    for x in items:
-        if len(heap) < k:
-            heapq.heappush(heap, x)
-        # Strict: an equal item can't improve the k, and a swap costs a sift.
-        elif heap[0] < x:
-            heapq.heapreplace(heap, x)
-    return sorted(heap, reverse=True)  # a heap is only partly ordered
+```python region=top-k-largest
+
 ```
 
-```typescript
-type Less<T> = (a: T, b: T) => boolean;
+```typescript region=part-2
 
-/** The k largest items, largest first; all of them if there are fewer. */
-export function topKLargest<T>(items: T[], k: number, less: Less<T>): T[] {
-  if (k <= 0) return []; // peek() below would read an empty heap
-  const heap = new MinHeap(less);
-  for (const x of items) {
-    if (heap.size < k) heap.push(x);
-    // Strict: an equal item can't improve the k, and a swap costs a sift.
-    else if (less(heap.peek(), x)) {
-      heap.pop();
-      heap.push(x);
-    }
-  }
-  const out: T[] = [];
-  while (heap.size > 0) out.push(heap.pop());
-  return out.reverse(); // a heap pops smallest first
-}
 ```
 
 The heap holds at most k items, and a rejected value costs one comparison with the root. The merge reuses the same heap with richer entries.
 
-```python
-def merge_sorted(lists: list[list[int]]) -> list[int]:
-    """One sorted list holding every item of the sorted input lists."""
-    # The list index breaks ties on value, so equal values come out in list
-    # order (a stable merge) and a tuple never has to compare past it.
-    heap = [(lst[0], i, 0) for i, lst in enumerate(lists) if lst]
-    heapq.heapify(heap)
-    merged: list[int] = []
-    while heap:
-        value, i, pos = heap[0]
-        merged.append(value)
-        if pos + 1 < len(lists[i]):
-            heapq.heapreplace(heap, (lists[i][pos + 1], i, pos + 1))
-        else:
-            heapq.heappop(heap)  # a drained list must leave, or its head repeats
-    return merged
+```python region=merge-sorted
+
 ```
 
-```typescript
-/** One sorted list holding every item of the sorted input lists. */
-export function mergeSorted<T>(lists: T[][], less: Less<T>): T[] {
-  // [value, list, position]. The list index breaks ties on value, so equal
-  // values come out in list order (a stable merge).
-  const heap = new MinHeap<[T, number, number]>(
-    (a, b) => less(a[0], b[0]) || (!less(b[0], a[0]) && a[1] < b[1]),
-  );
-  lists.forEach((lst, i) => lst.length > 0 && heap.push([lst[0], i, 0]));
-  const merged: T[] = [];
-  while (heap.size > 0) {
-    const [value, i, pos] = heap.pop(); // a drained list just isn't pushed back
-    merged.push(value);
-    if (pos + 1 < lists[i].length) heap.push([lists[i][pos + 1], i, pos + 1]);
-  }
-  return merged;
-}
+```typescript region=merge-sorted
+
 ```
 
 On `[[1, 4, 7], [3, 8], [5]]` the heap starts as `(1, 0, 0)`, `(3, 1, 0)`, `(5, 2, 0)`. Popping 1 replaces it with `(4, 0, 1)`; when 5 is popped, list 2 is empty and the heap shrinks to two entries. The median needs two heaps instead of one.
 
-```python
-def running_medians(stream: Iterable[float]) -> list[float]:
-    """The median after each value: the mean of the middle two when even."""
-    low: list[float] = []  # max-heap of the smaller half, stored negated
-    high: list[float] = []  # min-heap of the larger half
-    medians: list[float] = []
-    for x in stream:
-        # Through low, then its largest moves to high: wherever x belongs, every
-        # item in low stays <= every item in high.
-        heapq.heappush(low, -x)
-        heapq.heappush(high, -heapq.heappop(low))
-        # Low keeps the extra item, so its root is the median of an odd count.
-        if len(high) > len(low):
-            heapq.heappush(low, -heapq.heappop(high))
-        if len(low) > len(high):
-            medians.append(float(-low[0]))
-        else:
-            medians.append((-low[0] + high[0]) / 2)
-    return medians
+```python region=running-medians
+
 ```
 
-```typescript
-/** The median after each value: the mean of the middle two when even. */
-export function runningMedians(stream: number[]): number[] {
-  const low = new MinHeap<number>((a, b) => a > b); // max-heap of the smaller half
-  const high = new MinHeap<number>((a, b) => a < b); // min-heap of the larger half
-  return stream.map((x) => {
-    // Through low, then its largest moves to high: wherever x belongs, every
-    // item in low stays <= every item in high.
-    low.push(x);
-    high.push(low.pop());
-    // Low keeps the extra item, so its root is the median of an odd count.
-    if (high.size > low.size) low.push(high.pop());
-    return low.size > high.size ? low.peek() : (low.peek() + high.peek()) / 2;
-  });
-}
+```typescript region=running-medians
+
 ```
 
 Python's `heapq` is min-heap only, so `low` stores negatives. (Python 3.14 adds public max-heap functions; negation works on any version.) TypeScript flips the comparison instead. On the example, the third value, 7, goes into `low`, comes out as its largest and lands in `high`, which now outnumbers `low` 2 to 1, so 4 moves back: `low` is `{1, 4}`, `high` is `{7}`, and the median is 4.

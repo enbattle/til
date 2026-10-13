@@ -78,149 +78,42 @@ A matrix also has a fixed V: a new vertex means a new row and a new cell in ever
 
 Both languages store vertices as numbers 0 to n - 1, and both layouts are built from the same edge list.
 
-```python
-from collections.abc import Iterator
+```python region=part-1
 
-Edge = tuple[int, int]
-
-def check(n: int, edges: list[Edge]) -> None:
-    # Python reads adj[-1] as the last vertex, so a negative id would not fail.
-    for u, v in edges:
-        if not (0 <= u < n and 0 <= v < n):
-            raise ValueError(f"edge ({u}, {v}) names a vertex outside 0..{n - 1}")
-
-def build_list(n: int, edges: list[Edge], directed: bool = False) -> list[list[int]]:
-    """Adjacency list: adj[u] holds the neighbors of u."""
-    check(n, edges)
-    # A comprehension makes n separate lists; [[]] * n would share one.
-    adj: list[list[int]] = [[] for _ in range(n)]
-    for u, v in edges:
-        adj[u].append(v)
-        # An undirected edge is stored from both ends, or only one end sees it.
-        # A self-loop (u == v) is one entry, the same as one matrix cell.
-        if not directed and u != v:
-            adj[v].append(u)
-    return adj
 ```
 
-```typescript
-export type Edge = [number, number];
+```typescript region=part-1
 
-function check(n: number, edges: Edge[]): void {
-  // A bad column on a number[] row would silently grow the row, not fail.
-  for (const [u, v] of edges) {
-    if (!(u >= 0 && u < n && v >= 0 && v < n)) {
-      throw new RangeError(`edge (${u}, ${v}) names a vertex outside 0..${n - 1}`);
-    }
-  }
-}
-
-/** Adjacency list: adj[u] holds the neighbors of u. */
-export function buildList(n: number, edges: Edge[], directed = false): number[][] {
-  check(n, edges);
-  // Array.from calls the function per slot; fill([]) would share one array.
-  const adj: number[][] = Array.from({ length: n }, () => []);
-  for (const [u, v] of edges) {
-    adj[u].push(v);
-    // An undirected edge is stored from both ends, or only one end sees it.
-    // A self-loop (u === v) is one entry, the same as one matrix cell.
-    if (!directed && u !== v) adj[v].push(u);
-  }
-  return adj;
-}
 ```
 
 On the running example this returns the lists above, and with `directed` set `[[1, 2], [2], [3], []]`. The matrix builder takes the same arguments but allocates all V² cells before it reads an edge.
 
-```python
-def build_matrix(n: int, edges: list[Edge], directed: bool = False) -> list[list[int]]:
-    """Adjacency matrix: m[u][v] is 1 when there is an edge from u to v."""
-    check(n, edges)
-    # Every cell exists up front, which is the V * V space cost.
-    m = [[0] * n for _ in range(n)]
-    for u, v in edges:
-        m[u][v] = 1
-        if not directed:
-            m[v][u] = 1
-    return m
+```python region=build-matrix
+
 ```
 
-```typescript
-/** Adjacency matrix: m[u][v] is 1 when there is an edge from u to v. */
-export function buildMatrix(n: number, edges: Edge[], directed = false): number[][] {
-  check(n, edges);
-  // Every cell exists up front, which is the V * V space cost.
-  const m = Array.from({ length: n }, () => new Array<number>(n).fill(0));
-  for (const [u, v] of edges) {
-    m[u][v] = 1;
-    if (!directed) m[v][u] = 1;
-  }
-  return m;
-}
+```typescript region=build-matrix
+
 ```
 
 Writing a cell twice is harmless, so the matrix needs no `u != v` guard. The queries show the cost difference directly, and a list needs no `neighbors` function because `adj[v]` is already the answer.
 
-```python
-def has_edge_list(adj: list[list[int]], u: int, v: int) -> bool:
-    return v in adj[u]  # a scan of u's list, so O(deg(u))
+```python region=has-edge-list
 
-def has_edge_matrix(m: list[list[int]], u: int, v: int) -> bool:
-    return m[u][v] == 1  # one cell read, however many edges there are
-
-def neighbors_matrix(m: list[list[int]], u: int) -> list[int]:
-    # No list to return: the whole row must be read to find the 1s.
-    return [v for v, cell in enumerate(m[u]) if cell]
 ```
 
-```typescript
-export function hasEdgeList(adj: number[][], u: number, v: number): boolean {
-  return adj[u].includes(v); // a scan of u's list, so O(deg(u))
-}
+```typescript region=has-edge-list
 
-export function hasEdgeMatrix(m: number[][], u: number, v: number): boolean {
-  return m[u][v] === 1; // one cell read, however many edges there are
-}
-
-export function neighborsMatrix(m: number[][], u: number): number[] {
-  // No list to return: the whole row must be read to find the 1s.
-  const out: number[] = [];
-  m[u].forEach((cell, v) => {
-    if (cell) out.push(v);
-  });
-  return out;
-}
 ```
 
 On the example, `has_edge_list(adj, 2, 3)` scans the three entries of `[0, 1, 3]`, and `neighbors_matrix(m, 2)` reads all four cells of row 2 to return `[0, 1, 3]`. Last, visiting every edge, which is what a traversal does. Each undirected edge is yielded once from each end.
 
-```python
-def edges_of_list(adj: list[list[int]]) -> Iterator[Edge]:
-    for u, row in enumerate(adj):
-        for v in row:
-            yield u, v
+```python region=edges-of-list
 
-def edges_of_matrix(m: list[list[int]]) -> Iterator[Edge]:
-    for u, row in enumerate(m):
-        for v, cell in enumerate(row):
-            if cell:  # every cell is read, including the zeros
-                yield u, v
 ```
 
-```typescript
-export function* edgesOfList(adj: number[][]): Generator<Edge> {
-  for (const [u, row] of adj.entries()) {
-    for (const v of row) yield [u, v];
-  }
-}
+```typescript region=edges-of-list
 
-export function* edgesOfMatrix(m: number[][]): Generator<Edge> {
-  for (const [u, row] of m.entries()) {
-    for (const [v, cell] of row.entries()) {
-      if (cell) yield [u, v]; // every cell is read, including the zeros
-    }
-  }
-}
 ```
 
 The list version does 8 steps on the example, one per entry. The matrix version reads all 16 cells to find the same 8 edges.

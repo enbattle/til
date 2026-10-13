@@ -1,3 +1,4 @@
+# region subsets
 def subsets(values: list[int]) -> list[list[int]]:
     """Every subset of distinct values, each in input order, depth first."""
     result: list[list[int]] = []
@@ -16,8 +17,10 @@ def subsets(values: list[int]) -> list[list[int]]:
 
     visit(0)
     return result
+# endregion
 
 
+# region permutations
 def permutations(values: list[int]) -> list[list[int]]:
     """Every ordering of distinct values, in itertools.permutations order."""
     result: list[list[int]] = []
@@ -42,8 +45,10 @@ def permutations(values: list[int]) -> list[list[int]]:
 
     visit()
     return result
+# endregion
 
 
+# region combination-sum
 def combination_sum(candidates: list[int], target: int) -> list[list[int]]:
     """Every combination of positive candidates, each reusable, adding to target."""
     # A set: a repeated candidate would be two choices and double the answers.
@@ -70,3 +75,4 @@ def combination_sum(candidates: list[int], target: int) -> list[list[int]]:
 
     visit(0, target)
     return result
+# endregion

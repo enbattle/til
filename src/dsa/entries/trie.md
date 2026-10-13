@@ -104,56 +104,12 @@ costs several times the memory of a set of the same words.
 A node is a map of children and the end-of-word flag. `insert` walks down and
 creates a node only where the path runs out.
 
-```python
-class TrieNode:
-    __slots__ = ("children", "is_word")
+```python region=trie-node
 
-    def __init__(self) -> None:
-        self.children: dict[str, TrieNode] = {}
-        self.is_word = False
-
-class Trie:
-    """A set of strings stored as a tree with one character per edge."""
-
-    def __init__(self) -> None:
-        self._root = TrieNode()
-
-    def insert(self, word: str) -> None:
-        node = self._root
-        for ch in word:
-            # Not setdefault(ch, TrieNode()): that builds a node on every
-            # step, even when the child already exists.
-            if ch not in node.children:
-                node.children[ch] = TrieNode()
-            node = node.children[ch]
-        # The node may exist already as a step toward a longer word.
-        node.is_word = True
 ```
 
-```typescript
-class TrieNode {
-  readonly children = new Map<string, TrieNode>();
-  isWord = false;
-}
+```typescript region=trie-node
 
-/** A set of strings stored as a tree with one character per edge. */
-export class Trie {
-  private readonly root = new TrieNode();
-
-  insert(word: string): void {
-    let node = this.root;
-    // for...of steps by code point; word[i] would split an emoji in two.
-    for (const ch of word) {
-      let child = node.children.get(ch);
-      if (child === undefined) {
-        child = new TrieNode();
-        node.children.set(ch, child);
-      }
-      node = child;
-    }
-    // The node may exist already as a step toward a longer word.
-    node.isWord = true;
-  }
 ```
 
 Inserting the four words in the order above creates 3, 2, 1 and 3 nodes, the
@@ -162,49 +118,12 @@ follow the characters and return the node they lead to, or nothing as soon as
 a link is missing. The two questions then differ only in what they ask of that
 node.
 
-```python
-    def _find(self, prefix: str) -> TrieNode | None:
-        node: TrieNode | None = self._root
-        for ch in prefix:
-            node = node.children.get(ch)
-            if node is None:
-                return None
-        return node
+```python region=find
 
-    def __contains__(self, word: str) -> bool:
-        node = self._find(word)
-        # Reaching the node isn't enough: "app" is a step toward "apple".
-        return node is not None and node.is_word
-
-    def starts_with(self, prefix: str) -> bool:
-        node = self._find(prefix)
-        # An unmarked node with no children is only the root of an empty
-        # trie, which has no word to start with "".
-        return node is not None and (node.is_word or bool(node.children))
 ```
 
-```typescript
-  private find(prefix: string): TrieNode | undefined {
-    let node = this.root;
-    for (const ch of prefix) {
-      const child = node.children.get(ch);
-      if (child === undefined) return undefined;
-      node = child;
-    }
-    return node;
-  }
+```typescript region=find
 
-  has(word: string): boolean {
-    // Reaching the node isn't enough: "app" is a step toward "apple".
-    return this.find(word)?.isWord ?? false;
-  }
-
-  startsWith(prefix: string): boolean {
-    const node = this.find(prefix);
-    // An unmarked node with no children is only the root of an empty
-    // trie, which has no word to start with "".
-    return node !== undefined && (node.isWord || node.children.size > 0);
-  }
 ```
 
 On the example, `"ap"` is not stored but `starts_with("ap")` is true, and
@@ -213,40 +132,12 @@ visiting every node under it, so it uses an explicit **stack** (a list where
 the last item pushed is the first popped; see [stacks and queues](/dsa/stacks-and-queues)). Each entry carries the string
 spelled so far.
 
-```python
-    def words_with_prefix(self, prefix: str) -> list[str]:
-        """Every stored word that starts with prefix, in no fixed order."""
-        start = self._find(prefix)
-        if start is None:
-            return []
-        found: list[str] = []
-        # A stack, not recursion: one frame per character would overflow
-        # on a very long word.
-        stack = [(start, prefix)]
-        while stack:
-            node, word = stack.pop()
-            if node.is_word:
-                found.append(word)
-            stack.extend((c, word + ch) for ch, c in node.children.items())
-        return found
+```python region=words-with-prefix
+
 ```
 
-```typescript
-  /** Every stored word that starts with prefix, in no fixed order. */
-  wordsWithPrefix(prefix: string): string[] {
-    const start = this.find(prefix);
-    if (start === undefined) return [];
-    const found: string[] = [];
-    // A stack, not recursion: one frame per character would overflow
-    // on a very long word.
-    const stack: [TrieNode, string][] = [[start, prefix]];
-    for (let top = stack.pop(); top !== undefined; top = stack.pop()) {
-      const [node, word] = top;
-      if (node.isWord) found.push(word);
-      for (const [ch, child] of node.children) stack.push([child, word + ch]);
-    }
-    return found;
-  }
+```typescript region=words-with-prefix
+
 ```
 
 Here is `words_with_prefix("ap")`, with children visited in insertion order:
@@ -264,47 +155,12 @@ Deleting is the last job: clear the flag, then remove nodes that no longer lead
 to a word. A node knows its children but not its parent, so the walk down
 records each parent and the character used to leave it.
 
-```python
-    def delete(self, word: str) -> bool:
-        path: list[tuple[TrieNode, str]] = []
-        node = self._root
-        for ch in word:
-            if ch not in node.children:
-                return False
-            path.append((node, ch))
-            node = node.children[ch]
-        if not node.is_word:
-            return False
-        node.is_word = False
-        # Stop at a marked node: deleting "apple" must keep "app".
-        while path and not node.is_word and not node.children:
-            parent, ch = path.pop()
-            del parent.children[ch]
-            node = parent
-        return True
+```python region=delete
+
 ```
 
-```typescript
-  delete(word: string): boolean {
-    const path: [TrieNode, string][] = [];
-    let node = this.root;
-    for (const ch of word) {
-      const child = node.children.get(ch);
-      if (child === undefined) return false;
-      path.push([node, ch]);
-      node = child;
-    }
-    if (!node.isWord) return false;
-    node.isWord = false;
-    // Stop at a marked node: deleting "apple" must keep "app".
-    while (path.length > 0 && !node.isWord && node.children.size === 0) {
-      const [parent, ch] = path.pop() as [TrieNode, string];
-      parent.children.delete(ch);
-      node = parent;
-    }
-    return true;
-  }
-}
+```typescript region=delete
+
 ```
 
 Deleting `"apple"` clears the flag on `e`, removes `e` and then `l`, and stops

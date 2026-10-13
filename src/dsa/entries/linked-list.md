@@ -98,57 +98,12 @@ Python's `pop_front` raises `IndexError` on an empty list, as `list.pop` does;
 TypeScript's returns `undefined`, as `Array.prototype.shift` does. Both lists
 iterate from head to tail, so a `for` loop works on either.
 
-```python
-from collections.abc import Iterator
-from typing import Generic, TypeVar
+```python region=part-1
 
-T = TypeVar("T")
-
-class Node(Generic[T]):
-    """One link: a value and the next node, or None at the end."""
-
-    # No per-node __dict__: a million nodes would each pay for one.
-    __slots__ = ("value", "next")
-
-    def __init__(self, value: T) -> None:
-        self.value = value
-        self.next: Node[T] | None = None
-
-class LinkedList(Generic[T]):
-    """A singly linked list that keeps pointers to both ends."""
-
-    def __init__(self) -> None:
-        self.head: Node[T] | None = None
-        self.tail: Node[T] | None = None
-
-    def __iter__(self) -> Iterator[T]:
-        node = self.head
-        while node is not None:
-            yield node.value
-            node = node.next
 ```
 
-```typescript
-/** One link: a value and the next node, or null at the end. */
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+```typescript region=list-node
 
-  constructor(value: T) {
-    this.value = value;
-  }
-}
-
-/** A singly linked list that keeps pointers to both ends. */
-export class LinkedList<T> implements Iterable<T> {
-  head: ListNode<T> | null = null;
-  tail: ListNode<T> | null = null;
-
-  *[Symbol.iterator](): Iterator<T> {
-    for (let node = this.head; node !== null; node = node.next) {
-      yield node.value;
-    }
-  }
 ```
 
 An empty list is `head` and `tail` both `None`. Those two pointers are the
@@ -156,118 +111,35 @@ whole structure, and every method below has to leave them agreeing: `head` is
 `None` exactly when `tail` is, and `tail` is the last node reachable from
 `head`. Next come the two pushes.
 
-```python
-    def push_front(self, value: T) -> None:
-        node = Node(value)
-        # Aim the new node at the old head before moving head. The other order
-        # makes it point at itself and drops the rest of the list.
-        node.next = self.head
-        self.head = node
-        if self.tail is None:
-            self.tail = node
+```python region=push-front
 
-    def push_back(self, value: T) -> None:
-        node = Node(value)
-        if self.tail is None:
-            self.head = node
-        else:
-            # Through the tail; walking from head to find it would cost O(n).
-            self.tail.next = node
-        self.tail = node
 ```
 
-```typescript
-  pushFront(value: T): void {
-    const node = new ListNode(value);
-    // Aim the new node at the old head before moving head. The other order
-    // makes it point at itself and drops the rest of the list.
-    node.next = this.head;
-    this.head = node;
-    this.tail ??= node;
-  }
+```typescript region=push-front
 
-  pushBack(value: T): void {
-    const node = new ListNode(value);
-    if (this.tail === null) {
-      this.head = node;
-    } else {
-      // Through the tail; walking from head to find it would cost O(n).
-      this.tail.next = node;
-    }
-    this.tail = node;
-  }
 ```
 
 On an empty list the first node is both ends at once, so each push sets the
 pointer the other one skips. Pushing 1, 2, 3 onto the back builds the diagram
 above in three O(1) steps. Taking from the front is the mirror image.
 
-```python
-    def pop_front(self) -> T:
-        node = self.head
-        if node is None:
-            raise IndexError("pop from empty linked list")
-        self.head = node.next
-        if self.head is None:
-            # Left alone, tail keeps the popped node and the next push_back
-            # links after it, so head never gets set.
-            self.tail = None
-        return node.value
+```python region=pop-front
+
 ```
 
-```typescript
-  popFront(): T | undefined {
-    const node = this.head;
-    if (node === null) return undefined;
-    this.head = node.next;
-    // Left alone, tail keeps the popped node and the next pushBack links
-    // after it, so head never gets set.
-    if (this.head === null) this.tail = null;
-    return node.value;
-  }
+```typescript region=pop-front
+
 ```
 
 Removing from the middle is harder, because the node before it has
 to skip over it.
 
-```python
-    def remove(self, value: T) -> bool:
-        # A node can't say who points at it, so carry that node along.
-        prev: Node[T] | None = None
-        node = self.head
-        while node is not None and node.value != value:
-            prev, node = node, node.next
-        if node is None:
-            return False
-        if prev is None:
-            self.head = node.next
-        else:
-            prev.next = node.next
-        if node is self.tail:
-            # Left alone, push_back would link after a node that's gone.
-            self.tail = prev
-        return True
+```python region=remove
+
 ```
 
-```typescript
-  remove(value: T): boolean {
-    // A node can't say who points at it, so carry that node along.
-    let prev: ListNode<T> | null = null;
-    let node = this.head;
-    while (node !== null && node.value !== value) {
-      prev = node;
-      node = node.next;
-    }
-    if (node === null) return false;
-    if (prev === null) {
-      this.head = node.next;
-    } else {
-      prev.next = node.next;
-    }
-    // Left alone, pushBack would link after a node that's gone.
-    if (node === this.tail) this.tail = prev;
-    return true;
-  }
+```typescript region=remove
+
 ```
 
 Removing 3 from 1, 2, 3 walks `prev` and `node` along until `node` is 3, with
@@ -276,36 +148,12 @@ since 3 was the tail, the tail steps back to 2. The list is 1, 2. Removing the
 head has no `prev`, which is the `prev is None` branch, and only the first
 match goes. The last method flips every arrow in place.
 
-```python
-    def reverse(self) -> None:
-        prev: Node[T] | None = None
-        node = self.head
-        # The old head ends up last, and nothing will point at it afterward.
-        self.tail = node
-        while node is not None:
-            # Saved first: the next line overwrites the only way forward.
-            following = node.next
-            node.next = prev
-            prev, node = node, following
-        self.head = prev
+```python region=reverse
+
 ```
 
-```typescript
-  reverse(): void {
-    let prev: ListNode<T> | null = null;
-    let node = this.head;
-    // The old head ends up last, and nothing will point at it afterward.
-    this.tail = node;
-    while (node !== null) {
-      // Saved first: the next line overwrites the only way forward.
-      const following: ListNode<T> | null = node.next;
-      node.next = prev;
-      prev = node;
-      node = following;
-    }
-    this.head = prev;
-  }
-}
+```typescript region=reverse
+
 ```
 
 Each pass points one node backward and steps forward. On 1, 2, 3, the state

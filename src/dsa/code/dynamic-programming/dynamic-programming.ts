@@ -1,3 +1,4 @@
+// #region rob-memo
 /** Most money from houses with no two neighbors robbed, top-down. */
 export function robMemo(nums: number[]): number {
   // Created inside so the memo belongs to this street and starts empty on
@@ -18,7 +19,9 @@ export function robMemo(nums: number[]): number {
   // point depends on the engine) this throws a RangeError.
   return bestFrom(0);
 }
+// #endregion
 
+// #region rob-table
 /** The whole table, bottom-up: best[i] is the most from houses i onward. */
 export function robTable(nums: number[]): number[] {
   const n = nums.length;
@@ -32,7 +35,9 @@ export function robTable(nums: number[]): number[] {
   }
   return best;
 }
+// #endregion
 
+// #region houses-to-rob
 /** Indices of one best set of houses, read back out of the table. */
 export function housesToRob(nums: number[]): number[] {
   const best = robTable(nums);
@@ -49,7 +54,9 @@ export function housesToRob(nums: number[]): number[] {
   }
   return chosen;
 }
+// #endregion
 
+// #region rob
 /** The same answer as robTable(nums)[0], keeping only two entries. */
 export function rob(nums: number[]): number {
   let next1 = 0;
@@ -61,3 +68,4 @@ export function rob(nums: number[]): number {
   }
   return next1;
 }
+// #endregion

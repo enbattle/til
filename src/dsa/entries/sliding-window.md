@@ -51,134 +51,32 @@ The third question swaps the running sum for a map. What's the longest run holdi
 
 ## Walkthrough
 
-```python
-def max_window_sum(nums: list[int], k: int) -> int | None:
-    """Largest sum of k consecutive values, or None if nums has fewer than k."""
-    if k < 1:
-        raise ValueError("k must be at least 1")
-    if k > len(nums):
-        return None
-    window = sum(nums[:k])
-    # Start from the first window, not 0: all-negative input has a negative best.
-    best = window
-    for right in range(k, len(nums)):
-        # The value leaving is k behind right; right - k + 1 is still inside.
-        window += nums[right] - nums[right - k]
-        best = max(best, window)
-    return best
+```python region=max-window-sum
+
 ```
 
-```typescript
-/** Largest sum of `k` consecutive values, or null if `nums` is shorter. */
-export function maxWindowSum(nums: number[], k: number): number | null {
-  if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be at least 1');
-  if (k > nums.length) return null;
-  let window = 0;
-  for (let i = 0; i < k; i++) window += nums[i];
-  // Start from the first window, not 0: all-negative input has a negative best.
-  let best = window;
-  for (let right = k; right < nums.length; right++) {
-    // The value leaving is k behind right; right - k + 1 is still inside.
-    window += nums[right] - nums[right - k];
-    best = Math.max(best, window);
-  }
-  return best;
-}
+```typescript region=max-window-sum
+
 ```
 
 Prefix sums could answer this too, but with O(n) extra space; the window needs none.
 
-```python
-def shortest_run_at_least(nums: list[int], target: int) -> int:
-    """Length of the shortest run summing to >= target, or 0 if none.
+```python region=shortest-run-at-least
 
-    Needs non-negative values, so growing a run never lowers its sum.
-    """
-    if target < 1:
-        raise ValueError("target must be at least 1")
-    shortest = len(nums) + 1  # longer than any run; 0 here would win every min
-    total = left = 0
-    for right in range(len(nums)):
-        total += nums[right]
-        # while, not if: after one drop the run may still reach the target,
-        # and a shorter run would be missed.
-        while total >= target:
-            shortest = min(shortest, right - left + 1)
-            total -= nums[left]
-            left += 1
-    return shortest if shortest <= len(nums) else 0
 ```
 
-```typescript
-/**
- * Length of the shortest run summing to >= target, or 0 if none.
- * Needs non-negative values, so growing a run never lowers its sum.
- */
-export function shortestRunAtLeast(nums: number[], target: number): number {
-  if (!Number.isInteger(target) || target < 1) {
-    throw new RangeError('target must be at least 1');
-  }
-  let shortest = nums.length + 1; // longer than any run; 0 here would win every min
-  let total = 0;
-  let left = 0;
-  for (let right = 0; right < nums.length; right++) {
-    total += nums[right];
-    // while, not if: after one drop the run may still reach the target,
-    // and a shorter run would be missed.
-    while (total >= target) {
-      shortest = Math.min(shortest, right - left + 1);
-      total -= nums[left];
-      left++;
-    }
-  }
-  return shortest <= nums.length ? shortest : 0;
-}
+```typescript region=shortest-run-at-least
+
 ```
 
 The `target < 1` guard keeps the loop honest: with a target of 0, an empty window would already qualify and `left` would run past `right`. Recording the length happens inside the loop, before each drop, because the window is valid exactly then. At `right = 4` the loop runs twice, finding length 4 and then length 3; an `if` stops after the first and returns 4. The last function keeps counts instead of a sum.
 
-```python
-def longest_with_k_distinct(nums: list[int], k: int) -> int:
-    """Length of the longest run holding at most k different values."""
-    if k < 1:
-        raise ValueError("k must be at least 1")
-    counts: dict[int, int] = {}
-    left = best = 0
-    for right in range(len(nums)):
-        value = nums[right]
-        counts[value] = counts.get(value, 0) + 1
-        while len(counts) > k:
-            gone = nums[left]
-            counts[gone] -= 1
-            if counts[gone] == 0:
-                del counts[gone]  # a key left at 0 still counts as distinct
-            left += 1
-        best = max(best, right - left + 1)
-    return best
+```python region=longest-with-k-distinct
+
 ```
 
-```typescript
-/** Length of the longest run holding at most `k` different values. */
-export function longestWithKDistinct(nums: number[], k: number): number {
-  if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be at least 1');
-  const counts = new Map<number, number>();
-  let left = 0;
-  let best = 0;
-  for (let right = 0; right < nums.length; right++) {
-    const value = nums[right];
-    counts.set(value, (counts.get(value) ?? 0) + 1);
-    while (counts.size > k) {
-      const gone = nums[left];
-      const remaining = counts.get(gone)! - 1;
-      // A key left at 0 would still count as distinct.
-      if (remaining === 0) counts.delete(gone);
-      else counts.set(gone, remaining);
-      left++;
-    }
-    best = Math.max(best, right - left + 1);
-  }
-  return best;
-}
+```typescript region=longest-with-k-distinct
+
 ```
 
 Here the window is checked after growing, so it's repaired and then measured, and `best` takes the length of a valid window. At `right = 4` a third distinct value, 3, arrives; dropping the 1 at index 1 leaves the map at three keys, and only dropping the 5 as well, which removes its key, brings it back to 2.

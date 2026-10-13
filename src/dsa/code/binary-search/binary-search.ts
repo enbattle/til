@@ -1,8 +1,11 @@
+// #region first-true
 /** Smallest x in [lo, hi) with ok(x) true, or hi if none; ok goes false then true. */
 export function firstTrue(lo: number, hi: number, ok: (x: number) => boolean): number {
   while (lo < hi) {
     // Not Math.floor((lo + hi) / 2): in a fixed-width language that sum can overflow.
     const mid = lo + Math.floor((hi - lo) / 2);
+    // #endregion
+    // #region part-2
     if (ok(mid)) {
       hi = mid; // mid may be the answer, so it has to stay in range
     } else {
@@ -11,13 +14,17 @@ export function firstTrue(lo: number, hi: number, ok: (x: number) => boolean): n
   }
   return lo;
 }
+// #endregion
 
+// #region lower-bound
 /** First index i with nums[i] >= target in sorted `nums`, or nums.length if none. */
 export function lowerBound(nums: number[], target: number): number {
   // >=, not >: with > this returns the index after the last copy of target.
   return firstTrue(0, nums.length, (i) => nums[i] >= target);
 }
+// #endregion
 
+// #region min-capacity
 /** Least truck capacity that ships the packages, in order, within `days`. */
 export function minCapacity(weights: number[], days: number): number {
   const enough = (cap: number): boolean => {
@@ -37,3 +44,4 @@ export function minCapacity(weights: number[], days: number): number {
   const total = weights.reduce((a, b) => a + b, 0);
   return firstTrue(Math.max(0, ...weights), total, enough);
 }
+// #endregion

@@ -1,3 +1,4 @@
+# region shortest-path
 from collections import deque
 
 
@@ -16,6 +17,8 @@ def shortest_path(adj: list[list[int]], source: int, target: int) -> list[int] |
             if w not in parent:
                 parent[w] = v
                 queue.append(w)
+# endregion
+    # region part-2
     if target not in parent:
         return None
     path: list[int] = []
@@ -25,9 +28,11 @@ def shortest_path(adj: list[list[int]], source: int, target: int) -> list[int] |
         node = parent[node]
     # Parents point back toward the source, so the walk comes out reversed.
     return path[::-1]
+    # endregion
 
 
 
+# region minutes-to-rot
 def minutes_to_rot(grid: list[list[int]]) -> int:
     """Minutes until every fresh cell (1) rots, or -1 if one never does.
 
@@ -62,3 +67,4 @@ def minutes_to_rot(grid: list[list[int]]) -> int:
                         queue.append((nr, nc))
         minutes += 1
     return -1 if fresh else minutes
+# endregion

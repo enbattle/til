@@ -1,3 +1,4 @@
+// #region pair-with-sum
 /** Indices [i, j], i < j, of two values in sorted `nums` that add up to `target`. */
 export function pairWithSum(nums: number[], target: number): [number, number] | null {
   let left = 0;
@@ -6,6 +7,8 @@ export function pairWithSum(nums: number[], target: number): [number, number] | 
   while (left < right) {
     const total = nums[left] + nums[right];
     if (total === target) return [left, right];
+    // #endregion
+    // #region part-2
     // Too small: nums[left] is too small even beside the largest value still
     // in play, so no pair uses it. Too big: nums[right] fails the same way
     // beside the smallest. Either move rules one element out for good.
@@ -14,7 +17,9 @@ export function pairWithSum(nums: number[], target: number): [number, number] | 
   }
   return null;
 }
+// #endregion
 
+// #region list-node
 export class ListNode {
   val: number;
   next: ListNode | null;
@@ -32,6 +37,8 @@ export function hasCycle(head: ListNode | null): boolean {
   // Test fast and fast.next: fast.next.next reads the next of nothing when
   // an odd-length list leaves fast on its last node.
   while (fast !== null && fast.next !== null) {
+    // #endregion
+    // #region part-4
     slow = slow!.next;
     fast = fast.next.next;
     // After moving, not before: both start at head, so before always matches.
@@ -40,3 +47,4 @@ export function hasCycle(head: ListNode | null): boolean {
   }
   return false;
 }
+// #endregion

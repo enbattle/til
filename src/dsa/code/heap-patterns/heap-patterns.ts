@@ -1,3 +1,4 @@
+// #region min-heap
 /** heap.ts's MinHeap without heapify or empty checks: callers test `size` first. */
 export class MinHeap<T> {
   private readonly items: T[] = [];
@@ -38,7 +39,9 @@ export class MinHeap<T> {
     return top;
   }
 }
+// #endregion
 
+// #region part-2
 type Less<T> = (a: T, b: T) => boolean;
 
 /** The k largest items, largest first; all of them if there are fewer. */
@@ -57,7 +60,9 @@ export function topKLargest<T>(items: T[], k: number, less: Less<T>): T[] {
   while (heap.size > 0) out.push(heap.pop());
   return out.reverse(); // a heap pops smallest first
 }
+// #endregion
 
+// #region merge-sorted
 /** One sorted list holding every item of the sorted input lists. */
 export function mergeSorted<T>(lists: T[][], less: Less<T>): T[] {
   // [value, list, position]. The list index breaks ties on value, so equal
@@ -74,7 +79,9 @@ export function mergeSorted<T>(lists: T[][], less: Less<T>): T[] {
   }
   return merged;
 }
+// #endregion
 
+// #region running-medians
 /** The median after each value: the mean of the middle two when even. */
 export function runningMedians(stream: number[]): number[] {
   const low = new MinHeap<number>((a, b) => a > b); // max-heap of the smaller half
@@ -89,3 +96,4 @@ export function runningMedians(stream: number[]): number[] {
     return low.size > high.size ? low.peek() : (low.peek() + high.peek()) / 2;
   });
 }
+// #endregion

@@ -1,3 +1,4 @@
+# region part-1
 from typing import Protocol
 
 # adj[u] lists the neighbors of u, the shape the graph entry's build_list returns.
@@ -30,8 +31,10 @@ def count_components(adj: Graph) -> int:
             explore(adj, u, seen)
             count += 1
     return count
+# endregion
 
 
+# region part-2
 UNVISITED, ON_PATH, FINISHED = 0, 1, 2
 
 
@@ -52,8 +55,10 @@ def has_cycle(adj: Graph) -> bool:
         return False
 
     return any(state[u] == UNVISITED and visit(u) for u in range(len(adj)))
+# endregion
 
 
+# region tree-node
 class TreeNode(Protocol):
     """Anything with these three fields, such as the binary-tree entry's node."""
 
@@ -73,8 +78,10 @@ def has_path_sum(node: TreeNode | None, remaining: int) -> bool:
     if node.left is None and node.right is None:
         return remaining == 0
     return has_path_sum(node.left, remaining) or has_path_sum(node.right, remaining)
+# endregion
 
 
+# region diameter
 def diameter(root: TreeNode | None) -> int:
     """Edges on the longest path between any two nodes."""
     best = 0
@@ -94,3 +101,4 @@ def diameter(root: TreeNode | None) -> int:
 
     height(root)
     return best
+# endregion

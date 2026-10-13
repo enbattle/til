@@ -1,3 +1,4 @@
+// #region union-find
 /** Disjoint sets over the elements 0..n-1: union by size, path compression. */
 export class UnionFind {
   private readonly parent: Int32Array;
@@ -11,7 +12,9 @@ export class UnionFind {
     // Kept up to date, so asking never means calling find on every element.
     this.count = n;
   }
+  // #endregion
 
+  // #region find
   find(x: number): number {
     // An Int32Array read past its end gives undefined, not an error, and two
     // of them compare equal: connected(10, 11) would quietly say true.
@@ -29,7 +32,9 @@ export class UnionFind {
     }
     return root;
   }
+  // #endregion
 
+  // #region union
   union(a: number, b: number): boolean {
     let rootA = this.find(a);
     let rootB = this.find(b);
@@ -42,7 +47,9 @@ export class UnionFind {
     this.count--;
     return true;
   }
+  // #endregion
 
+  // #region connected
   connected(a: number, b: number): boolean {
     return this.find(a) === this.find(b);
   }
@@ -60,3 +67,4 @@ export function hasCycle(n: number, edges: Iterable<[number, number]>): boolean 
   }
   return false;
 }
+// #endregion

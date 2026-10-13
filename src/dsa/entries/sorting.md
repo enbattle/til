@@ -45,172 +45,42 @@ Call the built-in first. Python's `sorted` and `list.sort` are guaranteed stable
 
 ## Walkthrough
 
-```python
-import random
-from collections.abc import Callable
-from typing import Any, TypeVar
+```python region=part-1
 
-T = TypeVar("T")
-
-
-def merge_sort(items: list[T], key: Callable[[T], Any] = lambda x: x) -> list[T]:
-    """A new list in ascending key order; equal keys keep their input order."""
-    if len(items) <= 1:
-        return list(items)
-    mid = len(items) // 2
-    left = merge_sort(items[:mid], key)
-    right = merge_sort(items[mid:], key)
-    merged: list[T] = []
-    i = j = 0
 ```
 
-```typescript
-/** A new array in ascending key order; equal keys keep their input order. */
-export function mergeSort<T>(
-  items: readonly T[],
-  key: (item: T) => number = (item) => item as unknown as number,
-): T[] {
-  if (items.length <= 1) return [...items];
-  const mid = Math.floor(items.length / 2);
-  const left = mergeSort(items.slice(0, mid), key);
-  const right = mergeSort(items.slice(mid), key);
-  const merged: T[] = [];
-  let i = 0;
-  let j = 0;
+```typescript region=merge-sort
+
 ```
 
 `mid` rounded down leaves both halves non-empty and shorter, so the recursion ends. Next comes the merge itself.
 
-```python
-    while i < len(left) and j < len(right):
-        # <=, not <: on a tie the left item came first in the input, so it
-        # goes first. With < the sort still sorts, but stability is gone.
-        if key(left[i]) <= key(right[j]):
-            merged.append(left[i])
-            i += 1
-        else:
-            merged.append(right[j])
-            j += 1
-    # At most one of these is non-empty, and its items are already in order
-    # and no smaller than anything taken. Skip them and the tail vanishes.
-    merged.extend(left[i:])
-    merged.extend(right[j:])
-    return merged
+```python region=part-2
+
 ```
 
-```typescript
-  while (i < left.length && j < right.length) {
-    // <=, not <: on a tie the left item came first in the input, so it
-    // goes first. With < the sort still sorts, but stability is gone.
-    if (key(left[i]) <= key(right[j])) merged.push(left[i++]);
-    else merged.push(right[j++]);
-  }
-  // At most one of these is non-empty, and its items are already in order
-  // and no smaller than anything taken. Skip them and the tail vanishes.
-  return merged.concat(left.slice(i), right.slice(j));
-}
+```typescript region=part-2
+
 ```
 
 On the example this loop runs the table above and stops at step 6 with `[9]` left over, which `extend` appends. Counting inversions adds `inversions += len(left) - i` in the `else` branch. Quickselect needs a different tool, the partition.
 
-```python
-def partition(nums: list[int], lo: int, hi: int, pivot: int) -> tuple[int, int]:
-    """Rearrange nums[lo:hi] so nums[lo:lt] < pivot, nums[lt:gt] == pivot and
-    nums[gt:hi] > pivot, and return (lt, gt)."""
-    lt, i, gt = lo, lo, hi
-    while i < gt:
-        if nums[i] < pivot:
-            # What swaps in from lt is equal to the pivot, so i can move on.
-            nums[lt], nums[i] = nums[i], nums[lt]
-            lt += 1
-            i += 1
-        elif nums[i] > pivot:
-            # What swaps in from the end is unexamined, so i must stay put.
-            gt -= 1
-            nums[i], nums[gt] = nums[gt], nums[i]
-        else:
-            i += 1
-    return lt, gt
+```python region=partition
 
 ```
 
-```typescript
-/**
- * Rearrange nums[lo, hi) so nums[lo, lt) < pivot, nums[lt, gt) == pivot and
- * nums[gt, hi) > pivot, and return [lt, gt].
- */
-export function partition(
-  nums: number[],
-  lo: number,
-  hi: number,
-  pivot: number,
-): [number, number] {
-  let lt = lo;
-  let i = lo;
-  let gt = hi;
-  while (i < gt) {
-    if (nums[i] < pivot) {
-      // What swaps in from lt is equal to the pivot, so i can move on.
-      [nums[lt], nums[i]] = [nums[i], nums[lt]];
-      lt++;
-      i++;
-    } else if (nums[i] > pivot) {
-      // What swaps in from the end is unexamined, so i must stay put.
-      gt--;
-      [nums[i], nums[gt]] = [nums[gt], nums[i]];
-    } else {
-      i++;
-    }
-  }
-  return [lt, gt];
-}
+```typescript region=partition
+
 ```
 
 Three indexes keep four zones: `[lo, lt)` smaller, `[lt, i)` equal, `[i, gt)` unexamined and `[gt, hi)` larger. Around 4 the example ends as `[2, 1, 4, 4, 4, 9, 7]` with `lt = 2` and `gt = 5`, and the pivot goes in as a value because its own item moves during the swaps. That leaves choosing the pivot and picking a side.
 
-```python
-def quickselect(nums: list[int], k: int, rng: random.Random | None = None) -> int:
-    """The k-th smallest of nums, counting from 0. Reorders nums in place."""
-    if not 0 <= k < len(nums):
-        raise IndexError(f"k={k} out of range for {len(nums)} elements")
-    rng = rng or random.Random()
-    lo, hi = 0, len(nums)
-    while True:
-        # A random pivot means no input is reliably bad. A first-element pivot
-        # is the maximum every round on reversed input, so the range shrinks
-        # by one a round; sorted input is milder, about n^1.5.
-        lt, gt = partition(nums, lo, hi, nums[rng.randrange(lo, hi)])
-        if k < lt:
-            hi = lt
-        elif k >= gt:
-            lo = gt
-        else:
-            return nums[k]
+```python region=quickselect
+
 ```
 
-```typescript
-/** The k-th smallest of nums, counting from 0. Reorders nums in place. */
-export function quickselect(
-  nums: number[],
-  k: number,
-  random: () => number = Math.random,
-): number {
-  if (!Number.isInteger(k) || k < 0 || k >= nums.length) {
-    throw new RangeError(`k=${k} out of range for ${nums.length} elements`);
-  }
-  let lo = 0;
-  let hi = nums.length;
-  for (;;) {
-    // A random pivot means no input is reliably bad. A first-element pivot
-    // is the maximum every round on reversed input, so the range shrinks
-    // by one a round; sorted input is milder, about n^1.5.
-    const pivot = nums[lo + Math.floor(random() * (hi - lo))];
-    const [lt, gt] = partition(nums, lo, hi, pivot);
-    if (k < lt) hi = lt;
-    else if (k >= gt) lo = gt;
-    else return nums[k];
-  }
-}
+```typescript region=quickselect
+
 ```
 
 The range check comes first because an out-of-range `k` never lands in a zone, so Python would fail inside `randrange` and TypeScript would loop forever. The middle zone is why an all-equal array finishes in one pass; a Lomuto-style two-way partition goes quadratic on many duplicates.

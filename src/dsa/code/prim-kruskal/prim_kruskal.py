@@ -1,9 +1,12 @@
+# region part-1
 import heapq
 from collections.abc import Iterable
 
 Edge = tuple[int, int, int]  # (u, v, weight); undirected, vertices are 0..n-1
+# endregion
 
 
+# region kruskal
 def kruskal(n: int, edges: Iterable[Edge]) -> list[Edge] | None:
     """A minimum spanning tree as a list of edges, or None if disconnected."""
     parent = list(range(n))
@@ -30,8 +33,10 @@ def kruskal(n: int, edges: Iterable[Edge]) -> list[Edge] | None:
         if len(chosen) == n - 1:
             break
     return chosen if len(chosen) == max(n - 1, 0) else None
+# endregion
 
 
+# region prim
 def prim(n: int, edges: Iterable[Edge]) -> list[Edge] | None:
     """A minimum spanning tree grown from vertex 0, or None if disconnected."""
     if n == 0:  # adjacent[0] below would not exist
@@ -42,7 +47,9 @@ def prim(n: int, edges: Iterable[Edge]) -> list[Edge] | None:
         # once is a one-way street, and Prim would miss vertices behind it.
         adjacent[u].append((w, u, v))
         adjacent[v].append((w, v, u))
+# endregion
 
+    # region part-4
     in_tree = [False] * n
     in_tree[0] = True
     heap = list(adjacent[0])
@@ -60,3 +67,4 @@ def prim(n: int, edges: Iterable[Edge]) -> list[Edge] | None:
             if not in_tree[entry[2]]:  # an edge back into the tree is never used
                 heapq.heappush(heap, entry)
     return chosen if len(chosen) == n - 1 else None
+    # endregion

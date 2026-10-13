@@ -1,3 +1,4 @@
+// #region part-1
 /** An undirected weighted edge: [u, v, weight], with vertices numbered 0..n-1. */
 export type Edge = [u: number, v: number, weight: number];
 
@@ -37,7 +38,9 @@ class MinHeap<T> {
     return top;
   }
 }
+// #endregion
 
+// #region kruskal
 /** A minimum spanning tree as a list of edges, or null if disconnected. */
 export function kruskal(n: number, edges: Iterable<Edge>): Edge[] | null {
   const parent = Array.from({ length: n }, (_, i) => i);
@@ -66,7 +69,9 @@ export function kruskal(n: number, edges: Iterable<Edge>): Edge[] | null {
   }
   return chosen.length === Math.max(n - 1, 0) ? chosen : null;
 }
+// #endregion
 
+// #region prim
 /** A minimum spanning tree grown from vertex 0, or null if disconnected. */
 export function prim(n: number, edges: Iterable<Edge>): Edge[] | null {
   if (n === 0) return []; // adjacent[0] below would not exist
@@ -77,7 +82,9 @@ export function prim(n: number, edges: Iterable<Edge>): Edge[] | null {
     adjacent[u].push([u, v, w]);
     adjacent[v].push([v, u, w]);
   }
+  // #endregion
 
+  // #region part-4
   const inTree = new Array<boolean>(n).fill(false);
   inTree[0] = true;
   const heap = new MinHeap<Edge>((a, b) => a[2] < b[2]);
@@ -97,3 +104,4 @@ export function prim(n: number, edges: Iterable<Edge>): Edge[] | null {
   }
   return chosen.length === n - 1 ? chosen : null;
 }
+// #endregion

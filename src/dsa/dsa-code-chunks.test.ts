@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -6,14 +6,23 @@ import { markdownParser } from '@/lib/markdown.mjs';
 import { parseFrontmatter } from '@/lib/frontmatter';
 
 /**
- * docs/specs/dsa-tab.md, criteria 11 and 12. An entry's code is shown in
- * chunks, but the tested code lives in files beside it
- * (`src/dsa/code/<slug>/<slug_underscored>.py` and `<slug>.ts`). This checks
- * that the python fences under `## Implementation` / `## Walkthrough`, in
- * order, are exactly the `.py` file, and the typescript fences exactly the
- * `.ts` file, line by line with blank lines dropped. Fences elsewhere in the
- * entry (a usage example) aren't compared. Fences are read from the markdown
- * tree (`markdownParser`), not a regex.
+ * docs/specs/dsa-code-regions.md, criteria 3 and 5 (replacing
+ * docs/specs/dsa-tab.md criterion 11's copy check). An entry's code lives once,
+ * in the tested files beside it (`src/dsa/code/<slug>/<slug_underscored>.py`
+ * and `<slug>.ts`), which mark named regions. Under `## Implementation` /
+ * `## Walkthrough` the entry names regions with empty ` ```python region=<name> `
+ * fences, and the build fills them in. This checks, per entry and language:
+ *
+ * - the entry file on disk (read with fs, not the resolved `?raw` import)
+ *   holds region fences there and no literal python/typescript fence;
+ * - every non-blank line of the code file sits inside a region;
+ * - the resolved body (the `?raw` import) shows each region's text once, in
+ *   file order, and so the whole file, marker lines aside, exactly once.
+ *
+ * Fences are read from the markdown tree (`markdownParser`), not a regex. The
+ * region reading here is the test's own, kept independent of
+ * `src/lib/code-regions.mjs`, so this file still runs (and its folder
+ * allowlist still passes) when that module is broken.
  */
 
 const ENTRIES = import.meta.glob('/src/dsa/entries/*.md', {
@@ -36,8 +45,14 @@ interface MdNode {
   type: string;
   depth?: number;
   lang?: string | null;
+  meta?: string | null;
   value?: string;
   children?: MdNode[];
+}
+
+interface Fence {
+  meta: string;
+  value: string;
 }
 
 function textOf(node: MdNode): string {
@@ -45,12 +60,13 @@ function textOf(node: MdNode): string {
 }
 
 /** The `language` fences under the chunked sections, in order. */
-function chunks(markdown: string, language: Language): string[] {
+function fences(markdown: string, language: Language): Fence[] {
   const root = markdownParser().parse(markdown) as MdNode;
-  const found: string[] = [];
+  const found: Fence[] = [];
   let inChunkSection = false;
   const collect = (node: MdNode) => {
-    if (node.type === 'code' && node.lang === language) found.push(node.value ?? '');
+    if (node.type === 'code' && node.lang === language)
+      found.push({ meta: node.meta ?? '', value: node.value ?? '' });
     node.children?.forEach(collect);
   };
   for (const node of root.children ?? []) {
@@ -63,18 +79,72 @@ function chunks(markdown: string, language: Language): string[] {
   return found;
 }
 
-/** Lines with blank ones dropped and line endings normalised. */
-function nonBlankLines(text: string): string[] {
+// Every form VS Code folds (`#region`, `#  region`, `//#region`, `// region`,
+// and the matching endregion), but only as a comment that starts its line and
+// only the whole word: `x = 1  # region` and `# regional` stay code. An
+// endregion may carry trailing text (`# endregion lower-bound`).
+const MARKERS: Record<Language, { open: RegExp; close: RegExp }> = {
+  python: {
+    open: /^\s*#\s*region(?=\s|$)\s*(\S*)\s*$/,
+    close: /^\s*#\s*endregion(?=\s|$)/,
+  },
+  typescript: {
+    open: /^\s*\/\/\s*#?region(?=\s|$)\s*(\S*)\s*$/,
+    close: /^\s*\/\/\s*#?endregion(?=\s|$)/,
+  },
+};
+
+function isMarker(line: string, language: Language): boolean {
+  const { open, close } = MARKERS[language];
+  return open.test(line) || close.test(line);
+}
+
+/** Lines with blank ones (and, given a language, marker lines) dropped. */
+function nonBlankLines(text: string, language?: Language): string[] {
   return text
     .replace(/\r\n?/g, '\n')
     .split('\n')
-    .filter((line) => line.trim() !== '');
+    .filter((line) => line.trim() !== '' && !(language && isMarker(line, language)));
+}
+
+interface Marked {
+  regions: { name: string; text: string }[];
+  /** 1-based numbers of non-blank, non-marker lines outside every region. */
+  uncovered: number[];
+}
+
+/** The file's regions (outer blank lines trimmed) and its uncovered lines. */
+function markedRegions(source: string, language: Language): Marked {
+  const { open, close } = MARKERS[language];
+  const regions: Marked['regions'] = [];
+  const uncovered: number[] = [];
+  let current: { name: string; lines: string[] } | null = null;
+  source
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .forEach((line, index) => {
+      const opened = open.exec(line);
+      if (opened) {
+        current = { name: opened[1], lines: [] };
+      } else if (close.test(line) && current) {
+        const body = current.lines;
+        while (body.length && body[0].trim() === '') body.shift();
+        while (body.length && body[body.length - 1].trim() === '') body.pop();
+        regions.push({ name: current.name, text: body.join('\n') });
+        current = null;
+      } else if (current) {
+        current.lines.push(line);
+      } else if (line.trim() !== '') {
+        uncovered.push(index + 1);
+      }
+    });
+  return { regions, uncovered };
 }
 
 /**
- * `null` when the entry's `language` chunks equal `file` (blank lines
- * dropped); otherwise a message naming the entry and language and showing the
- * first line that differs.
+ * `null` when the entry's resolved `language` fences equal `file` with blank
+ * and marker lines dropped; otherwise a message naming the entry and language
+ * and showing the first line that differs.
  */
 function chunkMismatch(
   entry: string,
@@ -82,8 +152,12 @@ function chunkMismatch(
   markdown: string,
   file: string,
 ): string | null {
-  const shown = nonBlankLines(chunks(markdown, language).join('\n'));
-  const real = nonBlankLines(file);
+  const shown = nonBlankLines(
+    fences(markdown, language)
+      .map((f) => f.value)
+      .join('\n'),
+  );
+  const real = nonBlankLines(file, language);
   const length = Math.max(shown.length, real.length);
   for (let i = 0; i < length; i++) {
     if (shown[i] === real[i]) continue;
@@ -104,6 +178,12 @@ function codePath(slug: string, language: Language): string {
 }
 
 const SLUGS = Object.keys(ENTRIES).map((p) => p.replace(/^.*\/([^/]+)\.md$/, '$1'));
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+/** The entry file as it is on disk, before the build fills in its regions. */
+function entryOnDisk(slug: string): string {
+  return readFileSync(path.join(HERE, 'entries', `${slug}.md`), 'utf8');
+}
 
 describe('DSA code files (criterion 12)', () => {
   it('has the three reference entries', () => {
@@ -135,40 +215,96 @@ describe('DSA code files (criterion 12)', () => {
   });
 });
 
-describe('DSA code chunks match the code files (criterion 11)', () => {
-  const cases = SLUGS.flatMap((slug) => LANGUAGES.map((lang) => [slug, lang] as const));
+const CASES = SLUGS.flatMap((slug) => LANGUAGES.map((lang) => [slug, lang] as const));
 
-  it.each(cases)('%s: the %s chunks equal the code file', (slug, language) => {
-    const markdown = parseFrontmatter(ENTRIES[`/src/dsa/entries/${slug}.md`]).content;
-    const file = CODE[codePath(slug, language)];
-    expect(file, `${codePath(slug, language)} is missing`).toBeDefined();
-    expect(
-      chunks(markdown, language).length,
-      `${slug} has no ${language} chunks`,
-    ).toBeGreaterThan(0);
-    expect(chunkMismatch(slug, language, markdown, file)).toBeNull();
-  });
+describe('DSA entries name regions instead of copying code (regions criterion 5)', () => {
+  it.each(CASES)(
+    '%s: the file on disk has only %s region fences under Implementation/Walkthrough',
+    (slug, language) => {
+      const found = fences(parseFrontmatter(entryOnDisk(slug)).content, language);
+      expect(found.length, `${slug} has no ${language} region fences`).toBeGreaterThan(0);
+      const literal = found.filter((f) => !/^region=[a-z0-9-]+$/.test(f.meta.trim()));
+      expect(
+        literal.map((f) => f.value.split('\n')[0]),
+        `${slug} still holds literal ${language} fences`,
+      ).toEqual([]);
+      expect(found.map((f) => f.value).filter((v) => v !== '')).toEqual([]);
+    },
+  );
+
+  it.each(CASES)(
+    '%s: every non-blank line of the %s file is in a region',
+    (slug, language) => {
+      const file = CODE[codePath(slug, language)];
+      expect(file, `${codePath(slug, language)} is missing`).toBeDefined();
+      const { regions, uncovered } = markedRegions(file, language);
+      expect(
+        regions.length,
+        `${codePath(slug, language)} has no regions`,
+      ).toBeGreaterThan(0);
+      expect(
+        uncovered,
+        `${codePath(slug, language)}: lines outside every region`,
+      ).toEqual([]);
+    },
+  );
 });
 
-describe('the chunk check itself (criterion 11)', () => {
+describe('the resolved entries show their code files (regions criteria 3 and 5)', () => {
+  it.each(CASES)(
+    '%s: the resolved %s fences are the regions, once each, in file order',
+    (slug, language) => {
+      const markdown = parseFrontmatter(ENTRIES[`/src/dsa/entries/${slug}.md`]).content;
+      const file = CODE[codePath(slug, language)];
+      expect(file, `${codePath(slug, language)} is missing`).toBeDefined();
+      const shown = fences(markdown, language);
+      expect(shown.map((f) => f.meta.trim())).not.toContainEqual(
+        expect.stringMatching(/region=/),
+      );
+      expect(shown.map((f) => f.value)).toEqual(
+        markedRegions(file, language).regions.map((r) => r.text),
+      );
+    },
+  );
+
+  it.each(CASES)(
+    '%s: the resolved %s fences show the whole file once, in order',
+    (slug, language) => {
+      const markdown = parseFrontmatter(ENTRIES[`/src/dsa/entries/${slug}.md`]).content;
+      const file = CODE[codePath(slug, language)];
+      expect(fences(markdown, language).length).toBeGreaterThan(0);
+      expect(chunkMismatch(slug, language, markdown, file)).toBeNull();
+    },
+  );
+});
+
+describe('the region check itself', () => {
   const PY_FILE = [
+    '# region lower-bound',
     'def lower_bound(nums, target):',
     '    lo, hi = 0, len(nums)',
     '',
     '    while lo < hi:',
+    '# endregion',
+    '',
+    '    # region loop-body',
     '        mid = (lo + hi) // 2',
     '        if nums[mid] < target:',
     '            lo = mid + 1',
     '        else:',
     '            hi = mid',
     '    return lo',
+    '    # endregion',
     '',
   ].join('\n');
 
   const TS_FILE = [
+    '// #region lower-bound',
     'export function lowerBound(nums: number[], target: number): number {',
     '  let lo = 0;',
     '  let hi = nums.length;',
+    '  // #endregion',
+    '  // #region loop',
     '  while (lo < hi) {',
     '    const mid = (lo + hi) >>> 1;',
     '    if (nums[mid] < target) lo = mid + 1;',
@@ -176,97 +312,160 @@ describe('the chunk check itself (criterion 11)', () => {
     '  }',
     '  return lo;',
     '}',
+    '// #endregion',
     '',
   ].join('\n');
 
-  function fence(language: Language, lines: string[]): string {
-    return ['```' + language, ...lines, '```'].join('\n');
+  function fence(info: string, lines: string[]): string {
+    return ['```' + info, ...lines, '```'].join('\n');
   }
 
   const PY = PY_FILE.split('\n');
   const TS = TS_FILE.split('\n');
 
-  const GOOD = [
-    '## Prerequisites',
-    'None.',
+  const RESOLVED = [
     '## The idea',
-    'A usage example is not compared:',
     fence('python', ['print(lower_bound([1, 2], 2))']),
-    fence('typescript', ['console.log(lowerBound([1, 2], 2));']),
     '## Walkthrough',
-    // The first chunk splits the function after its first line; the blank
-    // line inside the file is not in any chunk.
-    fence('python', PY.slice(0, 2)),
-    fence('typescript', TS.slice(0, 3)),
-    'Why the half-open range.',
-    fence('python', PY.slice(3, 9)),
-    fence('typescript', TS.slice(3, 8)),
+    fence('python', PY.slice(1, 5)),
+    fence('typescript', TS.slice(1, 4)),
     'Why the loop ends.',
     '### Finishing',
-    fence('python', PY.slice(9)),
-    fence('typescript', TS.slice(8)),
-    'Why lo is the answer.',
+    fence('python', PY.slice(8, 14)),
+    fence('typescript', TS.slice(6, 13)),
     '## Complexity',
-    fence('python', ['# not compared either']),
+    fence('python', ['# not compared']),
   ].join('\n\n');
 
-  it('passes when the chunks, blank lines aside, equal the files', () => {
-    expect(chunkMismatch('demo', 'python', GOOD, PY_FILE)).toBeNull();
-    expect(chunkMismatch('demo', 'typescript', GOOD, TS_FILE)).toBeNull();
+  it('reads both marker styles, indented ones too, and trims outer blank lines', () => {
+    expect(markedRegions(PY_FILE, 'python')).toEqual({
+      regions: [
+        { name: 'lower-bound', text: PY.slice(1, 5).join('\n') },
+        { name: 'loop-body', text: PY.slice(8, 14).join('\n') },
+      ],
+      uncovered: [],
+    });
+    expect(markedRegions(TS_FILE, 'typescript').regions.map((r) => r.name)).toEqual([
+      'lower-bound',
+      'loop',
+    ]);
   });
 
-  it('ignores CRLF line endings in the file', () => {
-    expect(
-      chunkMismatch('demo', 'python', GOOD, PY_FILE.replace(/\n/g, '\r\n')),
-    ).toBeNull();
+  // docs/dsa.md: every form VS Code folds is a marker (VS Code's own snippet
+  // writes `//#region`), but only as a comment that starts its line.
+  const PY_VARIANTS = [
+    '#region a',
+    'a = 1',
+    '#endregion',
+    '#  region b',
+    'b = 2',
+    '#  endregion',
+    '  # region c',
+    'c = 3',
+    '  # endregion c',
+    '# regional',
+    'x = 1  # region d',
+    'y = 2  # endregion',
+  ].join('\n');
+
+  const TS_VARIANTS = [
+    '//#region a',
+    'const a = 1;',
+    '//#endregion',
+    '// region b',
+    'const b = 2;',
+    '// endregion',
+    '  //  #region c',
+    'const c = 3;',
+    '  // #endregion c',
+    '//region d',
+    'const d = 4;',
+    '//endregion',
+    '// regional',
+    'f(); // #region e',
+    'g(); // #endregion',
+  ].join('\n');
+
+  it('reads every Python marker form VS Code folds, and only at the start of a line', () => {
+    expect(markedRegions(PY_VARIANTS, 'python')).toEqual({
+      regions: [
+        { name: 'a', text: 'a = 1' },
+        { name: 'b', text: 'b = 2' },
+        { name: 'c', text: 'c = 3' },
+      ],
+      uncovered: [10, 11, 12],
+    });
   });
 
-  it('catches a changed line, naming the entry, the language and the line', () => {
-    const changed = GOOD.replace('            lo = mid + 1', '            lo = mid');
-    const message = chunkMismatch('demo', 'python', changed, PY_FILE);
-    expect(message).toContain('demo');
-    expect(message).toContain('python');
-    expect(message).toContain('"            lo = mid"');
-    expect(message).toContain('"            lo = mid + 1"');
-    expect(message).toMatch(/line 6\b/);
+  it('reads every TypeScript marker form VS Code folds, and only at the start of a line', () => {
+    expect(markedRegions(TS_VARIANTS, 'typescript')).toEqual({
+      regions: [
+        { name: 'a', text: 'const a = 1;' },
+        { name: 'b', text: 'const b = 2;' },
+        { name: 'c', text: 'const c = 3;' },
+        { name: 'd', text: 'const d = 4;' },
+      ],
+      uncovered: [13, 14, 15],
+    });
   });
 
-  it('catches a missing chunk', () => {
-    const missing = GOOD.replace(fence('typescript', TS.slice(3, 8)), '');
+  it('drops every marker form, but not mid-line or longer words, when comparing', () => {
+    const shown = (lines: string[]) =>
+      ['## Walkthrough', fence('python', lines)].join('\n\n');
+    const code = [
+      'a = 1',
+      'b = 2',
+      'c = 3',
+      '# regional',
+      'x = 1  # region d',
+      'y = 2  # endregion',
+    ];
+    expect(chunkMismatch('demo', 'python', shown(code), PY_VARIANTS)).toBeNull();
+    const tsShown = [
+      '## Walkthrough',
+      fence('typescript', [
+        'const a = 1;',
+        'const b = 2;',
+        'const c = 3;',
+        'const d = 4;',
+        '// regional',
+        'f(); // #region e',
+        'g(); // #endregion',
+      ]),
+    ].join('\n\n');
+    expect(chunkMismatch('demo', 'typescript', tsShown, TS_VARIANTS)).toBeNull();
+  });
+
+  it('reports a non-blank line outside every region by its line number', () => {
+    const stray = PY_FILE.replace(
+      '    # region loop-body',
+      'x = 1\n    # region loop-body',
+    );
+    expect(markedRegions(stray, 'python').uncovered).toEqual([8]);
+  });
+
+  it('passes when the resolved fences, blank and marker lines aside, equal the files', () => {
+    expect(chunkMismatch('demo', 'python', RESOLVED, PY_FILE)).toBeNull();
+    expect(chunkMismatch('demo', 'typescript', RESOLVED, TS_FILE)).toBeNull();
+  });
+
+  it('catches a missing chunk, naming the entry and the language', () => {
+    const missing = RESOLVED.replace(fence('typescript', TS.slice(6, 13)), '');
     const message = chunkMismatch('demo', 'typescript', missing, TS_FILE);
     expect(message).toContain('demo');
     expect(message).toContain('typescript');
-    expect(message).toContain(JSON.stringify(TS[3]));
+    expect(message).toContain(JSON.stringify(TS[6]));
   });
 
-  it('catches a chunk the file does not have', () => {
-    const extra = GOOD.replace(
-      'Why lo is the answer.',
-      `${fence('python', ['extra = 1'])}\n\nWhy lo is the answer.`,
+  it('only reads fences under Implementation or Walkthrough, with their info', () => {
+    const md = RESOLVED.replace(
+      fence('python', PY.slice(1, 5)),
+      fence('python region=x', []),
     );
-    const message = chunkMismatch('demo', 'python', extra, PY_FILE);
-    expect(message).toContain('"extra = 1"');
-    expect(message).toContain('(nothing)');
-  });
-
-  it('catches a chunk that stops early', () => {
-    const short = GOOD.replace(fence('python', PY.slice(9)), '');
-    expect(chunkMismatch('demo', 'python', short, PY_FILE)).toContain(
-      JSON.stringify(PY[9]),
-    );
-  });
-
-  it('only reads fences under Implementation or Walkthrough', () => {
-    expect(chunks(GOOD, 'python')).toHaveLength(3);
-    expect(chunks(GOOD, 'typescript')).toHaveLength(3);
-  });
-
-  it('reads an Implementation section the same way', () => {
-    const md = ['## Implementation', fence('python', PY), fence('typescript', TS)].join(
-      '\n\n',
-    );
-    expect(chunkMismatch('ds', 'python', md, PY_FILE)).toBeNull();
-    expect(chunkMismatch('ds', 'typescript', md, TS_FILE)).toBeNull();
+    expect(fences(md, 'python')).toEqual([
+      { meta: 'region=x', value: '' },
+      { meta: '', value: PY.slice(8, 14).join('\n') },
+    ]);
   });
 });
 

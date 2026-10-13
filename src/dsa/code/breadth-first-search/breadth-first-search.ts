@@ -1,3 +1,4 @@
+// #region shortest-path
 export function shortestPath(
   adj: number[][],
   source: number,
@@ -19,6 +20,8 @@ export function shortestPath(
       }
     }
   }
+  // #endregion
+  // #region part-2
   if (!parent.has(target)) return null;
   const path: number[] = [];
   for (let node: number | null = target; node !== null; node = parent.get(node)!) {
@@ -27,7 +30,9 @@ export function shortestPath(
   // Parents point back toward the source, so the walk comes out reversed.
   return path.reverse();
 }
+// #endregion
 
+// #region minutes-to-rot
 /** Minutes until every fresh cell (1) rots, or -1 if one never does. */
 export function minutesToRot(grid: number[][]): number {
   const rows = grid.length;
@@ -73,3 +78,4 @@ export function minutesToRot(grid: number[][]): number {
   }
   return fresh > 0 ? -1 : minutes;
 }
+// #endregion

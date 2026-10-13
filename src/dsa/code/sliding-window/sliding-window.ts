@@ -1,3 +1,4 @@
+// #region max-window-sum
 /** Largest sum of `k` consecutive values, or null if `nums` is shorter. */
 export function maxWindowSum(nums: number[], k: number): number | null {
   if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be at least 1');
@@ -13,7 +14,9 @@ export function maxWindowSum(nums: number[], k: number): number | null {
   }
   return best;
 }
+// #endregion
 
+// #region shortest-run-at-least
 /**
  * Length of the shortest run summing to >= target, or 0 if none.
  * Needs non-negative values, so growing a run never lowers its sum.
@@ -37,7 +40,9 @@ export function shortestRunAtLeast(nums: number[], target: number): number {
   }
   return shortest <= nums.length ? shortest : 0;
 }
+// #endregion
 
+// #region longest-with-k-distinct
 /** Length of the longest run holding at most `k` different values. */
 export function longestWithKDistinct(nums: number[], k: number): number {
   if (!Number.isInteger(k) || k < 1) throw new RangeError('k must be at least 1');
@@ -59,3 +64,4 @@ export function longestWithKDistinct(nums: number[], k: number): number {
   }
   return best;
 }
+// #endregion

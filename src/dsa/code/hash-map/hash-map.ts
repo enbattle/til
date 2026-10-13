@@ -1,3 +1,4 @@
+// #region string-hash
 /** Java's `String.hashCode`: h = 31 * h + code per UTF-16 unit, kept to 32 bits. */
 function stringHash(key: string): number {
   let h = 0;
@@ -39,7 +40,9 @@ export class HashMap<V> {
     // an index; adding n and taking % again fixes it.
     return this.buckets[((this.hash(key) % n) + n) % n];
   }
+  // #endregion
 
+  // #region find
   private find(key: string): Entry<V> | undefined {
     return this.bucketFor(key).find((entry) => entry.key === key);
   }
@@ -52,7 +55,9 @@ export class HashMap<V> {
     // Test the entry, not get(): get() can't tell a stored undefined from a miss.
     return this.find(key) !== undefined;
   }
+  // #endregion
 
+  // #region put
   put(key: string, value: V): void {
     const existing = this.find(key);
     if (existing) {
@@ -67,7 +72,9 @@ export class HashMap<V> {
     this.bucketFor(key).push({ key, value });
     this.count++;
   }
+  // #endregion
 
+  // #region delete
   delete(key: string): boolean {
     const bucket = this.bucketFor(key);
     const i = bucket.findIndex((entry) => entry.key === key);
@@ -79,7 +86,9 @@ export class HashMap<V> {
     this.count--;
     return true;
   }
+  // #endregion
 
+  // #region resize
   private resize(capacity: number): void {
     const oldBuckets = this.buckets;
     this.buckets = Array.from({ length: capacity }, () => []);
@@ -92,3 +101,4 @@ export class HashMap<V> {
     }
   }
 }
+// #endregion

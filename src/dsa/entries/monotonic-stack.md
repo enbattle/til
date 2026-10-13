@@ -45,107 +45,44 @@ If you need the nearest element with a given _value_ rather than a greater one, 
 
 ## Walkthrough
 
-```python
-def next_greater(nums: list[int]) -> list[int]:
-    """For each i, the index of the first larger value to its right, or -1."""
-    answer = [-1] * len(nums)
-    # Indices, not values: the answer is a position, and equal values repeat.
-    stack: list[int] = []
-    for i, value in enumerate(nums):
-        # while, not if: one new value can answer several waiting positions.
-        # <, not <=: an equal value isn't larger, so it keeps waiting.
-        while stack and nums[stack[-1]] < value:
-            answer[stack.pop()] = i
-        stack.append(i)
-    return answer
+```python region=next-greater
+
 ```
 
-```typescript
-/** For each i, the index of the first larger value to its right, or -1. */
-export function nextGreater(nums: number[]): number[] {
-  const answer: number[] = new Array(nums.length).fill(-1);
-  // Indices, not values: the answer is a position, and equal values repeat.
-  const stack: number[] = [];
-  for (let i = 0; i < nums.length; i++) {
-    // while, not if: one new value can answer several waiting positions.
-    // <, not <=: an equal value isn't larger, so it keeps waiting.
-    while (stack.length > 0 && nums[stack[stack.length - 1]] < nums[i]) {
-      answer[stack.pop()!] = i;
-    }
-    stack.push(i);
-  }
-  return answer;
-}
+```typescript region=next-greater
+
 ```
 
 Positions left on the stack at the end keep their `-1`, so there's no cleanup pass. The next question is usually a distance.
 
-```python
-def days_until_warmer(temps: list[int]) -> list[int]:
-    """For each day, how many days until a strictly warmer one; 0 if never."""
-    # The -1 check matters: without it a day with no answer gets -1 - i.
-    return [0 if j == -1 else j - i for i, j in enumerate(next_greater(temps))]
+```python region=days-until-warmer
+
 ```
 
-```typescript
-/** For each day, how many days until a strictly warmer one; 0 if never. */
-export function daysUntilWarmer(temps: number[]): number[] {
-  // The -1 check matters: without it a day with no answer gets -1 - i.
-  return nextGreater(temps).map((j, i) => (j === -1 ? 0 : j - i));
-}
+```typescript region=days-until-warmer
+
 ```
 
 On the running example `[3, 2, 3, -1, -1]` becomes `[3, 1, 1, 0, 0]`. A stack of values couldn't have done this. Now a problem where the stack does more than find a neighbor.
 
 Given bar heights, find the area of the largest rectangle that fits under the bars. Each bar can stretch left and right until a shorter bar blocks it, which is a next-smaller question, so the stack now holds bars in increasing height, and popping a bar is the moment you learn its right edge.
 
-```python
-def largest_rectangle(heights: list[int]) -> int:
-    """Area of the biggest rectangle that fits under the bars of a histogram."""
-    best = 0
-    stack: list[int] = []  # indices of bars, heights strictly increasing
-    # One extra step with height 0 pops every bar still waiting; without it
-    # the bars left on the stack at the end are never measured.
-    for i in range(len(heights) + 1):
-        h = heights[i] if i < len(heights) else 0
+```python region=largest-rectangle
+
 ```
 
-```typescript
-/** Area of the biggest rectangle that fits under the bars of a histogram. */
-export function largestRectangle(heights: number[]): number {
-  let best = 0;
-  const stack: number[] = []; // indices of bars, heights strictly increasing
-  // One extra step with height 0 pops every bar still waiting; without it
-  // the bars left on the stack at the end are never measured.
-  for (let i = 0; i <= heights.length; i++) {
-    const h = i < heights.length ? heights[i] : 0;
+```typescript region=largest-rectangle
+
 ```
 
 A bar popped at step `i` was blocked by bar `i`, so its right edge is just before `i`; its left edge comes from the next entry down.
 
-```python
-        while stack and heights[stack[-1]] >= h:
-            height = heights[stack.pop()]
-            # The new top is the nearest shorter bar on the left, not the
-            # popped index: bars between them were popped earlier, as taller.
-            left = stack[-1] if stack else -1
-            best = max(best, height * (i - left - 1))
-        stack.append(i)
-    return best
+```python region=part-4
+
 ```
 
-```typescript
-    while (stack.length > 0 && heights[stack[stack.length - 1]] >= h) {
-      const height = heights[stack.pop()!];
-      // The new top is the nearest shorter bar on the left, not the
-      // popped index: bars between them were popped earlier, as taller.
-      const left = stack.length > 0 ? stack[stack.length - 1] : -1;
-      best = Math.max(best, height * (i - left - 1));
-    }
-    stack.push(i);
-  }
-  return best;
-}
+```typescript region=part-4
+
 ```
 
 Run it on `[2, 1, 2, 4, 3]`, where `-1` means no shorter bar to the left:

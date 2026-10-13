@@ -1,5 +1,5 @@
+# region rob-memo
 from functools import cache
-
 
 def rob_memo(nums: list[int]) -> int:
     """Most money from houses with no two neighbors robbed, top-down."""
@@ -16,8 +16,10 @@ def rob_memo(nums: list[int]) -> int:
     # One stack frame per house: Python's default limit of 1,000 frames
     # raises RecursionError before 1,000 houses (sooner on 3.11).
     return best_from(0)
+# endregion
 
 
+# region rob-table
 def rob_table(nums: list[int]) -> list[int]:
     """The whole table, bottom-up: best[i] is the most from houses i onward."""
     n = len(nums)
@@ -29,8 +31,10 @@ def rob_table(nums: list[int]) -> list[int]:
     for i in reversed(range(n)):
         best[i] = max(best[i + 1], nums[i] + best[i + 2])
     return best
+# endregion
 
 
+# region houses-to-rob
 def houses_to_rob(nums: list[int]) -> list[int]:
     """Indices of one best set of houses, read back out of the table."""
     best = rob_table(nums)
@@ -44,8 +48,10 @@ def houses_to_rob(nums: list[int]) -> list[int]:
         else:
             i += 1
     return chosen
+# endregion
 
 
+# region rob
 def rob(nums: list[int]) -> int:
     """The same answer as rob_table(nums)[0], keeping only two entries."""
     next1, next2 = 0, 0
@@ -54,3 +60,4 @@ def rob(nums: list[int]) -> int:
         # statements would overwrite next1 before next2 copies it.
         next1, next2 = max(next1, amount + next2), next1
     return next1
+# endregion

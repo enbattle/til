@@ -1,3 +1,4 @@
+// #region next-greater
 /** For each i, the index of the first larger value to its right, or -1. */
 export function nextGreater(nums: number[]): number[] {
   const answer: number[] = new Array(nums.length).fill(-1);
@@ -13,13 +14,17 @@ export function nextGreater(nums: number[]): number[] {
   }
   return answer;
 }
+// #endregion
 
+// #region days-until-warmer
 /** For each day, how many days until a strictly warmer one; 0 if never. */
 export function daysUntilWarmer(temps: number[]): number[] {
   // The -1 check matters: without it a day with no answer gets -1 - i.
   return nextGreater(temps).map((j, i) => (j === -1 ? 0 : j - i));
 }
+// #endregion
 
+// #region largest-rectangle
 /** Area of the biggest rectangle that fits under the bars of a histogram. */
 export function largestRectangle(heights: number[]): number {
   let best = 0;
@@ -28,6 +33,8 @@ export function largestRectangle(heights: number[]): number {
   // the bars left on the stack at the end are never measured.
   for (let i = 0; i <= heights.length; i++) {
     const h = i < heights.length ? heights[i] : 0;
+    // #endregion
+    // #region part-4
     while (stack.length > 0 && heights[stack[stack.length - 1]] >= h) {
       const height = heights[stack.pop()!];
       // The new top is the nearest shorter bar on the left, not the
@@ -39,3 +46,4 @@ export function largestRectangle(heights: number[]): number {
   }
   return best;
 }
+// #endregion

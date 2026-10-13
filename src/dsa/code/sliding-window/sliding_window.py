@@ -1,3 +1,4 @@
+# region max-window-sum
 def max_window_sum(nums: list[int], k: int) -> int | None:
     """Largest sum of k consecutive values, or None if nums has fewer than k."""
     if k < 1:
@@ -12,8 +13,10 @@ def max_window_sum(nums: list[int], k: int) -> int | None:
         window += nums[right] - nums[right - k]
         best = max(best, window)
     return best
+# endregion
 
 
+# region shortest-run-at-least
 def shortest_run_at_least(nums: list[int], target: int) -> int:
     """Length of the shortest run summing to >= target, or 0 if none.
 
@@ -32,8 +35,10 @@ def shortest_run_at_least(nums: list[int], target: int) -> int:
             total -= nums[left]
             left += 1
     return shortest if shortest <= len(nums) else 0
+# endregion
 
 
+# region longest-with-k-distinct
 def longest_with_k_distinct(nums: list[int], k: int) -> int:
     """Length of the longest run holding at most k different values."""
     if k < 1:
@@ -51,3 +56,4 @@ def longest_with_k_distinct(nums: list[int], k: int) -> int:
             left += 1
         best = max(best, right - left + 1)
     return best
+# endregion

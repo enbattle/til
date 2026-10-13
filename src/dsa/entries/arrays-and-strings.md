@@ -84,164 +84,42 @@ An append's worst case is a resize that copies all n items. Doubling is what kee
 
 The array's storage is a list that the code never resizes in place: it only ever replaces it with a bigger one, as a fixed block of memory would be.
 
-```python
-from typing import Any, Generic, Self, TypeVar
+```python region=part-1
 
-T = TypeVar("T")
-
-class DynamicArray(Generic[T]):
-    """A growable array on fixed-size storage that doubles when it fills."""
-
-    def __init__(self) -> None:
-        self._data: list[Any] = [None]
-        self._size = 0
-
-    def __len__(self) -> int:
-        return self._size
-
-    @property
-    def capacity(self) -> int:
-        return len(self._data)
-
-    def __getitem__(self, i: int) -> T:
-        # Check against the length, not the capacity: the spare slots past it
-        # would hand back None as if it were an item.
-        if not 0 <= i < self._size:
-            raise IndexError(i)
-        return self._data[i]
 ```
 
-```typescript
-/** A growable array on fixed-size storage that doubles when it fills. */
-export class DynamicArray<T> {
-  private data: (T | undefined)[] = [undefined];
-  private count = 0;
+```typescript region=dynamic-array
 
-  get length(): number {
-    return this.count;
-  }
-
-  get capacity(): number {
-    return this.data.length;
-  }
-
-  get(i: number): T {
-    // Check against the length, not the capacity: the spare slots past it
-    // would hand back undefined as if it were an item.
-    if (!Number.isInteger(i) || i < 0 || i >= this.count) {
-      throw new RangeError(`index ${i} out of range`);
-    }
-    return this.data[i] as T;
-  }
 ```
 
 Capacity and length are separate numbers: capacity is how many slots exist, length how many hold items. Starting at capacity 1 matches the table above. TypeScript can't overload `a[i]` on a class, so it uses `get`.
 
-```python
-    def insert(self, i: int, item: T) -> None:
-        # i == length is allowed: that is an append.
-        if not 0 <= i <= self._size:
-            raise IndexError(i)
-        if self._size == len(self._data):
-            # Double rather than add a fixed number of slots: a fixed step
-            # copies everything every few appends, so n appends cost O(n^2).
-            bigger: list[Any] = [None] * (2 * len(self._data))
-            bigger[: self._size] = self._data
-            self._data = bigger
-        # Shift from the right end: from the left, each item would overwrite
-        # its neighbor before that neighbor had moved.
-        for j in range(self._size, i, -1):
-            self._data[j] = self._data[j - 1]
-        self._data[i] = item
-        self._size += 1
+```python region=insert
 
-    def append(self, item: T) -> None:
-        self.insert(self._size, item)
 ```
 
-```typescript
-  insert(i: number, item: T): void {
-    // i === length is allowed: that is an append.
-    if (!Number.isInteger(i) || i < 0 || i > this.count) {
-      throw new RangeError(`index ${i} out of range`);
-    }
-    if (this.count === this.data.length) {
-      // Double rather than add a fixed number of slots: a fixed step
-      // copies everything every few appends, so n appends cost O(n^2).
-      const spare = new Array<T | undefined>(this.data.length).fill(undefined);
-      this.data = this.data.concat(spare);
-    }
-    // Shift from the right end: from the left, each item would overwrite
-    // its neighbor before that neighbor had moved.
-    for (let j = this.count; j > i; j--) {
-      this.data[j] = this.data[j - 1];
-    }
-    this.data[i] = item;
-    this.count += 1;
-  }
+```typescript region=insert
 
-  append(item: T): void {
-    this.insert(this.count, item);
-  }
-}
 ```
 
 Appending is an insert whose shifting loop runs zero times, so one method covers both costs: O(1) at the end, O(n) at the front. The string fix is the same idea at a smaller scale: store the pieces, and do the expensive copy once.
 
-```python
-class StringBuilder:
-    """Collects pieces and joins them once, in time linear in the total."""
+```python region=string-builder
 
-    def __init__(self) -> None:
-        self._parts: list[str] = []
-
-    def append(self, piece: str) -> Self:
-        # Storing the piece copies no text; += on a string would copy it all.
-        self._parts.append(piece)
-        return self
-
-    def build(self) -> str:
-        text = "".join(self._parts)
-        # Keep the result as one piece, so a second build won't join it all again.
-        self._parts = [text]
-        return text
 ```
 
-```typescript
-/** Collects pieces and joins them once, in time linear in the total. */
-export class StringBuilder {
-  private parts: string[] = [];
+```typescript region=string-builder
 
-  append(piece: string): this {
-    // Storing the piece copies no text; += on a string would copy it all.
-    this.parts.push(piece);
-    return this;
-  }
-
-  build(): string {
-    const text = this.parts.join('');
-    // Keep the result as one piece, so a second build won't join it all again.
-    this.parts = [text];
-    return text;
-  }
-}
 ```
 
 `new StringBuilder().append("ab").append("😀").build()` gives `"ab😀"` and copies each character once. Last, the code-point trap, using the running example:
 
-```python
-def reverse_code_points(s: str) -> str:
-    # Python indexes code points, so a slice keeps an emoji whole. It still
-    # splits an "e" from the combining accent written after it.
-    return s[::-1]
+```python region=reverse-code-points
+
 ```
 
-```typescript
-export function reverseCodePoints(s: string): string {
-  // split('') cuts an emoji's surrogate pair in two; spread walks code points.
-  // It still splits an "e" from the combining accent written after it.
-  return [...s].reverse().join('');
-}
+```typescript region=reverse-code-points
+
 ```
 
 Both return `"😀ba"`. `s.split('').reverse().join('')` in JavaScript would put the low half of the pair first and produce an invalid string.

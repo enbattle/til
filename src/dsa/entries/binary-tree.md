@@ -70,186 +70,52 @@ Every operation touches each node a constant number of times, so all are O(n). A
 
 The node is a small class. There is no tree class: a tree is a reference to its root, and the empty tree is `None` (`null`), which keeps every function a plain function of a node.
 
-```python
-from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Generic, TypeVar
+```python region=part-1
 
-T = TypeVar("T")
-
-
-# eq=False compares nodes by identity. The generated __eq__ would walk both
-# subtrees, which overflows the stack on a deep tree. repr=False, same reason.
-@dataclass(eq=False, repr=False)
-class TreeNode(Generic[T]):
-    """One node: a value and a left and a right child, or None."""
-
-    value: T
-    left: "TreeNode[T] | None" = None
-    right: "TreeNode[T] | None" = None
 ```
 
-```typescript
-/** One node: a value and a left and a right child, or null. */
-export class TreeNode<T> {
-  constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
-}
+```typescript region=tree-node
+
 ```
 
 Building takes the list a level at a time. After the root, each node of the current level takes the next two values, left then right, and a gap gets no node, so it has no pair below. On the example, 1 takes 2 and 3; 2 takes 4 and a gap; 3 takes 5 and 6; 4 takes a gap and 7. That's all 9 values.
 
-```python
-def _child(value: T | None, born: list[TreeNode[T]]) -> TreeNode[T] | None:
-    # `is None`, not falsy: 0 and "" are real values that must get a node.
-    if value is None:
-        return None
-    node = TreeNode(value)
-    born.append(node)
-    return node
+```python region=child
 
-
-def build_tree(values: Sequence[T | None]) -> TreeNode[T] | None:
-    """Build a tree from its level order, where None marks a missing child."""
-    items = iter(values)
-    first = next(items, None)
-    root = None if first is None else TreeNode(first)
-    level = [] if root is None else [root]
-    while level:
-        born: list[TreeNode[T]] = []
-        # Values come in pairs, and only for nodes that exist, so a gap
-        # costs two entries fewer one level down, not two Nones.
-        for node in level:
-            node.left = _child(next(items, None), born)
-            node.right = _child(next(items, None), born)
-        level = born
-    # Values left over once no node is waiting for children have no parent.
-    if list(items):
-        raise ValueError("a value has no parent")
-    return root
 ```
 
-```typescript
-/** Build a tree from its level order, where null marks a missing child. */
-export function buildTree<T>(values: readonly (T | null)[]): TreeNode<T> | null {
-  let i = 0;
-  const take = (): T | null => (i < values.length ? values[i++] : null);
-  const child = (value: T | null, born: TreeNode<T>[]): TreeNode<T> | null => {
-    // === null, not falsy: 0 and "" are real values that must get a node.
-    if (value === null) return null;
-    const node = new TreeNode(value);
-    born.push(node);
-    return node;
-  };
-  const first = take();
-  const root: TreeNode<T> | null = first === null ? null : new TreeNode<T>(first);
-  let level: TreeNode<T>[] = root === null ? [] : [root];
-  while (level.length > 0) {
-    const born: TreeNode<T>[] = [];
-    // Values come in pairs, and only for nodes that exist, so a gap
-    // costs two entries fewer one level down, not two nulls.
-    for (const node of level) {
-      node.left = child(take(), born);
-      node.right = child(take(), born);
-    }
-    level = born;
-  }
-  // Values left over once no node is waiting for children have no parent.
-  if (i < values.length) throw new RangeError('a value has no parent');
-  return root;
-}
+```typescript region=build-tree
+
 ```
 
 A trailing gap is optional, but `[1, None, None, 4]` describes no tree, so both versions raise. Now a postorder walk, where recursion earns its place.
 
-```python
-def height(node: TreeNode[T] | None) -> int:
-    # -1 for the empty tree, so a leaf is 0 and the formula needs no special
-    # case. Recursion is as deep as the tree is tall, so a chain overflows.
-    return -1 if node is None else 1 + max(height(node.left), height(node.right))
+```python region=height
+
 ```
 
-```typescript
-export function height<T>(node: TreeNode<T> | null): number {
-  // -1 for the empty tree, so a leaf is 0 and the formula needs no special
-  // case. Recursion is as deep as the tree is tall, so a chain overflows.
-  if (node === null) return -1;
-  return 1 + Math.max(height(node.left), height(node.right));
-}
+```typescript region=height
+
 ```
 
 Node 7 gives 0, node 4 gives 1, node 2 gives 2, and the root gives 1 + max(2, 1) = 3. Preorder and postorder are this recursion with the visit moved before or after the two calls. Inorder you'll want as a loop, for trees that could be deep.
 
-```python
-def inorder(root: TreeNode[T] | None) -> list[T]:
-    """Left subtree, node, right subtree, with an explicit stack, not recursion."""
-    out: list[T] = []
-    stack: list[TreeNode[T]] = []
-    node = root
-    while stack or node is not None:
-        # Ancestors wait on the stack until their left side is done. The list
-        # grows on the heap, so a chain of a million nodes is fine.
-        while node is not None:
-            stack.append(node)
-            node = node.left
-        node = stack.pop()
-        out.append(node.value)
-        node = node.right  # else the loop re-walks the left spine forever
-    return out
+```python region=inorder
+
 ```
 
-```typescript
-/** Left subtree, node, right subtree, with an explicit stack, not recursion. */
-export function inorder<T>(root: TreeNode<T> | null): T[] {
-  const out: T[] = [];
-  const stack: TreeNode<T>[] = [];
-  let node = root;
-  while (stack.length > 0 || node !== null) {
-    // Ancestors wait on the stack until their left side is done. The array
-    // grows on the heap, so a chain of a million nodes is fine.
-    while (node !== null) {
-      stack.push(node);
-      node = node.left;
-    }
-    const top = stack.pop()!;
-    out.push(top.value);
-    node = top.right; // else every right subtree is dropped
-  }
-  return out;
-}
+```typescript region=inorder
+
 ```
 
 On the example the stack fills 1, 2, 4, pops 4 and moves right to 7, then pops 7, 2 and 1, and finishes 5, 3, 6. Last, level order, which needs no stack at all.
 
-```python
-def level_order(root: TreeNode[T] | None) -> list[list[T]]:
-    """Values grouped by depth, left to right."""
-    levels: list[list[T]] = []
-    level = [] if root is None else [root]
-    while level:
-        levels.append([node.value for node in level])
-        # The next level comes from the whole current one, so depths never mix;
-        # a flat queue would have to count where each level ends.
-        level = [c for n in level for c in (n.left, n.right) if c is not None]
-    return levels
+```python region=level-order
+
 ```
 
-```typescript
-/** Values grouped by depth, left to right. */
-export function levelOrder<T>(root: TreeNode<T> | null): T[][] {
-  const levels: T[][] = [];
-  let level: TreeNode<T>[] = root === null ? [] : [root];
-  while (level.length > 0) {
-    levels.push(level.map((node) => node.value));
-    // The next level comes from the whole current one, so depths never mix;
-    // a flat queue would have to count where each level ends.
-    level = level.flatMap((n) => [n.left, n.right]).filter((c) => c !== null);
-  }
-  return levels;
-}
+```typescript region=level-order
+
 ```
 
 The example gives `[[1], [2, 3], [4, 5, 6], [7]]`, and the number of levels is the height plus one.

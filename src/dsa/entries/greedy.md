@@ -82,84 +82,24 @@ which is [dynamic programming](/dsa/dynamic-programming).
 
 ## Walkthrough
 
-```python
-Interval = tuple[int, int]  # half-open: (1, 4) and (4, 6) don't overlap
+```python region=part-1
 
-
-def select_intervals(intervals: list[Interval]) -> list[Interval]:
-    """A largest set of pairwise non-overlapping intervals (start < end each)."""
-    chosen: list[Interval] = []
-    # By end, not start or length: the interval that ends first leaves the
-    # most room, and the other two orders can pick one that blocks several.
-    for start, end in sorted(intervals, key=lambda interval: interval[1]):
-        # Sorted by end, chosen[-1] ends last of everything taken, so one
-        # comparison covers them all. >=, not >: touching intervals both fit.
-        if not chosen or start >= chosen[-1][1]:
-            chosen.append((start, end))
-    return chosen
 ```
 
-```typescript
-/** [start, end], half-open: (1, 4) and (4, 6) don't overlap. */
-export type Interval = [number, number];
+```typescript region=part-1
 
-/** A largest set of pairwise non-overlapping intervals (start < end each). */
-export function selectIntervals(intervals: Interval[]): Interval[] {
-  const chosen: Interval[] = [];
-  // By end, not start or length: the interval that ends first leaves the
-  // most room, and the other two orders can pick one that blocks several.
-  // Copy first: sort changes the array it is called on.
-  const byEnd = [...intervals].sort((a, b) => a[1] - b[1]);
-  for (const [start, end] of byEnd) {
-    const last = chosen[chosen.length - 1];
-    // Sorted by end, last ends last of everything taken, so one comparison
-    // covers them all. >=, not >: touching intervals both fit.
-    if (last === undefined || start >= last[1]) {
-      chosen.push([start, end]);
-    }
-  }
-  return chosen;
-}
 ```
 
 This is the table above as code: the sort is the greedy rule, and the loop is
 the keep-or-skip column. It returns the meetings, not a count, so the caller
 sees which ones are held. The jump game needs no sort, only a running maximum.
 
-```python
-def can_reach_end(jumps: list[int]) -> bool:
-    """Can you get from index 0 to the last index? jumps[i] is the longest
-    jump from i; shorter ones are allowed. An empty list has no last index."""
-    if not jumps:
-        return False
-    farthest = 0
-    for i, length in enumerate(jumps):
-        # Check before updating, so a gap stops the walk. > and not >=:
-        # index farthest itself is reachable (>= rejects index 0).
-        if i > farthest:
-            return False
-        # max, not assignment: a later index can reach less far than an earlier.
-        farthest = max(farthest, i + length)
-    return True
+```python region=can-reach-end
+
 ```
 
-```typescript
-/**
- * Can you get from index 0 to the last index? jumps[i] is the longest
- * jump from i; shorter ones are allowed. An empty array has no last index.
- */
-export function canReachEnd(jumps: number[]): boolean {
-  if (jumps.length === 0) return false;
-  let farthest = 0;
-  for (let i = 0; i < jumps.length; i++) {
-    // Check before updating, so a gap stops the walk. > and not >=:
-    // index farthest itself is reachable (>= rejects index 0).
-    if (i > farthest) return false;
-    // max, not assignment: a later index can reach less far than an earlier.
-    farthest = Math.max(farthest, i + jumps[i]);
-  }
-  return true;
-}
+```typescript region=can-reach-end
+
 ```
 
 On `[3, 2, 1, 0, 4]` the loop sets `farthest` to 3 at index 0 and leaves it
@@ -167,37 +107,12 @@ there; at `i = 4` the check fails and it returns `False`. Falling out of the
 loop means every index was reachable, the last one included. Next, the rule
 that looks just as natural and isn't safe.
 
-```python
-def greedy_coin_count(coins: list[int], amount: int) -> int | None:
-    """Coins used by always taking the largest that fits, or None if stuck.
-    NOT always the fewest coins. Coins are positive, amount is not negative."""
-    count = 0
-    # Largest first is the rule itself; the caller's order isn't trusted.
-    for coin in sorted(coins, reverse=True):
-        # A coin can repeat, and one bigger than amount adds 0: no guard needed.
-        count += amount // coin
-        amount %= coin
-    # A leftover means nothing fit it; returning count would pay too little.
-    return count if amount == 0 else None
+```python region=greedy-coin-count
+
 ```
 
-```typescript
-/**
- * Coins used by always taking the largest that fits, or null if stuck.
- * NOT always the fewest coins. Coins are positive, amount is not negative.
- */
-export function greedyCoinCount(coins: number[], amount: number): number | null {
-  let count = 0;
-  // Largest first is the rule itself; the caller's order isn't trusted.
-  for (const coin of [...coins].sort((a, b) => b - a)) {
-    // A coin can repeat, and one bigger than amount adds 0: no guard needed.
-    // Math.floor: / on numbers gives a fraction.
-    count += Math.floor(amount / coin);
-    amount %= coin;
-  }
-  // A leftover means nothing fit it; returning count would pay too little.
-  return amount === 0 ? count : null;
-}
+```typescript region=greedy-coin-count
+
 ```
 
 With `{1, 3, 4}` and 6: the 4 goes in once, leaving 2; the 3 doesn't fit; the

@@ -1,3 +1,4 @@
+// #region part-1
 /** [start, end], half-open: (1, 4) and (4, 6) don't overlap. */
 export type Interval = [number, number];
 
@@ -18,7 +19,9 @@ export function selectIntervals(intervals: Interval[]): Interval[] {
   }
   return chosen;
 }
+// #endregion
 
+// #region can-reach-end
 /**
  * Can you get from index 0 to the last index? jumps[i] is the longest
  * jump from i; shorter ones are allowed. An empty array has no last index.
@@ -35,7 +38,9 @@ export function canReachEnd(jumps: number[]): boolean {
   }
   return true;
 }
+// #endregion
 
+// #region greedy-coin-count
 /**
  * Coins used by always taking the largest that fits, or null if stuck.
  * NOT always the fewest coins. Coins are positive, amount is not negative.
@@ -52,3 +57,4 @@ export function greedyCoinCount(coins: number[], amount: number): number | null 
   // A leftover means nothing fit it; returning count would pay too little.
   return amount === 0 ? count : null;
 }
+// #endregion

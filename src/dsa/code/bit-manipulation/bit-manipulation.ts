@@ -1,3 +1,4 @@
+// #region part-1
 const MAX_UINT32 = 0xffffffff;
 
 /** Number of 1 bits in the binary form of `n`, an integer in 0..2**32 - 1. */
@@ -19,7 +20,9 @@ export function countSetBits(n: number): number {
   }
   return count;
 }
+// #endregion
 
+// #region is-power-of-two
 /** True when `n` is 1, 2, 4, 8, ...; zero and negatives are not. Max 2**32 - 1. */
 export function isPowerOfTwo(n: number): boolean {
   // 2**32 + 1 would be truncated to 1 and reported as a power of two.
@@ -31,7 +34,9 @@ export function isPowerOfTwo(n: number): boolean {
   // n & (n - 1) === 0 would mean n & ((n - 1) === 0).
   return n > 0 && (n & (n - 1)) === 0;
 }
+// #endregion
 
+// #region single-number
 /** The value that appears once when every other value appears twice. */
 export function singleNumber(nums: number[]): number {
   // An empty list has no lone value; returning 0 would look like an answer.
@@ -46,7 +51,9 @@ export function singleNumber(nums: number[]): number {
   }
   return result;
 }
+// #endregion
 
+// #region subsets
 /** All 2**n subsets; mask m picks items[i] where bit i of m is 1. */
 export function subsets<T>(items: T[]): T[][] {
   const result: T[][] = [];
@@ -62,3 +69,4 @@ export function subsets<T>(items: T[]): T[][] {
   }
   return result;
 }
+// #endregion

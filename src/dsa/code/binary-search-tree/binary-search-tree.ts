@@ -1,3 +1,4 @@
+// #region node
 export class Node {
   left: Node | null = null;
   right: Node | null = null;
@@ -31,7 +32,9 @@ export function insert(root: Node | null, key: number): Node {
   else parent.right = added;
   return root as Node;
 }
+// #endregion
 
+// #region remove
 /** Returns the root, which changes when the root itself was removed. */
 export function remove(root: Node | null, key: number): Node | null {
   let [parent, node] = find(root, key);
@@ -57,7 +60,9 @@ export function remove(root: Node | null, key: number): Node | null {
   else parent.right = child;
   return root;
 }
+// #endregion
 
+// #region in-order
 export function* inOrder(root: Node | null): Generator<number> {
   // An explicit stack: recursion overflows on a long chain of nodes.
   const stack: Node[] = [];
@@ -86,3 +91,4 @@ export function isValid(root: Node | null): boolean {
   }
   return true;
 }
+// #endregion

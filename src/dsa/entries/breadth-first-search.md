@@ -48,161 +48,32 @@ Vertex 5 is found while scanning 3, so the search stops. Following parents back,
 
 The graph search needs a queue and a record of what it has reached. A dictionary from vertex to parent does both jobs.
 
-```python
-from collections import deque
+```python region=shortest-path
 
-
-def shortest_path(adj: list[list[int]], source: int, target: int) -> list[int] | None:
-    """A path from source to target with the fewest edges, or None."""
-    # parent doubles as the visited set, and a vertex goes in when it is
-    # queued, not when it is popped: marked later, a vertex that two queued
-    # neighbors both reach is queued twice and its neighbors scanned twice.
-    parent: dict[int, int | None] = {source: None}
-    queue = deque([source])
-    # Stop once target is found: its parent is already a shortest route,
-    # and waiting to pop it would scan every vertex queued ahead of it.
-    while queue and target not in parent:
-        v = queue.popleft()  # a list's pop(0) shifts every item, O(n) a pop
-        for w in adj[v]:
-            if w not in parent:
-                parent[w] = v
-                queue.append(w)
 ```
 
-```typescript
-export function shortestPath(
-  adj: number[][],
-  source: number,
-  target: number,
-): number[] | null {
-  // parent doubles as the visited set, and a vertex goes in when it is
-  // queued, not when it is popped: marked later, a vertex that two queued
-  // neighbors both reach is queued twice and its neighbors scanned twice.
-  const parent = new Map<number, number | null>([[source, null]]);
-  const queue = [source];
-  // Stop once target is found: its parent is already a shortest route,
-  // and waiting to pop it would scan every vertex queued ahead of it.
-  // head walks the array instead of shift(): shift moves every item, O(n) a pop.
-  for (let head = 0; head < queue.length && !parent.has(target); head++) {
-    for (const w of adj[queue[head]]) {
-      if (!parent.has(w)) {
-        parent.set(w, queue[head]);
-        queue.push(w);
-      }
-    }
-  }
+```typescript region=shortest-path
+
 ```
 
 In the table, vertex 3 is queued while scanning 1, so when 2 scans it later, 3 is already in `parent` and is skipped. This run popped 4 of the 6 vertices and read 10 of the 14 adjacency entries before it stopped. The queue only found the target; the path comes from walking the parents.
 
-```python
-    if target not in parent:
-        return None
-    path: list[int] = []
-    node: int | None = target
-    while node is not None:
-        path.append(node)
-        node = parent[node]
-    # Parents point back toward the source, so the walk comes out reversed.
-    return path[::-1]
+```python region=part-2
+
 ```
 
-```typescript
-  if (!parent.has(target)) return null;
-  const path: number[] = [];
-  for (let node: number | null = target; node !== null; node = parent.get(node)!) {
-    path.push(node);
-  }
-  // Parents point back toward the source, so the walk comes out reversed.
-  return path.reverse();
-}
+```typescript region=part-2
+
 ```
 
 A target the search never reached is absent from `parent`, which is how unreachable shows up. The source's parent is `None`, which ends the walk, so `source == target` returns `[source]` without scanning anything. Now several sources at once, on a grid, where the answer is how many rounds the spread takes.
 
-```python
-def minutes_to_rot(grid: list[list[int]]) -> int:
-    """Minutes until every fresh cell (1) rots, or -1 if one never does.
+```python region=minutes-to-rot
 
-    Cells are 0 empty, 1 fresh, 2 rotten; rot spreads up, down, left, right.
-    """
-    rows, cols = len(grid), len(grid[0]) if grid else 0
-    seen: set[tuple[int, int]] = set()
-    fresh = 0
-    for r in range(rows):
-        for c in range(cols):
-            cell = grid[r][c]
-            if cell == 2:
-                seen.add((r, c))
-            elif cell == 1:
-                fresh += 1
-    # Every rotten cell starts in the queue, so one search spreads from all of
-    # them at once; a search per source repeats work and needs a merge of answers.
-    queue = deque(seen)
-    minutes = 0
-    while queue and fresh:
-        # Fix the count now: cells rotted this minute join the queue, so
-        # asking len(queue) again would run them in the same minute.
-        for _ in range(len(queue)):
-            r, c = queue.popleft()
-            for nr, nc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
-                # Bounds before indexing: grid[-1] is the last row in Python,
-                # not off the edge. Marked when queued, as in shortest_path.
-                if 0 <= nr < rows and 0 <= nc < cols and (nr, nc) not in seen:
-                    if grid[nr][nc] == 1:
-                        seen.add((nr, nc))
-                        fresh -= 1
-                        queue.append((nr, nc))
-        minutes += 1
-    return -1 if fresh else minutes
 ```
 
-```typescript
-/** Minutes until every fresh cell (1) rots, or -1 if one never does. */
-export function minutesToRot(grid: number[][]): number {
-  const rows = grid.length;
-  const cols = rows > 0 ? grid[0].length : 0;
-  // Keyed r * cols + c: a Set of [r, c] arrays would compare by reference.
-  const seen = new Set<number>();
-  const queue: [number, number][] = [];
-  let fresh = 0;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (grid[r][c] === 2) {
-        seen.add(r * cols + c);
-        queue.push([r, c]);
-      } else if (grid[r][c] === 1) fresh++;
-    }
-  }
-  // Every rotten cell starts in the queue, so one search spreads from all of
-  // them at once; a search per source repeats work and needs a merge of answers.
-  let head = 0;
-  let minutes = 0;
-  while (head < queue.length && fresh > 0) {
-    // Fix the end now: cells rotted this minute join the queue, so reading
-    // queue.length again would run them in the same minute.
-    for (const end = queue.length; head < end; head++) {
-      const [r, c] = queue[head];
-      for (const [nr, nc] of [
-        [r + 1, c],
-        [r - 1, c],
-        [r, c + 1],
-        [r, c - 1],
-      ]) {
-        // Bounds before indexing: grid[-1] is undefined here, and indexing it
-        // throws. Marked when queued, as in shortestPath.
-        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-        if (grid[nr][nc] === 1 && !seen.has(nr * cols + nc)) {
-          seen.add(nr * cols + nc);
-          fresh--;
-          queue.push([nr, nc]);
-        }
-      }
-    }
-    minutes++;
-  }
-  return fresh > 0 ? -1 : minutes;
-}
+```typescript region=minutes-to-rot
+
 ```
 
 Take the grid `[[2, 1, 1], [1, 1, 0], [0, 1, 2]]`, with two rotten cells. Minute 1 starts with a queue of 2 and rots 3 cells, (0,1), (1,0) and (2,1). Minute 2 starts with 3, rots (0,2) and (1,1), and leaves no fresh cell, so the answer is 2; with only the top-left source, and the bottom-right cell fresh instead of rotten, it would be 4. Taking `len(queue)` at the start of a minute is what turns the queue into a count of minutes.

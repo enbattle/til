@@ -1,13 +1,12 @@
+# region node
 from collections.abc import Iterator
 from math import inf
-
 
 class Node:
     def __init__(self, key: int) -> None:
         self.key = key
         self.left: Node | None = None
         self.right: Node | None = None
-
 
 def find(root: Node | None, key: int) -> tuple[Node | None, Node | None]:
     """The node holding key (None if absent) and its parent."""
@@ -17,10 +16,8 @@ def find(root: Node | None, key: int) -> tuple[Node | None, Node | None]:
         parent, node = node, (node.left if key < node.key else node.right)
     return parent, node
 
-
 def contains(root: Node | None, key: int) -> bool:
     return find(root, key)[1] is not None
-
 
 def insert(root: Node | None, key: int) -> Node:
     """Returns the root, which is new only when the tree was empty."""
@@ -36,8 +33,10 @@ def insert(root: Node | None, key: int) -> Node:
     else:
         parent.right = new
     return root
+# endregion
 
 
+# region remove
 def remove(root: Node | None, key: int) -> Node | None:
     """Returns the root, which changes when the root itself was removed."""
     parent, node = find(root, key)
@@ -62,8 +61,10 @@ def remove(root: Node | None, key: int) -> Node | None:
     else:
         parent.right = child
     return root
+# endregion
 
 
+# region in-order
 def in_order(root: Node | None) -> Iterator[int]:
     # An explicit stack: recursion overflows on a long chain of nodes.
     stack: list[Node] = []
@@ -75,7 +76,6 @@ def in_order(root: Node | None) -> Iterator[int]:
         node = stack.pop()
         yield node.key
         node = node.right
-
 
 def is_valid(root: Node | None) -> bool:
     # Bounds come from every ancestor, not just the parent: 50 with left
@@ -90,3 +90,4 @@ def is_valid(root: Node | None) -> bool:
         stack.append((node.left, lo, node.key))
         stack.append((node.right, node.key, hi))
     return True
+# endregion

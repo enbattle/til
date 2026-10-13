@@ -1,10 +1,10 @@
+# region trie-node
 class TrieNode:
     __slots__ = ("children", "is_word")
 
     def __init__(self) -> None:
         self.children: dict[str, TrieNode] = {}
         self.is_word = False
-
 
 class Trie:
     """A set of strings stored as a tree with one character per edge."""
@@ -22,7 +22,9 @@ class Trie:
             node = node.children[ch]
         # The node may exist already as a step toward a longer word.
         node.is_word = True
+# endregion
 
+    # region find
     def _find(self, prefix: str) -> TrieNode | None:
         node: TrieNode | None = self._root
         for ch in prefix:
@@ -41,7 +43,9 @@ class Trie:
         # An unmarked node with no children is only the root of an empty
         # trie, which has no word to start with "".
         return node is not None and (node.is_word or bool(node.children))
+    # endregion
 
+    # region words-with-prefix
     def words_with_prefix(self, prefix: str) -> list[str]:
         """Every stored word that starts with prefix, in no fixed order."""
         start = self._find(prefix)
@@ -57,7 +61,9 @@ class Trie:
                 found.append(word)
             stack.extend((c, word + ch) for ch, c in node.children.items())
         return found
+    # endregion
 
+    # region delete
     def delete(self, word: str) -> bool:
         path: list[tuple[TrieNode, str]] = []
         node = self._root
@@ -75,3 +81,4 @@ class Trie:
             del parent.children[ch]
             node = parent
         return True
+    # endregion

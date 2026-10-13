@@ -103,203 +103,57 @@ use to force collisions. Python hashes any hashable key with the built-in
 `h = 31 * h + code` per character kept to 32 bits, since JavaScript doesn't
 expose the one its engine uses.
 
-```python
-from collections.abc import Callable, Hashable
-from typing import Any
+```python region=hash-map
 
-class HashMap:
-    """A hash map with separate chaining: each bucket is a list of [key, value]."""
-
-    MAX_LOAD_FACTOR = 0.75
-
-    def __init__(self, capacity: int = 8, hash_fn: Callable[[Hashable], int] = hash):
-        # A comprehension, not [[]] * capacity: that repeats one list, so
-        # every key would share a single bucket.
-        self._buckets: list[list[list[Any]]] = [[] for _ in range(capacity)]
-        self._size = 0
-        self._hash = hash_fn
-
-    def __len__(self) -> int:
-        return self._size
-
-    @property
-    def capacity(self) -> int:
-        return len(self._buckets)
-
-    def _bucket(self, key: Hashable) -> list[list[Any]]:
-        # Python's % is never negative for a positive divisor, so a negative
-        # hash still gives a valid index (JavaScript's would not).
-        return self._buckets[self._hash(key) % len(self._buckets)]
 ```
 
-```typescript
-/** Java's `String.hashCode`: h = 31 * h + code per UTF-16 unit, kept to 32 bits. */
-function stringHash(key: string): number {
-  let h = 0;
-  for (let i = 0; i < key.length; i++) {
-    // imul multiplies as 32-bit ints, as Java does; | 0 wraps the final
-    // sum too, so the result is a signed 32-bit int like Java's.
-    h = (Math.imul(31, h) + key.charCodeAt(i)) | 0;
-  }
-  return h;
-}
+```typescript region=string-hash
 
-type Entry<V> = { key: string; value: V };
-
-/** A hash map with separate chaining: each bucket is an array of entries. */
-export class HashMap<V> {
-  static readonly MAX_LOAD_FACTOR = 0.75;
-  private buckets: Entry<V>[][];
-  private count = 0;
-
-  constructor(
-    capacity = 8,
-    private readonly hash: (key: string) => number = stringHash,
-  ) {
-    // A factory per bucket: new Array(n).fill([]) would share one array.
-    this.buckets = Array.from({ length: capacity }, () => []);
-  }
-
-  get size() {
-    return this.count;
-  }
-
-  get capacity() {
-    return this.buckets.length;
-  }
-
-  private bucketFor(key: string): Entry<V>[] {
-    const n = this.buckets.length;
-    // JavaScript's % keeps the dividend's sign (-3 % 8 is -3), which is not
-    // an index; adding n and taking % again fixes it.
-    return this.buckets[((this.hash(key) % n) + n) % n];
-  }
 ```
 
 `_bucket` is the whole idea in one line: hash, remainder, index. The count lives
 in its own field so `len(m)` doesn't walk every bucket.
 
-```python
-    def get(self, key: Hashable, default: Any = None) -> Any:
-        for k, v in self._bucket(key):
-            if k == key:
-                return v
-        return default
+```python region=get
 
-    def __contains__(self, key: Hashable) -> bool:
-        # Look for the key itself: get() can't tell a stored None from a miss.
-        return any(k == key for k, _ in self._bucket(key))
 ```
 
-```typescript
-  private find(key: string): Entry<V> | undefined {
-    return this.bucketFor(key).find((entry) => entry.key === key);
-  }
+```typescript region=find
 
-  get(key: string): V | undefined {
-    return this.find(key)?.value;
-  }
-
-  has(key: string): boolean {
-    // Test the entry, not get(): get() can't tell a stored undefined from a miss.
-    return this.find(key) !== undefined;
-  }
 ```
 
 Lookup compares keys with `==` because two different keys can share a bucket.
 Next, the insert that decides when to grow.
 
-```python
-    def put(self, key: Hashable, value: Any) -> None:
-        bucket = self._bucket(key)
-        for pair in bucket:
-            if pair[0] == key:
-                pair[1] = value  # an overwrite adds no entry, so no resize
-                return
-        # Check with size + 1 so the load factor never exceeds the bound.
-        if (self._size + 1) / len(self._buckets) > self.MAX_LOAD_FACTOR:
-            self._resize(2 * len(self._buckets))
-            bucket = self._bucket(key)  # the old bucket list was just discarded
-        bucket.append([key, value])
-        self._size += 1
+```python region=put
+
 ```
 
-```typescript
-  put(key: string, value: V): void {
-    const existing = this.find(key);
-    if (existing) {
-      existing.value = value; // an overwrite adds no entry, so no resize
-      return;
-    }
-    // Check with count + 1 so the load factor never exceeds the bound.
-    if ((this.count + 1) / this.buckets.length > HashMap.MAX_LOAD_FACTOR) {
-      this.resize(this.buckets.length * 2);
-    }
-    // Look the bucket up after any resize: the old array was just discarded.
-    this.bucketFor(key).push({ key, value });
-    this.count++;
-  }
+```typescript region=put
+
 ```
 
 On the running example, a fourth key (`"di"`, hash 2) would make the load
 factor 4 / 4 = 1, over 0.75, so the map doubles to 8 buckets first. Deletion
 comes before the resize itself.
 
-```python
-    def delete(self, key: Hashable) -> bool:
-        bucket = self._bucket(key)
-        for i, (k, _) in enumerate(bucket):
-            if k == key:
-                # Order inside a bucket means nothing: swap in the last pair
-                # rather than shifting every later one down.
-                bucket[i] = bucket[-1]
-                bucket.pop()
-                self._size -= 1
-                return True
-        return False
+```python region=delete
+
 ```
 
-```typescript
-  delete(key: string): boolean {
-    const bucket = this.bucketFor(key);
-    const i = bucket.findIndex((entry) => entry.key === key);
-    if (i === -1) return false;
-    // Order inside a bucket means nothing: swap in the last entry rather
-    // than shifting every later one down.
-    bucket[i] = bucket[bucket.length - 1];
-    bucket.pop();
-    this.count--;
-    return true;
-  }
+```typescript region=delete
+
 ```
 
 Returning whether the key was there saves callers a separate `in` check. The
 last method is the resize.
 
-```python
-    def _resize(self, new_capacity: int) -> None:
-        old_buckets = self._buckets
-        self._buckets = [[] for _ in range(new_capacity)]
-        # Rehash every pair: hash % capacity changed, so its old bucket is
-        # wrong. Append directly; put() would recount and could resize again.
-        for bucket in old_buckets:
-            for pair in bucket:
-                self._bucket(pair[0]).append(pair)
+```python region=resize
+
 ```
 
-```typescript
-  private resize(capacity: number): void {
-    const oldBuckets = this.buckets;
-    this.buckets = Array.from({ length: capacity }, () => []);
-    // Rehash every entry: hash % capacity changed, so its old bucket is
-    // wrong. Push directly; put() would recount and could resize again.
-    for (const bucket of oldBuckets) {
-      for (const entry of bucket) {
-        this.bucketFor(entry.key).push(entry);
-      }
-    }
-  }
-}
+```typescript region=resize
+
 ```
 
 After the resize `"ada"` (17) stays in bucket 17 % 8 = 1, but `"cy"` (13) moves

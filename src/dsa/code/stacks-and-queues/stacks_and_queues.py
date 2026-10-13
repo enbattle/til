@@ -1,7 +1,7 @@
+# region part-1
 from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
-
 
 class Deque(Generic[T]):
     """Push at the back, pop at either end, in a ring that doubles when full."""
@@ -18,13 +18,17 @@ class Deque(Generic[T]):
     def _slot(self, offset: int) -> int:
         # % sends a position past the last slot back around to slot 0.
         return (self._head + offset) % len(self._slots)
+# endregion
 
+    # region append
     def append(self, item: T) -> None:
         if self._size == len(self._slots):
             self._grow()  # full: the slot after the back is the front's
         self._slots[self._slot(self._size)] = item
         self._size += 1
+    # endregion
 
+    # region peekleft
     def peekleft(self) -> T:
         # Check the size, not the slot: None could be a stored item.
         if self._size == 0:
@@ -48,16 +52,19 @@ class Deque(Generic[T]):
         self._slots[self._slot(self._size - 1)] = None
         self._size -= 1
         return item
+    # endregion
 
+    # region grow
     def _grow(self) -> None:
         # Unroll the ring so the front lands in slot 0 of the bigger array.
         old = self._slots
         self._slots = old[self._head :] + old[: self._head] + [None] * len(old)
         self._head = 0
+    # endregion
 
 
+# region part-5
 PAIRS = {")": "(", "]": "[", "}": "{"}
-
 
 def is_balanced(text: str) -> bool:
     """True if every bracket is closed by its partner, innermost first."""
@@ -70,8 +77,10 @@ def is_balanced(text: str) -> bool:
             if not stack or stack.pop() != PAIRS[ch]:
                 return False
     return not stack  # an opener still on the stack was never closed
+# endregion
 
 
+# region window-max
 def window_max(nums: list[int], k: int) -> list[int]:
     """The maximum of every run of k consecutive items, in O(n)."""
     if k < 1:
@@ -90,3 +99,4 @@ def window_max(nums: list[int], k: int) -> list[int]:
         if i >= k - 1:
             out.append(nums[window.peekleft()])
     return out
+# endregion

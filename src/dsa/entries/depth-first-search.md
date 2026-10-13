@@ -36,215 +36,42 @@ A tree needs no seen set, since each node has one parent, so you just recurse. T
 
 ## Walkthrough
 
-```python
-from typing import Protocol
+```python region=part-1
 
-# adj[u] lists the neighbors of u, the shape the graph entry's build_list returns.
-Graph = list[list[int]]
-
-
-def explore(adj: Graph, start: int, seen: set[int]) -> None:
-    """Mark every vertex reachable from start, with a stack that lives on the heap."""
-    stack = [start]
-    while stack:
-        u = stack.pop()
-        # Marked on pop, so the order is truly depth-first. A vertex can be
-        # pushed by several neighbors first; skip repeats or it is scanned twice.
-        if u in seen:
-            continue
-        seen.add(u)
-        # Reversed, so the first neighbor is popped first, as in recursion.
-        for v in reversed(adj[u]):
-            if v not in seen:
-                stack.append(v)
-
-
-def count_components(adj: Graph) -> int:
-    """Groups of vertices that can reach each other, in an undirected graph."""
-    seen: set[int] = set()
-    count = 0
-    # Every vertex is tried as a start, or an isolated one would never be counted.
-    for u in range(len(adj)):
-        if u not in seen:
-            explore(adj, u, seen)
-            count += 1
-    return count
 ```
 
-```typescript
-/** adj[u] lists the neighbors of u, the shape the graph entry's buildList returns. */
-export type Graph = number[][];
+```typescript region=part-1
 
-/** Mark every vertex reachable from start, with a stack that lives on the heap. */
-export function explore(adj: Graph, start: number, seen: Set<number>): void {
-  const stack = [start];
-  while (stack.length > 0) {
-    const u = stack.pop()!;
-    // Marked on pop, so the order is truly depth-first. A vertex can be
-    // pushed by several neighbors first; skip repeats or it is scanned twice.
-    if (seen.has(u)) continue;
-    seen.add(u);
-    // Reversed, so the first neighbor is popped first, as in recursion.
-    for (const v of [...adj[u]].reverse()) {
-      if (!seen.has(v)) stack.push(v);
-    }
-  }
-}
-
-/** Groups of vertices that can reach each other, in an undirected graph. */
-export function countComponents(adj: Graph): number {
-  const seen = new Set<number>();
-  let count = 0;
-  // Every vertex is tried as a start, or an isolated one would never be counted.
-  for (let u = 0; u < adj.length; u++) {
-    if (!seen.has(u)) {
-      explore(adj, u, seen);
-      count++;
-    }
-  }
-  return count;
-}
 ```
 
 On the example, `explore(adj, 0, seen)` visits 0, 1 and 2; the starts 3 and 5 follow, for a count of 3.
 
-```python
-UNVISITED, ON_PATH, FINISHED = 0, 1, 2
+```python region=part-2
 
-
-def has_cycle(adj: Graph) -> bool:
-    """Whether a directed graph has a cycle; adj[u] lists u's out-neighbors."""
-    state = [UNVISITED] * len(adj)
-
-    def visit(u: int) -> bool:
-        state[u] = ON_PATH
-        for v in adj[u]:
-            # Only an edge back into the current path closes a loop. In the
-            # diamond 0>1, 0>2, 1>3, 2>3, reaching 3 twice is not a cycle.
-            if state[v] == ON_PATH or (state[v] == UNVISITED and visit(v)):
-                return True
-        # Stays FINISHED, never reset: resetting re-walks shared subgraphs,
-        # which takes exponential time on a chain of diamonds.
-        state[u] = FINISHED
-        return False
-
-    return any(state[u] == UNVISITED and visit(u) for u in range(len(adj)))
 ```
 
-```typescript
-const UNVISITED = 0;
-const ON_PATH = 1;
-const FINISHED = 2;
+```typescript region=part-2
 
-/** Whether a directed graph has a cycle; adj[u] lists u's out-neighbors. */
-export function hasCycle(adj: Graph): boolean {
-  const state = new Array<number>(adj.length).fill(UNVISITED);
-  const visit = (u: number): boolean => {
-    state[u] = ON_PATH;
-    for (const v of adj[u]) {
-      // Only an edge back into the current path closes a loop. In the
-      // diamond 0>1, 0>2, 1>3, 2>3, reaching 3 twice is not a cycle.
-      if (state[v] === ON_PATH || (state[v] === UNVISITED && visit(v))) return true;
-    }
-    // Stays FINISHED, never reset: resetting re-walks shared subgraphs,
-    // which takes exponential time on a chain of diamonds.
-    state[u] = FINISHED;
-    return false;
-  };
-  for (let u = 0; u < adj.length; u++) {
-    if (state[u] === UNVISITED && visit(u)) return true;
-  }
-  return false;
-}
 ```
 
 On the diamond the search enters 0, 1 and 3, finishes 3 and 1, then enters 2. Its edge to 3 meets a finished vertex and is ignored, so the answer is `False`; with 3→0 added, vertex 3 meets 0 on the path and returns `True`. This version recurses to the length of the current path. An explicit-stack version must also remember each vertex's place in its neighbor list, which makes it longer, so reach for `explore` when a graph is deep and only reachability matters.
 
-```python
-class TreeNode(Protocol):
-    """Anything with these three fields, such as the binary-tree entry's node."""
+```python region=tree-node
 
-    value: int
-    left: "TreeNode | None"
-    right: "TreeNode | None"
-
-
-def has_path_sum(node: TreeNode | None, remaining: int) -> bool:
-    """Whether some root-to-leaf path has values adding up to remaining."""
-    if node is None:
-        return False
-    # An argument, so each call has its own copy and nothing needs undoing.
-    remaining -= node.value
-    # Test at a leaf, not at None: a node with one child would otherwise
-    # count its empty side as a second place for a path to end.
-    if node.left is None and node.right is None:
-        return remaining == 0
-    return has_path_sum(node.left, remaining) or has_path_sum(node.right, remaining)
 ```
 
-```typescript
-/** Anything with these three fields, such as the binary-tree entry's node. */
-export interface TreeNode {
-  value: number;
-  left: TreeNode | null;
-  right: TreeNode | null;
-}
+```typescript region=part-3
 
-/** Whether some root-to-leaf path has values adding up to remaining. */
-export function hasPathSum(node: TreeNode | null, remaining: number): boolean {
-  if (node === null) return false;
-  // An argument, so each call has its own copy and nothing needs undoing.
-  remaining -= node.value;
-  // Test at a leaf, not at null: a node with one child would otherwise
-  // count its empty side as a second place for a path to end.
-  if (node.left === null && node.right === null) return remaining === 0;
-  return hasPathSum(node.left, remaining) || hasPathSum(node.right, remaining);
-}
 ```
 
 With a target of 22, `remaining` goes 17 at node 5, 13 at 4 and 2 at 11; leaf 7 gives -5, but leaf 2 gives 0, so the answer is `True`. A target of 9 reaches 0 at node 4, which has a child, so it doesn't count. The data flowed down here. Next it flows up.
 
-```python
-def diameter(root: TreeNode | None) -> int:
-    """Edges on the longest path between any two nodes."""
-    best = 0
+```python region=diameter
 
-    def height(node: TreeNode | None) -> int:
-        nonlocal best
-        # -1 for the empty tree, as in the binary-tree entry, so a leaf is 0.
-        if node is None:
-            return -1
-        left, right = height(node.left), height(node.right)
-        # The longest path turning at this node goes down both sides. Computed
-        # here, from heights already returned; calling height() afresh at every
-        # node re-walks each subtree, O(n^2) on a chain.
-        best = max(best, left + right + 2)
-        # A parent can extend only one side, so only the taller one goes up.
-        return 1 + max(left, right)
-
-    height(root)
-    return best
 ```
 
-```typescript
-/** Edges on the longest path between any two nodes. */
-export function diameter(root: TreeNode | null): number {
-  let best = 0;
-  const height = (node: TreeNode | null): number => {
-    // -1 for the empty tree, as in the binary-tree entry, so a leaf is 0.
-    if (node === null) return -1;
-    const left = height(node.left);
-    const right = height(node.right);
-    // The longest path turning at this node goes down both sides. Computed
-    // here, from heights already returned; calling height() afresh at every
-    // node re-walks each subtree, O(n^2) on a chain.
-    best = Math.max(best, left + right + 2);
-    // A parent can extend only one side, so only the taller one goes up.
-    return 1 + Math.max(left, right);
-  };
-  height(root);
-  return best;
-}
+```typescript region=diameter
+
 ```
 
 Each call returns its height up and records a candidate on the side. Node 11 sees heights 0 and 0, a candidate of 2; node 8 sees 0 and 1, a candidate of 3; the root sees 2 and 2, giving 6, the largest. The best path needn't pass through the root, which is why `best` is kept apart from the return value.

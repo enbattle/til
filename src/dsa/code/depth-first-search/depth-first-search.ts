@@ -1,3 +1,4 @@
+// #region part-1
 /** adj[u] lists the neighbors of u, the shape the graph entry's buildList returns. */
 export type Graph = number[][];
 
@@ -30,7 +31,9 @@ export function countComponents(adj: Graph): number {
   }
   return count;
 }
+// #endregion
 
+// #region part-2
 const UNVISITED = 0;
 const ON_PATH = 1;
 const FINISHED = 2;
@@ -55,7 +58,9 @@ export function hasCycle(adj: Graph): boolean {
   }
   return false;
 }
+// #endregion
 
+// #region part-3
 /** Anything with these three fields, such as the binary-tree entry's node. */
 export interface TreeNode {
   value: number;
@@ -73,7 +78,9 @@ export function hasPathSum(node: TreeNode | null, remaining: number): boolean {
   if (node.left === null && node.right === null) return remaining === 0;
   return hasPathSum(node.left, remaining) || hasPathSum(node.right, remaining);
 }
+// #endregion
 
+// #region diameter
 /** Edges on the longest path between any two nodes. */
 export function diameter(root: TreeNode | null): number {
   let best = 0;
@@ -92,3 +99,4 @@ export function diameter(root: TreeNode | null): number {
   height(root);
   return best;
 }
+// #endregion
