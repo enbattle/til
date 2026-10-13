@@ -1,7 +1,7 @@
 // What the site reads out of a markdown body, parsed with the site's own
-// markdown stack: diagram images, catalog and case-study links, DSA
-// prerequisites. Shared by the app (MarkdownRenderer, Diagram, headings.ts),
-// `vite.config.ts` (the build-time `?links`, `?dsaPrereqs` and `?words` queries) and
+// markdown stack: diagram images, catalog and case-study links, and prose word
+// counts. Shared by the app (MarkdownRenderer, Diagram, headings.ts),
+// `vite.config.ts` (the build-time `?links` and `?words` queries) and
 // scripts/check-diagrams.mjs, which runs under plain Node and can't import a
 // `.ts` module, so this is JavaScript with its types in markdown.d.mts.
 import remarkGfm from 'remark-gfm';
@@ -31,31 +31,6 @@ export function diagramName(src) {
   return src.slice('/diagrams/'.length, -'.svg'.length);
 }
 
-/** The text of a markdown node and everything under it, joined with nothing
- * added: a text or code node's value, or its children's text. A link gives
- * its text, not its URL; a node with neither (a thematic break) gives ''. */
-export function textOf(node) {
-  return node.value ?? (node.children ?? []).map(textOf).join('');
-}
-
-/**
- * The top-level nodes of `tree` under its `## heading` (matched by the
- * heading's trimmed text), up to the next `#` or `##` heading; a deeper
- * heading inside stays part of the section. [] when there's no such section.
- */
-export function sectionNodes(tree, heading) {
-  const nodes = [];
-  let inSection = false;
-  for (const node of tree.children) {
-    if (node.type === 'heading' && node.depth <= 2) {
-      inSection = node.depth === 2 && textOf(node).trim() === heading;
-    } else if (inSection) {
-      nodes.push(node);
-    }
-  }
-  return nodes;
-}
-
 // Every question below parses the whole body afresh.
 function parse(markdown) {
   return markdownParser().parse(markdown);
@@ -65,14 +40,14 @@ const IMAGES = { inline: 'image', reference: 'imageReference' };
 const LINKS = { inline: 'link', reference: 'linkReference' };
 
 /**
- * The URLs of every image or link (`kind`) under `nodes` (default: the whole
- * tree), in document order: inline ones (`[text](url)`, with any title, angle
- * brackets or wrapped text) and references whose label has a matching
+ * The URLs of every image or link (`kind`) in `tree`, in document order:
+ * inline ones (`[text](url)`, with any title, angle brackets or wrapped
+ * text) and references whose label has a matching
  * definition anywhere in `tree` (`[text][ref]` plus `[ref]: url`; the first
  * definition of a label wins). Code (fenced, indented or inline) holds no
  * image or link nodes, so an example there doesn't count.
  */
-function urlsOf(tree, kind, nodes = [tree]) {
+function urlsOf(tree, kind) {
   const definitions = new Map();
   const collectDefinitions = (node) => {
     if (node.type === 'definition' && !definitions.has(node.identifier)) {
@@ -90,7 +65,7 @@ function urlsOf(tree, kind, nodes = [tree]) {
     }
     node.children?.forEach(visit);
   };
-  nodes.forEach(visit);
+  visit(tree);
   return urls;
 }
 
@@ -130,27 +105,6 @@ export function extractCaseStudyRefs(body) {
   for (const path of linkPaths(body)) {
     const match = /^\/system-design\/([^/]+)$/.exec(path);
     if (match && !slugs.includes(match[1])) slugs.push(match[1]);
-  }
-  return slugs;
-}
-
-/** A link to one DSA entry: `/dsa/<slug>`, optionally with a `#fragment`. */
-const DSA_LINK = /^\/dsa\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:#.*)?$/;
-
-/**
- * The slugs of the DSA entries linked inside a markdown body's
- * `## Prerequisites` section, in order of first appearance and de-duplicated.
- * The section runs from that heading to the next `#` or `##` heading (a `###`
- * inside it doesn't end it). Only `/dsa/<slug>` links count: a `/dsa/` link
- * elsewhere in the body is a "see also", and catalog, external and landing-page
- * links are ignored.
- */
-export function dsaPrerequisites(markdown) {
-  const tree = parse(markdown);
-  const slugs = [];
-  for (const url of urlsOf(tree, LINKS, sectionNodes(tree, 'Prerequisites'))) {
-    const slug = DSA_LINK.exec(url)?.[1];
-    if (slug && !slugs.includes(slug)) slugs.push(slug);
   }
   return slugs;
 }

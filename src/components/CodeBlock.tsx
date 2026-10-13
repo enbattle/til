@@ -5,15 +5,13 @@ import { highlightCode } from '@/lib/highlighter';
 interface CodeBlockProps {
   code: string;
   language?: string;
-  /** The block's vertical margin; `CodeTabs` sets its own, under its tabs. */
-  className?: string;
 }
 
-export function CodeBlock({ code, language, className = 'my-5' }: CodeBlockProps) {
+export function CodeBlock({ code, language }: CodeBlockProps) {
   const { resolved } = useTheme();
-  // The highlighted HTML and the code it was made from: after `code` changes
-  // (a CodeTabs switch), the old HTML would otherwise stay on screen until the
-  // new highlight resolves.
+  // The highlighted HTML and the code it was made from: after `code` changes,
+  // the old HTML would otherwise stay on screen until the new highlight
+  // resolves.
   const [highlighted, setHighlighted] = useState<{ code: string; html: string } | null>(
     null,
   );
@@ -43,9 +41,7 @@ export function CodeBlock({ code, language, className = 'my-5' }: CodeBlockProps
   }
 
   return (
-    <div
-      className={`group not-prose relative ${className} overflow-hidden rounded-lg border border-border`}
-    >
+    <div className="group not-prose relative my-5 overflow-hidden rounded-lg border border-border">
       <button
         type="button"
         onClick={handleCopy}

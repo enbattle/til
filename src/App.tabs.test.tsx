@@ -7,23 +7,33 @@ import { renderAt } from '@/test/render';
 // docs/specs/ui-dedupe.md, criterion 1, through the whole app: one test per
 // tab, over its landing route and one of its item routes. The header shows the
 // tabs from TABS with only this one current; the persistent sidebar and the
-// mobile nav show this tab's nav and neither of the others. This replaces
-// Header.tabs.test.tsx, Header.dsa.test.tsx, MobileNav.system-design.test.tsx,
-// DsaNav.test.tsx's MobileNav block and the "sidebar selection" blocks of
-// App.system-design.test.tsx and App.dsa.test.tsx; tabs.test.ts holds the
-// table of routes. On each tab's item route it also checks the wiring that
+// mobile nav show this tab's nav and not the other. This replaces
+// Header.tabs.test.tsx, MobileNav.system-design.test.tsx and the "sidebar
+// selection" block of App.system-design.test.tsx; tabs.test.ts holds the
+// table of routes. docs/specs/remove-dsa-tab.md, criteria 1 and 2: exactly
+// two tabs, no nav ever lists DSA entries (the retired nav's name stays in
+// NAVS so every route checks it is absent), and the retired /dsa routes are
+// unknown catalog routes. On each tab's item route it also checks the wiring that
 // OrderedNav.test.tsx can't see: App's sidebar classes reach the nav element,
 // and MobileNav's onClose reaches the nav's links (clicking the current page's
 // link changes no route, so only onNavigate can close the dialog).
 
 const NAVS = ['Sections', 'Case studies', 'DSA entries'] as const;
+const TAB_LABELS = ['Catalog', 'System Design'];
 
 const CASES = [
   {
     id: 'catalog',
     label: 'Catalog',
     nav: 'Sections',
-    paths: ['/', '/ai-and-ml', '/ai-and-ml/prompt-engineering', '/not-found'],
+    paths: [
+      '/',
+      '/ai-and-ml',
+      '/ai-and-ml/prompt-engineering',
+      '/not-found',
+      '/dsa',
+      '/dsa/binary-search',
+    ],
     item: '/ai-and-ml/prompt-engineering',
   },
   {
@@ -32,13 +42,6 @@ const CASES = [
     nav: 'Case studies',
     paths: ['/system-design', '/system-design/url-shortener'],
     item: '/system-design/url-shortener',
-  },
-  {
-    id: 'dsa',
-    label: 'DSA',
-    nav: 'DSA entries',
-    paths: ['/dsa', '/dsa/binary-search'],
-    item: '/dsa/binary-search',
   },
 ] as const;
 
@@ -62,6 +65,7 @@ describe.each(CASES)('the $label tab', ({ id, label, nav, paths, item }) => {
       expect(links.map((a) => [a.textContent?.trim(), a.getAttribute('href')])).toEqual(
         TABS.map((tab) => [tab.label, tab.to]),
       );
+      expect(links.map((a) => a.textContent?.trim())).toEqual(TAB_LABELS);
       const current = links.filter((a) => a.getAttribute('aria-current') === 'page');
       expect(current.map((a) => a.textContent?.trim())).toEqual([label]);
       expect(TABS.find((tab) => tab.label === label)?.id).toBe(id);

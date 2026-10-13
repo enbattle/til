@@ -167,19 +167,3 @@ the first hand run, on 2026-09-28, found only a few internal-only exports
 **Revisit when:** A review or retro finds dead code (an unused export, file
 or dependency) that shipped after this entry's date, or `npx knip` reports
 real findings on two separate on-demand runs.
-
-### Per-test timeouts for the DSA code tests
-
-**What it is:** Stopping a test stuck in an infinite loop after a few seconds
-and failing it by name, with `pytest-timeout` (thread method, which works on
-Windows) or an outer kill in `scripts/test-python.mjs`, and an equivalent for
-vitest.
-**Why deferred:** Measured on 2026-10-02: vitest's `testTimeout` can't stop a
-synchronous loop, and
-pytest's `faulthandler_timeout` names the stuck test but leaves it running, so
-a real stop needs a new dependency or an outer kill in locked test tooling,
-for Python only. Every hang so far came from a deliberate break check, which
-`add-dsa-entry` Stage 1 now steers away from loop conditions, and CI's
-10-minute job timeout still fails a run.
-**Revisit when:** a hang reaches CI, or a hanging test costs another agent run
-after this entry's date.

@@ -10,7 +10,7 @@
 //   `hast-util-raw` in package.json's `dependencies` or `devDependencies`,
 //   naming the package;
 // - in every non-test `.js/.jsx/.mjs/.cjs/.ts/.tsx/.mts/.cts` file under src/
-//   (except src/dsa/code/ and src/test/, never shipped to the browser), any
+//   (except src/test/, never shipped to the browser), any
 //   sink name below (and `parseFromString`) as a case-insensitive substring,
 //   or the whole word `write`/`writeln` (case-sensitive), in code, a comment
 //   or a string alike (it fails closed), naming the file.
@@ -183,8 +183,6 @@ describe('check-raw-html', () => {
 
   describe('code never shipped to the browser', () => {
     it.each([
-      ['src/dsa/code/heap/heap.ts', 'el.innerHTML = s;\n'],
-      ['src/dsa/code/heap/heap.ts', 'out.write(s);\n'],
       ['src/test/helpers.mjs', 'el.innerHTML = s;\n'],
       ['src/test/helpers.ts', 'stream.write(s);\n'],
     ])('ignores %s', (path, source) => {
@@ -192,9 +190,11 @@ describe('check-raw-html', () => {
     });
 
     it.each(['el.innerHTML = s;\n', 'out.write(s);\n'])(
-      'still fails the same code in src/lib/ (%s)',
+      'still fails the same code in any other src/ file (%s)',
       (source) => {
-        expect(problems({ 'src/lib/x.ts': source }).join('\n')).toContain('src/lib/x.ts');
+        for (const path of ['src/lib/x.ts', 'src/code/heap/heap.ts', 'src/x.ts']) {
+          expect(problems({ [path]: source }).join('\n')).toContain(path);
+        }
       },
     );
   });
@@ -227,10 +227,10 @@ describe('check-raw-html', () => {
     ).toEqual([]);
   });
 
-  it('ignores a test file in src/dsa/code/ and src/lib/ alike', () => {
+  it('ignores a test file in any src/ directory', () => {
     expect(
       problems({
-        'src/dsa/code/heap/heap.test.ts': 'out.write(s); el.innerHTML = s;\n',
+        'src/code/heap/heap.test.ts': 'out.write(s); el.innerHTML = s;\n',
         'src/lib/x.test.mts': 'out.write(s); el.innerHTML = s;\n',
       }),
     ).toEqual([]);

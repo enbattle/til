@@ -62,8 +62,8 @@ describe('CodeBlock', () => {
     expect(screen.getByRole('button', { name: 'Copy' })).toBeInTheDocument();
   });
 
-  // Regression test: switching a CodeTabs pair changes `code`, and the old
-  // highlighted HTML stayed on screen until the new highlight resolved.
+  // Regression test: when `code` changed, the old highlighted HTML stayed on
+  // screen until the new highlight resolved.
   it('never shows the previous code while the new code is still highlighting', async () => {
     const { container, rerender } = renderBlock('first_py = 1', 'python');
     expect(await screen.findByText('highlighted first_py = 1')).toBeInTheDocument();
@@ -72,5 +72,15 @@ describe('CodeBlock', () => {
     rerender(block('const firstTs = 1;', 'typescript'));
     expect(container.textContent).toContain('const firstTs = 1;');
     expect(container.textContent).not.toContain('first_py = 1');
+  });
+
+  // docs/specs/remove-dsa-tab.md, criterion 6: the className prop is gone and
+  // its default margin is inlined, so every block keeps the same margin.
+  it('keeps its vertical margin, with no className prop to change it', () => {
+    const { container } = renderBlock('const x = 1;', 'javascript');
+    expect(container.firstElementChild).toHaveClass('my-5');
+    // @ts-expect-error CodeBlock takes no className prop.
+    const element = <CodeBlock code="x" className="mt-0" />;
+    expect(element.type).toBe(CodeBlock);
   });
 });

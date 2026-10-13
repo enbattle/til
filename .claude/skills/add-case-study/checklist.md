@@ -53,8 +53,7 @@ cut an exception or a second alternative before cutting a decision's reason.
    made a claim true ("never loses a message" for "doesn't lose an
    acknowledged message"). Check every absolute word: never, always, exactly,
    guaranteed.
-8. **Voice and prose** (docs/writing-standard.md, "Case studies and DSA
-   entries").
+8. **Voice and prose** (docs/writing-standard.md, "Case studies").
    - Talk to the reader; ask their next question, then answer it.
    - One running example, carried through the page.
    - No meta-commentary ("it's worth noting", "remember that").

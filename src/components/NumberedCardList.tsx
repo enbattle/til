@@ -7,9 +7,9 @@ interface NumberedCard {
   summary: string;
 }
 
-/** A landing page's numbered list of cards (System Design, DSA), one link
- * each, in the order given. `start` follows the first card's number, so a
- * list that continues another's numbering (a DSA group) says so. */
+/** A landing page's numbered list of cards (System Design), one link each, in
+ * the order given. `start` follows the first card's number, so the list's own
+ * numbering matches the visible numbers. */
 export function NumberedCardList({ cards }: { cards: NumberedCard[] }) {
   return (
     <ol start={cards[0]?.number} className="space-y-3">

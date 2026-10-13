@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import {
   RAW_CASE_STUDIES,
-  RAW_DSA_ENTRIES,
   RAW_TOPICS,
   bodyOnlyWord,
   fuzzyMatchesFrontmatter,
@@ -32,11 +31,7 @@ describe('fuzzyMatchesFrontmatter', () => {
 
 describe('bodyOnlyWord', () => {
   it('picks a word with no fuzzy match in any published title or summary', () => {
-    const entries = Object.values({
-      ...RAW_TOPICS,
-      ...RAW_CASE_STUDIES,
-      ...RAW_DSA_ENTRIES,
-    }).map((raw) => {
+    const entries = Object.values({ ...RAW_TOPICS, ...RAW_CASE_STUDIES }).map((raw) => {
       const { data } = parseFrontmatter(raw);
       return { title: data.title ?? '', summary: data.summary ?? '' };
     });

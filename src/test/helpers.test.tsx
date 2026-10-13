@@ -99,9 +99,9 @@ describe('shared test helpers (dedupe criterion 8)', () => {
   });
 
   it('renderAt renders a given element inside the router and providers instead', () => {
-    renderAt('/dsa', <p>Only this</p>);
+    renderAt('/system-design', <p>Only this</p>);
     expect(screen.getByText('Only this')).toBeInTheDocument();
     expect(screen.queryByRole('main')).not.toBeInTheDocument();
-    expect(screen.getByTestId('location-display').textContent).toBe('/dsa');
+    expect(screen.getByTestId('location-display').textContent).toBe('/system-design');
   });
 });

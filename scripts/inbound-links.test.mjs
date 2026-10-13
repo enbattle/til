@@ -105,20 +105,20 @@ describe('inboundLinks (criterion 6)', () => {
     expect(sentence).not.toContain('Intro paragraph');
   });
 
-  it('finds links from a case study and from a DSA entry', () => {
+  it('finds links from case studies, in body order', () => {
     const links = find([
       {
         file: 'src/system-design/case-studies/feed.md',
         text: page('The feed reads through a [cache](/s/caching).'),
       },
       {
-        file: 'src/dsa/entries/lru.md',
-        text: page('An LRU list backs a [cache](/s/caching#eviction).'),
+        file: 'src/system-design/case-studies/chat.md',
+        text: page('Recent messages sit in a [cache](/s/caching#eviction).'),
       },
     ]);
     expect(links.map((link) => link.file)).toEqual([
       'src/system-design/case-studies/feed.md',
-      'src/dsa/entries/lru.md',
+      'src/system-design/case-studies/chat.md',
     ]);
     expect(links[1].anchor).toBe('#eviction');
   });

@@ -4,8 +4,8 @@
 //
 //   npm run links:inbound -- <section>/<slug>
 //
-// Reads every markdown body under src/content/**, src/system-design/
-// case-studies/*.md and src/dsa/entries/*.md with the site's markdown parser,
+// Reads every markdown body under src/content/** and src/system-design/
+// case-studies/*.md with the site's markdown parser,
 // and prints one line per link whose path is /<section>/<slug>, or an old path
 // src/content/redirects.ts maps to it (query ignored, #anchor kept). Inline
 // links count, and so do reference-style ones (`[text][ref]`, `[ref][]`),
@@ -156,9 +156,6 @@ async function main() {
     ...listFiles({ root, under: 'src/content', ext: '.md' }),
     ...listFiles({ root, under: 'src/system-design/case-studies', ext: '.md' }).filter(
       (full) => dirname(rel(full)) === 'src/system-design/case-studies',
-    ),
-    ...listFiles({ root, under: 'src/dsa/entries', ext: '.md' }).filter(
-      (full) => dirname(rel(full)) === 'src/dsa/entries',
     ),
   ];
   const bodies = files.map((full) => ({

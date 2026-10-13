@@ -1,6 +1,6 @@
 # Writing standard
 
-The bar every published topic, case study and DSA entry meets. Every
+The bar every published topic and case study meets. Every
 reviewer of published prose is given this file;
 [docs/NON_NEGOTIABLES.md](NON_NEGOTIABLES.md) #4 makes it binding.
 
@@ -17,8 +17,8 @@ pass on denser subjects, not assumed on the first read. Concretely:
 - The `summary` frontmatter field is a one-sentence scannable hook — it's
   the only place terseness is the goal. The body is a teaching write-up,
   not a short "gotcha" note. (Every page has a word budget; the two
-  sections below say how catalog topics, case studies and DSA entries meet
-  this standard within it.)
+  sections below say how catalog topics and case studies meet this standard
+  within it.)
 - Prose reads like something a knowledgeable person actually wrote, not
   a generically AI-patterned draft: avoid stock rhetorical crutches
   ("not just X — it's Y," "that's the real/actual X" as a closer),
@@ -57,9 +57,8 @@ pass on denser subjects, not assumed on the first read. Concretely:
 ## Catalog topics
 
 A topic under `src/content/` teaches one idea from zero background, and it is
-where case studies and DSA entries send a reader for more. It gets more room
-than those pages, but not unlimited room: a reader should finish it in one
-sitting.
+where case studies send a reader for more. It gets more room than those
+pages, but not unlimited room: a reader should finish it in one sitting.
 
 - **Five minutes at most.** At most 1,000 words of prose, about 5
   minutes at 230 words a minute; aim for 600–900 (3 or 4 min). Words count as in the section below (tables count; code blocks and
@@ -85,11 +84,11 @@ sitting.
 paragraph on every topic, and the `## Where you'll meet this` section on every
 `systems-and-infrastructure` topic.
 
-## Case studies and DSA entries
+## Case studies
 
-These pages prepare a reader to talk through a design or a problem in an
-interview. A reader who zones out halfway learns nothing, so they trade
-completeness for a page someone finishes and remembers. Where a rule above
+These pages prepare a reader to talk through a design in an interview. A
+reader who zones out halfway learns nothing, so they trade completeness for a
+page someone finishes and remembers. Where a rule above
 pulls the other way, this section decides for these pages; catalog topics
 teach more depth, and they are where these pages send a reader for more.
 
@@ -119,8 +118,3 @@ teach more depth, and they are where these pages send a reader for more.
   the stock phrases banned above.
 - **Zero background, briefly.** Define a term in a short phrase at first use
   and link the catalog topic for the rest, rather than teaching it here.
-- **Code explains itself.** In a DSA entry, comments carry the reason behind a
-  line, at the line where the obvious alternative would break
-  (`lo = mid + 1  # mid was already checked; keeping it can loop forever`).
-  They don't narrate what each line does. The prose after a chunk of code
-  connects it to the next step.

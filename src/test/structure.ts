@@ -2,18 +2,15 @@ import { createElement } from 'react';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import { CodeLanguageProvider } from '@/contexts/CodeLanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { proseWordCount } from '@/lib/markdown.mjs';
 
-// Shared support for the content-structure tests (case studies, DSA entries,
-// catalog topics; docs/specs/content-dedupe.md, design item 4). Each test
+// Shared support for the content-structure tests (case studies and catalog
+// topics; docs/specs/content-dedupe.md, design item 4). Each test
 // keeps its own rules; this is only the plumbing they used to copy.
 
-/** `body` rendered with the real `MarkdownRenderer`, as its page renders it:
- * `codeTabs` on for a DSA entry (python+typescript pairs become tabs). */
-export function renderBody(body: string, { codeTabs = false } = {}): HTMLElement {
-  const renderer = createElement(MarkdownRenderer, { content: body, codeTabs });
+/** `body` rendered with the real `MarkdownRenderer`, as its page renders it. */
+export function renderBody(body: string): HTMLElement {
   const { container } = render(
     createElement(
       MemoryRouter,
@@ -21,7 +18,7 @@ export function renderBody(body: string, { codeTabs = false } = {}): HTMLElement
       createElement(
         ThemeProvider,
         null,
-        codeTabs ? createElement(CodeLanguageProvider, null, renderer) : renderer,
+        createElement(MarkdownRenderer, { content: body }),
       ),
     ),
   );

@@ -14,11 +14,11 @@ Take the first approach to our duplicate check: two nested loops that compare ev
 
 ## The common classes
 
-Can we do better than comparing every pair? Sort the IDs first, then scan once, because any duplicates now sit next to each other. A good [sort](/dsa/sorting) takes about n × log₂ n comparisons, so this is **O(n log n)**. A logarithm answers "how many times can I halve n before reaching 1?", so log₂ 1,000,000 is about 20. That's roughly 20 million steps, about 0.2 seconds at a million IDs, and 10,000 steps (0.1 ms) at a thousand.
+Can we do better than comparing every pair? Sort the IDs first, then scan once, because any duplicates now sit next to each other. A good sorting algorithm, such as merge sort, takes about n × log₂ n comparisons, so this is **O(n log n)**. A logarithm answers "how many times can I halve n before reaching 1?", so log₂ 1,000,000 is about 20. That's roughly 20 million steps, about 0.2 seconds at a million IDs, and 10,000 steps (0.1 ms) at a thousand.
 
-Better still, walk the list once and keep a **hash set**, a structure that answers "have I seen this ID?" in roughly constant time. That's **O(n)** on average: about 1,000 steps at n = 1,000, and a million at a million, about 10 milliseconds. The set's lookup is **O(1)**, meaning the cost doesn't depend on n. Read about how it manages that in [hash map](/dsa/hash-map).
+Better still, walk the list once and keep a **hash set**, a structure that answers "have I seen this ID?" in roughly constant time. That's **O(n)** on average: about 1,000 steps at n = 1,000, and a million at a million, about 10 milliseconds. The set's lookup is **O(1)**, meaning the cost doesn't depend on n. It gets there by [hashing](/computing-fundamentals/encoding-hashing-and-encryption) each ID to pick where to look, instead of searching the whole set.
 
-Two more classes round out the ladder. **O(log n)** is what [binary search](/dsa/binary-search) costs on the sorted IDs: about 20 steps to find one ID among a million. **O(2ⁿ)**, exponential, is what you'd pay to try every subset of the IDs. At n = 30 that's about 10⁹ steps, around 10 seconds. At n = 60 it's about 10¹⁸ steps, roughly 365 years. Exponential algorithms are fine for tiny inputs and useless past a few dozen items.
+Two more classes round out the ladder. **O(log n)** is what binary search costs on the sorted IDs: compare yours with the middle ID and discard the half that can't hold it, so finding one ID among a million takes about 20 steps. **O(2ⁿ)**, exponential, is what you'd pay to try every subset of the IDs. At n = 30 that's about 10⁹ steps, around 10 seconds. At n = 60 it's about 10¹⁸ steps, roughly 365 years. Exponential algorithms are fine for tiny inputs and useless past a few dozen items.
 
 ## Time versus space
 
@@ -28,7 +28,7 @@ Big-O describes memory the same way it describes steps. The hash set stores up t
 
 Does the duplicate check always cost the full amount? No. If the first two IDs match, the hash set stops after two steps. Big-O usually quotes the **worst case**, here a list with no duplicate, because it's the guarantee. The **average case** is what you expect in practice: a hash lookup is O(1) on average, assuming the hash spreads IDs evenly across the table, but O(n) if many land in the same place. So the hash-set check is O(n) expected and O(n²) in the worst case.
 
-An **amortized** cost spreads an occasional expensive step across the cheap ones. Appending to a [dynamic array](/dsa/arrays-and-strings) is usually one write, but when the array is full it copies everything into one twice as big. That one append is O(n), yet doubling keeps the average over many appends at O(1).
+An **amortized** cost spreads an occasional expensive step across the cheap ones. Appending to a **dynamic array**, a list that grows as you add to it (a Python `list` or a JavaScript array), is usually one write, but when the array is full it copies everything into a bigger one, a fixed multiple of the old size (twice, in the textbook version). That one append is O(n), yet growing by a multiple keeps the average over many appends at O(1).
 
 ## Why constants still matter
 

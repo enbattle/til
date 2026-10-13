@@ -2,16 +2,15 @@ import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { getSection } from '@/content/registry';
 import { TOPICS } from '@/lib/content';
-import { DSA_ENTRIES } from '@/lib/dsa';
 import { CASE_STUDIES } from '@/lib/system-design';
 import { renderAt } from '@/test/render';
 
 // docs/specs/ui-dedupe.md, design item 6: Previous/Next and "unknown slug →
-// not found" over the three kinds of page, through the whole app. Each
+// not found" over the two kinds of page, through the whole app. Each
 // replaces a per-kind copy: App.system-design.test.tsx's adjacency cases and
-// unknown-slug test, App.dsa.test.tsx's adjacency cases and unknown-slug test,
-// and TopicPage.test.tsx's first/last-topic and unknown-slug tests. The
-// expected links are each neighbour's `path` (criterion 2).
+// unknown-slug test, and TopicPage.test.tsx's first/last-topic and
+// unknown-slug tests. The expected links are each neighbour's `path`
+// (criterion 2).
 
 interface Item {
   slug: string;
@@ -50,13 +49,6 @@ const KINDS: {
     route: (item) => `/system-design/${item.slug}`,
     pager: 'More case studies',
     unknown: '/system-design/no-such-case-study',
-  },
-  {
-    kind: 'DSA entry',
-    list: DSA_ENTRIES,
-    route: (item) => `/dsa/${item.slug}`,
-    pager: 'More DSA entries',
-    unknown: '/dsa/no-such-entry',
   },
 ];
 
@@ -97,5 +89,25 @@ describe.each(KINDS)('An unknown $kind slug', ({ unknown }) => {
     expect(
       await screen.findByRole('heading', { level: 1, name: /page not found/i }),
     ).toBeInTheDocument();
+  });
+});
+
+// docs/specs/remove-dsa-tab.md, criterion 2: the retired tab's routes are
+// unknown routes like any other, with no redirect and no special case: each
+// lands on the same not-found page, by the same route, as an unknown non-DSA
+// section or topic (the first two paths are those controls).
+describe('The retired DSA routes', () => {
+  it.each([
+    '/no-such-section',
+    `/${SECTION}/no-such-topic`,
+    '/dsa',
+    '/dsa/binary-search',
+    '/dsa/no-such-entry',
+  ])('%s lands on /not-found like any unknown section or topic', async (path) => {
+    renderAt(path);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /page not found/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('location-display')).toHaveTextContent(/^\/not-found$/);
   });
 });

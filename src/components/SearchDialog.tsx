@@ -14,7 +14,7 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  // Topic, case-study and DSA bodies load on demand (they aren't in the main bundle), so
+  // Topic and case-study bodies load on demand (they aren't in the main bundle), so
   // title and summary matches work at once and body matches join in when they arrive.
   const [fullText, setFullText] = useState<'loading' | 'ready' | 'failed'>(() =>
     isFullTextSearchReady() ? 'ready' : 'loading',

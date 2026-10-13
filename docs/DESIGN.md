@@ -20,8 +20,8 @@ notebook than a product. The UI follows that:
   — with a warm amber/ochre accent standing in for a highlighter pen
   rather than a generic interface blue.
 - **Layout**: a persistent left-side section/topic nav (`SectionNav`, or
-  `CaseStudyNav` on System Design routes and `DsaNav` on DSA routes — see
-  "Case study navigation" and "DSA navigation" below)
+  `CaseStudyNav` on System Design routes — see "Case study navigation"
+  below)
   alongside a reading column capped at 800px (`max-w-[50rem]`) at every
   width, inside a 1440px shell (`max-w-[90rem]`, the header's inner row
   shares the cap). From `xl` (1280px) the shell adds a 224px right column
@@ -54,14 +54,14 @@ notebook than a product. The UI follows that:
   so titles get `leading-snug` and vertical padding on each link instead
   so wrapped and single-line items read as one consistent list.
 - **Header tabs**: the header carries a `<nav aria-label="Primary">` with
-  three links, **Catalog** (`/`), **System Design** (`/system-design`) and
-  **DSA** (`/dsa`), defined once as `TABS` in `src/lib/tabs.ts`, whose
+  two links, **Catalog** (`/`) and **System Design** (`/system-design`),
+  defined once as `TABS` in `src/lib/tabs.ts`, whose
   `tabForPath` also picks the sidebar and `MobileNav` nav for a route.
   The active one has `aria-current="page"` plus a non-color signal — bold
   weight and an accent-colored bottom border, the same treatment the
   sidebar navs use for the current page — so it isn't marked by color
   alone. System Design is active on `/system-design` and everything under
-  it, DSA on `/dsa` and everything under it; Catalog is active on every other route, including topic pages a
+  it; Catalog is active on every other route, including topic pages a
   case study links to (following a link into the catalog switches tabs). The
   tabs are visible at every width. Above the `sm` breakpoint they sit in
   the logo row right after the logo; below it they wrap onto their own row
@@ -81,11 +81,11 @@ notebook than a product. The UI follows that:
   nothing to expand: each case study page carries its own **On this page**
   list (below). The way back from a catalog topic is the
   "Used in these case studies:" list a topic page shows for the case studies
-  that link to it. On desktop all three navs stay mounted and the inactive ones sit
+  that link to it. On desktop both navs stay mounted and the inactive one sits
   in a `hidden`, `display: contents` wrapper (out of the accessibility tree
   at every width), so a section group the user opened survives a round trip
   between the tabs.
-- **On this page**: each case study page, DSA entry and catalog topic carries
+- **On this page**: each case study page and catalog topic carries
   its own **On this page** list (`OnThisPage`): the body's
   `##` sections as in-page anchors, from `h2Headings`, in two copies of which
   exactly one shows at any width. From `xl` it's a
@@ -133,7 +133,7 @@ notebook than a product. The UI follows that:
   add to the padding and land every jump too low. The same goes for in-body links: a markdown link whose href
   starts with `#` (a case study's links to its own headings) renders as
   a plain same-tab anchor, a `/…` link is a router `Link`, and an external
-  link opens in a new tab with `rel="noreferrer"`. Opening a topic, case study or DSA entry at a `#<heading-id>` URL works too:
+  link opens in a new tab with `rel="noreferrer"`. Opening a topic or case study at a `#<heading-id>` URL works too:
   the body loads after the browser's own jump, so `LazyBody` scrolls the
   heading into view once the body renders, and the same scroll padding applies;
   after that it re-aligns the heading whenever layout above it shifts, for at
@@ -141,34 +141,6 @@ notebook than a product. The UI follows that:
   stops at once on the reader's first wheel, touch, key or pointer press, and
   on any scroll it didn't cause itself (a scrollbar drag, find-in-page,
   assistive technology), so it never fights the reader).
-- **DSA navigation**: on `/dsa` and `/dsa/*` the sidebar and `MobileNav` show
-  `DsaNav`, built on `OrderedNav` like `CaseStudyNav` but grouped: under the
-  "DSA" label, one `<p>` label per kind ("Data structures", "Patterns",
-  "Algorithms"; serif, sentence case, `text-primary`, so it reads as a
-  subheading under the uppercase "DSA" rather than a fourth label of the same
-  rank) followed by an `<ol>` named by it (`aria-labelledby`), each
-  in prerequisites-first order (docs/dsa.md). The visible numbers run 1..N
-  across the groups (each `<ol>` has a matching `start`), with the same bold
-  plus accent-border current signal and `aria-current="page"`. Groups don't
-  collapse. The landing page has the same groups as `<section>`s, each with an
-  `h2` and a `NumberedCardList` whose numbers continue across sections; its
-  cards carry no kind label, since the heading says it. Each entry page shows
-  the entry's kind ("Data structure", "Pattern", "Algorithm") as text, never
-  as a color alone. An entry page lists its prerequisites under
-  the title as **Before this** (a `<nav aria-label="Before this">`, absent when
-  there are none), then the same "On this page" list as a case study.
-- **Code tabs**: on a DSA entry page each Python/TypeScript code pair is one
-  block (`CodeTabs`) with a two-tab `role="tablist"` ("Python",
-  "TypeScript") over a single code block. It follows the WAI-ARIA tabs
-  pattern with manual activation: the selected tab is the one tab stop
-  (roving tabindex), Left/Right (and Home/End) move focus between the tabs,
-  and Enter or Space selects, so moving focus never re-renders every code
-  block on the page. The selected tab has the header tabs' treatment: bold
-  weight and an accent bottom border. The choice is shared by every pair on
-  the site (`CodeLanguageProvider`, stored under `til-code-language` like the
-  theme, Python by default). Other pages never pass `codeTabs` to
-  `MarkdownRenderer`, so their code blocks are unchanged. A long line scrolls
-  inside the code block, as in any code block, never the page.
 - **Diagrams**: case-study diagrams are D2 sources rendered at build time to
   one SVG per theme, colored from the tokens below (the render script maps
   them onto D2's theme slots: paper surfaces and `accent-soft` for fills,
@@ -281,8 +253,7 @@ than a new one added ad hoc.
   (`src/hooks/useFocusTrap.ts`, which holds the one focusable-element
   selector): on open focus moves inside (the search box; the first link),
   Tab and Shift+Tab stay inside, `Escape` closes, and focus returns to the
-  button that opened it. A new modal uses the same hook. Code tabs move
-  with the arrow keys and select with Enter or Space. A diagram or
+  button that opened it. A new modal uses the same hook. A diagram or
   table that scrolls sideways is a focusable region, scrolled with the arrow
   keys. The narrow-view "On this page" bar's button opens and closes its
   panel with Enter or Space, Tab moves on into the panel's links (it isn't a

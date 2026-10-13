@@ -1,6 +1,6 @@
 ---
 name: content-review-eval
-description: Run this repo's content-review eval — checks whether the Stage 3 review of add-topic, add-case-study and add-dsa-entry actually catches a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim, a wrong estimate, a decision that names no alternative, a claim compression made false, a code bug the tests miss, a walkthrough that only narrates) rather than rubber-stamping a draft, including false-positive controls. Use when asked to run/check the content-review eval, after editing docs/content-review.md or the Writing Standard (evals/README.md's table lists every trigger), or after a real content review misses something in actual use (add a scenario for it first).
+description: Run this repo's content-review eval — checks whether the Stage 3 review of add-topic and add-case-study actually catches a deliberately planted content-quality violation (undefined jargon, AI-patterned tone, over-explained figurative language, an unverified technical claim, a wrong estimate, a decision that names no alternative, a claim compression made false) rather than rubber-stamping a draft, including false-positive controls. Use when asked to run/check the content-review eval, after editing docs/content-review.md or the Writing Standard (evals/README.md's table lists every trigger), or after a real content review misses something in actual use (add a scenario for it first).
 ---
 
 # Content-review eval
@@ -16,8 +16,8 @@ this file adds what is specific to this eval.
 
 ## Stage 0 — Scope
 
-All scenarios (`CR-*` for `add-topic`, `CS-*` for `add-case-study`, `DS-*`
-for `add-dsa-entry`) by default, and after an edit to something they all
+All scenarios (`CR-*` for `add-topic`, `CS-*` for `add-case-study`) by
+default, and after an edit to something they all
 depend on: the Writing Standard, `docs/NON_NEGOTIABLES.md`, or the shared
 Stage 3 instruction in `docs/content-review.md`. An edit to one skill's
 checklist needs only that skill's scenarios; a Writing Standard edit that only
@@ -31,20 +31,18 @@ For each scenario, read fresh:
 
 - the Stage 3 instruction from `docs/content-review.md`, verbatim, with
   `<kind>` and `<checklist>` filled in from the reviewing skill's `SKILL.md`
-  (`add-topic` for `CR-*`, `add-case-study` for `CS-*`, `add-dsa-entry` for
-  `DS-*`), replacing a checklist item that doesn't apply to the draft with
+  (`add-topic` for `CR-*`, `add-case-study` for `CS-*`), replacing a checklist item that doesn't apply to the draft with
   "none", as a real run would (`CR-*` drafts link nothing, and only a
   `systems-and-infrastructure` draft gets add-topic's item 2);
 - `docs/writing-standard.md`;
 - the existing items for the near-duplicate check: the scenario's
   **Section**'s topics (`ls src/content/<section>/`) for `CR-*`, the case
-  studies for `CS-*`, the entries for `DS-*`. If a published item shares the
-  draft's slug (the `DS-*` base is a Prefix Sums entry, which now exists), leave
+  studies for `CS-*`. If a published item shares the draft's slug, leave
   it out and tell the reviewer the draft is a rewrite of that item and that it
   must not open the published file (comparing the two would expose the planted
   line); otherwise a true near-duplicate finding confounds every grade.
 
-Build the draft as `scenarios.md` says (a `CS-*` or `DS-*` scenario is its
+Build the draft as `scenarios.md` says (a `CS-*` scenario is its
 base plus the scenario's replacements). Give the agent, in this order: the
 draft's files, verbatim, exactly as the skill's Stage 3 would; the Writing
 Standard; the path of `docs/NON_NEGOTIABLES.md`; the existing items; and the
@@ -55,7 +53,7 @@ instruction. Record each review's finding text.
 Against the scenario's **Expected finding**:
 
 - **PASS**: a finding substantively names the planted violation. For a
-  control (`CR-05`, `CS-03`, `DS-03`): nothing flagged, or only findings true
+  control (`CR-05`, `CS-03`): nothing flagged, or only findings true
   of the text (a real polish gap, a scope or placement observation).
 - **FAIL**: nothing flagged when a violation was planted, or only something
   unrelated; for a control, a reported defect that isn't true of the draft (a

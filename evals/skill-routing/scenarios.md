@@ -125,14 +125,14 @@ its stated purpose) or `/feature` (no app behavior involved).
 <!-- premise: src/components/NumberedCardList.tsx lacks "readingMinutes" -->
 
 > Add a "reading time" estimate (e.g., "5 min read") to the topic cards on
-> the home and section pages, and to the case-study and DSA cards on their
-> landing pages.
+> the home and section pages, and to the case-study cards on their landing
+> page.
 
 **Expected:** `/feature`
-**Why:** Topic, case-study and DSA entry pages already show the label
+**Why:** Topic and case-study pages already show the label
 (`readingMinutes`, the build-time `?words` view), but no card does: this
 wires the count into `TopicCard.tsx` and `NumberedCardList.tsx` across the
-home, section and landing pages, with real design decisions (where the label
+home, section and System Design pages, with real design decisions (where the label
 sits on a card, how it reads at phone width, whether it's worth the space on
 every card) and new behavior across several files.
 **Fails if:** implemented directly with no spec, given the multi-file
@@ -202,15 +202,14 @@ fresh-subagent-per-scenario procedure the skill exists to standardize.
 **Expected:** `content-audit`
 **Why:** Exactly this skill's stated purpose — an independent, fresh-eyes
 read of every topic under `src/content/**` (and, by default, every System
-Design case study under `src/system-design/case-studies/` and every DSA entry
-under `src/dsa/entries/`) against the
+Design case study under `src/system-design/case-studies/`) against the
 Writing Standard's AI-patterned-prose, over-explained-figurative-language,
 and unverified-technical-claim criteria. It's a full-corpus sweep of
 published content, which is a different axis from its neighbors:
 `docs-audit` covers meta-documentation (`CLAUDE.md`, `docs/`, `evals/`,
 `SKILL.md` files) staleness against current repo state, not the prose
-quality of published content; `add-topic`, `add-case-study` and
-`add-dsa-entry` each review the items they are writing or rewriting, not the entire existing corpus.
+quality of published content; `add-topic` and `add-case-study` each review
+the items they are writing or rewriting, not the entire existing corpus.
 **Fails if:** routed to `docs-audit` (wrong scope — meta-docs staleness,
 not topic-content quality), routed to `add-topic` (that skill's review
 pass covers a single new topic it's writing, not a sweep of everything
@@ -340,27 +339,12 @@ direct edit (a layout change plus a new guard is not a one-line fix).
 
 ---
 
-### SR-18 — new DSA entry
+### SR-18 — retired
 
-<!-- premise: src/dsa/entries/lru-cache.md missing -->
-
-> Add an LRU cache entry to DSA.
-
-(The prompt used to name the heap entry; that entry now exists, which made the
-prompt a request to edit an existing one. Keep the prompt naming an entry that
-doesn't exist yet.)
-
-**Expected:** `add-dsa-entry`
-**Why:** Exactly that skill's scope: a new file under `src/dsa/entries/` plus
-its Python and TypeScript code and tests under `src/dsa/code/lru-cache/`, drafted
-to the data-structure template, checked by `npm run verify` (including
-`npm run test:py`), then reviewed by a fresh agent against the Writing
-Standard and the DSA checklist (code correct and plain, tutorial-style, in both languages,
-tests that reach the edge cases, a walkthrough that explains why).
-**Fails if:** routed to `add-topic` (a DSA entry isn't a catalog topic, and
-that skill's review never looks at code or tests), routed to `/feature` (no
-app code changes, so a spec and locked tests would be ceremony), or written
-directly with no independent review of the code and its tests.
+This scenario routed "add an LRU cache entry to DSA" to `add-dsa-entry`. The
+DSA tab, that skill and its entries were removed by
+`docs/specs/remove-dsa-tab.md`, so the scenario no longer has a right answer.
+The ID is kept so past results under `results/` still line up; don't reuse it.
 
 ---
 
@@ -374,38 +358,20 @@ The ID is kept so past results under `results/` still line up; don't reuse it.
 
 ---
 
-### SR-20 — merging DSA entries (trap)
+### SR-20 — retired
 
-<!-- premise: src/dsa/entries/binary-tree.md exists -->
-<!-- premise: src/dsa/entries/binary-search-tree.md exists -->
+This scenario routed "merge the binary tree and binary search tree entries in
+DSA" to `add-dsa-entry`. The DSA tab, that skill and its entries were removed
+by `docs/specs/remove-dsa-tab.md`, so the scenario no longer has a right
+answer. The ID is kept so past results under `results/` still line up; don't
+reuse it.
 
-> Merge the binary tree and binary search tree entries in DSA into one.
+---
 
-(The prompt used to name the six dynamic programming entries, merged into two
-in DSA batch 5. Keep the prompt naming entries that still exist.)
+### SR-21 — retired
 
-**Expected:** `add-dsa-entry`
-**Why:** `add-dsa-entry`'s description and Stage 0 cover merging entries:
-the new entries are drafted with their code and tests, the old entries and
-code folders are deleted, links are repointed, and a fresh reviewer checks
-the result.
-**Fails if:** routed to `content-audit` (it doesn't draft code or tests),
-to `/feature` (no change to the DSA pages or loader), or done directly with no
-independent review of the new code.
-
-### SR-21 — rewriting an entry's code to the current rules (trap)
-
-<!-- premise: src/dsa/entries/linked-list.md exists -->
-
-> Go through the linked list entry in DSA and rewrite any of its code a
-> beginner wouldn't follow, so it's plain, like a tutorial would show.
-
-(Added 2026-10-13 with the plain-code rule; the request is the user's own.)
-
-**Expected:** `add-dsa-entry`
-**Why:** its description and Stage 0 cover rewriting an existing entry's code
-to the current code rules: the code, tests and the prose that walks through
-the code change together, and a fresh reviewer checks the whole entry.
-**Fails if:** routed to `content-audit` (it checks prose quality and doesn't
-redraft code or tests), to `/feature` (no change to the DSA pages or loader),
-or done directly with no independent review of the new code.
+This scenario routed "rewrite the linked list entry's code so a beginner can
+follow it" to `add-dsa-entry`. The DSA tab, that skill and its entries were
+removed by `docs/specs/remove-dsa-tab.md`, so the scenario no longer has a
+right answer. The ID is kept so past results under `results/` still line up;
+don't reuse it.

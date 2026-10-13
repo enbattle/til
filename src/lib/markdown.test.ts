@@ -290,20 +290,24 @@ describe('extractCaseStudyRefs on the markdown parser (dedupe criterion 1)', () 
 });
 
 describe('the rest of src/lib/markdown.mjs (dedupe criterion 1)', () => {
-  it('exports the parser and the diagram and DSA helpers from the one module', () => {
-    for (const name of [
+  // docs/specs/remove-dsa-tab.md, criterion 7: the module exports exactly
+  // these, with the prerequisites parser and its section helpers gone.
+  it('exports exactly the parser, the link and diagram helpers and the word counter', () => {
+    const names = [
       'markdownParser',
       'isDiagramSrc',
       'diagramName',
       'diagramReferences',
-      'dsaPrerequisites',
       'extractTopicRefs',
       'extractCaseStudyRefs',
-    ]) {
+      'proseWordCount',
+    ];
+    for (const name of names) {
       expect(typeof ({ ...markdown } as Record<string, unknown>)[name], name).toBe(
         'function',
       );
     }
+    expect(Object.keys(markdown).sort()).toEqual([...names].sort());
   });
 
   it('finds diagram images, inline and reference-style, but not in code', () => {
@@ -330,18 +334,19 @@ describe('the rest of src/lib/markdown.mjs (dedupe criterion 1)', () => {
   });
 });
 
-// Criterion 3: the three old modules are gone and nothing imports them.
+// Criterion 3: the old modules are gone and nothing imports them. The
+// code-regions module joins them (docs/specs/remove-dsa-tab.md, criterion 7).
 describe('the old link modules are gone (dedupe criterion 3)', () => {
   const ROOT = resolve('.');
-  const OLD = /^(markdown-links|diagram-refs|dsa-prereqs)(\.d)?(\.m?[jt]s)?$/;
+  const OLD = /^(markdown-links|diagram-refs|code-regions)(\.d)?(\.m?[jt]s)?$/;
   const THIS_FILE = 'src/lib/markdown.test.ts';
 
   it.each([
     'src/lib/markdown-links.ts',
     'src/lib/diagram-refs.mjs',
     'src/lib/diagram-refs.d.mts',
-    'src/lib/dsa-prereqs.mjs',
-    'src/lib/dsa-prereqs.d.mts',
+    'src/lib/code-regions.mjs',
+    'src/lib/code-regions.d.mts',
   ])('%s does not exist', (path) => {
     expect(existsSync(join(ROOT, path))).toBe(false);
   });

@@ -104,8 +104,8 @@ describe('parseTopicMeta (criterion 2)', () => {
   );
 
   // docs/specs/content-dedupe.md, criterion 1: topics had no allowed-key check
-  // before; an unknown key now fails at load time, as it does for case studies
-  // and DSA entries.
+  // before; an unknown key now fails at load time, as it does for case
+  // studies.
   it.each(['template', 'tags', 'order', 'kind'])(
     'throws naming the file and the key for an unknown frontmatter field %s',
     (key) => {
@@ -241,7 +241,7 @@ describe('createBodyStore.loadAll (criterion 4)', () => {
 });
 
 // docs/specs/dedupe-app-scripts-tests.md, criterion 4: one loader shape for
-// topics, case studies and DSA entries. `createCollection({ meta, bodies, parse,
+// topics and case studies. `createCollection({ meta, bodies, parse,
 // key })` takes the eager `?meta` glob (path -> frontmatter), the lazy `?raw`
 // glob (path -> loader of the raw file), `parse(path, data)` and `key(path)`
 // (the item's key, or undefined for a path that isn't one). It returns

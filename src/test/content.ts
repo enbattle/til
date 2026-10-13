@@ -20,12 +20,6 @@ export const RAW_CASE_STUDIES = import.meta.glob('/src/system-design/case-studie
   eager: true,
 }) as Record<string, string>;
 
-export const RAW_DSA_ENTRIES = import.meta.glob('/src/dsa/entries/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
 function rawAt(files: Record<string, string>, path: string, what: string): string {
   const raw = files[path];
   if (raw === undefined) throw new Error(`no raw file for ${what}`);
@@ -46,19 +40,9 @@ export function rawCaseStudy(slug: string): string {
   );
 }
 
-/** The raw file (frontmatter included) of the DSA entry `slug`. */
-export function rawDsaEntry(slug: string): string {
-  return rawAt(RAW_DSA_ENTRIES, `/src/dsa/entries/${slug}.md`, `DSA entry ${slug}`);
-}
-
 /** The case study's markdown body, frontmatter stripped. */
 export function caseStudyBody(slug: string): string {
   return parseFrontmatter(rawCaseStudy(slug)).content;
-}
-
-/** The DSA entry's markdown body, frontmatter stripped. */
-export function dsaEntryBody(slug: string): string {
-  return parseFrontmatter(rawDsaEntry(slug)).content;
 }
 
 /** True when the app's search would match `candidate` against some entry's
@@ -84,10 +68,10 @@ export function bodyOnlyWord(section: string, slug: string): string {
   return bodyOnlyWordAt(`/src/content/${section}/${slug}.md`);
 }
 
-/** `bodyOnlyWord` for any published file (topic, case study or DSA entry),
- * named by its glob path, e.g. `/src/dsa/entries/binary-search.md`. */
+/** `bodyOnlyWord` for any published file (topic or case study), named by its
+ * glob path, e.g. `/src/system-design/case-studies/url-shortener.md`. */
 export function bodyOnlyWordAt(path: string): string {
-  const files = { ...RAW_TOPICS, ...RAW_CASE_STUDIES, ...RAW_DSA_ENTRIES };
+  const files = { ...RAW_TOPICS, ...RAW_CASE_STUDIES };
   const { data, content } = parseFrontmatter(rawAt(files, path, path));
   const frontmatter = Object.values(data).join(' ').toLowerCase();
   const all = Object.entries(files);

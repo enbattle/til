@@ -26,7 +26,7 @@ const AUDIT_DUE_AFTER = 10;
 
 const GIT_SHIP_COMMAND = /(^|[;&|]|\s)git\s+(commit|push)(\s|$)/;
 const GIT_PUSH = /(^|[;&|]|\s)git\s+push(\s|$)/;
-const CONTENT_PATH = /^src\/(content|system-design\/case-studies|dsa\/(entries|code))\//;
+const CONTENT_PATH = /^src\/(content|system-design\/case-studies)\//;
 
 function git(cwd, args) {
   return execFileSync('git', args, {

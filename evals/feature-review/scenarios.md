@@ -9,7 +9,8 @@ the general eval philosophy.
 
 The planted defects are the kind a hurried implementer ships and a
 rubber-stamp review waves through: a subtle correctness bug, a quiet
-violation of `docs/NON_NEGOTIABLES.md`, a React stale closure. **When
+violation of `docs/NON_NEGOTIABLES.md`, an event a shared hook still
+handles. **When
 Stage 4's reviewer instruction is edited, rotate at least one scenario's
 planted defect** (same file, different bug), so the instruction can't drift
 toward the specific bugs listed here.
@@ -172,7 +173,7 @@ checks every page's external links.
 ```diff
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
-@@ -79,6 +79,13 @@ export function TopicPage() {
+@@ -73,6 +73,13 @@ export function TopicPage() {
                prev={prev && { to: prev.path, title: prev.title }}
                next={next && { to: next.path, title: next.title }}
              />
@@ -196,69 +197,104 @@ referrer the rule is about.
 
 ---
 
-### FR-03 — React stale closure: the first Escape always closes
+### FR-03 — an Escape the modal hook still handles
 
-**Planted defect:** the Escape handler reads the query from `queryRef`, a
-ref set to the first render's query (`''`) and never updated, so the first
-Escape always closes the dialog, failing criterion 1. Lint can't see it:
-`exhaustive-deps` doesn't track a ref's `.current`.
+<!-- premise: src/hooks/useFocusTrap.ts contains "if (event.key === 'Escape') onClose();" -->
+<!-- premise: src/hooks/useFocusTrap.ts contains "window.addEventListener('keydown', onKeyDown);" -->
+<!-- premise: src/components/SearchDialog.tsx contains "useModal(panelRef, { onClose, initialFocusRef: inputRef });" -->
+
+**Planted defect:** the input's new `onKeyDown` clears a non-empty query on
+Escape and calls `event.preventDefault()`, as if that kept the Escape from
+closing the dialog. It doesn't: `useModal` (`src/hooks/useFocusTrap.ts`)
+closes on Escape from its own `keydown` listener on `window`, which the
+event still bubbles to and which never checks `defaultPrevented`. So the
+first Escape clears the query and closes the dialog in the same keystroke,
+failing criterion 1. The cause is one call away from the diff, in a hook it
+doesn't touch. The diff's own test asserts the input is empty after the first
+Escape (it is: the test's `onClose` is a mock, so the dialog stays mounted)
+and only that `onClose` was called at some point, so it passes; no existing
+test types a query before pressing Escape. Typecheck and lint can't see it.
 
 History: the first FR-03 left `query` out of the effect's dependency list.
 Once `npm run lint` ran with `--deny-warnings` (2026-10-01), `exhaustive-deps`
-caught that mechanically, so it was rotated to this ref, which lint can't
-check. On 2026-10-13 the dialog's own Escape listener moved into the shared
-`useModal` hook, so the handler became the `onClose` the diff passes it.
+caught that mechanically, so it was rotated to a stale ref (`queryRef`, set
+to the first render's `''` and never updated), which lint can't check; on
+2026-10-13 that handler became the `onClose` passed to `useModal`. Rotated
+again 2026-10-13, to this defect in the same file, because
+`docs/specs/remove-dsa-tab.md` edited Stage 4's reviewer and triage
+instructions and the stale ref had gone longest without rotation. It was
+checked with the diff applied to the `feat/remove-dsa-tab` working tree:
+`tsc -b`, `oxlint --deny-warnings`, prettier, `check:colors`,
+`check:tokens`, `check:npm-refs`, `check:raw-html` and the whole vitest suite
+pass (the diff's test included). A probe found `onClose` called once after
+typing "cache" and pressing Escape, and in the app (Ctrl+K, type, Escape) the
+dialog gone; with `stopPropagation()` in place of `preventDefault()`, the
+same probe kept the dialog open.
 
 **Spec:**
 
-> In the search dialog, Escape with a non-empty query clears the query and
-> keeps the dialog open; Escape with an empty query closes it. Acceptance
-> criteria: (1) Type "cache", press Escape: the input is empty and the
-> dialog is still open. (2) Press Escape again: the dialog closes. (3)
-> Escape on an empty query closes the dialog immediately.
+> In the search box, Escape with a non-empty query clears the query and keeps
+> the dialog open; otherwise Escape closes the dialog as it does today.
+> Acceptance criteria: (1) Type "cache", press Escape: the input is empty and
+> the dialog is still open. (2) Press Escape again: the dialog closes. (3)
+> Escape on an empty query, or with focus on a result, closes the dialog
+> immediately.
 
 **Diff:**
 
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -1,4 +1,4 @@
--import { useEffect, useRef, useState } from 'react';
-+import { useCallback, useEffect, useRef, useState } from 'react';
- import { useNavigate } from 'react-router-dom';
- import { ensureFullTextSearch, isFullTextSearchReady, searchContent } from '@/lib/search';
- import { useModal } from '@/hooks/useFocusTrap';
-@@ -11,6 +11,8 @@ interface SearchDialogProps {
-  * time means the query naturally starts empty, with no reset-on-open effect. */
- export function SearchDialog({ onClose }: SearchDialogProps) {
-   const [query, setQuery] = useState('');
-+  // Read by the Escape handler, which is created once.
-+  const queryRef = useRef(query);
-   const inputRef = useRef<HTMLInputElement>(null);
-   const panelRef = useRef<HTMLDivElement>(null);
-   const navigate = useNavigate();
-@@ -26,7 +28,15 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -62,6 +62,13 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+           value={query}
+           onChange={(event) => setQuery(event.target.value)}
+           onKeyDown={(event) => {
++            // Escape with a query only clears it; on an empty query, useModal's
++            // Escape closes the dialog as before.
++            if (event.key === 'Escape' && query) {
++              event.preventDefault();
++              setQuery('');
++              return;
++            }
+             // Enter opens the first result, as a search box is expected to,
+             // except while an input method (IME) is composing: that Enter
+             // commits the composed text. Some browsers flag it only with
+--- a/src/components/SearchDialog.test.tsx
++++ b/src/components/SearchDialog.test.tsx
+@@ -121,6 +121,17 @@ describe('SearchDialog', () => {
+     expect(onClose).toHaveBeenCalledTimes(1);
+   });
 
-   // Focus starts on the input; Tab stays inside, Escape closes, and focus
-   // returns to the opener on close.
--  useModal(panelRef, { onClose, initialFocusRef: inputRef });
-+  // Escape clears a non-empty query first, and closes only an empty one.
-+  const onEscape = useCallback(() => {
-+    if (queryRef.current) {
-+      setQuery('');
-+      return;
-+    }
-+    onClose();
-+  }, [onClose]);
-+  useModal(panelRef, { onClose: onEscape, initialFocusRef: inputRef });
-
-   useEffect(() => {
-     let active = true;
++  it('clears a non-empty query on the first Escape and closes on the second', async () => {
++    const user = userEvent.setup();
++    const onClose = renderDialog();
++    const input = screen.getByPlaceholderText(/search topics/i);
++    await user.type(input, 'cache');
++    await user.keyboard('{Escape}');
++    expect(input).toHaveValue('');
++    await user.keyboard('{Escape}');
++    expect(onClose).toHaveBeenCalled();
++  });
++
+   it('closes when clicking the backdrop', async () => {
+     const user = userEvent.setup();
+     const onClose = renderDialog();
 ```
 
-**Expected finding:** the stale ref: `queryRef.current` is never updated
-after the first render, so the handler always sees `''` and the first Escape
-closes the dialog.
+**Expected finding:** criterion 1 fails: `preventDefault()` doesn't stop
+`useModal`'s Escape listener on `window`, which runs for the same keydown
+and doesn't check `defaultPrevented`, so the first Escape on a non-empty
+query clears it and closes the dialog. Either naming that listener (or "the
+event still reaches `useModal`'s handler") or the fix (`stopPropagation()`,
+or moving the clear-first logic into the `onClose` passed to `useModal`)
+counts. It counts more if it notes that the test can't see it because it
+asserts only `toHaveBeenCalled()` after the second Escape, but that alone,
+without the cause, is AMBIGUOUS. Medium severity or higher, since the
+feature's main criterion never holds.
+
+**Fails if:** the double handling is missed, rated low, or labelled
+theoretical; or the review asserts that `preventDefault()` stops the modal's
+handler.
 
 ---
 
@@ -397,7 +433,7 @@ panel and height hid focused elements, fixed by `docs/specs/focus-not-obscured.m
 ```diff
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
-@@ -35,7 +35,13 @@ export function TopicPage() {
+@@ -32,7 +32,13 @@ export function TopicPage() {
        <PageHeader
          back={{ to: `/${section.slug}`, label: section.label }}
          title={topic.title}
@@ -591,7 +627,7 @@ a spec, a diff and one review finding (procedure in the skill's Stage 1).
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -208,3 +208,9 @@ export function getTopic(section: string, slug: string): Topic | undefined {
+@@ -230,3 +230,9 @@ export function getTopic(section: string, slug: string): Topic | undefined {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -641,7 +677,7 @@ theoretical, Known limitation or Reject.
 
  describe('content loader', () => {
    it('finds a known topic by section and slug', () => {
-@@ -68,3 +69,10 @@ describe('content loader', () => {
+@@ -89,3 +90,10 @@ describe('Topic.path', () => {
      }
    });
  });

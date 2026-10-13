@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { useModal } from '@/hooks/useFocusTrap';
 import { tabForPath } from '@/lib/tabs';
 import { CaseStudyNav } from './CaseStudyNav';
-import { DsaNav } from './DsaNav';
 import { SectionNav } from './SectionNav';
 
 interface MobileNavProps {
@@ -13,8 +12,8 @@ interface MobileNavProps {
 /**
  * Narrow-viewport nav overlay: fixed backdrop + a panel sliding in from the
  * left edge, containing the same nav tree the persistent desktop sidebar
- * uses (`CaseStudyNav` on System Design routes, `DsaNav` on DSA routes,
- * `SectionNav` everywhere else).
+ * uses (`CaseStudyNav` on System Design routes, `SectionNav` everywhere
+ * else).
  * A modal like `SearchDialog` (`useModal`: focus moves to the first link on
  * open, Tab stays inside, Escape closes, focus returns to the Menu button),
  * opening from the left edge instead of a centered panel.
@@ -40,8 +39,6 @@ export function MobileNav({ onClose }: MobileNavProps) {
       >
         {tab === 'system-design' ? (
           <CaseStudyNav onNavigate={onClose} />
-        ) : tab === 'dsa' ? (
-          <DsaNav onNavigate={onClose} />
         ) : (
           <SectionNav onNavigate={onClose} />
         )}

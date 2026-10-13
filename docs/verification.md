@@ -43,7 +43,7 @@ It decodes escapes first, so `\u0069nnerHTML` fails too.
 Each check script named here exports its logic as a function that takes the root it
 checks (default: the repository, `ROOT`) and returns its problems as strings
 (`diagramProblems`, `rawHtmlProblems`, `bundleProblems`, `hexColorProblems`,
-`checkEvalPremises`; `pipelineLogProblems` takes the log's text), and runs its
+`npmRefProblems`, `checkEvalPremises`; `pipelineLogProblems` takes the log's text), and runs its
 command-line part only under `if (isMain(import.meta.url))` (`scripts/lib.mjs`).
 Its tests call the function in-process on throwaway fixtures
 (`src/test/guard-helpers.mjs`), with one spawned run of the script on the real
@@ -51,13 +51,15 @@ repository. A new check follows the same shape, with one test file per script;
 no environment variable or argument points one of these at another root.
 Older checks keep their spawned tests: `check:claude-md` (pointed at a
 planted root through `CHECK_CLAUDE_MD_ROOT`), `check:contrast` and
-`check:tokens`. `check:npm-refs` has no test of its own.
+`check:tokens`.
 
 `check:tokens` proves `docs/DESIGN.md`'s token table matches the `--color-*`
 tokens in `src/index.css`, in both directions and by value; `check:contrast`
 proves text clears WCAG AA (4.5:1) on the surfaces it sits on, in both themes;
 `check:npm-refs` proves every `npm run <name>` a markdown file names is a
-script in `package.json`; `check:pipeline-log` proves every row of
+script in `package.json`, skipping the records (every file under `docs/specs/`
+but its `README.md`, and the table rows of `docs/pipeline-log.md`), which may
+name a script since removed; `check:pipeline-log` proves every row of
 `docs/pipeline-log.md` has its header's eight columns in their format and
 follows the retro rules listed in `scripts/check-pipeline-log.mjs`'s header.
 
@@ -77,22 +79,9 @@ applies ([evals/README.md](../evals/README.md#running-any-eval); details in
 `scripts/check-eval-premises.mjs`'s header).
 
 `npm run links:inbound -- <section>/<slug>` is a tool, not a check: it lists
-every link to a topic from topics, case studies and DSA entries (old paths in
+every link to a topic from topics and case studies (old paths in
 `REDIRECTS` included), with the anchor and the sentence around each.
 `add-topic`'s rewrite mode runs it before drafting.
-
-`npm run test:py` (`scripts/test-python.mjs`) runs pytest over the DSA
-entries' Python code in `src/dsa/code`, and fails with install instructions
-when there's no suitable Python or no pytest. [docs/dsa.md](dsa.md) has how it
-finds Python, what to install and how it pins pytest's config and import
-path; CI and the deploy install both with `actions/setup-python` before
-`verify`. It runs with bytecode and pytest's cache off, so it leaves no `__pycache__` or
-`.pytest_cache` behind. `test:run` needs the same Python and pytest, since
-`scripts/python-wiring.test.mjs` runs the real runner on scratch copies of the
-tree (one with a planted failing test). The TypeScript half of each entry's
-code is tested by vitest, in `test:run`, and `src/dsa/dsa-code-chunks.test.ts`
-checks that the code an entry shows is exactly its tested code files and that
-each code folder holds only its four files.
 
 `npm run check:test-lock` and `npm run review:diff` are not part of `verify`
 or CI: `/feature` uses them inside a run (`-- --snapshot`, then
@@ -100,14 +89,12 @@ or CI: `/feature` uses them inside a run (`-- --snapshot`, then
 including new untracked files. `check:test-lock` proves none of these changed
 after Stage 2 (a config part the snapshot lacks counts as `added`):
 
-- every test file, vitest or pytest, including `conftest.py` and pytest's
-  config files (`.pytest.ini` and `.pytest.toml` among them), everything under
-  `src/test/` (the shared setup, render and guard-test helpers) and every vitest snapshot
+- every test file, everything under `src/test/` (the shared setup, render and guard-test helpers) and every vitest snapshot
   (`__snapshots__/*.snap`);
 - the test runners' config: any `vitest.config.*` or `vitest.workspace.*`
   file, the `test` block of `vite.config.ts`, the `test*` scripts, the
   `pre`/`post` scripts npm runs around them and around `verify` (`pretest:run`,
-  `preverify`), and `scripts/test-python.mjs`;
+  `preverify`);
 - the gate itself: the `check:test-lock` script string, the whole `verify`
   script string (one hash, so any edit to it, including a new check step,
   trips the lock; a new `verify` step belongs to the Stage 2 test-writer), and
@@ -121,8 +108,7 @@ after Stage 2 (a config part the snapshot lacks counts as `added`):
 The lock guards against a stage's slip, not a deliberate evasion: it doesn't
 read global ignore files or `core.excludesFile`, and it doesn't look inside
 nested git repositories. Agent worktrees under `.claude/worktrees/` are
-ignored by `.gitignore` (vitest excludes them too, and pytest collects only
-`src/dsa/code`). Claude Code's runtime can append entries to
+ignored by `.gitignore` (vitest excludes them too). Claude Code's runtime can append entries to
 `.git/info/exclude` itself (a permission grant can add one), which trips
 `--verify` with nothing weakened; surface that failure to the user like any
 other.
@@ -132,8 +118,7 @@ exports and dependencies), not part of `verify` or CI and not a dependency
 (npx fetches it); run it after removing or moving code, and expect no output.
 `knip.json` holds its verified false positives: `.claude/hooks/*.js` are entry
 points (Claude Code runs them from `.claude/settings.json`, which knip doesn't
-read), `src/lib/markdown.d.mts` and `src/lib/code-regions.d.mts` are used by tsc
-rather than imported, and
+read), `src/lib/markdown.d.mts` is used by tsc rather than imported, and
 `d2` is an external binary, not an npm package. Why it isn't a CI gate is in
 [DEFERRED_PRACTICES.md](DEFERRED_PRACTICES.md).
 
@@ -158,11 +143,9 @@ not part of `verify`, and CI never runs it.
 and a topic; open the System Design tab and a case study, follow an "On this
 page" link and open a diagram full size, and check that a topic the case study links
 (e.g. `/systems-and-infrastructure/caching`) shows its "Used in these case
-studies:" back-link; toggle the theme and check the diagrams switch with it;
-open the DSA tab and an entry, switch a code block to TypeScript and reload
-(every block should stay on TypeScript); open search (`Ctrl`/`Cmd`+K) and
-confirm a topic, a case study and a DSA entry are each findable by title and
-by a body phrase.
+studies:" back-link; toggle the theme and check the diagrams switch with it; open search
+(`Ctrl`/`Cmd`+K) and confirm a topic and a case study are each findable by
+title and by a body phrase.
 
 `npm run size` checks the built JS chunks against the budgets in
 `package.json`'s `size-limit` field — a change that pulls in a heavy new
@@ -172,18 +155,17 @@ chunk's limit deliberately rather than letting it drift unnoticed. The limits
 live in `package.json`, and the commit history records each raise with its
 measured numbers.
 
-The main chunk carries no content bodies: each topic, case-study and DSA entry body is
+The main chunk carries no content bodies: each topic and case-study body is
 its own chunk, loaded on demand, and `npm run size` prints the main chunk's
 current size against its limit. Adding content barely touches it: what reaches
 it is small build-time data, not text: a case study's topic links (the
-`?links` query), a DSA entry's prerequisite list (`?dsaPrereqs`), and one word
-count per topic, case study and DSA entry (`?words`, for the "N min read"
-label).
+`?links` query) and one word count per topic and case study (`?words`, for
+the "N min read" label).
 What still grows it is app code.
 `npm run check:bundle` guards the split itself: after a build it fails if a
-topic's, case study's or DSA entry's body text is in the main chunk, or in no
+topic's or case study's body text is in the main chunk, or in no
 chunk at all. The markdown chunk's entry points at `MarkdownRenderer-*.js`
-because `TopicPage`, `CaseStudyPage` and `DsaEntryPage` share it; the DSA code
-tabs (`CodeTabs`) and the pages' shared header and prev/next nav are in it too.
+because `TopicPage` and `CaseStudyPage` share it; the pages' shared header and
+prev/next nav are in it too.
 Rollup would name that shared chunk after whichever of its modules runs last,
 so `vite.config.ts` (`chunkFileNames`) names it after `MarkdownRenderer`.

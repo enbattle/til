@@ -19,9 +19,9 @@ type BodyState =
  * promise inside a synchronous test `render` never gets retried.
  *
  * `load` is called once, on mount: key this component on the page's identity
- * (topic, case study or DSA entry) so moving to another page starts a fresh
- * load instead of showing the previous body until the new one arrives. Used by
- * `TopicPage`, `CaseStudyPage` and `DsaEntryPage`.
+ * (topic or case study) so moving to another page starts a fresh load instead
+ * of showing the previous body until the new one arrives. Used by `TopicPage`
+ * and `CaseStudyPage`.
  *
  * Opening a page at `#<heading-id>` (a shared link to a section) can't rely on
  * the browser's own jump: the body isn't there yet when it tries. So once the

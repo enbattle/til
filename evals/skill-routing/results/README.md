@@ -55,17 +55,31 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-09 | SR-07 narrowed to the cards (topic-read-time built the topic page's label)                                                                                   | 1    | 0    | 0         | SR-07 only; still routes to `/feature`.                      |
 | 2026-10-13 | Cleanup #117–#124 and docs dedupe: CLAUDE.md router trim, eval skills cut to their own parts, feature/add-dsa-entry/content-audit/add-topic/docs-audit edits | 18   | 0    | 0         | All live scenarios; no regression.                           |
 | 2026-10-13 | add-dsa-entry: rewrite mode in description and Stage 0, plain-code checklist item; SR-21 added                                                               | 5    | 0    | 0         | SR-11, 16, 18, 20, 21.                                       |
+| 2026-10-13 | DSA tab removed (docs/specs/remove-dsa-tab.md), all scenarios                                                                                                | 17   | 0    | 0         | Full run; SR-18/20/21 retired.                               |
 
-## Latest run: 2026-10-13, add-dsa-entry rewrite mode
+## Latest run: 2026-10-13, DSA tab removed
 
-- **Run by:** Claude (the orchestrating session), with 5 fresh `general-purpose` agents.
-- **Trigger:** `add-dsa-entry`'s description and Stage 0 now cover rewriting an existing entry's code to the current code rules; its checklist item (2) asks for plain, tutorial-style code. SR-21 added for the rewrite request (the user's own words).
-- **Scope:** the scenarios whose expected or wrong answers name `add-dsa-entry` or `content-audit`: SR-11, 16, 18, 20, plus the new SR-21.
+- **Run by:** Claude (the orchestrating session), with 17 fresh `general-purpose` agents.
+- **Trigger:** `docs/specs/remove-dsa-tab.md` deleted the `add-dsa-entry` skill and edited CLAUDE.md, the add-topic, content-audit, content-review-eval, docs-audit, feature and skill-routing-eval skills, and the `nudge-sdlc.js` reminder. SR-18, SR-20 and SR-21 are retired.
+- **Scope:** every live scenario (SR-01 to SR-12, SR-14 to SR-17), since CLAUDE.md's framing changed.
 
-| ID    | Routing decision           | Reasoning (one line)                                              | Grade |
-| ----- | -------------------------- | ----------------------------------------------------------------- | ----- |
-| SR-11 | `content-audit`            | Corpus-wide sweep of published prose.                             | PASS  |
-| SR-16 | `content-audit` (one file) | Quality check of one published case study.                        | PASS  |
-| SR-18 | `add-dsa-entry`            | New entry; none exists.                                           | PASS  |
-| SR-20 | `add-dsa-entry`            | Merges are add-dsa-entry's; content-audit hands them back.        | PASS  |
-| SR-21 | `add-dsa-entry`            | The new rewrite clause; not content-audit (doesn't redraft code). | PASS  |
+| ID    | Routing decision                        | Reasoning (one line)                                                     | Grade |
+| ----- | --------------------------------------- | ------------------------------------------------------------------------ | ----- |
+| SR-01 | `/feature`                              | Paging the search dialog is new UI behaviour with design choices.        | PASS  |
+| SR-02 | `add-topic`                             | New topic in an existing section.                                        | PASS  |
+| SR-03 | Direct                                  | A typo in a meta-doc; CLAUDE.md's small-change carve-out.                | PASS  |
+| SR-04 | Direct (new-section steps), `add-topic` | add-topic excludes new sections; the starter topic then goes through it. | PASS  |
+| SR-05 | Triage first (`/feature` Stage 0)       | Reproduce and find the cause, then route by what's found.                | PASS  |
+| SR-06 | Direct                                  | A one-clause factual addition to a published topic.                      | PASS  |
+| SR-07 | `/feature`                              | Reading time on cards is multi-file UI work.                             | PASS  |
+| SR-08 | Direct, then `npm run verify`           | CLAUDE.md: a dependency update is a direct change.                       | PASS  |
+| SR-09 | `docs-audit`                            | Staleness of meta-docs.                                                  | PASS  |
+| SR-10 | `skill-routing-eval`                    | Asked by name.                                                           | PASS  |
+| SR-11 | `content-audit`                         | Corpus-wide sweep of published prose.                                    | PASS  |
+| SR-12 | `content-review-eval`                   | Does the review still catch a planted violation.                         | PASS  |
+| SR-14 | `feature-review-eval`                   | Does the reviewer still catch planted defects.                           | PASS  |
+| SR-15 | `add-case-study`                        | New case study with its diagram.                                         | PASS  |
+| SR-16 | `content-audit` (one file)              | Quality check of one published case study.                               | PASS  |
+| SR-17 | `/feature`                              | Case-study page UI and diagram tooling are app code.                     | PASS  |
+
+No agent mentioned `add-dsa-entry` or DSA, and none hesitated over the shorter option list.

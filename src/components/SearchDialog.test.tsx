@@ -1,7 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { getDsaEntry } from '@/lib/dsa';
 import { ensureFullTextSearch, searchContent } from '@/lib/search';
 import { getCaseStudy } from '@/lib/system-design';
 import { escapeRegExp, renderDialog } from '@/test/render';
@@ -47,31 +46,32 @@ describe('SearchDialog', () => {
     expect(result).toHaveTextContent(caseStudy.summary);
   });
 
-  // docs/specs/dsa-tab.md, criterion 14 (was SearchDialog.dsa.test.tsx).
-  it('labels a DSA result "DSA", with its title and summary', async () => {
+  it('navigates to the case study and closes when its result is chosen', async () => {
     const user = userEvent.setup();
-    const entry = getDsaEntry('binary-search')!;
-    expect(entry).toBeDefined();
+    const caseStudy = getCaseStudy('url-shortener')!;
+    const onClose = renderDialog();
+    await user.click(screen.getByPlaceholderText(/search topics/i));
+    await user.paste(caseStudy.title);
+    await user.click(await findResult(caseStudy.summary));
+    expect(onClose).toHaveBeenCalled();
+    expect(screen.getByTestId('location-display')).toHaveTextContent(caseStudy.path);
+  });
+
+  // docs/specs/remove-dsa-tab.md, criterion 3: search indexes only topics and
+  // case studies, so a query that used to match DSA entries shows none.
+  it('shows only topic and case-study results for "binary search"', async () => {
+    const user = userEvent.setup();
+    await ensureFullTextSearch();
+    const expected = searchContent('binary search');
     renderDialog();
     await user.click(screen.getByPlaceholderText(/search topics/i));
     await user.paste('binary search');
-    const result = await findResult(entry.summary);
-    expect(result).toHaveTextContent('DSA');
-    expect(result).toHaveTextContent(entry.summary);
-    expect(result).not.toHaveTextContent('System Design');
-  });
-
-  it('navigates to /dsa/binary-search and closes when the DSA result is chosen', async () => {
-    const user = userEvent.setup();
-    const entry = getDsaEntry('binary-search')!;
-    const onClose = renderDialog();
-    await user.click(screen.getByPlaceholderText(/search topics/i));
-    await user.paste('binary search');
-    await user.click(await findResult(entry.summary));
-    expect(onClose).toHaveBeenCalled();
-    expect(screen.getByTestId('location-display')).toHaveTextContent(
-      '/dsa/binary-search',
-    );
+    const items = await waitFor(() => {
+      const found = screen.getAllByRole('listitem');
+      expect(found).toHaveLength(Math.max(expected.length, 1));
+      return found;
+    });
+    for (const li of items) expect(li).not.toHaveTextContent(/\bDSA\b/);
   });
 
   // docs/specs/content-dedupe.md, criterion 6: the dialog renders the index's

@@ -14,13 +14,6 @@ declare module '*.md?links' {
   export default links;
 }
 
-// The DSA entry slugs linked under a DSA entry's `## Prerequisites` heading,
-// in order, also produced by the `markdownMeta` plugin.
-declare module '*.md?dsaPrereqs' {
-  const prereqs: string[];
-  export default prereqs;
-}
-
 // The words of prose in a markdown file's body (code blocks excluded), counted
 // by `proseWordCount`, also produced by the `markdownMeta` plugin.
 declare module '*.md?words' {
