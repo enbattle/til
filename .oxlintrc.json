@@ -4,6 +4,12 @@
   "ignorePatterns": ["dist", ".claude/worktrees"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "react/no-danger": "error"
   }
 }

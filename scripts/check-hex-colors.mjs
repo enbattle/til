@@ -6,48 +6,45 @@
 // documented convention into a hard check" reasoning as `npm run size`.
 import { readFileSync } from 'node:fs';
 import { join, sep } from 'node:path';
-import { listFiles, ROOT } from './lib.mjs';
+import { isMain, listFiles, ROOT } from './lib.mjs';
 
-const SRC = join(ROOT, 'src');
-
-// Token definitions legitimately live here; everything else under src/ is
-// app code that should reference a token, not a literal.
-const EXCLUDED_FILES = new Set([join(SRC, 'index.css')]);
-// Published prose, not app code — a topic's body text isn't held to this.
-const EXCLUDED_DIR = join(SRC, 'content') + sep;
 // `.d2` diagram sources aren't scanned here: check:diagrams already rejects a
 // hex color (or any color style key) in them, where `#` also starts comments.
 // `.mjs` covers src/lib/markdown.mjs, which ships to the browser.
 const SCANNED_EXTENSIONS = ['.ts', '.tsx', '.mjs', '.css'];
 const HEX_COLOR = /#[0-9a-fA-F]{3,8}\b/g;
 
-const files = listFiles({ under: 'src', ext: SCANNED_EXTENSIONS }).filter(
-  (file) => !EXCLUDED_FILES.has(file) && !file.startsWith(EXCLUDED_DIR),
-);
-
-const violations = [];
-for (const file of files) {
-  const content = readFileSync(file, 'utf8');
-  const lines = content.split('\n');
-  lines.forEach((line, i) => {
-    const matches = line.match(HEX_COLOR);
-    if (matches) {
-      violations.push({ file, line: i + 1, matches });
-    }
-  });
-}
-
-if (violations.length > 0) {
-  console.error(
-    'Raw hex color(s) found outside src/index.css — use a CSS custom property token instead (see docs/DESIGN.md):\n',
-  );
-  for (const { file, line, matches } of violations) {
-    console.error(`  ${file}:${line} — ${matches.join(', ')}`);
+/** Each raw hex color in app code under `root`'s src/, as `file:line — colors`. */
+export function hexColorProblems(root = ROOT) {
+  const src = join(root, 'src');
+  // Token definitions legitimately live in src/index.css; published prose
+  // under src/content/ isn't app code.
+  const excludedFile = join(src, 'index.css');
+  const excludedDir = join(src, 'content') + sep;
+  const problems = [];
+  for (const file of listFiles({ root, under: 'src', ext: SCANNED_EXTENSIONS })) {
+    if (file === excludedFile || file.startsWith(excludedDir)) continue;
+    readFileSync(file, 'utf8')
+      .split('\n')
+      .forEach((line, i) => {
+        const matches = line.match(HEX_COLOR);
+        if (matches) problems.push(`${file}:${i + 1} — ${matches.join(', ')}`);
+      });
   }
-  console.error(
-    '\nIf this is a legitimate new token, add it to src/index.css and reference the token, not the literal.',
-  );
-  process.exit(1);
+  return problems;
 }
 
-console.log('No raw hex colors found outside src/index.css.');
+if (isMain(import.meta.url)) {
+  const problems = hexColorProblems();
+  if (problems.length > 0) {
+    console.error(
+      'Raw hex color(s) found outside src/index.css — use a CSS custom property token instead (see docs/DESIGN.md):\n',
+    );
+    for (const problem of problems) console.error(`  ${problem}`);
+    console.error(
+      '\nIf this is a legitimate new token, add it to src/index.css and reference the token, not the literal.',
+    );
+    process.exit(1);
+  }
+  console.log('No raw hex colors found outside src/index.css.');
+}

@@ -186,7 +186,9 @@ everything it locks). The lock lists files through git, so a file inside an igno
 `src/dsa/code` (a `coverage/conftest.py`, say) is invisible to it; the
 allowlist test is what rejects that one. Outside `src/dsa/code`, pytest loads
 `conftest.py` only from the fixed folders above the code tree, none of them
-ignored, and ignoring one would mean editing a locked ignore rule.
+ignored, and ignoring one would mean editing a locked ignore rule (a
+`.gitignore` or `.git/info/exclude`; the lock doesn't read global ignore
+files, since it guards against a slip, not evasion).
 
 ## Prerequisites and order
 

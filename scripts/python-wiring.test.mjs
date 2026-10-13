@@ -1,7 +1,10 @@
 // @vitest-environment node
-// docs/specs/dsa-tab.md, criteria 12 and 15: pytest runs as part of
-// `npm run verify` (and so in CI and the deploy), from a pinned
-// requirements-dev.txt, on a Python that the workflows set up.
+// docs/specs/dsa-tab.md, criteria 12 and 15, as slimmed by
+// docs/specs/in-process-checks.md (criterion 8): pytest runs as part of
+// `npm run verify` through scripts/test-python.mjs, which passes a clean tree,
+// fails a failing test, leaves nothing behind, and says how to install
+// Python 3.11+ when there is none. The config files' own text isn't asserted
+// here; a wrong pin or path fails loudly when pytest runs.
 import { spawn, spawnSync } from 'node:child_process';
 import {
   copyFileSync,
@@ -37,40 +40,6 @@ describe('npm scripts', () => {
   });
 });
 
-describe('requirements-dev.txt', () => {
-  it('pins pytest to an exact version', () => {
-    expect(read('requirements-dev.txt')).toMatch(/^pytest==\d+\.\d+(\.\d+)?\s*$/m);
-  });
-});
-
-describe('pytest.ini', () => {
-  it('points pytest at src/dsa/code', () => {
-    expect(read('pytest.ini')).toMatch(/^\s*testpaths\s*=\s*src\/dsa\/code\s*$/m);
-  });
-});
-
-describe.each(['.github/workflows/ci.yml', '.github/workflows/deploy.yml'])(
-  '%s',
-  (workflow) => {
-    it('sets up Python 3.12 with a SHA-pinned setup-python, then installs requirements-dev.txt, before verify', () => {
-      const text = read(workflow);
-      const setup = text.search(/uses:\s*actions\/setup-python@[0-9a-f]{40}\b/);
-      const install = text.search(/pip install -r requirements-dev\.txt/);
-      const verify = text.search(/run:\s*npm run verify/);
-      expect(setup, 'setup-python pinned by SHA').toBeGreaterThanOrEqual(0);
-      expect(install, 'pip install -r requirements-dev.txt').toBeGreaterThan(setup);
-      expect(verify).toBeGreaterThan(install);
-      expect(text.slice(setup, install)).toMatch(/python-version:\s*['"]?3\.12['"]?/);
-    });
-  },
-);
-
-describe('dependabot', () => {
-  it('watches the pip ecosystem', () => {
-    expect(read('.github/dependabot.yml')).toMatch(/package-ecosystem:\s*pip\b/);
-  });
-});
-
 describe('scripts/test-python.mjs', () => {
   it('fails with install instructions when no Python is on the PATH', () => {
     const empty = mkdtempSync(join(tmpdir(), 'til-no-python-'));
@@ -99,13 +68,10 @@ describe('scripts/test-python.mjs', () => {
     expect(text).not.toMatch(/3\.10/);
   });
 
-  // docs/specs/dsa-tab.md, criterion 13: nothing outside the locked files can
-  // make the runner pass a failing test. Each case runs the real runner in a
-  // throwaway copy of the repository whose only test fails, plants one way
-  // to hijack pytest, and asserts the run still fails. The cases run
-  // concurrently (each owns its own copy), since each one waits on a pytest
-  // run.
-  describe.concurrent('against a failing test', () => {
+  // Each case runs the real runner in a throwaway copy of the repository
+  // holding one test. The cases run concurrently (each owns its own copy),
+  // since each one waits on a pytest run.
+  describe.concurrent('against a scratch tree', () => {
     function copy(fixed = false) {
       const root = mkdtempSync(join(tmpdir(), 'til-runner-'));
       const code = join(root, 'src/dsa/code/x');
@@ -129,11 +95,10 @@ describe('scripts/test-python.mjs', () => {
     }
 
     // Asynchronous, so the concurrent cases' pytest runs overlap.
-    function runner(root, env = {}) {
+    function runner(root) {
       return new Promise((done, fail) => {
         const child = spawn(process.execPath, [join(root, 'scripts/test-python.mjs')], {
           cwd: root,
-          env: { ...process.env, ...env },
         });
         let stdout = '';
         let stderr = '';
@@ -176,48 +141,6 @@ describe('scripts/test-python.mjs', () => {
       await withCopy(false, async (root) =>
         expect((await runner(root)).status).not.toBe(0),
       );
-    });
-
-    it.each([
-      ['a root iniconfig.py that exits 0', 'iniconfig.py', 'raise SystemExit(0)\n'],
-      ['a root pluggy.py that exits 0', 'pluggy.py', 'raise SystemExit(0)\n'],
-      [
-        'a .pytest.ini next to the tests that only collects',
-        'src/dsa/code/.pytest.ini',
-        '[pytest]\naddopts = --co\n',
-      ],
-      [
-        'a root .pytest.ini that only collects',
-        '.pytest.ini',
-        '[pytest]\naddopts = --co\n',
-      ],
-      [
-        'a tox.ini next to the tests that only collects',
-        'src/dsa/code/tox.ini',
-        '[pytest]\naddopts = --co\n',
-      ],
-      [
-        'a pyproject.toml next to the tests that only collects',
-        'src/dsa/code/pyproject.toml',
-        '[tool.pytest.ini_options]\naddopts = "--co"\n',
-      ],
-    ])('still fails with %s', async (_label, path, content) => {
-      await withCopy(false, async (root) => {
-        writeFileSync(join(root, path), content);
-        expect((await runner(root)).status).not.toBe(0);
-      });
-    });
-
-    it.each([
-      ['PYTEST_ADDOPTS=--co', { PYTEST_ADDOPTS: '--co' }],
-      ['PYTEST_PLUGINS set to a plugin that exits 0', { PYTEST_PLUGINS: 'exitzero' }],
-    ])('still fails with %s in the environment', async (_label, env) => {
-      await withCopy(false, async (root) => {
-        // A plugin importable from the working directory; the runner must
-        // neither load it via PYTEST_PLUGINS nor let the directory onto sys.path.
-        writeFileSync(join(root, 'exitzero.py'), 'raise SystemExit(0)\n');
-        expect((await runner(root, env)).status).not.toBe(0);
-      });
     });
 
     it('leaves no __pycache__ or .pytest_cache behind', () => {

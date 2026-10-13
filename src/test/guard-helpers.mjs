@@ -2,12 +2,15 @@
 // (scripts/check-*.test.mjs). Not a test file itself; it lives under src/test/
 // so check:test-lock locks it as test support, like the tests that import it.
 //
-// Each test file gets its own copy of this module (Vitest isolates modules per
-// file), so `temps` is per file; each file registers `afterEach(cleanTemps)`.
-import { execFileSync, spawnSync } from 'node:child_process';
+// Every guard exports a function that takes the root it checks
+// (docs/specs/in-process-checks.md), so a planted case builds a throwaway
+// git repository here and calls that function in-process; no case spawns
+// `node`. Each test file gets its own copy of this module (Vitest isolates
+// modules per file), so `temps` is per file; each file registers
+// `afterEach(cleanTemps)`.
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -21,7 +24,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
 // Vitest runs from the repository root.
-export const SCRIPTS = resolve('scripts');
+export const REPO = resolve('.');
 const temps = [];
 export function tempDir() {
   const dir = mkdtempSync(join(tmpdir(), 'til-checks-'));
@@ -33,97 +36,44 @@ export function cleanTemps() {
   while (temps.length) rmSync(temps.pop(), { recursive: true, force: true });
 }
 
-// A guard script copied into a throwaway root runs there as it would in the
-// repository, so it needs the shared helpers it imports beside it
-// (scripts/lib.mjs, docs/specs/dedupe-app-scripts-tests.md criterion 6).
-export function copyScripts(root, ...names) {
-  mkdirSync(join(root, 'scripts'), { recursive: true });
-  for (const name of [...names, 'lib.mjs']) {
-    if (existsSync(join(SCRIPTS, name))) {
-      copyFileSync(join(SCRIPTS, name), join(root, 'scripts', name));
-    }
-  }
-}
-
 // The scripts list their inputs through `git ls-files` (so .gitignore is
 // respected), so a throwaway root must be a git repository.
 export function gitInit(root) {
-  execFileSync('git', ['init', '-q'], { cwd: root });
+  execFileSync('git', ['init', '-q', '--template='], { cwd: root });
 }
 
-// check-bundle, copied with what it imports: scripts/lib.mjs and
-// src/lib/frontmatter.ts (run by Node with its types stripped).
-export function bundleRoot(root) {
-  gitInit(root);
-  writeFileSync(join(root, 'package.json'), JSON.stringify({ type: 'module' }));
-  copyScripts(root, 'check-bundle.mjs');
-  mkdirSync(join(root, 'src/lib'), { recursive: true });
-  copyFileSync(resolve('src/lib/frontmatter.ts'), join(root, 'src/lib/frontmatter.ts'));
+/** Write `content` to `root/path`, creating its directories. */
+export function write(root, path, content) {
+  const full = join(root, path);
+  mkdirSync(dirname(full), { recursive: true });
+  writeFileSync(full, content);
 }
 
-export function run(script, args = [], env = {}) {
-  return spawnSync(process.execPath, [join(SCRIPTS, script), ...args], {
-    encoding: 'utf8',
-    env: { ...process.env, ...env },
-  });
-}
-
-// --- check-test-lock (scripts/check-test-lock*.test.mjs) ---
-
-// The script finds the repository from its own location, so each case runs
-// a copy of it inside a throwaway git repository.
-function testLockRepo() {
+/** A throwaway git repository holding `files` ({ path: content }). */
+export function repoWith(files = {}) {
   const root = tempDir();
-  mkdirSync(join(root, 'src/lib'), { recursive: true });
-  copyScripts(root, 'check-test-lock.mjs');
-  writeFileSync(
-    join(root, 'package.json'),
-    JSON.stringify({ scripts: { 'test:run': 'vitest run' } }),
-  );
-  writeFileSync(
-    join(root, 'vite.config.ts'),
-    "export default {\n  test: {\n    coverage: { enabled: false },\n    include: ['src/**'],\n  },\n};\n",
-  );
-  writeFileSync(join(root, 'src/lib/a.test.ts'), 'it("a", () => {});\n');
-  execFileSync('git', ['init', '-q'], { cwd: root });
-  const lock = (mode) =>
-    spawnSync(process.execPath, [join(root, 'scripts/check-test-lock.mjs'), mode], {
-      encoding: 'utf8',
-    }).status;
-  return { root, lock };
+  gitInit(root);
+  for (const [path, content] of Object.entries(files)) write(root, path, content);
+  return root;
 }
 
-// A run of the fixture's copy of the script, with its output, and with
-// extra environment variables (for the global-ignore cases; one set to
-// undefined is removed).
-const lockRun = (root, mode, env = {}) =>
-  spawnSync(process.execPath, [join(root, 'scripts/check-test-lock.mjs'), mode], {
-    encoding: 'utf8',
-    env: Object.fromEntries(
-      Object.entries({ ...process.env, ...env }).filter(
-        ([, value]) => value !== undefined,
-      ),
-    ),
-  });
+/** Problem lines with forward slashes, so a Windows path matches too. */
+export const slashes = (lines) => lines.map((line) => String(line).split('\\').join('/'));
 
-export const testLockFixture = { repo: testLockRepo, lockRun };
-
-// --- check-diagrams (scripts/check-diagrams*.test.mjs) ---
+// --- check-diagrams (scripts/check-diagrams.test.mjs) ---
 //
-// Interface assumed for scripts/check-diagrams.mjs (spec: "Diagrams (D2)"):
-//
-// - Run as `node scripts/check-diagrams.mjs` with no arguments. The root it
-//   checks is the repository by default, or the directory in the
-//   CHECK_DIAGRAMS_ROOT environment variable (like CHECK_RAW_HTML_ROOT).
-// - Under that root it reads:
+// Interface assumed for scripts/check-diagrams.mjs (docs/specs/
+// in-process-checks.md): it exports `diagramProblems(root)`, which checks
+// `root` (default: the repository) and returns its problems as strings, each
+// naming the file at fault; `[]` when clean. Importing it runs nothing. Under
+// `root` it reads:
 //     src/system-design/diagrams/<case>/<name>.d2          (sources)
 //     public/diagrams/<case>/<name>.light.svg / .dark.svg  (rendered)
 //     public/diagrams/manifest.json                        (lock file)
 //     src/system-design/case-studies/*.md                  (references)
 //     src/index.css                                        (color tokens)
-// - A case study references a diagram as `/diagrams/<case>/<name>.svg` in a
-//   markdown image; that reference exists when both themed SVGs exist.
-// - Exit 0 when clean, non-zero on any violation.
+// A case study references a diagram as `/diagrams/<case>/<name>.svg` in a
+// markdown image; that reference exists when both themed SVGs exist.
 //
 // Manifest shape (the lock file; `npm run diagrams` writes it, this checks it).
 // It extends the original shape: every source entry keeps `sha256` (and the
@@ -182,12 +132,6 @@ const CSS = (tokens = TOKENS) => {
       .join('\n')}\n}\n`;
   return `@import 'tailwindcss';\n\n${block(':root', tokens.light)}\n${block('.dark', tokens.dark)}`;
 };
-
-function write(root, path, content) {
-  const full = join(root, path);
-  mkdirSync(dirname(full), { recursive: true });
-  writeFileSync(full, content);
-}
 
 /** Every file under `dir` (recursively) ending in `suffix`, relative, with `/`. */
 function list(dir, suffix, base = dir, files = []) {
@@ -269,7 +213,8 @@ const plantSource = (source) => (root) => {
   lock(root);
 };
 
-/** A clean fixture: one case study referencing one diagram, rendered and locked. */
+/** A clean fixture (its root): one case study referencing one diagram,
+ * rendered and locked. */
 function diagramRepo() {
   const root = tempDir();
   gitInit(root);
@@ -279,9 +224,7 @@ function diagramRepo() {
   write(root, 'public/diagrams/demo/flow.dark.svg', SVG());
   write(root, 'src/system-design/case-studies/demo.md', CASE_STUDY());
   lock(root);
-  const result = () => run('check-diagrams.mjs', [], { CHECK_DIAGRAMS_ROOT: root });
-  const check = () => result().status;
-  return { root, check, result };
+  return root;
 }
 
 /** Plant a complete, locked diagram (source and both SVGs) at `name`, so only

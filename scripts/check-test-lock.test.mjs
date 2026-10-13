@@ -1,263 +1,432 @@
 // @vitest-environment node
-// Planted-violation tests for scripts/check-test-lock.mjs: the basics, ignore
-// files and the self-lock. The other nested groups are in
-// check-test-lock.python.test.mjs, check-test-lock.nested.test.mjs (nested
-// repositories and global ignore files) and check-test-lock.gate.test.mjs,
-// split along their `describe` boundaries so no one file sets vitest's wall
-// time.
+// Tests for scripts/check-test-lock.mjs, the guard for /feature's locked-tests
+// rule (NON_NEGOTIABLES #9), in its slim form (docs/specs/
+// in-process-checks.md, criteria 2 and 5).
+//
+// Interface assumed:
+//
+// - `snapshotLock(root, fixtures = [])` hashes every locked file and config
+//   part under `root` (a git repository; default: this one) and writes the
+//   snapshot inside its git directory. Each fixture is a path relative to
+//   `root`; one that isn't an existing file throws.
+// - `verifyLock(root)` returns the change lines since the snapshot, each
+//   `modified: <key>`, `added: <key>` or `deleted: <key>` (padding after the
+//   colon allowed), `[]` when nothing changed. A file's key is its path
+//   relative to `root` with `/`; a config part's key names the file it is
+//   part of (`vite.config.ts`, `package.json`, `.git/info/exclude`), and the
+//   `verify` part's key also contains "verify". With no snapshot it throws.
+// - `clearLock(root)` deletes the snapshot.
+// - Importing the module runs nothing. Run as a script it takes `--snapshot
+//   [fixture...]`, `--verify` or `--clear`, and exits 2 with the usage line on
+//   anything else.
+//
+// Every case runs in a throwaway repository, so no test touches this
+// repository's own snapshot.
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { cleanTemps, testLockFixture } from '../src/test/guard-helpers.mjs';
+import {
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import {
+  cleanTemps,
+  repoWith,
+  slashes,
+  tempDir,
+  write,
+} from '../src/test/guard-helpers.mjs';
+import { clearLock, snapshotLock, verifyLock } from './check-test-lock.mjs';
 
 afterEach(cleanTemps);
 
-const { repo, lockRun } = testLockFixture;
+const VITE = `export default {
+  plugins: [],
+  test: {
+    coverage: { enabled: false },
+    include: ['src/**'],
+  },
+};
+`;
+const SCRIPTS = {
+  build: 'vite build',
+  'check:colors': 'node scripts/check-hex-colors.mjs',
+  'test:run': 'vitest run',
+  'test:py': 'node scripts/test-python.mjs',
+  'check:test-lock': 'node scripts/check-test-lock.mjs',
+  verify: 'npm run typecheck && npm run test:run && npm run test:py && npm run build',
+};
+const pkg = (scripts = {}, extra = {}) =>
+  `${JSON.stringify({ scripts: { ...SCRIPTS, ...scripts }, dependencies: {}, ...extra }, null, 2)}\n`;
+const CODE = 'src/dsa/code/x';
+
+/** A throwaway repository holding one of each kind of locked file, plus app
+ * files that aren't locked. */
+function repo() {
+  return repoWith({
+    'package.json': pkg(),
+    'vite.config.ts': VITE,
+    '.gitignore': 'node_modules\ndist\n',
+    'src/lib/a.ts': 'export const a = 1;\n',
+    'src/lib/a.test.ts': 'it("a", () => {});\n',
+    'src/lib/__snapshots__/a.test.ts.snap': 'exports[`a 1`] = `"a"`;\n',
+    'src/test/setup.ts': 'export {};\n',
+    'src/content/s/topic.md': '# A topic\n',
+    [`${CODE}/x.py`]: 'def f():\n    return 1\n',
+    [`${CODE}/test_x.py`]: 'from x import f\n\n\ndef test_f():\n    assert f() == 1\n',
+    'pytest.ini': '[pytest]\ntestpaths = src/dsa/code\n',
+    'scripts/test-python.mjs': '// runs pytest\n',
+    'scripts/check-test-lock.mjs': '// the lock\n',
+    'scripts/lib.mjs': '// shared helpers\n',
+    'README.md': '# notes\n',
+  });
+}
+
+// Most cases start from the same snapshotted repository, so one is built and
+// snapshotted once and each case works on its own copy: a git call costs tens
+// of milliseconds on Windows, and a fresh repository and snapshot take several.
+let base;
+beforeAll(() => {
+  base = mkdtempSync(join(tmpdir(), 'til-lock-base-'));
+  cpSync(repo(), base, { recursive: true });
+  snapshotLock(base);
+});
+afterAll(() => rmSync(base, { recursive: true, force: true }));
+
+/** A copy of the snapshotted base repository. */
+function snapshotted() {
+  const root = tempDir();
+  cpSync(base, root, { recursive: true });
+  return root;
+}
+
+const append = (root, path, text = '\n// weakened\n') =>
+  write(root, path, `${readFileSync(join(root, path), 'utf8')}${text}`);
+
+const changes = (root) => slashes(verifyLock(root));
+
+/** A regexp for one change line: `<kind>: <key>`, the key matching `key`. */
+const line = (kind, key) => new RegExp(`^${kind}:\\s+${key}`);
 
 describe('check-test-lock', () => {
-  it('passes when nothing changed, and fails with no snapshot', () => {
-    const { lock } = repo();
-    expect(lock('--verify')).toBe(1);
-    expect(lock('--snapshot')).toBe(0);
-    expect(lock('--verify')).toBe(0);
+  it('reports nothing when nothing changed', () => {
+    const root = snapshotted();
+    expect(changes(root)).toEqual([]);
+  });
+
+  it('keeps its snapshot out of the working tree', () => {
+    const root = repo();
+    const before = execFileSync('git', ['status', '--porcelain', '-uall'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    snapshotLock(root);
+    expect(
+      execFileSync('git', ['status', '--porcelain', '-uall'], {
+        cwd: root,
+        encoding: 'utf8',
+      }),
+    ).toBe(before);
+  });
+
+  it('throws on verify with no snapshot, and after clearLock', () => {
+    const root = repo();
+    expect(() => verifyLock(root)).toThrow();
+    snapshotLock(root);
+    expect(changes(root)).toEqual([]);
+    clearLock(root);
+    expect(() => verifyLock(root)).toThrow();
+  });
+
+  describe('reports a change to each locked kind (criterion 5)', () => {
+    it.each([
+      [
+        'an edited test file',
+        (root) => append(root, 'src/lib/a.test.ts'),
+        line('modified', 'src/lib/a\\.test\\.ts'),
+      ],
+      [
+        'an added spec file',
+        (root) => write(root, 'src/lib/b.spec.ts', 'x\n'),
+        line('added', 'src/lib/b\\.spec\\.ts'),
+      ],
+      [
+        'a deleted test file',
+        (root) => rmSync(join(root, 'src/lib/a.test.ts')),
+        line('deleted', 'src/lib/a\\.test\\.ts'),
+      ],
+      [
+        'an edited file under src/test/',
+        (root) => append(root, 'src/test/setup.ts'),
+        line('modified', 'src/test/setup\\.ts'),
+      ],
+      [
+        'an added file under src/test/',
+        (root) => write(root, 'src/test/fixture.json', '{}\n'),
+        line('added', 'src/test/fixture\\.json'),
+      ],
+      [
+        'an edited vitest snapshot',
+        (root) => append(root, 'src/lib/__snapshots__/a.test.ts.snap', '\n'),
+        line('modified', 'src/lib/__snapshots__/a\\.test\\.ts\\.snap'),
+      ],
+      [
+        'an added vitest.config.ts',
+        (root) => write(root, 'vitest.config.ts', 'export default {};\n'),
+        line('added', 'vitest\\.config\\.ts'),
+      ],
+      [
+        "a narrowed include in vite.config.ts's test block",
+        (root) => write(root, 'vite.config.ts', VITE.replace('src/**', 'src/none/**')),
+        line('modified', 'vite\\.config\\.ts'),
+      ],
+      [
+        'a changed test* script',
+        (root) => write(root, 'package.json', pkg({ 'test:run': 'vitest run --bail 1' })),
+        line('modified', 'package\\.json'),
+      ],
+      [
+        'an added test* script',
+        (root) => write(root, 'package.json', pkg({ 'test:e2e': 'echo none' })),
+        line('modified', 'package\\.json'),
+      ],
+      [
+        'a changed check:test-lock script',
+        (root) => write(root, 'package.json', pkg({ 'check:test-lock': 'exit 0' })),
+        line('modified', 'package\\.json'),
+      ],
+      [
+        '.git/info/exclude edited',
+        (root) => {
+          const path = '.git/info/exclude';
+          const old = existsSync(join(root, path))
+            ? readFileSync(join(root, path), 'utf8')
+            : '';
+          write(root, path, `${old}vitest.config.ts\n`);
+        },
+        line('(modified|added)', '.*info/exclude'),
+      ],
+      [
+        'an edited root .gitignore',
+        (root) => append(root, '.gitignore', 'conftest.py\n'),
+        line('modified', '\\.gitignore'),
+      ],
+      [
+        'an added nested .gitignore',
+        (root) => write(root, 'src/lib/.gitignore', 'b.test.ts\n'),
+        line('added', 'src/lib/\\.gitignore'),
+      ],
+      [
+        'an added nested .gitignore that ignores itself',
+        (root) => write(root, 'src/lib/.gitignore', '.gitignore\n'),
+        line('added', 'src/lib/\\.gitignore'),
+      ],
+      [
+        'an added conftest.py',
+        (root) => write(root, `${CODE}/conftest.py`, 'collect_ignore = ["."]\n'),
+        line('added', 'src/dsa/code/x/conftest\\.py'),
+      ],
+      [
+        'an edited test_x.py',
+        (root) => write(root, `${CODE}/test_x.py`, 'def test_f():\n    assert True\n'),
+        line('modified', 'src/dsa/code/x/test_x\\.py'),
+      ],
+      [
+        'an edited pytest.ini',
+        (root) => write(root, 'pytest.ini', '[pytest]\ntestpaths = src/none\n'),
+        line('modified', 'pytest\\.ini'),
+      ],
+      [
+        'an added pyproject.toml',
+        (root) =>
+          write(
+            root,
+            'pyproject.toml',
+            '[tool.pytest.ini_options]\naddopts = "-k nothing"\n',
+          ),
+        line('added', 'pyproject\\.toml'),
+      ],
+      [
+        'an edited scripts/test-python.mjs',
+        (root) => append(root, 'scripts/test-python.mjs', 'process.exit(0);\n'),
+        line('modified', 'scripts/test-python\\.mjs'),
+      ],
+      [
+        'an edited scripts/check-test-lock.mjs',
+        (root) => append(root, 'scripts/check-test-lock.mjs'),
+        line('modified', 'scripts/check-test-lock\\.mjs'),
+      ],
+      [
+        'an edited scripts/lib.mjs',
+        (root) => append(root, 'scripts/lib.mjs'),
+        line('modified', 'scripts/lib\\.mjs'),
+      ],
+    ])('%s', (_label, plant, expected) => {
+      const root = snapshotted();
+      plant(root);
+      expect(changes(root)).toEqual([expect.stringMatching(expected)]);
+    });
+
+    it('reports a fixture path given at snapshot, and only once it changes', () => {
+      const root = repo();
+      snapshotLock(root, ['src/content/s/topic.md']);
+      expect(changes(root)).toEqual([]);
+      append(root, 'src/content/s/topic.md', 'More.\n');
+      expect(changes(root)).toEqual([
+        expect.stringMatching(line('modified', 'src/content/s/topic\\.md')),
+      ]);
+    });
+  });
+
+  // The whole `verify` string is one hash: any edit to it counts, including
+  // a plain step appended at the end.
+  describe('any edit to verify (criterion 5)', () => {
+    it.each([
+      ['a plain step appended', `${SCRIPTS.verify} && npm run check:x`],
+      [
+        'a plain step inserted',
+        'npm run typecheck && npm run check:x && npm run test:run && npm run test:py && npm run build',
+      ],
+      ['a step removed', 'npm run typecheck && npm run test:run && npm run test:py'],
+      [
+        'the test steps reordered',
+        'npm run typecheck && npm run test:py && npm run test:run && npm run build',
+      ],
+      ['|| true appended', `${SCRIPTS.verify} || true`],
+      ['whitespace changed', SCRIPTS.verify.replace(' && ', '  &&  ')],
+    ])('reports %s', (_label, verify) => {
+      const root = snapshotted();
+      write(root, 'package.json', pkg({ verify }));
+      expect(changes(root)).toEqual([
+        expect.stringMatching(line('modified', 'package\\.json.*verify')),
+      ]);
+    });
+  });
+
+  describe('reports nothing outside the lock (criterion 5)', () => {
+    it.each([
+      [
+        'an edited app file',
+        (root) => append(root, 'src/lib/a.ts', 'export const b = 2;\n'),
+      ],
+      ['an added app file', (root) => write(root, 'src/lib/b.ts', 'export {};\n')],
+      ['an edited README', (root) => append(root, 'README.md', 'More.\n')],
+      [
+        'an added Python module beside the tests',
+        (root) => write(root, `${CODE}/helpers.py`, 'def g():\n    return 2\n'),
+      ],
+      [
+        'an edit to vite.config.ts outside the test block',
+        (root) =>
+          write(root, 'vite.config.ts', VITE.replace('plugins: []', 'plugins: [x()]')),
+      ],
+      [
+        'a changed non-test script in package.json',
+        (root) => write(root, 'package.json', pkg({ 'check:colors': 'node x.mjs' })),
+      ],
+      [
+        'an added dependency in package.json',
+        (root) =>
+          write(root, 'package.json', pkg({}, { dependencies: { react: '^19.0.0' } })),
+      ],
+    ])('%s', (_label, plant) => {
+      const root = snapshotted();
+      plant(root);
+      expect(changes(root)).toEqual([]);
+    });
+  });
+
+  it('reports a config part the snapshot lacks as added (criterion 5)', () => {
+    const root = snapshotted();
+    // The snapshot is a JSON file inside the git directory, keyed by path or
+    // config part; drop the `verify` part, as a snapshot taken by an older
+    // script would lack it.
+    const gitDir = join(root, '.git');
+    const [name] = readdirSync(gitDir).filter((file) => {
+      if (!file.endsWith('.json')) return false;
+      try {
+        return Object.keys(JSON.parse(readFileSync(join(gitDir, file), 'utf8'))).some(
+          (key) => /verify/.test(key),
+        );
+      } catch {
+        return false;
+      }
+    });
+    expect(name, 'a JSON snapshot in the git directory with a verify part').toBeTruthy();
+    const snapshot = JSON.parse(readFileSync(join(gitDir, name), 'utf8'));
+    const part = Object.keys(snapshot).find((key) => /verify/.test(key));
+    delete snapshot[part];
+    write(gitDir, name, JSON.stringify(snapshot, null, 2));
+    expect(changes(root)).toEqual([expect.stringMatching(line('added', '.*verify'))]);
   });
 
   it.each([
-    [
-      'an edited untracked test',
-      (root) => writeFileSync(join(root, 'src/lib/a.test.ts'), 'weakened\n'),
-    ],
-    [
-      'an added spec file',
-      (root) => writeFileSync(join(root, 'src/lib/b.spec.ts'), 'x\n'),
-    ],
-    [
-      'a narrowed include after a nested block',
-      (root) => {
-        const path = join(root, 'vite.config.ts');
-        writeFileSync(
-          path,
-          readFileSync(path, 'utf8').replace(
-            "include: ['src/**']",
-            "include: ['src/none/**']",
-          ),
-        );
-      },
-    ],
-    [
-      'a changed test script',
-      (root) =>
-        writeFileSync(
-          join(root, 'package.json'),
-          JSON.stringify({ scripts: { 'test:run': 'vitest run --passWithNoTests' } }),
-        ),
-    ],
-    [
-      'a new vitest.config',
-      (root) => writeFileSync(join(root, 'vitest.config.ts'), 'export default {};\n'),
-    ],
-  ])('fails on %s', (_label, plant) => {
-    const { root, lock } = repo();
-    expect(lock('--snapshot')).toBe(0);
-    plant(root);
-    expect(lock('--verify')).toBe(1);
+    ['a missing file', 'src/content/s/nope.md'],
+    ['a directory', 'src/content/s'],
+  ])('rejects %s given as a fixture (criterion 5)', (_label, fixture) => {
+    const root = repo();
+    expect(() => snapshotLock(root, [fixture])).toThrow();
   });
 
-  it('allows edits to vite.config.ts outside the test block', () => {
-    const { root, lock } = repo();
-    expect(lock('--snapshot')).toBe(0);
-    const path = join(root, 'vite.config.ts');
-    writeFileSync(path, `// a plugin change\n${readFileSync(path, 'utf8')}`);
-    expect(lock('--verify')).toBe(0);
-  });
+  // The global-ignore layer is gone: the user's own machine files, and git's
+  // core.excludesFile, are not part of the lock (criterion 5).
+  describe('does not read the global ignore setup', () => {
+    const VARS = ['HOME', 'USERPROFILE', 'XDG_CONFIG_HOME'];
+    const saved = Object.fromEntries(VARS.map((name) => [name, process.env[name]]));
+    afterEach(() => {
+      for (const name of VARS) {
+        if (saved[name] === undefined) delete process.env[name];
+        else process.env[name] = saved[name];
+      }
+    });
 
-  // docs/specs/dedupe-app-scripts-tests.md, criterion 7: the lock lists files
-  // through git, so a path added to an ignore file after the snapshot would be
-  // invisible to it (a new ignored vitest.config.ts or conftest.py). Every
-  // .gitignore in the tree and .git/info/exclude are locked instead: the
-  // exclusion list is pinned, rather than ignored files hunted by name.
-  describe('ignore files (dedupe criterion 7)', () => {
-    function ignoreRepo() {
-      const made = repo();
-      writeFileSync(join(made.root, '.gitignore'), 'node_modules\ndist\n');
-      writeFileSync(join(made.root, 'src/lib/a.ts'), 'export const a = 1;\n');
-      const exclude = join(made.root, '.git/info/exclude');
-      mkdirSync(dirname(exclude), { recursive: true });
-      if (!existsSync(exclude))
-        writeFileSync(exclude, '# git ls-files --exclude-standard\n');
-      return { ...made, exclude };
+    /** A home directory whose git global ignore file holds `ignore`. */
+    function home(ignore) {
+      const dir = tempDir();
+      write(dir, '.config/git/ignore', ignore);
+      write(dir, 'git/ignore', ignore);
+      return dir;
     }
 
-    it('passes when nothing changed', () => {
-      const { lock } = ignoreRepo();
-      expect(lock('--snapshot')).toBe(0);
-      expect(lock('--verify')).toBe(0);
+    it('reports nothing when HOME, USERPROFILE and XDG_CONFIG_HOME change', () => {
+      const root = repo();
+      const first = home('unrelated-a.txt\n');
+      for (const name of VARS) process.env[name] = first;
+      snapshotLock(root);
+      const second = home('unrelated-b.txt\n');
+      for (const name of VARS) process.env[name] = second;
+      expect(changes(root)).toEqual([]);
     });
 
-    it.each([
-      [
-        'an edited root .gitignore that hides a new vitest.config.ts',
-        ({ root }) => {
-          writeFileSync(
-            join(root, '.gitignore'),
-            'node_modules\ndist\nvitest.config.ts\n',
-          );
-          writeFileSync(
-            join(root, 'vitest.config.ts'),
-            "export default { test: { include: ['none/**'] } };\n",
-          );
-        },
-      ],
-      [
-        'an edited root .gitignore alone',
-        ({ root }) =>
-          writeFileSync(join(root, '.gitignore'), 'node_modules\ndist\nconftest.py\n'),
-      ],
-      [
-        'an added nested src/.gitignore that hides a new test',
-        ({ root }) => {
-          writeFileSync(join(root, 'src/.gitignore'), 'lib/b.test.ts\n');
-          writeFileSync(join(root, 'src/lib/b.test.ts'), 'it.skip("b", () => {});\n');
-        },
-      ],
-      [
-        'an added nested src/.gitignore alone',
-        ({ root }) => writeFileSync(join(root, 'src/.gitignore'), 'conftest.py\n'),
-      ],
-      [
-        'an edited .git/info/exclude',
-        ({ exclude }) =>
-          writeFileSync(
-            exclude,
-            `${readFileSync(exclude, 'utf8')}vitest.config.ts\nconftest.py\n`,
-          ),
-      ],
-    ])('fails on %s', (_label, plant) => {
-      const made = ignoreRepo();
-      expect(made.lock('--snapshot')).toBe(0);
-      plant(made);
-      expect(made.lock('--verify')).toBe(1);
-    });
-
-    it('fails on a .gitignore added where there was none', () => {
-      const { root, lock } = repo();
-      expect(lock('--snapshot')).toBe(0);
-      writeFileSync(join(root, '.gitignore'), 'vitest.config.ts\n');
-      expect(lock('--verify')).toBe(1);
-    });
-
-    // A .gitignore that lists itself drops out of `git ls-files -co
-    // --exclude-standard`, so it must still be locked (review finding H1, A).
-    it('fails on an added .gitignore that ignores itself and hides a new test', () => {
-      const { root, lock } = ignoreRepo();
-      expect(lock('--snapshot')).toBe(0);
-      writeFileSync(join(root, 'src/.gitignore'), '.gitignore\nlib/b.test.ts\n');
-      writeFileSync(join(root, 'src/lib/b.test.ts'), 'it.skip("b", () => {});\n');
-      expect(lock('--verify')).toBe(1);
-    });
-
-    // A repo-local core.excludesFile is a third source of ignore rules,
-    // outside .gitignore and .git/info/exclude (review finding H1, C).
-    const gitConfig = (root, ...args) =>
-      execFileSync('git', ['config', ...args], { cwd: root });
-
-    it('fails on a repo-local core.excludesFile set after the snapshot', () => {
-      const { root, lock } = ignoreRepo();
-      expect(lock('--snapshot')).toBe(0);
-      writeFileSync(join(root, '.hide'), 'vitest.config.ts\n');
-      gitConfig(root, 'core.excludesFile', '.hide');
-      writeFileSync(
-        join(root, 'vitest.config.ts'),
-        "export default { test: { include: ['none/**'] } };\n",
-      );
-      expect(lock('--verify')).toBe(1);
-    });
-
-    it("fails on a change to an already-set core.excludesFile's contents", () => {
-      const { root, lock } = ignoreRepo();
-      writeFileSync(join(root, '.hide'), 'conftest.py\n');
-      gitConfig(root, 'core.excludesFile', '.hide');
-      expect(lock('--snapshot')).toBe(0);
-      expect(lock('--verify')).toBe(0);
-      writeFileSync(join(root, '.hide'), 'conftest.py\nvitest.config.ts\n');
-      expect(lock('--verify')).toBe(1);
-    });
-
-    // With core.ignorecase=true git honours `.GITIGNORE`, so the ignore-file
-    // match must be case-insensitive too (review round 2, finding 2).
-    it('fails on a differently-cased .GITIGNORE that hides a new conftest.py', () => {
-      const { root, lock } = ignoreRepo();
-      gitConfig(root, 'core.ignorecase', 'true');
-      expect(lock('--snapshot')).toBe(0);
-      mkdirSync(join(root, 'src/dsa/code/heap'), { recursive: true });
-      writeFileSync(
-        join(root, 'src/dsa/code/heap/.GITIGNORE'),
-        '.GITIGNORE\nconftest.py\n',
-      );
-      writeFileSync(
-        join(root, 'src/dsa/code/heap/conftest.py'),
-        'collect_ignore = ["*"]\n',
-      );
-      expect(lock('--verify')).toBe(1);
-    });
-
-    // A snapshot taken by an older script lacks a config part that
-    // runnerConfig() now produces; --verify must report it, not skip it
-    // (review round 2, finding 3).
-    it('fails on a config part the snapshot lacks, naming it as added', () => {
-      const { root, lock } = ignoreRepo();
-      expect(lock('--snapshot')).toBe(0);
-      const manifest = join(root, '.git/til-test-lock.json');
-      const locked = JSON.parse(readFileSync(manifest, 'utf8'));
-      const part = 'package.json#scripts.test*';
-      expect(part in locked).toBe(true);
-      delete locked[part];
-      writeFileSync(manifest, JSON.stringify(locked, null, 2));
-      const result = spawnSync(
-        process.execPath,
-        [join(root, 'scripts/check-test-lock.mjs'), '--verify'],
-        { encoding: 'utf8' },
-      );
-      expect(result.status).toBe(1);
-      expect(result.stderr).toMatch(/added:\s+package\.json#scripts\.test\*/);
-    });
-
-    it('allows an unrelated edit to a file that is not locked', () => {
-      const { root, lock } = ignoreRepo();
-      expect(lock('--snapshot')).toBe(0);
-      writeFileSync(join(root, 'src/lib/a.ts'), 'export const a = 2;\n');
-      writeFileSync(join(root, 'README.md'), '# notes\n');
-      expect(lock('--verify')).toBe(0);
+    it("reports nothing when core.excludesFile, or the file's contents, change", () => {
+      const root = repo();
+      write(root, '.hide', 'unrelated-a.txt\n');
+      write(root, '.hide2', 'unrelated-b.txt\n');
+      snapshotLock(root);
+      execFileSync('git', ['config', 'core.excludesFile', '.hide'], { cwd: root });
+      expect(changes(root)).toEqual([]);
+      write(root, '.hide', 'unrelated-c.txt\n');
+      expect(changes(root)).toEqual([]);
+      execFileSync('git', ['config', 'core.excludesFile', '.hide2'], { cwd: root });
+      expect(changes(root)).toEqual([]);
     });
   });
 
-  // docs/specs/tooling-gaps.md, criterion 2: the lock script, and the
-  // scripts/lib.mjs it imports, are locked too, so a later stage can't weaken
-  // the lock and then pass it.
-  describe('self-lock (tooling-gaps criterion 2)', () => {
-    it('locks scripts/check-test-lock.mjs and scripts/lib.mjs', () => {
-      const { root } = repo();
-      expect(lockRun(root, '--snapshot').status).toBe(0);
-      const locked = JSON.parse(
-        readFileSync(join(root, '.git/til-test-lock.json'), 'utf8'),
-      );
-      expect(Object.keys(locked)).toEqual(
-        expect.arrayContaining(['scripts/check-test-lock.mjs', 'scripts/lib.mjs']),
-      );
-    });
-
-    it.each(['scripts/check-test-lock.mjs', 'scripts/lib.mjs'])(
-      'fails on an edited %s',
-      (path) => {
-        const { root } = repo();
-        expect(lockRun(root, '--snapshot').status).toBe(0);
-        const full = join(root, path);
-        writeFileSync(full, `${readFileSync(full, 'utf8')}\n// weakened\n`);
-        const result = lockRun(root, '--verify');
-        expect(result.status).toBe(1);
-        expect(result.stderr).toContain(path);
-      },
+  // Criterion 2: the one spawn test. An unknown mode never reads or writes a
+  // snapshot, so this one touches nothing.
+  it('exits 2 with the usage line on an unknown mode, run as a script', () => {
+    const result = spawnSync(
+      process.execPath,
+      [resolve('scripts/check-test-lock.mjs'), '--bogus'],
+      { encoding: 'utf8' },
     );
+    expect(result.status).toBe(2);
+    expect(result.stderr).toMatch(/usage/i);
+    expect(result.stderr).toMatch(/--snapshot[\s\S]*--verify[\s\S]*--clear/);
   });
 });

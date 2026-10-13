@@ -17,8 +17,13 @@
 //   `line` the 1-based line of the link in the file, `anchor` the `#fragment`
 //   (with its `#`) or null, and `sentence` the sentence holding the link, from
 //   the plain text of its enclosing paragraph or list item.
-// - Importing the module runs nothing. The CLI is covered in
-//   inbound-links.cli.test.mjs.
+// - Importing the module runs nothing. Run as `node scripts/inbound-links.mjs
+//   <section>/<slug>`, it reads this repository (no root override,
+//   docs/specs/in-process-checks.md) and prints one line per link,
+//   `<file>:<line>  <#anchor or —>  "<sentence>"`; its one run as a script
+//   is at the end.
+import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { inboundLinks } from './inbound-links.mjs';
 
@@ -213,5 +218,23 @@ describe('inboundLinks (criterion 6)', () => {
   it('returns nothing when no body links to the topic', () => {
     expect(find([{ file: 'a.md', text: page('No links at all.') }])).toEqual([]);
     expect(find([])).toEqual([]);
+  });
+});
+
+// docs/specs/in-process-checks.md, criterion 2: the one run as a script.
+describe('inbound-links, run as a command on the repository', () => {
+  it('lists the ecommerce-checkout link to forward-vs-reverse-proxy and exits 0', () => {
+    const result = spawnSync(
+      process.execPath,
+      [
+        resolve('scripts/inbound-links.mjs'),
+        'systems-and-infrastructure/forward-vs-reverse-proxy',
+      ],
+      { encoding: 'utf8' },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout.split('\\').join('/')).toMatch(
+      /src\/system-design\/case-studies\/ecommerce-checkout\.md:\d+/,
+    );
   });
 });

@@ -13,36 +13,20 @@
 //   scenarios file relative to `root` (forward slashes) and <line> is the line
 //   of the failing comment (for a diff block, a line of that block). An empty
 //   array means everything holds. Importing the module runs nothing.
-// - Run as `node scripts/check-eval-premises.mjs`, it checks the repository, or
-//   the directory in the CHECK_EVAL_PREMISES_ROOT environment variable; it
-//   prints the failure lines and exits 1 on any failure, else 0.
+// - Run as `node scripts/check-eval-premises.mjs`, it checks the repository;
+//   it prints the failure lines and exits 1 on any failure, else 0 with
+//   "Every eval premise holds." (docs/specs/in-process-checks.md).
 // - It reads every `evals/*/scenarios.md` under the root, and also checks that
 //   each fenced `diff` block in `evals/feature-review/scenarios.md` passes
 //   `git apply --check` against the root's working tree.
-//
-// The script-run and real-repository cases (criterion 5) are in
-// check-eval-premises.cli.test.mjs, which doesn't import the module.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanTemps, gitInit, tempDir } from '../src/test/guard-helpers.mjs';
+import { cleanTemps, repoWith as repo } from '../src/test/guard-helpers.mjs';
 import { checkEvalPremises } from './check-eval-premises.mjs';
 
 afterEach(cleanTemps);
-
-function write(root, path, content) {
-  const full = join(root, path);
-  mkdirSync(dirname(full), { recursive: true });
-  writeFileSync(full, content);
-}
-
-/** A throwaway git repository holding `files` ({ path: content }). */
-function repo(files = {}) {
-  const root = tempDir();
-  gitInit(root);
-  for (const [path, content] of Object.entries(files)) write(root, path, content);
-  return root;
-}
 
 const SCENARIOS = 'evals/skill-routing/scenarios.md';
 // A scenarios file whose premise comment (or comments) start on line 5.
@@ -323,6 +307,56 @@ describe('check-eval-premises', () => {
       expect(
         await failuresOf(repo({ ...SOURCE, [FEATURE]: scenarioWith(block) })),
       ).toEqual([]);
+    });
+  });
+
+  describe('on the real repository (criterion 5)', () => {
+    it('returns no failures', async () => {
+      expect(await checkEvalPremises(resolve('.'))).toEqual([]);
+      expect(await checkEvalPremises()).toEqual([]);
+    });
+
+    // docs/specs/in-process-checks.md, criterion 2: the one run as a script.
+    it('exits 0 with its success message when run as a script', () => {
+      const result = spawnSync(
+        process.execPath,
+        [resolve('scripts/check-eval-premises.mjs')],
+        { encoding: 'utf8' },
+      );
+      expect(result.status, `${result.stdout}${result.stderr}`).toBe(0);
+      expect(result.stdout).toMatch(/Every eval premise holds/);
+    });
+
+    it('has the premises the spec seeds', () => {
+      const routing = readFileSync(resolve('evals/skill-routing/scenarios.md'), 'utf8');
+      const feature = readFileSync(resolve('evals/feature-review/scenarios.md'), 'utf8');
+      // SR-18 relies on there being no LRU cache entry yet.
+      expect(routing).toContain('<!-- premise: src/dsa/entries/lru-cache.md missing -->');
+      // SR-06 relies on a sentence in caching.md.
+      expect(routing).toMatch(
+        /<!-- premise: src\/content\/systems-and-infrastructure\/caching\.md contains "[^"]+" -->/,
+      );
+      // FR-06 relies on titles containing "vs.".
+      expect(feature).toMatch(/<!-- premise: \S+ contains "[^"]*vs\.[^"]*" -->/);
+    });
+
+    it('fails once a premise names a sentence that was removed', async () => {
+      const PATH = 'src/content/systems-and-infrastructure/caching.md';
+      const real = readFileSync(resolve(PATH), 'utf8');
+      // The first sentence of the body, after the frontmatter, as one line.
+      const body = real
+        .replace(/^---[\s\S]*?\n---\r?\n/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const sentence = /^[^.]+\./.exec(body)[0];
+      const scenario = scenarios(`<!-- premise: ${PATH} contains "${sentence}" -->`);
+
+      expect(await failuresOf(repo({ [PATH]: real, [SCENARIOS]: scenario }))).toEqual([]);
+      const after = await failuresOf(
+        repo({ [PATH]: body.replace(sentence, ''), [SCENARIOS]: scenario }),
+      );
+      expect(after).toHaveLength(1);
+      expect(after[0]).toContain(at(PREMISE_LINE));
     });
   });
 });

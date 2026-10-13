@@ -22,7 +22,8 @@
 // Each `evals/*/scenarios.md` is parsed with the site's markdown parser, so a
 // premise shown inside a code block isn't checked. Prints one
 // `<file>:<line>: premise …` line per failure and exits 1 on any failure.
-// The root is the repository, or CHECK_EVAL_PREMISES_ROOT. The file listing
+// `checkEvalPremises(root)` checks `root` (default: the repository); run as a
+// script, it checks the repository. The file listing
 // respects ignore rules; premise targets and `git apply` read the working
 // tree directly.
 //
@@ -42,9 +43,8 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { markdownParser } from '../src/lib/markdown.mjs';
-import { listFiles, ROOT as REPO_ROOT } from './lib.mjs';
+import { isMain, listFiles, ROOT as REPO_ROOT } from './lib.mjs';
 
 const FEATURE_REVIEW = 'evals/feature-review/scenarios.md';
 const SCENARIOS = /^evals\/[^/]+\/scenarios\.md$/;
@@ -155,8 +155,8 @@ export function checkEvalPremises(root = REPO_ROOT) {
   return failures;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const failures = checkEvalPremises(process.env.CHECK_EVAL_PREMISES_ROOT ?? REPO_ROOT);
+if (isMain(import.meta.url)) {
+  const failures = checkEvalPremises();
   if (failures.length > 0) {
     console.error('Eval premises that no longer hold:\n');
     for (const failure of failures) console.error(failure);

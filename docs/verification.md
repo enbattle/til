@@ -30,19 +30,41 @@ also read paths they're given rather than listed: `check:eval-premises` reads
 each premise's target and runs `git apply --check` against the working tree,
 and `links:inbound` checks its topic argument against the working tree, so
 those reads don't go through the ignore rules.
-`check:raw-html` scans `.js`, `.jsx`, `.mjs`, `.ts` and `.tsx` under `src/`
-(minus tests), and `check:colors` scans `.ts`, `.tsx`, `.mjs` and `.css`;
-`.mjs` counts because `src/lib/markdown.mjs` ships to the browser.
-`check:raw-html` parses each file with `oxc-parser` and matches sinks in the
-syntax tree, not the text, so a file that doesn't parse fails the check. It
-rejects more sinks than NON_NEGOTIABLES #6 names (`srcdoc` and the other
-HTML-parsing methods in its `HTML_PROPS` and `HTML_METHODS`), and its header
-lists the forms it still can't see (e.g. aliasing, `Object.assign`, variable
-keys). `scripts/check-raw-html.test.mjs` reads #6's text: every inline-code
-span in #6 must be classified in its `SPAN_TABLE`, so adding or removing a
-backticked name in #6 fails `test:run` until the table matches.
-`scripts/check-pipeline-log.test.mjs` reads `docs/pipeline-log.md`'s header the
-same way.
+`check:raw-html` scans `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`
+and `.cts` under `src/` (minus tests, `src/dsa/code/` and `src/test/`, which
+never ship to the browser), and `check:colors` scans `.ts`, `.tsx`, `.mjs`
+and `.css`; `.mjs` counts because `src/lib/markdown.mjs` ships to the browser.
+`check:raw-html` matches names, not syntax: it fails on any HTML sink name in
+its `SINKS` list (`dangerouslySetInnerHTML`, `innerHTML`, `outerHTML`,
+`srcdoc`, `insertAdjacentHTML`, `setHTMLUnsafe`, `parseHTMLUnsafe`,
+`createContextualFragment`, `parseFromString`, `document.write`) as a
+case-insensitive substring, or on the whole word `write` or `writeln`
+(case-sensitive, so `document.write` is caught however the document is
+reached), anywhere in a scanned file, comments and strings included, so it
+fails closed; reword a comment that names one. It decodes the escape
+sequences `\uXXXX`, `\u{…}` and `\xXX` first, so `\u0069nnerHTML` fails too. `dangerouslySetInnerHTML` is
+allowed only in `src/components/CodeBlock.tsx`. It also fails on
+`rehype-raw`, `rehype-dom-raw`, `hast-util-raw`, `markdown-to-jsx` or
+`html-react-parser` in `package.json`. A name built at run time (`'inner' +
+'HTML'`, `document['wr' + 'ite']`) gets past it, and so does one spelled with
+another escape (an identity escape such as `'inner\HTML'`, or a backslash line
+continuation inside a string); review covers those. oxlint's `react/no-danger` rule
+(an error in `.oxlintrc.json`) also flags the JSX prop, and `CodeBlock.tsx`
+disables it on its one line, with the reason.
+`scripts/check-pipeline-log.test.mjs` reads `docs/pipeline-log.md`'s header.
+
+Each check script named here exports its logic as a function that takes the root it
+checks (default: the repository, `ROOT`) and returns its problems as strings
+(`diagramProblems`, `rawHtmlProblems`, `bundleProblems`, `hexColorProblems`,
+`checkEvalPremises`; `pipelineLogProblems` takes the log's text), and runs its
+command-line part only under `if (isMain(import.meta.url))` (`scripts/lib.mjs`).
+Its tests call the function in-process on throwaway fixtures
+(`src/test/guard-helpers.mjs`), with one spawned run of the script on the real
+repository. A new check follows the same shape, with one test file per script;
+no environment variable or argument points one of these at another root.
+Older checks keep their spawned tests: `check:claude-md` (pointed at a
+planted root through `CHECK_CLAUDE_MD_ROOT`), `check:contrast` and
+`check:tokens`. `check:npm-refs` has no test of its own.
 
 `check:tokens` proves `docs/DESIGN.md`'s token table matches the `--color-*`
 tokens in `src/index.css`, in both directions and by value; `check:contrast`
@@ -64,22 +86,21 @@ Windows-1252 and written back, as Windows PowerShell 5.1's
 saved in the ANSI code page decodes to. It scans `git ls-files` output (plus
 untracked, unignored files) by extension and skips `public/`. A topic that
 needs to show mojibake as an example would need an exemption there. It stays
-the real gate; `.claude/hooks/block-powershell-writes.js` only saves the redo,
-denying a PowerShell command that writes a file inside the project
-(`Set-Content`, `Add-Content`, `Out-File`, `Tee-Object` and their aliases
-`sc`, `ac`, `tee`; a `>`/`>>`/`2>`/`*>` redirection; `[IO.File]::Write*`/`Append*`)
-and pointing to the Edit or Write tool or a script file that reads its input
-from a file. It also denies an inline `node -e` or `python -c` script that
-writes a file when the command hands it text through a command-line argument,
-wherever the file is, because native-argument quoting can truncate or alter
-that text. That argument is a `$var` not assigned a quoted literal, a `$(...)`,
-a parenthesized `( … )` expression, or literal text holding a `"` or a newline
-(PowerShell 5.1 strips an embedded `"`), whether quoted, a here-string or held
-in a literal-assigned `$var`; or a double-quoted script that expands computed
-text into itself. It matches command
-text, not a full parse, so it fails open on whatever it can't resolve (the
-hook's header lists these limits). `scripts/block-powershell-writes.test.mjs`
-holds its vectors.
+the real gate; `.claude/hooks/block-powershell-writes.js` only saves the redo.
+It is deliberately blunt: with comments and quoted string contents removed, it denies a
+PowerShell command that runs `Set-Content`, `Add-Content`, `Out-File` or
+`Tee-Object` (or the aliases `sc`, `ac`, `tee`) as a command word (at the
+start of a line or after `;`, `|`, `&`, `(` or `{`), calls
+`[IO.File]::Write*`/`Append*`, or redirects output (`>`, `>>`, `2>`, `*>`, ...)
+to anything but `$null` (`2>&1` is fine). It also denies an inline
+`node -e`/`--eval`/`-p`/`--print` or `python`/`py -c` script whose text writes a
+file (`writeFileSync`, `open(path, 'w')`, `write_text`, ...), because
+native-argument quoting can truncate or alter the text it passes. It resolves
+no paths or variables, so a write to the scratchpad is denied too; the deny
+message points to the Write or Edit tool, or the Bash tool. It catches slips,
+not deliberate evasion. Any other tool, malformed input or an error allows the
+command. `scripts/block-powershell-writes.test.mjs` holds its vectors, calling
+its exported `denyReason(command)`.
 
 `npm run check:eval-premises` proves the eval scenarios still rest on true
 facts: each `<!-- premise: … -->` comment in `evals/*/scenarios.md` holds
@@ -118,40 +139,26 @@ after Stage 2 (a config part the snapshot lacks counts as `added`):
   `src/test/` (the shared setup, render and guard-test helpers) and every vitest snapshot
   (`__snapshots__/*.snap`);
 - the test runners' config: any `vitest.config.*` or `vitest.workspace.*`
-  file, the `test` block of `vite.config.ts`, the `test*`
-  scripts, `scripts/test-python.mjs`, and any root `pytest.py`, `_pytest.py`,
-  `pytest/` or `_pytest/` path (a second layer behind the runner's own `-c`
-  and `PYTHONSAFEPATH` pinning);
-- the gate itself: the `check:test-lock` script string, each whole
-  `&&`-separated `verify` step that starts with `npm run test` (in order,
-  arguments included), the order of every other shell operator in `verify`
-  (`||`, `;`, `&`, `|`, newline), every other `&&` step that isn't a bare
-  `npm run <name>` with no arguments (an `exit 0` or `exec` step; adding or
-  removing a plain check step stays free), and `scripts/check-test-lock.mjs` with the `scripts/lib.mjs` it imports;
-- every ignore rule, because the lock lists files through git and a path added
-  to one would otherwise drop out unseen: every `.gitignore` in any letter
-  case (including one that ignores itself), `.git/info/exclude`, a
-  `core.excludesFile`'s configured value and the contents of the file it
-  names wherever it lives, and, while that is unset, every location git's
-  default global ignore file could resolve to (`$XDG_CONFIG_HOME/git/ignore`,
-  and `.config/git/ignore` under `HOME`, `USERPROFILE`,
-  `HOMEDRIVE`+`HOMEPATH` and the OS home; only those that exist are hashed,
-  so a different environment over the same files still matches);
-- every nested git repository git lists, untracked (`dir/`) or staged as a
-  submodule gitlink (`dir`), since pytest would collect a `conftest.py` inside
-  one: a new one is `added: <dir>/`, an existing one is compared by its own
-  `git ls-files -co` listing and file contents, and one git can't list (a
-  pruned worktree) is `unreadable: <dir>/`. Agent worktrees under
-  `.claude/worktrees/` are ignored by `.gitignore`, so they aren't nested repos
-  here (vitest excludes them too, and pytest collects only `src/dsa/code`).
+  file, the `test` block of `vite.config.ts`, the `test*` scripts and
+  `scripts/test-python.mjs`;
+- the gate itself: the `check:test-lock` script string, the whole `verify`
+  script string (one hash, so any edit to it, including a new check step,
+  trips the lock; a new `verify` step belongs to the Stage 2 test-writer), and
+  `scripts/check-test-lock.mjs` with the `scripts/lib.mjs` it imports;
+- every ignore rule in the repository, because the lock lists files through
+  git and a path added to one would otherwise drop out unseen: every
+  `.gitignore` at any depth (including one that ignores itself) and
+  `.git/info/exclude`;
+- the fixture paths given to `--snapshot`.
 
-The global ignore files are machine files, so editing your own global
-gitignore mid-run trips the lock. Known, fail-safe limitation: Claude Code's
-runtime appends entries to `~/.config/git/ignore` and `.git/info/exclude`
-itself (a permission grant can add one), which also trips `--verify` with
-nothing weakened. The lock keeps failing closed rather than ignoring those
-entries, because ignoring them would let anyone hide a file by writing one;
-surface the failure to the user like any other.
+The lock guards against a stage's slip, not a deliberate evasion: it doesn't
+read global ignore files or `core.excludesFile`, and it doesn't look inside
+nested git repositories. Agent worktrees under `.claude/worktrees/` are
+ignored by `.gitignore` (vitest excludes them too, and pytest collects only
+`src/dsa/code`). Claude Code's runtime can append entries to
+`.git/info/exclude` itself (a permission grant can add one), which trips
+`--verify` with nothing weakened; surface that failure to the user like any
+other.
 
 `npx knip --no-progress` is an on-demand dead-code check (unused files,
 exports and dependencies), not part of `verify` or CI and not a dependency
