@@ -30,27 +30,14 @@ also read paths they're given rather than listed: `check:eval-premises` reads
 each premise's target and runs `git apply --check` against the working tree,
 and `links:inbound` checks its topic argument against the working tree, so
 those reads don't go through the ignore rules.
-`check:raw-html` scans `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`
-and `.cts` under `src/` (minus tests, `src/dsa/code/` and `src/test/`, which
-never ship to the browser), and `check:colors` scans `.ts`, `.tsx`, `.mjs`
-and `.css`; `.mjs` counts because `src/lib/markdown.mjs` ships to the browser.
-`check:raw-html` matches names, not syntax: it fails on any HTML sink name in
-its `SINKS` list (`dangerouslySetInnerHTML`, `innerHTML`, `outerHTML`,
-`srcdoc`, `insertAdjacentHTML`, `setHTMLUnsafe`, `parseHTMLUnsafe`,
-`createContextualFragment`, `parseFromString`, `document.write`) as a
-case-insensitive substring, or on the whole word `write` or `writeln`
-(case-sensitive, so `document.write` is caught however the document is
-reached), anywhere in a scanned file, comments and strings included, so it
-fails closed; reword a comment that names one. It decodes the escape
-sequences `\uXXXX`, `\u{…}` and `\xXX` first, so `\u0069nnerHTML` fails too. `dangerouslySetInnerHTML` is
-allowed only in `src/components/CodeBlock.tsx`. It also fails on
-`rehype-raw`, `rehype-dom-raw`, `hast-util-raw`, `markdown-to-jsx` or
-`html-react-parser` in `package.json`. A name built at run time (`'inner' +
-'HTML'`, `document['wr' + 'ite']`) gets past it, and so does one spelled with
-another escape (an identity escape such as `'inner\HTML'`, or a backslash line
-continuation inside a string); review covers those. oxlint's `react/no-danger` rule
-(an error in `.oxlintrc.json`) also flags the JSX prop, and `CodeBlock.tsx`
-disables it on its one line, with the reason.
+`check:colors` scans `.ts`, `.tsx`, `.mjs` and `.css`; `.mjs` counts because
+`src/lib/markdown.mjs` ships to the browser.
+`check:raw-html` proves no shipped source file under `src/` names an HTML sink
+(`dangerouslySetInnerHTML` only in `src/components/CodeBlock.tsx`) and no
+raw-HTML markdown package is a dependency. It matches names, comments and
+strings included, so reword a comment that names one; what it scans, the sink
+list and what gets past it are in `scripts/check-raw-html.mjs`'s header.
+It decodes escapes first, so `\u0069nnerHTML` fails too.
 `scripts/check-pipeline-log.test.mjs` reads `docs/pipeline-log.md`'s header.
 
 Each check script named here exports its logic as a function that takes the root it
@@ -71,44 +58,23 @@ tokens in `src/index.css`, in both directions and by value; `check:contrast`
 proves text clears WCAG AA (4.5:1) on the surfaces it sits on, in both themes;
 `check:npm-refs` proves every `npm run <name>` a markdown file names is a
 script in `package.json`; `check:pipeline-log` proves every row of
-`docs/pipeline-log.md` has its header's eight columns in their format, and that
-a run with gate failures or findings doesn't close with a bare "nothing to
-change" retro. For rows dated after `KINDS_AND_ROUNDS_ALLOWED_UNTIL` (in
-`scripts/check-pipeline-log.mjs`) it also fails a content row
-(`add-topic`, `add-case-study`, `add-dsa-entry`) with findings whose Retro
-doesn't name them as `kinds: a, b` from the script's `KINDS` list, and any row
-with a fix round but no gate failure, finding or `pre:N` to cause it.
+`docs/pipeline-log.md` has its header's eight columns in their format and
+follows the retro rules listed in `scripts/check-pipeline-log.mjs`'s header.
 
 `src/lib/text-encoding.test.ts` (part of `test:run`) fails on any tracked text
-file holding double-encoded UTF-8. That happens when a UTF-8 file is read as
-Windows-1252 and written back, as Windows PowerShell 5.1's
-`Get-Content`/`Set-Content` do. It also fails on U+FFFD, which is what a file
-saved in the ANSI code page decodes to. It scans `git ls-files` output (plus
-untracked, unignored files) by extension and skips `public/`. A topic that
-needs to show mojibake as an example would need an exemption there. It stays
-the real gate; `.claude/hooks/block-powershell-writes.js` only saves the redo.
-It is deliberately blunt: with comments and quoted string contents removed, it denies a
-PowerShell command that runs `Set-Content`, `Add-Content`, `Out-File` or
-`Tee-Object` (or the aliases `sc`, `ac`, `tee`) as a command word (at the
-start of a line or after `;`, `|`, `&`, `(` or `{`), calls
-`[IO.File]::Write*`/`Append*`, or redirects output (`>`, `>>`, `2>`, `*>`, ...)
-to anything but `$null` (`2>&1` is fine). It also denies an inline
-`node -e`/`--eval`/`-p`/`--print` or `python`/`py -c` script whose text writes a
-file (`writeFileSync`, `open(path, 'w')`, `write_text`, ...), because
-native-argument quoting can truncate or alter the text it passes. It resolves
-no paths or variables, so a write to the scratchpad is denied too; the deny
-message points to the Write or Edit tool, or the Bash tool. It catches slips,
-not deliberate evasion. Any other tool, malformed input or an error allows the
-command. `scripts/block-powershell-writes.test.mjs` holds its vectors, calling
-its exported `denyReason(command)`.
+file holding double-encoded UTF-8 (a UTF-8 file read as Windows-1252 and
+written back, as Windows PowerShell 5.1's `Get-Content`/`Set-Content` do) or
+U+FFFD; its header says what it scans. A topic that needs to show mojibake as
+an example would need an exemption there. It stays the real gate;
+`.claude/hooks/block-powershell-writes.js` only saves the redo, denying a
+PowerShell command or inline script that writes a file (what it matches and
+its known gaps are in its header; `scripts/block-powershell-writes.test.mjs`
+holds its vectors).
 
 `npm run check:eval-premises` proves the eval scenarios still rest on true
-facts: each `<!-- premise: … -->` comment in `evals/*/scenarios.md` holds
-(the forms are in
-[evals/README.md](../evals/README.md)), no `premise:` comment is malformed, and
-every `diff` block in `evals/feature-review/scenarios.md` passes
-`git apply --check`. It parses the scenarios with `markdownParser()`, so a
-premise shown in a code block isn't checked.
+facts: every premise comment holds and every feature-review `diff` still
+applies ([evals/README.md](../evals/README.md#running-any-eval); details in
+`scripts/check-eval-premises.mjs`'s header).
 
 `npm run links:inbound -- <section>/<slug>` is a tool, not a check: it lists
 every link to a topic from topics, case studies and DSA entries (old paths in
@@ -170,41 +136,19 @@ read), `src/lib/markdown.d.mts` is used by tsc rather than imported, and
 `d2` is an external binary, not an npm package. Why it isn't a CI gate is in
 [DEFERRED_PRACTICES.md](DEFERRED_PRACTICES.md).
 
-`npm run check:diagrams` needs no d2: it proves the committed SVGs match their
-`.d2` sources and their own recorded bytes (the source and SVG hashes in
-`public/diagrams/manifest.json`), that no diagram's recorded width exceeds
-`MAX_WIDTH` (the limit and why are in [case-studies.md](case-studies.md)), that the `--color-*` tokens recorded there
-under `$tokens` still match `src/index.css` (its one top-level `:root` and one
-`.dark` block; `check:contrast` and `check:tokens` read them through the same
-`readThemeTokens` in `scripts/css-tokens.mjs`, which fails loudly on a second
-block for a theme, a `--color-*` token declared anywhere else, such as under
-`@media`, a value other than 3- or 6-digit hex, or an `@theme` color other
-than `var(--color-<token>)` naming a token both blocks define)
-and keep diagram text at 4.5:1 on every fill, that no `.d2` names a color or imports a file, that every `.d2`
-sits at `<case>/<name>.d2` in lowercase kebab-case (the rule `npm run diagrams`
-renders by, `SOURCE_PATH`), that no SVG is missing or orphaned and nothing
-but `manifest.json` and `<case>/<name>.light.svg`/`.dark.svg` sits under
-`public/diagrams/`, that every SVG passes an allowlist built from what d2 v0.9
-emits, and that every diagram a case study references exists. References are
-found by parsing the case study with the site's own markdown stack
-(`diagramReferences` in `src/lib/markdown.mjs`, which also holds the
-`isDiagramSrc` rule `MarkdownRenderer` uses and the topic-link and DSA
-prerequisite extractors), so inline and reference-style
-images count and an example inside code doesn't. The SVG allowlist: only listed
-elements (no `<script>`, `<foreignObject>`, `<a>`, `<image>`, animation
-elements, ...) and listed attributes, no event handlers, no comments, DOCTYPE
-or processing instructions, and an XML declaration only in the exact form
-`<?xml version="1.0"`, then optionally `encoding="utf-8"`, then optionally
-`standalone="yes|no"`, single-spaced, then `?>`; attribute values with no backslash, quote or
-character reference, `href`s only to `#fragment`s, and no function but
-`url(#fragment)` (plus numeric transform functions in `transform`); `style`
-attributes limited to a few numeric or keyword properties (`stroke-width`,
-`font-size`, `text-anchor`, ...) with plain values; and in `<style>`, besides
-rules with plain values and `font-family: "<name>"`, only `@font-face` blocks
-whose one source is an embedded base64 `data:` font. Any other at-rule, quoted
-string, function (`url()`, `image-set()`, ...) or CSS escape fails, so the
-SVG, opened full size as a document, can't run script or fetch anything. The manifest format and the shared contrast and
-safety code live in `scripts/diagram-manifest.mjs`. `npm run diagrams` is the one command that needs d2 (v0.9.x on PATH:
+`npm run check:diagrams` needs no d2: it proves the committed SVGs and
+`public/diagrams/manifest.json` still match their `.d2` sources and the
+`--color-*` tokens, that diagrams stay within `MAX_WIDTH` (why, in
+[case-studies.md](case-studies.md)) and keep text at 4.5:1, that no `.d2`
+names a color or imports a file, that every file sits where the naming rule
+puts it, that every SVG passes a safety allowlist, and that every diagram a
+case study references exists. The full list is in `scripts/check-diagrams.mjs`'s
+header; the allowlist (`svgProblems`) and the manifest format are in
+`scripts/diagram-manifest.mjs`, and the token reader all three token checks
+share, with the shapes it rejects, is `readThemeTokens` in
+`scripts/css-tokens.mjs`. References are found with the site's own markdown
+stack (`diagramReferences` in `src/lib/markdown.mjs`), so an example inside
+code doesn't count. `npm run diagrams` is the one command that needs d2 (v0.9.x on PATH:
 `scoop install d2`, `brew install d2`, or the install script at d2lang.com);
 run it after adding or editing a `.d2` file and commit what it writes. It is
 not part of `verify`, and CI never runs it.

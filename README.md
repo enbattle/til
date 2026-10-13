@@ -86,9 +86,10 @@ System Design case studies and their diagrams in
 These live in GitHub, not in the code, so they are listed here:
 
 - **Branch protection on `main`** requiring the CI `verify` check to pass.
-  Dependabot auto-merge (`.github/workflows/dependabot-automerge.yml`)
-  depends on it: with no required check, GitHub merges an auto-merge pull
-  request immediately, untested.
+  Dependabot auto-merge (`.github/workflows/dependabot-automerge.yml`), which
+  merges patch and minor updates on their own once CI passes and leaves major
+  ones for a person, depends on it: with no required check, GitHub merges an
+  auto-merge pull request immediately, untested.
 - **"Allow auto-merge"** and **squash merging** enabled in the repository
   settings (the workflow merges with `--squash`).
 - Known effect: a merge made by the workflow's `GITHUB_TOKEN` doesn't start

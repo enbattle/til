@@ -62,18 +62,9 @@ observing what it actually does, which costs real time and tokens per
 scenario. That's a deliberate, judged expense for a personal site, not
 something to run on every commit. Each category runs through its own skill
 (`skill-routing-eval`, `content-review-eval`, `feature-review-eval`), which
-holds its whole procedure; each folder here holds the scenarios and results.
-
-**Premises are checked on every verify.** Scenarios quote live content (a
-sentence in a topic, an entry that mustn't exist yet, a diff against real
-code), and that content changes under them. A scenario states each such fact
-as an HTML comment in its `scenarios.md`, in one of four forms:
-`<!-- premise: <path> contains "<text>" -->`, `… lacks "<text>"`,
-`<!-- premise: <path> exists -->` or `… missing`, with `<path>` relative to
-the repository root. `npm run check:eval-premises` (in `verify`) fails when
-one stops holding, when a `premise:` comment matches no form, and when a
-`diff` block in `feature-review/scenarios.md` no longer passes
-`git apply --check`. Fix the scenario, not the check.
+holds what's specific to it; the stages they share are in
+[Running any eval](#running-any-eval). Each folder here holds the scenarios
+and results.
 
 **Re-run whenever it matters**, not on a fixed schedule: after any change
 the table below names; `.claude/hooks/nudge-sdlc.js` reminds a session
@@ -91,6 +82,68 @@ Which eval to run depends on what changed:
 | The Writing Standard, `docs/content-review.md`, a content skill's Stage 3 checklist, or `docs/NON_NEGOTIABLES.md`               | `content-review-eval`                                                                                                                          |
 | `/feature`'s Stage 4 reviewer or finding-triage instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review | `feature-review-eval`                                                                                                                          |
 | Added or widened a `check:*` script, or made lint stricter                                                                      | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |
+
+## Running any eval
+
+Every eval skill runs these stages. The skill adds only what is its own:
+which instruction it copies, what the agent is given, what each grade means
+for it, its results table's columns, and any run-twice rule.
+
+**Stage 0 — Scope the run.** All scenarios by default; after a narrower
+change, only the scenarios plausibly affected (the skill says how to tell).
+Say which you're running and why.
+
+Scenarios quote live content (a sentence in a topic, an entry that mustn't
+exist yet, a diff against real code), and that content changes under them. A
+scenario states each such fact as an HTML comment in its `scenarios.md`, in
+one of four forms: `<!-- premise: <path> contains "<text>" -->`,
+`… lacks "<text>"`, `<!-- premise: <path> exists -->` or `… missing`, with
+`<path>` relative to the repository root. `npm run check:eval-premises` (in
+`verify`) fails when one stops holding, when a `premise:` comment matches no
+form, and when a `diff` block in `feature-review/scenarios.md` no longer
+passes `git apply --check`. When a new or refreshed scenario relies on live
+content, declare it as a premise. When the check fails, fix the scenario (the
+prompt, draft or diff) so it still tests what it says it tests, not the check.
+
+**Stage 1 — Run each in-scope scenario.** The instruction under test is never
+stored in the eval: a snapshot would test a prompt that no longer exists the
+moment the real one changes. Copy it verbatim from its source on every run.
+For each scenario, spawn a **fresh** `general-purpose` agent, never `fork`
+([why](../docs/SDLC.md#why-a-fresh-agent-never-a-fork)): it must not inherit
+this session's context, its guess at the answer, or the knowledge that
+something was planted. The skill-routing and feature-review instructions also
+tell it not to read anything under `evals/`; the content reviewer isn't told,
+since naming the folder would hint that the draft is an eval. Give it the instruction with its framing
+intact, so it believes it's doing real work. Run independent scenarios in
+parallel (one message, several `Agent` calls). Record each response's text,
+not a paraphrase.
+
+**Stage 2 — Grade and log.** Grade each against the scenario's expected
+answer; the skill says what counts for it.
+
+- **PASS**: the response matches what's expected.
+- **FAIL**: it doesn't (the skill lists the ways).
+- **AMBIGUOUS**: you can't tell, or the response circles the expected answer
+  without clearly naming it. Say why; don't force a grade.
+
+Log the run in the category's `results/README.md`: add a row to its trend
+table (date, trigger, counts, one-line note) and replace its "Latest run"
+section with this run's log: date, run by, trigger, a table with one row per
+scenario run (the skill names the columns), then notes on anything that stood
+out. Git history keeps older logs.
+
+**Stage 3 — A real miss or a new skill? Add a scenario first.** If the run
+was triggered by something the machinery got wrong in real use, or by a new
+skill, first add a scenario to `scenarios.md` in its existing format (each
+scenario tests one thing), and include it in this run. A scenario from something
+that actually happened beats several hypothetical ones.
+
+**Stage 4 — Report.** Summarize for the user: which scenarios ran, the
+grades, and anything surprising (a near-miss, a right answer for the wrong
+reason, a sign the instruction under test needs tightening; report that as a
+finding, don't patch it mid-eval). Run `npm run format:check` on the results
+file, and `npm run check:eval-premises` if you added or edited a scenario.
+Ask before committing.
 
 ## Grading philosophy
 

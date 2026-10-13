@@ -87,15 +87,16 @@ order: 1
   - `Likely follow-ups`: a list of 4–6 interviewer questions, each in bold,
     with a one- or two-sentence answer.
 
-  `src/system-design/case-study-structure.test.ts` checks: a paragraph before
-  the first `##`; the headings; `Requirements` as exactly one list of 4–6
+  `src/system-design/case-study-structure.test.ts` enforces the template's
+  mechanical parts, not its sentence or word counts per section: a paragraph
+  before the first `##`; the headings; `Requirements` as one list of 4–6
   top-level items; `Key numbers` as a paragraph, then one list of 4–5
-  top-level items each opening with bold text that begins with a label and a
-  colon; each decision ending with a `**Rule of thumb.**` paragraph with text
-  after the label; `Likely follow-ups` as one list of 4–6 items each opening
-  with bold; the diagram; and the word budget (`proseWordCount` in
+  top-level items each opening with a bold `Label:`; each decision ending with
+  a `**Rule of thumb.**` paragraph with text after the label; `Likely
+follow-ups` as one list of 4–6 items each opening with bold; the diagram;
+  and the word budget, counted by `proseWordCount` in
   `src/lib/markdown.mjs`: the body's prose, outside code blocks, image alt
-  text, raw HTML and reference definitions). An in-page link,
+  text, raw HTML and reference definitions. An in-page link,
   `[text](#heading-id)`, uses the id the heading renders with (`headingId` in
   `src/lib/headings.ts`: "Decision: the read path" is
   `#decision-the-read-path`), and the test fails one that resolves to no `#` or

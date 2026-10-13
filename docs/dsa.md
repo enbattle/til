@@ -163,8 +163,10 @@ The code files:
   it for every later import in the run. Name the entry instead: `arrays-and-strings`, `stacks-and-queues`.
 - `test_<slug_underscored>.py` (pytest) and `<slug>.test.ts` (vitest) import
   the real code files and cover the edge cases, not only the happy path: empty
-  input, duplicates, the boundaries, and a comparison against a brute-force
-  or standard-library answer on seeded random inputs where one exists.
+  input, a single element, duplicates, the boundaries (the smallest and largest
+  answers), the failure case (nothing found, a missing key), and a comparison
+  against a brute-force or standard-library answer on seeded random inputs
+  where one exists.
 - A randomized comparison is one test per property that loops over its
   trials: at most 50, from a fixed seed (`random.Random(seed)` in pytest, a
   small seeded generator such as mulberry32 in vitest). Put the seed, and the step or input where cheap, in
@@ -264,7 +266,8 @@ Adding an entry is a scope decision for the user, not a gap; a new entry still
 goes through the `add-dsa-entry` skill.
 
 Merging entries into one also follows that skill. The merge reads the old
-entries and code as research notes, deletes them and their code folders, and
-repoints every link to an old slug (`git grep -n "/dsa/<old-slug>"`); a new
+entries and code as research notes, not a draft to trim, and in the same
+change deletes them and their code folders and repoints every link to an old
+slug (`git grep -n "/dsa/<old-slug>"`); a new
 slug is checked against Python's standard-library module names ("Code pairs
 and the code files" above).

@@ -9,28 +9,25 @@ Once a content skill's Stage 3 review actually runs, does it catch a real
 planted problem instead of rubber-stamping the draft, and leave a clean draft
 alone? (`skill-routing-eval` checks the step before: whether the right skill
 is chosen.) The scenarios are in
-[`evals/content-review/scenarios.md`](../../../evals/content-review/scenarios.md);
-read `evals/README.md` for the general eval philosophy.
+[`evals/content-review/scenarios.md`](../../../evals/content-review/scenarios.md).
+Follow the stages in
+[evals/README.md, "Running any eval"](../../../evals/README.md#running-any-eval);
+this file adds what is specific to this eval.
 
-## Stage 0 — Scope the run
+## Stage 0 — Scope
 
 All scenarios (`CR-*` for `add-topic`, `CS-*` for `add-case-study`, `DS-*`
 for `add-dsa-entry`) by default, and after an edit to something they all
 depend on: the Writing Standard, `docs/NON_NEGOTIABLES.md`, or the shared
 Stage 3 instruction in `docs/content-review.md`. An edit to one skill's
 checklist needs only that skill's scenarios; a Writing Standard edit that only
-touches tone needs only `CR-02`. Say which you're running and why.
+touches tone needs only `CR-02`. The drafts are fabricated, but a scenario can
+still rely on live content (a case study the draft links to, no published item
+with the draft's slug); declare it as a premise.
 
-The drafts are fabricated, but a scenario can still rely on live content (a
-case study the draft links to, no published item with the draft's slug).
-Declare each such fact as a `<!-- premise: … -->` comment in `scenarios.md`;
-`npm run check:eval-premises` (part of `verify`) fails when one stops holding.
+## Stage 1 — What the reviewer gets
 
-## Stage 1 — Run each in-scope scenario
-
-The reviewer instruction is never stored in the eval: a snapshot would test a
-review that no longer exists the moment the real prompt changes. So for each
-scenario, read fresh, never from a cached copy:
+For each scenario, read fresh:
 
 - the Stage 3 instruction from `docs/content-review.md`, verbatim, with
   `<kind>` and `<checklist>` filled in from the reviewing skill's `SKILL.md`
@@ -48,18 +45,14 @@ scenario, read fresh, never from a cached copy:
   line); otherwise a true near-duplicate finding confounds every grade.
 
 Build the draft as `scenarios.md` says (a `CS-*` or `DS-*` scenario is its
-base plus the scenario's replacements). Then spawn a **fresh**
-`general-purpose` agent (never `fork`: it must not know a problem was
-planted) and give it, in this order: the draft's files, verbatim, exactly as
-the skill's Stage 3 would; the Writing Standard; the path of
-`docs/NON_NEGOTIABLES.md`; the existing items; and the instruction, with its
-framing intact, so it believes it's doing a real review. Run independent
-scenarios in parallel (one message, several `Agent` calls). Record each
-review's finding text, not a paraphrase.
+base plus the scenario's replacements). Give the agent, in this order: the
+draft's files, verbatim, exactly as the skill's Stage 3 would; the Writing
+Standard; the path of `docs/NON_NEGOTIABLES.md`; the existing items; and the
+instruction. Record each review's finding text.
 
-## Stage 2 — Grade and log
+## Stage 2 — Grading specifics
 
-Grade each against the scenario's **Expected finding**:
+Against the scenario's **Expected finding**:
 
 - **PASS**: a finding substantively names the planted violation. For a
   control (`CR-05`, `CS-03`, `DS-03`): nothing flagged, or only findings true
@@ -67,28 +60,12 @@ Grade each against the scenario's **Expected finding**:
 - **FAIL**: nothing flagged when a violation was planted, or only something
   unrelated; for a control, a reported defect that isn't true of the draft (a
   fabricated claim, a misreading, a correct statement called wrong).
-- **AMBIGUOUS**: a finding brushes near the planted issue without clearly
-  naming it. Say why; don't force a grade.
 
-Log the run in `evals/content-review/results/README.md`: add a row to its
-trend table (date, trigger, counts, one-line note) and replace its "Latest
-run" section with this run's log: date, run by, trigger, a table of ID,
-planted violation, whether the review caught it and the grade, then notes on
-anything that stood out. Git history keeps older logs.
+Log in `evals/content-review/results/README.md`, with columns ID, planted
+violation, whether the review caught it, and grade.
 
-## Stage 3 — A real miss or a new skill? Add a scenario first
+## Stage 3 — New scenarios
 
-If this run was triggered by a real content review missing something, or by a
-new content-reviewing skill, first add a scenario to `scenarios.md` in the
-existing format (**Section** or base, **Planted violation**, the fabricated
-draft, **Expected finding**, **Fails if**), one planted problem each, and
-include it. A scenario sourced from a real miss is worth more than several
-speculative ones.
-
-## Stage 4 — Report
-
-Summarize for the user: which scenarios ran, the grades, and anything
-surprising (a violation caught for the wrong reason, a near-miss, a sign the
-Stage 3 prompt itself needs tightening; report that as a finding, don't patch
-it mid-eval). Run `npm run format:check` on the results file, and `npm run check:eval-premises` if you added or edited a scenario. Ask before
-committing.
+Triggered by a real content review missing something, or by a new
+content-reviewing skill. Format: **Section** or base, **Planted violation**,
+the fabricated draft, **Expected finding**, **Fails if**.

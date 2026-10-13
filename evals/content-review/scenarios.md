@@ -1037,9 +1037,10 @@ supported by the ID length.
 
 These test `add-dsa-entry`'s Stage 3 review. Like the case-study scenarios, they
 share one fabricated base: a short Prefix Sums entry (a pattern) and its four
-code files, written to the template in `docs/dsa.md`, with the code's comments
-carrying the reasons and the walkthrough paragraphs connecting each step to
-the next. Build a scenario's files by taking the base and applying that
+code files, written to the template and code model in `docs/dsa.md` (region
+fences in the entry, region markers in the code files), with the code's
+comments carrying the reasons and the walkthrough paragraphs connecting each
+step to the next. Build a scenario's files by taking the base and applying that
 scenario's replacements verbatim, then give the reviewer the entry and all
 four code files, exactly as `add-dsa-entry` Stage 3 would. These are fixtures
 for this eval only: never write them into `src/dsa/`. The base code and tests
@@ -1128,31 +1129,12 @@ answer it.
 
 ## Walkthrough
 
-```python
-from collections import Counter
+```python region=build-prefix
 
-
-def build_prefix(nums: list[int]) -> list[int]:
-    # One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
-    # range that starts at 0 still has something to subtract.
-    prefix = [0] * (len(nums) + 1)
-    for i, value in enumerate(nums):
-        # Slot i + 1, not i: prefix[i] is the total before nums[i], which this reads.
-        prefix[i + 1] = prefix[i] + value
-    return prefix
 ```
 
-```typescript
-export function buildPrefix(nums: number[]): number[] {
-  // One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
-  // range that starts at 0 still has something to subtract.
-  const prefix = new Array<number>(nums.length + 1).fill(0);
-  for (let i = 0; i < nums.length; i++) {
-    // Slot i + 1, not i: prefix[i] is the total before nums[i], which this reads.
-    prefix[i + 1] = prefix[i] + nums[i];
-  }
-  return prefix;
-}
+```typescript region=build-prefix
+
 ```
 
 One pass, each total built from the one before it, and the example's table
@@ -1161,17 +1143,12 @@ One pass, each total built from the one before it, and the example's table
 call, and `Counter` is for the counting function below.) With the table built,
 a range question costs almost nothing.
 
-```python
-def range_sum(prefix: list[int], left: int, right: int) -> int:
-    # right is inside the range: prefix[right] would stop just before it.
-    return prefix[right + 1] - prefix[left]
+```python region=range-sum
+
 ```
 
-```typescript
-export function rangeSum(prefix: number[], left: number, right: number): number {
-  // right is inside the range: prefix[right] would stop just before it.
-  return prefix[right + 1] - prefix[left];
-}
+```typescript region=range-sum
+
 ```
 
 That's two reads and a subtraction however long the range is, and
@@ -1179,36 +1156,12 @@ That's two reads and a subtraction however long the range is, and
 way: you know the sum you want and need the ranges that make it, so the totals
 go into a hash map instead of an array, looked up by value.
 
-```python
-def count_subarrays_with_sum(nums: list[int], k: int) -> int:
-    # The empty prefix: without it, a subarray that starts at 0 is never counted.
-    seen = Counter({0: 1})
-    total = 0
-    count = 0
-    for value in nums:
-        total += value
-        # Look up before recording total, or total pairs with itself: an empty
-        # subarray, counted once per element when k is 0.
-        count += seen[total - k]
-        seen[total] += 1
-    return count
+```python region=count-subarrays-with-sum
+
 ```
 
-```typescript
-export function countSubarraysWithSum(nums: number[], k: number): number {
-  // The empty prefix: without it, a subarray that starts at 0 is never counted.
-  const seen = new Map<number, number>([[0, 1]]);
-  let total = 0;
-  let count = 0;
-  for (const value of nums) {
-    total += value;
-    // Look up before recording total, or total pairs with itself: an empty
-    // subarray, counted once per element when k is 0.
-    count += seen.get(total - k) ?? 0;
-    seen.set(total, (seen.get(total) ?? 0) + 1);
-  }
-  return count;
-}
+```typescript region=count-subarrays-with-sum
+
 ```
 
 On the example with `k = 5`, the totals arrive as 3, 4, 8, 9 and 14, and each
@@ -1253,6 +1206,7 @@ is O(n²), even when the table makes each pair's sum O(1).
 `src/dsa/code/prefix-sums/prefix_sums.py`:
 
 ```python
+# region build-prefix
 from collections import Counter
 
 
@@ -1264,13 +1218,17 @@ def build_prefix(nums: list[int]) -> list[int]:
         # Slot i + 1, not i: prefix[i] is the total before nums[i], which this reads.
         prefix[i + 1] = prefix[i] + value
     return prefix
+# endregion
 
 
+# region range-sum
 def range_sum(prefix: list[int], left: int, right: int) -> int:
     # right is inside the range: prefix[right] would stop just before it.
     return prefix[right + 1] - prefix[left]
+# endregion
 
 
+# region count-subarrays-with-sum
 def count_subarrays_with_sum(nums: list[int], k: int) -> int:
     # The empty prefix: without it, a subarray that starts at 0 is never counted.
     seen = Counter({0: 1})
@@ -1283,6 +1241,7 @@ def count_subarrays_with_sum(nums: list[int], k: int) -> int:
         count += seen[total - k]
         seen[total] += 1
     return count
+# endregion
 ```
 
 `src/dsa/code/prefix-sums/test_prefix_sums.py`:
@@ -1358,6 +1317,7 @@ def test_counts_match_brute_force():
 `src/dsa/code/prefix-sums/prefix-sums.ts`:
 
 ```typescript
+// #region build-prefix
 export function buildPrefix(nums: number[]): number[] {
   // One slot longer than nums: prefix[0] = 0 is the sum of no elements, so a
   // range that starts at 0 still has something to subtract.
@@ -1368,12 +1328,16 @@ export function buildPrefix(nums: number[]): number[] {
   }
   return prefix;
 }
+// #endregion
 
+// #region range-sum
 export function rangeSum(prefix: number[], left: number, right: number): number {
   // right is inside the range: prefix[right] would stop just before it.
   return prefix[right + 1] - prefix[left];
 }
+// #endregion
 
+// #region count-subarrays-with-sum
 export function countSubarraysWithSum(nums: number[], k: number): number {
   // The empty prefix: without it, a subarray that starts at 0 is never counted.
   const seen = new Map<number, number>([[0, 1]]);
@@ -1388,6 +1352,7 @@ export function countSubarraysWithSum(nums: number[], k: number): number {
   }
   return count;
 }
+// #endregion
 ```
 
 `src/dsa/code/prefix-sums/prefix-sums.test.ts`:
@@ -1505,8 +1470,9 @@ the bug and `countSubarraysWithSum` doesn't use `buildPrefix`. The Python code
 and tests are unchanged and correct, and the comments in both files are
 unchanged, so the TypeScript comment on the loop body still describes the
 correct code.
-**Replacements in the base:** in both `prefix-sums.ts` and the entry's first
-typescript fence, replace `  for (let i = 0; i < nums.length; i++) {` with:
+**Replacements in the base:** in `prefix-sums.ts` (the entry's
+`region=build-prefix` fence shows it from there), replace
+`  for (let i = 0; i < nums.length; i++) {` with:
 
 ```typescript
   for (let i = 0; i < nums.length - 1; i++) {

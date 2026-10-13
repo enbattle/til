@@ -20,8 +20,8 @@ thumb, and in a case study each decision's rule, against every example on the
 page; a rule that fails the page's own example is the finding reviews raise
 most often.
 
-Spawn a **fresh** `general-purpose` agent (never `fork`: it must not inherit
-your own read of the draft). Give it what the skill's **Files** lists,
+Spawn a **fresh** `general-purpose` agent (never `fork`;
+[why](SDLC.md#why-a-fresh-agent-never-a-fork)). Give it what the skill's **Files** lists,
 `docs/writing-standard.md`, the path of `docs/NON_NEGOTIABLES.md`, the titles
 and slugs of the skill's **Existing items** (for a near-duplicate check), any
 decisions already recorded in an earlier round, and this instruction, close

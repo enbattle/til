@@ -33,13 +33,9 @@ as files in the repository and shipped with the next build.
 ## Adding a feature or nontrivial change
 
 Use `/feature <description>` — it runs this repo's full spec → TDD →
-implementation → adversarial review (code + UI) → retrospective pipeline: three separate,
-fresh agents (test-writer, implementer, reviewer; a triager, a fixer or a
-process-edit reader joins only when a stage calls for one) with role separation
-enforced between them, plus the orchestrating session handling spec
-directly (docs stay with the implementer agent, as part of finishing the
-change). See [docs/SDLC.md](docs/SDLC.md) for why it's shaped this
-way — including why it's three agents and not one per named step — and
+implementation → adversarial review (code + UI) → retrospective pipeline,
+with the test-writer, implementer and reviewer as separate, fresh agents. See
+[docs/SDLC.md](docs/SDLC.md) for why it's shaped this way and
 [`.claude/skills/feature/SKILL.md`](.claude/skills/feature/SKILL.md) for
 the exact steps. Skip it for genuinely small, unambiguous changes (a typo,
 a one-line fix) — just make those directly. A bug of unknown size is
@@ -76,11 +72,10 @@ Every change, including a small direct fix, lands through a branch and a pull
 request and merges only when CI passes; nothing is committed directly to
 `main`. That is how CI runs before a change goes live: two commits with
 failing tests once reached `main` and deployed because they were pushed
-straight to it. A dependency update (a Dependabot pull request, or a version
-bump done by hand) is a direct change, not a `/feature`: run `npm run verify`,
-read the release notes for a major version, and let CI decide; patch and minor
-Dependabot updates merge on their own once CI passes (README, "Repository
-settings this relies on"). The skills still end at "ready to commit"; committing,
+straight to it. A dependency update, Dependabot's or by hand, is a direct change, not a `/feature`: run
+`npm run verify`, read the release notes for a major version, and let CI
+decide ([README](README.md), "Repository settings this relies on", covers
+Dependabot's auto-merge). The skills still end at "ready to commit"; committing,
 pushing and opening the pull request wait for the user's go-ahead.
 
 ## Verifying a change

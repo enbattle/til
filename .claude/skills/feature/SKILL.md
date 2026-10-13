@@ -13,8 +13,8 @@ request is this skill's argument). Why each stage is shaped this way is in
 
 1. The agent that writes tests never implements. The agent that implements
    never edits a test file. The agent that reviews never writes code. Each
-   is a **separate, fresh** `Agent` call — never a `fork` — so no stage
-   inherits another stage's reasoning or bias.
+   is a **separate, fresh** `Agent` call — never a `fork`
+   ([why](../../../docs/SDLC.md#why-a-fresh-agent-never-a-fork)).
 2. After the test-writing stage and after the implementation stage, you
    (the orchestrator) verify the rule held by running the gate checks
    yourself (`git status`, the test-lock check) — not by trusting the
@@ -126,6 +126,13 @@ this instruction, close to verbatim:
 > implementation, not a typo in the test). A file that can't import a module
 > nothing implements yet is red as a whole and hides each test's own reason,
 > so a test that doesn't need that module goes in a file that doesn't import it.
+> When you remove or merge a test, for each behaviour only it asserted, name
+> a code change that breaks that behaviour and show a remaining test that
+> passes on the unchanged code and fails on the change (a mutation in a copy
+> outside the working tree). Where that code doesn't exist yet, list the
+> mutation instead. A test removed with the behaviour it tested needs none;
+> say so. Your report lists each removed or merged test with its mutation
+> and the test that failed.
 
 **Gate** (you run it):
 
@@ -216,6 +223,9 @@ Also:
   Stage 2 wrote them if the spec planned the
   guard; otherwise report it and re-run Stage 2 for them before this gate
   passes.
+- **Run the listed mutations.** Run each mutation Stage 2 listed for code
+  that didn't exist then, the same way; a remaining test must fail on it, or
+  re-run Stage 2 for that behaviour.
 
 ## Stage 4 — Adversarial review (code + UI)
 
