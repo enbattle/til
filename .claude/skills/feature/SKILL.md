@@ -68,8 +68,15 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   without short of building the name at run time (as `check:raw-html` does,
   `\u` and `\x` escapes decoded, leaving `'inner' + 'HTML'` to review), never a regex over how the code is
   spelled. Its vectors cover each route code can take to the sink, not only
-  spellings. List the ones known at the start; the spec needn't foresee all of
-  them, since Stage 4 tries every way past the guard.
+  spellings. List the ones known at the start. A change that replaces a guard,
+  or deletes or edits its reject cases, accounts for each removed case (from
+  the base's test files) and for each class the old guard rejected by
+  construction (a parser sees through escapes and comments; a top-level
+  script always runs): each is kept as an acceptance criterion or dropped in
+  the plan the user approves, recorded under `## Review decisions` as
+  "Dropped at spec" so Stage 4 doesn't re-raise it. A vector a
+  NON_NEGOTIABLES line names is never dropped this way. Stage 4 tries every
+  other way past the guard.
 - A change to a script that is already locked (`docs/verification.md` lists
   them, e.g. `scripts/lib.mjs`) or a new `verify` step (the whole string is
   locked) is assigned to the Stage 2 test-writer, which writes its planted
