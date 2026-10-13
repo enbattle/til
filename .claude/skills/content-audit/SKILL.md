@@ -35,8 +35,7 @@ say so before starting.
 
 List every in-scope file yourself (mechanical, no bias risk). Split the
 list into roughly-even parallel batches rather than one massive agent
-call — by section is the natural split (mirrors how this repo's own
-first full sweep split 52 files across 4 agents by section). A batch of
+call — by section is the natural split. A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
 section is unusually large. The case studies get batches of their
 own, split so each agent can read its share in full (about five per agent,
@@ -109,9 +108,8 @@ apply them directly — no separate fix agent needed for a small finding
 count, the same reasoning `docs-audit` Stage 3 gives (the independent
 audit in Stage 2 already was the check). If the finding count is large
 (many files, many findings per file), batch the fixes across fresh
-agents again rather than applying dozens of edits serially yourself,
-mirroring how the first full sweep (2026-09-15) applied its fixes in
-batches rather than one at a time. For a finding you disagree with, or a
+agents again rather than applying dozens of edits serially yourself.
+For a finding you disagree with, or a
 correctness claim that needs a judgment call the audit agent couldn't
 make on its own, resolve it yourself or ask the user rather than
 applying it blindly.

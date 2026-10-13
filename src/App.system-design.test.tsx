@@ -13,7 +13,7 @@ import { caseStudyBody, chromeLinks } from '@/test/content';
 import { escapeRegExp, renderAt } from '@/test/render';
 
 // --- System Design: design case studies alongside the catalog ---
-// Shared across the three kinds of page (docs/specs/ui-dedupe.md, design item
+// Shared across both kinds of page (docs/specs/ui-dedupe.md, design item
 // 6): "On this page" is tested in App.on-this-page.test.tsx, Previous/Next and
 // not-found in App.page-kinds.test.tsx, and the sidebar choice in
 // App.tabs.test.tsx.

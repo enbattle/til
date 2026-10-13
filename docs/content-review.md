@@ -61,11 +61,8 @@ one (a `git status --porcelain` over the folders it must not touch; unlike a
 diff, this also shows untracked files). Summarize the content and the review
 outcome for the user.
 
-Append a row for this run to [docs/pipeline-log.md](pipeline-log.md): its
-header defines the columns; Run is `<skill> <path>`, Retro is `n/a` (these
-skills have no retrospective) or, when the first round had findings, their
-kinds from the header's list (`kinds: tone, wrong-claim`), Gate failures counts failed `verify` runs, and
-Agents counts every agent you started, a batch drafter included. Then run
+Append a row for this run to [docs/pipeline-log.md](pipeline-log.md), whose
+header defines each column (Agents counts a batch drafter too), then run
 `npm run check:pipeline-log`.
 The row goes in the content's commit, with the files the skill lists. Ask
 before committing or pushing: these skills leave the working tree ready, they

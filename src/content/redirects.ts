@@ -3,7 +3,10 @@
  * moved, merged or renamed topic's old URL keeps working. `TopicPage` checks
  * this before falling back to /not-found. Entries are never removed, and a
  * target must be a live topic, never another source (`redirects.test.ts`).
- * See docs/content.md, "Moving, merging or renaming a topic".
+ * See docs/content.md, "Moving, merging or renaming a topic". The export is
+ * read by dynamic import (`redirects.test.ts`, `scripts/inbound-links.mjs`),
+ * which knip can't see.
+ * @public
  */
 export const REDIRECTS: Readonly<Record<string, string>> = {
   'ai-and-ml/context-is-a-budget': 'coding-agents/context-is-a-budget',

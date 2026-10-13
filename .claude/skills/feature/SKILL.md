@@ -68,15 +68,15 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   without short of building the name at run time (as `check:raw-html` does,
   `\u` and `\x` escapes decoded, leaving `'inner' + 'HTML'` to review), never a regex over how the code is
   spelled. Its vectors cover each route code can take to the sink, not only
-  spellings. List the ones known at the start. A change that replaces a guard,
-  or deletes or edits its reject cases, accounts for each removed case (from
-  the base's test files) and for each class the old guard rejected by
-  construction (a parser sees through escapes and comments; a top-level
-  script always runs): each is kept as an acceptance criterion or dropped in
-  the plan the user approves, recorded under `## Review decisions` as
-  "Dropped at spec" so Stage 4 doesn't re-raise it. A vector a
-  NON_NEGOTIABLES line names is never dropped this way. Stage 4 tries every
-  other way past the guard.
+  spellings. List the ones known at the start. A change that replaces, removes
+  or narrows a guard lists, in the plan the user approves, each reject case
+  it drops (from the base's test files) and each class the old guard rejected
+  by construction (a parser sees through escapes and comments; a top-level
+  script always runs), each kept as a criterion or dropped; a drop is recorded
+  under `## Review decisions` as "Dropped at spec" so Stage 4 doesn't re-raise
+  it. A vector a NON_NEGOTIABLES line names is never dropped. Stage 2 proves
+  every case not dropped is still covered. Stage 4 tries every other way past
+  the guard.
 - A change to a script that is already locked (`docs/verification.md` lists
   them, e.g. `scripts/lib.mjs`) or a new `verify` step (the whole string is
   locked) is assigned to the Stage 2 test-writer, which writes its planted
@@ -126,13 +126,17 @@ this instruction, close to verbatim:
 > implementation, not a typo in the test). A file that can't import a module
 > nothing implements yet is red as a whole and hides each test's own reason,
 > so a test that doesn't need that module goes in a file that doesn't import it.
-> When you remove or merge a test, for each behaviour only it asserted, name
-> a code change that breaks that behaviour and show a remaining test that
-> passes on the unchanged code and fails on the change (a mutation in a copy
-> outside the working tree). Where that code doesn't exist yet, list the
-> mutation instead. A test removed with the behaviour it tested needs none;
-> say so. Your report lists each removed or merged test with its mutation
-> and the test that failed.
+> When you remove, merge or narrow a test (fewer cases, a looser assertion
+> or a smaller fixture; a guard's reject case included), or the spec narrows
+> what a guard checks, for each behaviour no longer asserted name a code
+> change that breaks it and show a remaining test that passes on the
+> unchanged code and fails on the change (a mutation in a copy outside the
+> working tree). Where that code doesn't exist yet, list the mutation
+> instead. None is needed for a behaviour the product no longer has (a
+> replaced guard's cases don't count: its replacement must still reject
+> them) or one the spec lists as "Dropped at spec"; say so. Your report lists
+> each removed, merged or narrowed test with its mutation and the test that
+> failed.
 
 **Gate** (you run it):
 
