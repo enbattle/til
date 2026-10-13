@@ -11,8 +11,8 @@ src/content/
   registry.test.ts      # asserts registry.ts matches the folders on disk
   redirects.ts          # old section/slug -> new, for moved or merged topics
   redirects.test.ts     # every redirect's shape, target and lack of chains
-  topic-structure.test.ts        # the catalog standard (budget, title, rule of thumb)
-  where-youll-meet-this.test.ts  # systems topics' closing section
+  topic-structure.test.ts  # the catalog standard (budget, title, rule of thumb,
+                           # systems topics' closing section)
   <section-slug>/
     <topic-slug>.md
 ```
@@ -32,9 +32,11 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
 - **Section** is the file's immediate parent folder — not repeated in
   frontmatter.
 - **Slug** is the filename without `.md` (kebab-case).
-- **`title`, `summary`, and `date` are required** — `src/lib/content.ts`
-  throws at load time if any is missing, so `src/lib/content.test.ts`, which
-  loads every topic, fails.
+- **`title`, `summary`, and `date` are required, and are the only keys** —
+  `src/lib/content.ts` throws at load time, naming the file and the field, if
+  any is missing or empty or if there's any other key (`checkFields` in
+  `src/lib/frontmatter.ts`, shared with case studies and DSA entries), so
+  `src/lib/content.test.ts`, which loads every topic, fails.
 - **Frontmatter is eager, bodies are lazy.** `content.ts` reads each file's
   frontmatter at load through a `?meta` Vite query (the `markdownMeta` plugin
   in `vite.config.ts`), and each body's prose word count through a `?words`
@@ -78,16 +80,17 @@ otherwise the easiest one to skip review on entirely.
 
 Every `systems-and-infrastructure` topic ends with a
 `## Where you'll meet this` section: the exact heading (straight apostrophe),
-the last `##` in the body, at least 25 words. It names the two or three kinds
+with no `#` or `##` heading after it (nested ones in a blockquote or list
+included), at least 25 words. It names the two or three kinds
 of systems where the topic genuinely matters and says what the topic does
 there, drawn from a small fixed set that recurs across topics so the same
 systems connect them: payments and checkout, a news feed or timeline, chat
 and messaging, a URL shortener, and a notification or email pipeline (name
 one outside the set only when none fit).
-`src/content/where-youll-meet-this.test.ts` enforces the heading, its position
-and its length. If a topic already ends with a section about where it shows
-up, rename that section instead of adding a second. Other sections' topics
-don't need it.
+`src/content/topic-structure.test.ts` enforces the heading, its position
+and its length (prose words, as the read-time count has them). If a topic
+already ends with a section about where it shows up, rename that section
+instead of adding a second. Other sections' topics don't need it.
 
 ## The catalog standard
 

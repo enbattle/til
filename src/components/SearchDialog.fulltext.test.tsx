@@ -1,6 +1,7 @@
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getSection } from '@/content/registry';
 import { TOPICS, loadAllTopicBodies } from '@/lib/content';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { CASE_STUDIES, getCaseStudy } from '@/lib/system-design';
@@ -61,19 +62,38 @@ beforeEach(async () => {
   });
   // Rejections are asserted through the UI; keep Node from flagging the promise.
   pending.catch(() => {});
-  state.index = actual.createSearchIndex({
-    topics: TOPICS,
-    caseStudies: CASE_STUDIES,
-    dsaEntries: [],
-    loadTopicBodies: () => pending,
-    // Case-study bodies load on the same full-text path; this fixture body holds
-    // a word no title, summary or topic body contains.
-    loadCaseStudyBodies: async () =>
-      new Map([
-        ['url-shortener', `Some prose. ${CASE_STUDY_BODY_WORD} appears only here.\n`],
-      ]),
-    loadDsaBodies: async () => new Map(),
-  });
+  // The real topics and case studies as search items (the shape the app's own
+  // index gives them), over body loaders this test controls.
+  state.index = actual.createSearchIndex([
+    {
+      items: TOPICS.map((t) => ({
+        key: `${t.section}/${t.slug}`,
+        path: `/${t.section}/${t.slug}`,
+        label: getSection(t.section)?.label ?? t.section,
+        title: t.title,
+        summary: t.summary,
+      })),
+      loadBodies: () => pending,
+    },
+    {
+      items: CASE_STUDIES.map((c) => ({
+        key: `system-design/${c.slug}`,
+        path: `/system-design/${c.slug}`,
+        label: 'System Design',
+        title: c.title,
+        summary: c.summary,
+      })),
+      // Case-study bodies load on the same full-text path; this fixture body
+      // holds a word no title, summary or topic body contains.
+      loadBodies: async () =>
+        new Map([
+          [
+            'system-design/url-shortener',
+            `Some prose. ${CASE_STUDY_BODY_WORD} appears only here.\n`,
+          ],
+        ]),
+    },
+  ]);
   ensureSpy = vi.fn(() => state.index.ensureFullTextSearch());
   state.ensure = ensureSpy as unknown as () => Promise<void>;
 });

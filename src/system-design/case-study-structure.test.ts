@@ -1,92 +1,42 @@
-import { createElement } from 'react';
-import { render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import { parseFrontmatter } from '@/lib/frontmatter';
-import { proseWordCount } from '@/lib/markdown.mjs';
+import { isDiagramSrc, proseWordCount } from '@/lib/markdown.mjs';
 import { WORD_BUDGET } from '@/lib/reading-time';
+import { RAW_CASE_STUDIES } from '@/test/content';
+import {
+  blocksAfter,
+  frontmatterProblems,
+  renderBody,
+  section,
+  wordBudgetProblems,
+} from '@/test/structure';
 
 /**
- * Content-structure test for the System Design case studies; the rules are in
- * docs/case-studies.md. The template is the five-minute one
- * (docs/specs/five-minute-templates.md, criteria 8 and 10), and since
- * docs/specs/retire-template-switch.md (criteria 1, 3, 4, 6 and 7) it is the
- * only one: nothing in a page's frontmatter picks it. Each case study is
- * rendered with the real `MarkdownRenderer` and checked on the DOM it
- * produces, so a heading, link, list item or id counts exactly when the
- * reader's page has it.
- *
- * - the frontmatter keys are exactly `title`, `summary`, `date` and `order`
- *   (an allowlist: an extra key, `template` included, or a missing one fails,
- *   naming the file and the key);
- * - at least one paragraph before the first `h2`;
- * - the `h2`s exactly: `Requirements`, `Key numbers`, `High-level
- *   architecture`, `API and data model`, three `Decision: <topic>`, `Likely
- *   follow-ups`;
- * - `Requirements`: one list of 4-6 top-level items;
- * - `Key numbers`: a paragraph first, then one list of 4-5 top-level items,
- *   each opening with bold text that begins with a label and a colon;
- * - each `Decision:` section ends with a paragraph opening with bold
- *   `Rule of thumb.`, with a rule after it;
- * - `Likely follow-ups`: one list of 4-6 top-level items, each opening with
- *   bold text;
- * - `High-level architecture` holds a `/diagrams/` image with alt text;
- * - every `href="#id"` link names an id the page has;
- * - `proseWordCount(body)` is at most 1,150.
+ * Content-structure test for the System Design case studies. The rules are
+ * docs/case-studies.md's; this file checks each one on the DOM the real
+ * `MarkdownRenderer` produces, so a heading, link, list item or id counts
+ * exactly when the reader's page has it. The shared plumbing is in
+ * src/test/structure.ts.
  */
 
-const RAW = import.meta.glob('/src/system-design/case-studies/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-const FILES = Object.entries(RAW);
+const FILES = Object.entries(RAW_CASE_STUDIES);
 
 const ALLOWED_KEYS = ['title', 'summary', 'date', 'order'];
 const IN_PAGE = 'a[href^="#"]';
-
-function renderBody(body: string): HTMLElement {
-  const { container } = render(
-    createElement(
-      MemoryRouter,
-      null,
-      createElement(
-        ThemeProvider,
-        null,
-        createElement(MarkdownRenderer, { content: body }),
-      ),
-    ),
-  );
-  return container;
-}
-
-/** The blocks after `h2`, up to the next `h2`. */
-function blocksAfter(h2: Element): Element[] {
-  const blocks: Element[] = [];
-  for (let el = h2.nextElementSibling; el && el.tagName !== 'H2';) {
-    blocks.push(el);
-    el = el.nextElementSibling;
-  }
-  return blocks;
-}
-
-/** The blocks after the `h2` titled `heading`, up to the next `h2`; `null`
- * when there's no such `h2`. */
-function section(page: HTMLElement, heading: string): Element[] | null {
-  const h2 = [...page.querySelectorAll('h2')].find(
-    (h) => h.textContent?.trim() === heading,
-  );
-  return h2 ? blocksAfter(h2) : null;
-}
 
 function brokenInPageLinks(page: HTMLElement): string[] {
   const ids = new Set([...page.querySelectorAll('[id]')].map((el) => el.id));
   return [...page.querySelectorAll(IN_PAGE)]
     .map((a) => a.getAttribute('href')!.slice(1))
     .filter((id) => !ids.has(id));
+}
+
+/** Whether a rendered `img` is a diagram: its src, less the site's base path,
+ * is a `/diagrams/` URL as `isDiagramSrc` reads one. */
+function isDiagramImg(img: HTMLImageElement): boolean {
+  const base = import.meta.env.BASE_URL;
+  const src = img.getAttribute('src') ?? '';
+  return src.startsWith(base) && isDiagramSrc(`/${src.slice(base.length)}`);
 }
 
 function diagramProblems(page: HTMLElement): string[] {
@@ -96,7 +46,7 @@ function diagramProblems(page: HTMLElement): string[] {
       ...(b.matches('img') ? [b as HTMLImageElement] : []),
       ...b.querySelectorAll<HTMLImageElement>('img'),
     ])
-    .filter((img) => /\/diagrams\/.+\.svg$/.test(img.getAttribute('src') ?? ''));
+    .filter(isDiagramImg);
   if (diagrams.length === 0)
     return ['no /diagrams/ image inside High-level architecture'];
   return diagrams.some((img) => (img.getAttribute('alt') ?? '').trim())
@@ -214,13 +164,6 @@ function decisionProblems(page: HTMLElement): string[] {
     });
 }
 
-function budgetProblems(body: string): string[] {
-  const words = proseWordCount(body);
-  return words <= WORD_BUDGET
-    ? []
-    : [`${words} words, over the ${WORD_BUDGET}-word budget`];
-}
-
 /** Every structure rule's problems for `body`; [] when it's right. */
 function structureProblems(body: string): string[] {
   const page = renderBody(body);
@@ -236,28 +179,17 @@ function structureProblems(body: string): string[] {
     }),
     ...diagramProblems(page),
     ...brokenInPageLinks(page).map((id) => `broken in-page link #${id}`),
-    ...budgetProblems(body),
-  ];
-}
-
-/** Problems with `file`'s frontmatter keys: each key not in the allowlist,
- * and each allowed key that's missing. */
-function frontmatterProblems(file: string, data: Record<string, string>): string[] {
-  const keys = Object.keys(data);
-  return [
-    ...keys
-      .filter((key) => !ALLOWED_KEYS.includes(key))
-      .map((key) => `${file}: unexpected frontmatter key "${key}"`),
-    ...ALLOWED_KEYS.filter((key) => !keys.includes(key)).map(
-      (key) => `${file}: missing frontmatter key "${key}"`,
-    ),
+    ...wordBudgetProblems(body, WORD_BUDGET),
   ];
 }
 
 /** The problems with one case-study file, frontmatter included. */
 function fileProblems(file: string, raw: string): string[] {
   const { data, content } = parseFrontmatter(raw);
-  return [...frontmatterProblems(file, data), ...structureProblems(content)];
+  return [
+    ...frontmatterProblems(file, data, ALLOWED_KEYS),
+    ...structureProblems(content),
+  ];
 }
 
 describe('case-study structure (retire-template-switch criteria 1, 4 and 7)', () => {
@@ -267,10 +199,6 @@ describe('case-study structure (retire-template-switch criteria 1, 4 and 7)', ()
 
   it.each(FILES)('%s follows the template', (file, raw) => {
     expect(fileProblems(file, raw)).toEqual([]);
-  });
-
-  it.each(FILES)('%s has no template line', (_, raw) => {
-    expect(raw).not.toMatch(/^template:/m);
   });
 });
 
@@ -552,6 +480,12 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
       'no architecture diagram',
       '![The architecture](/diagrams/demo/architecture.svg)',
       'A diagram belongs here.',
+      'no /diagrams/ image inside High-level architecture',
+    ],
+    [
+      'an architecture image that is not a /diagrams/ SVG',
+      '![The architecture](/diagrams/demo/architecture.svg)',
+      '![The architecture](/images/architecture.png)',
       'no /diagrams/ image inside High-level architecture',
     ],
     [

@@ -31,6 +31,31 @@ export function diagramName(src) {
   return src.slice('/diagrams/'.length, -'.svg'.length);
 }
 
+/** The text of a markdown node and everything under it, joined with nothing
+ * added: a text or code node's value, or its children's text. A link gives
+ * its text, not its URL; a node with neither (a thematic break) gives ''. */
+export function textOf(node) {
+  return node.value ?? (node.children ?? []).map(textOf).join('');
+}
+
+/**
+ * The top-level nodes of `tree` under its `## heading` (matched by the
+ * heading's trimmed text), up to the next `#` or `##` heading; a deeper
+ * heading inside stays part of the section. [] when there's no such section.
+ */
+export function sectionNodes(tree, heading) {
+  const nodes = [];
+  let inSection = false;
+  for (const node of tree.children) {
+    if (node.type === 'heading' && node.depth <= 2) {
+      inSection = node.depth === 2 && textOf(node).trim() === heading;
+    } else if (inSection) {
+      nodes.push(node);
+    }
+  }
+  return nodes;
+}
+
 // Every question below parses the whole body afresh.
 function parse(markdown) {
   return markdownParser().parse(markdown);
@@ -112,10 +137,6 @@ export function extractCaseStudyRefs(body) {
 /** A link to one DSA entry: `/dsa/<slug>`, optionally with a `#fragment`. */
 const DSA_LINK = /^\/dsa\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:#.*)?$/;
 
-function textOf(node) {
-  return node.value ?? (node.children ?? []).map(textOf).join('');
-}
-
 /**
  * The slugs of the DSA entries linked inside a markdown body's
  * `## Prerequisites` section, in order of first appearance and de-duplicated.
@@ -126,18 +147,8 @@ function textOf(node) {
  */
 export function dsaPrerequisites(markdown) {
   const tree = parse(markdown);
-  const section = [];
-  let inSection = false;
-  for (const node of tree.children) {
-    if (node.type === 'heading' && node.depth <= 2) {
-      inSection = node.depth === 2 && textOf(node).trim() === 'Prerequisites';
-    } else if (inSection) {
-      section.push(node);
-    }
-  }
-
   const slugs = [];
-  for (const url of urlsOf(tree, LINKS, section)) {
+  for (const url of urlsOf(tree, LINKS, sectionNodes(tree, 'Prerequisites'))) {
     const slug = DSA_LINK.exec(url)?.[1];
     if (slug && !slugs.includes(slug)) slugs.push(slug);
   }

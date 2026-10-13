@@ -48,9 +48,10 @@ order: 1
   throws at load time, naming the file and field, if any of the four fields is
   missing or `order` isn't a positive integer, and `src/lib/system-design.test.ts`
   fails a duplicate `order`.
-- **These four keys and no others.** `case-study-structure.test.ts` fails a
-  case study whose frontmatter has any other key, or lacks one of the four,
-  naming the file and the key.
+- **These four keys and no others.** `parseCaseStudy` also throws at load
+  time on any other key, naming the file and the key (`checkFields` in
+  `src/lib/frontmatter.ts`, shared by all three loaders), and
+  `case-study-structure.test.ts` checks the same allowlist.
 - **A case study is a five-minute read.** The whole page is the summary a
   reader takes into an interview, with enough reasoning under each decision to
   defend it and to guess well at a question it never asked. It meets the

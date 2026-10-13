@@ -1,45 +1,21 @@
-import { createElement } from 'react';
-import { render } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
-import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import { CodeLanguageProvider } from '@/contexts/CodeLanguageContext';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { proseWordCount } from '@/lib/markdown.mjs';
 import { WORD_BUDGET } from '@/lib/reading-time';
+import { RAW_DSA_ENTRIES as RAW } from '@/test/content';
+import {
+  frontmatterProblems,
+  renderBody,
+  section,
+  wordBudgetProblems,
+} from '@/test/structure';
 
 /**
- * Content-structure test for the DSA entries; the rules are in docs/dsa.md.
- * The templates are the five-minute ones (docs/specs/five-minute-templates.md,
- * criteria 9 and 10), and since docs/specs/retire-template-switch.md (criteria
- * 2, 3, 5, 6 and 7) they are the only ones: an entry's `kind` picks its
- * template, and nothing else in its frontmatter does. Each entry is rendered
- * with the real `MarkdownRenderer` with `codeTabs` on, as the entry page
- * renders it, and checked on the DOM.
- *
- * - the frontmatter keys are exactly `title`, `summary`, `date` and `kind`
- *   (an allowlist: an extra key, `template` included, or a missing one fails,
- *   naming the file and the key);
- * - a data structure's `h2`s are `Prerequisites`, `What it is`, `When to use
- *   it`, `Operations and costs`, `Implementation`, `Pitfalls`, in order (no
- *   `Invariants` or `Tricky lines`); its `Operations and costs` holds a
- *   table, and its `Implementation` holds at least one python+typescript pair;
- * - a pattern's or algorithm's `h2`s are `Prerequisites`, `The idea`, `When
- *   to use it`, `Walkthrough`, `Complexity`, `Pitfalls`, in order; its
- *   `Walkthrough` holds at least two pairs, each followed by a paragraph;
- * - every code block in `Implementation` / `Walkthrough` is part of a pair: a
- *   pair renders as one tablist over one code block, so the section has as
- *   many code blocks (copy buttons) as tablists;
- * - `Prerequisites` is not empty;
- * - `proseWordCount(body)` is at most 1,150.
+ * Content-structure test for the DSA entries. The rules, one template per
+ * `kind`, are docs/dsa.md's; this file checks each one on the DOM the real
+ * `MarkdownRenderer` produces with `codeTabs` on, as the entry page renders
+ * it. The shared plumbing is in src/test/structure.ts.
  */
-
-const RAW = import.meta.glob('/src/dsa/entries/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
 
 const ENTRIES = Object.entries(RAW).map(([filePath, raw]) => {
   const { data, content } = parseFrontmatter(raw);
@@ -80,40 +56,6 @@ const TEMPLATES: Record<string, string[]> = {
 afterEach(() => {
   localStorage.clear();
 });
-
-function renderBody(body: string): HTMLElement {
-  const { container } = render(
-    createElement(
-      MemoryRouter,
-      null,
-      createElement(
-        ThemeProvider,
-        null,
-        createElement(
-          CodeLanguageProvider,
-          null,
-          createElement(MarkdownRenderer, { content: body, codeTabs: true }),
-        ),
-      ),
-    ),
-  );
-  return container;
-}
-
-/** The blocks after the `h2` titled `heading`, up to the next `h2`; `null`
- * when there's no such `h2`. */
-function section(page: HTMLElement, heading: string): Element[] | null {
-  const h2 = [...page.querySelectorAll('h2')].find(
-    (h) => h.textContent?.trim() === heading,
-  );
-  if (!h2) return null;
-  const blocks: Element[] = [];
-  for (let el = h2.nextElementSibling; el && el.tagName !== 'H2';) {
-    blocks.push(el);
-    el = el.nextElementSibling;
-  }
-  return blocks;
-}
 
 function within(blocks: Element[], selector: string): Element[] {
   return blocks.flatMap((b) => [
@@ -164,7 +106,7 @@ function pairProblems(
 function structureProblems(kind: string, body: string): string[] {
   const template = TEMPLATES[kind];
   if (!template) return [`unknown kind ${JSON.stringify(kind)}`];
-  const page = renderBody(body);
+  const page = renderBody(body, { codeTabs: true });
   const problems: string[] = [];
   const headings = [...page.querySelectorAll('h2')].map((h) => h.textContent?.trim());
   if (JSON.stringify(headings) !== JSON.stringify(template)) {
@@ -185,31 +127,17 @@ function structureProblems(kind: string, body: string): string[] {
   if (!prereqs.some((b) => b.textContent?.trim())) {
     problems.push('"Prerequisites" is empty (say "none" in prose if there are none)');
   }
-  const words = proseWordCount(body);
-  if (words > WORD_BUDGET) {
-    problems.push(`${words} words, over the ${WORD_BUDGET}-word budget`);
-  }
+  problems.push(...wordBudgetProblems(body, WORD_BUDGET));
   return problems;
-}
-
-/** Problems with `file`'s frontmatter keys: each key not in the allowlist,
- * and each allowed key that's missing. */
-function frontmatterProblems(file: string, data: Record<string, string>): string[] {
-  const keys = Object.keys(data);
-  return [
-    ...keys
-      .filter((key) => !ALLOWED_KEYS.includes(key))
-      .map((key) => `${file}: unexpected frontmatter key "${key}"`),
-    ...ALLOWED_KEYS.filter((key) => !keys.includes(key)).map(
-      (key) => `${file}: missing frontmatter key "${key}"`,
-    ),
-  ];
 }
 
 /** The problems with one entry file, frontmatter included. */
 function fileProblems(file: string, raw: string): string[] {
   const { data, content } = parseFrontmatter(raw);
-  return [...frontmatterProblems(file, data), ...structureProblems(data.kind, content)];
+  return [
+    ...frontmatterProblems(file, data, ALLOWED_KEYS),
+    ...structureProblems(data.kind, content),
+  ];
 }
 
 describe('DSA entry structure (retire-template-switch criteria 2, 5 and 7)', () => {
@@ -222,10 +150,6 @@ describe('DSA entry structure (retire-template-switch criteria 2, 5 and 7)', () 
 
   it.each(FILES)('%s follows its kind’s template', (file, raw) => {
     expect(fileProblems(file, raw)).toEqual([]);
-  });
-
-  it.each(FILES)('%s has no template line', (_, raw) => {
-    expect(raw).not.toMatch(/^template:/m);
   });
 });
 

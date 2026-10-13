@@ -51,6 +51,29 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
   return { data, content };
 }
 
+/**
+ * The frontmatter contract the three loaders share. Throws, naming the file
+ * (`name`), for the first required field that is missing or empty, in
+ * `required` order, then for the first key that isn't in `allowed`. Checks of
+ * a field's value (an `order` or a `kind`) stay with the loader that has it.
+ */
+export function checkFields(
+  name: string,
+  data: Record<string, string>,
+  { required, allowed }: { required: readonly string[]; allowed: readonly string[] },
+): void {
+  for (const field of required) {
+    if (!data[field]) {
+      throw new Error(`${name} is missing required frontmatter field "${field}"`);
+    }
+  }
+  for (const key of Object.keys(data)) {
+    if (!allowed.includes(key)) {
+      throw new Error(`${name} has an unknown frontmatter field "${key}"`);
+    }
+  }
+}
+
 function unquote(value: string): string {
   const isQuoted =
     value.length >= 2 &&

@@ -1,5 +1,6 @@
 import type { DsaEntry, DsaGroup, DsaKind } from '@/types';
 import { createCollection } from './content';
+import { checkFields } from './frontmatter';
 
 // Frontmatter, prerequisite links and word counts only, eagerly: enough for
 // the landing page, the sidebar, search titles, "Before this" and the
@@ -29,6 +30,9 @@ const bodyFiles = import.meta.glob<string>('/src/dsa/entries/*.md', {
 
 const PATH_PATTERN = /^\/src\/dsa\/entries\/([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/;
 
+// An entry's frontmatter: every field required, no other allowed.
+const ENTRY_FIELDS = ['title', 'summary', 'date', 'kind'];
+
 const KINDS: readonly DsaKind[] = ['data-structure', 'pattern', 'algorithm'];
 
 const KIND_LABELS: Record<DsaKind, string> = {
@@ -56,8 +60,8 @@ function isKind(value: string): value is DsaKind {
 
 /**
  * Turns one entry file's path and parsed frontmatter into a `DsaEntry`, less
- * the body's `words` (the loader adds those from the `?words` view).
- * Exported so the frontmatter contract can be unit-tested against fixtures
+ * the body's `words` (`createCollection` adds those from the `?words` view).
+ * Throws on a missing, empty or unknown field (`checkFields`). Exported so the frontmatter contract can be unit-tested against fixtures
  * instead of only the real files.
  */
 export function parseDsaEntry(
@@ -73,11 +77,7 @@ export function parseDsaEntry(
   const [, slug] = match;
   const name = `dsa/entries/${slug}.md`;
 
-  for (const field of ['title', 'summary', 'date', 'kind'] as const) {
-    if (!data[field]) {
-      throw new Error(`${name} is missing required frontmatter field "${field}"`);
-    }
-  }
+  checkFields(name, data, { required: ENTRY_FIELDS, allowed: ENTRY_FIELDS });
   const { kind } = data;
   if (!isKind(kind)) {
     throw new Error(
@@ -193,10 +193,8 @@ const PREREQS: Record<string, string[]> = Object.fromEntries(
 const entries = createCollection({
   meta: metaFiles,
   bodies: bodyFiles,
-  parse: (filePath, data): DsaEntry => ({
-    ...parseDsaEntry(filePath, data),
-    words: wordFiles[filePath],
-  }),
+  parse: parseDsaEntry,
+  words: wordFiles,
   key: slugOf,
 });
 

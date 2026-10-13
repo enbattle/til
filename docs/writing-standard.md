@@ -82,7 +82,8 @@ sitting.
   is allowed and isn't a subtitle.
 
 `topic-structure.test.ts` checks the budget, the title and the rule-of-thumb
-paragraph on every topic.
+paragraph on every topic, and the `## Where you'll meet this` section on every
+`systems-and-infrastructure` topic.
 
 ## Case studies and DSA entries
 

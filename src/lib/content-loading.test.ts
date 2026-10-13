@@ -8,7 +8,6 @@ import {
   parseTopicMeta,
 } from './content';
 import { parseFrontmatter } from './frontmatter';
-import { proseWordCount } from './markdown.mjs';
 import { readingMinutes } from './reading-time';
 import { RAW_TOPICS as RAW, rawTopic as rawFor } from '@/test/content';
 
@@ -35,18 +34,8 @@ describe('TOPICS is metadata only (criterion 1)', () => {
   });
 
   // docs/specs/topic-read-time.md, criteria 2 and 3: the count comes from the
-  // build-time `?words` view; the test checks it against its own raw view.
-  it('gives every topic a positive integer words: its body’s prose word count (read-time criterion 2)', () => {
-    for (const topic of TOPICS) {
-      const id = `${topic.section}/${topic.slug}`;
-      expect(Number.isInteger(topic.words), id).toBe(true);
-      expect(topic.words, id).toBeGreaterThan(0);
-      expect(topic.words, id).toBe(
-        proseWordCount(parseFrontmatter(rawFor(topic.section, topic.slug)).content),
-      );
-    }
-  });
-
+  // build-time `?words` view (each item's `words` is checked against that view
+  // in words-view.test.ts, for all three collections).
   it('makes every topic a read of five minutes or less (read-time criterion 3)', () => {
     for (const topic of TOPICS) {
       const id = `${topic.section}/${topic.slug}`;
@@ -98,11 +87,27 @@ describe('parseTopicMeta (criterion 2)', () => {
   );
 
   it.each(['title', 'summary', 'date'] as const)(
-    'throws when %s is present but empty',
+    'throws the same message when %s is present but empty',
     (field) => {
       expect(() =>
         parseTopicMeta('/src/content/alpha/some-topic.md', { ...VALID, [field]: '' }),
-      ).toThrow(new RegExp(`"${field}"`));
+      ).toThrow(
+        new Error(`alpha/some-topic.md is missing required frontmatter field "${field}"`),
+      );
+    },
+  );
+
+  // docs/specs/content-dedupe.md, criterion 1: topics had no allowed-key check
+  // before; an unknown key now fails at load time, as it does for case studies
+  // and DSA entries.
+  it.each(['template', 'tags', 'order', 'kind'])(
+    'throws naming the file and the key for an unknown frontmatter field %s',
+    (key) => {
+      expect(() =>
+        parseTopicMeta('/src/content/alpha/some-topic.md', { ...VALID, [key]: '2' }),
+      ).toThrow(
+        new Error(`alpha/some-topic.md has an unknown frontmatter field "${key}"`),
+      );
     },
   );
 
@@ -352,6 +357,27 @@ describe('createCollection (dedupe criterion 4)', () => {
     });
   });
 
+  // docs/specs/content-dedupe.md, design item 2 and criterion 2: the loaders'
+  // `{ ...parse(), words }` wrappers move into createCollection as an optional
+  // `words` record keyed by file path.
+  it('sets words on each item from a words record keyed by path', () => {
+    const collection = createCollection({
+      meta: { '/fake/one.md': { title: 'One' }, '/fake/two.md': { title: 'Two' } },
+      bodies: {},
+      parse,
+      key,
+      words: { '/fake/one.md': 120, '/fake/two.md': 7 },
+    });
+    expect(collection.get('one')).toEqual({ slug: 'one', title: 'One', words: 120 });
+    expect(collection.get('two')).toEqual({ slug: 'two', title: 'Two', words: 7 });
+    expect(collection.items).toContain(collection.get('one'));
+  });
+
+  it('leaves words off the items when no words record is given', () => {
+    const { collection } = fakes();
+    for (const item of collection.items) expect(item).not.toHaveProperty('words');
+  });
+
   it('skips a body path that key() rejects', async () => {
     const stray = vi.fn(async () => 'stray');
     const { collection } = fakes({ '/fake/Not_A_Slug.md': stray, '/other/x.md': stray });
@@ -372,24 +398,6 @@ describe('loadTopicBody (criterion 3)', () => {
     expect(body.trim().length).toBeGreaterThan(0);
     expect(body.startsWith('---')).toBe(false);
     expect(body).not.toMatch(/^summary:/m);
-  });
-
-  it('returns the same promise for the same topic', () => {
-    const first = loadTopicBody('ai-and-ml', 'prompt-engineering');
-    const second = loadTopicBody('ai-and-ml', 'prompt-engineering');
-    expect(second).toBe(first);
-  });
-
-  it('rejects for a slug that is not in TOPICS, naming it', async () => {
-    await expect(loadTopicBody('ai-and-ml', 'no-such-topic')).rejects.toThrow(
-      /no-such-topic/,
-    );
-  });
-
-  it('rejects for a section that is not in TOPICS, naming it', async () => {
-    await expect(loadTopicBody('no-such-section', 'prompt-engineering')).rejects.toThrow(
-      /no-such-section/,
-    );
   });
 });
 

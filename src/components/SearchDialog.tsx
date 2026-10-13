@@ -1,45 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSection } from '@/content/registry';
-import {
-  ensureFullTextSearch,
-  isFullTextSearchReady,
-  searchContent,
-  type SearchResult,
-} from '@/lib/search';
+import { ensureFullTextSearch, isFullTextSearchReady, searchContent } from '@/lib/search';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
-
-/** What a result row shows, and where it goes. A case study or DSA entry
- * stands in the position a topic gives its section label; its own "section"
- * is its header tab (System Design, DSA). */
-function describeResult(result: SearchResult) {
-  switch (result.kind) {
-    case 'topic':
-      return {
-        key: `${result.topic.section}/${result.topic.slug}`,
-        path: `/${result.topic.section}/${result.topic.slug}`,
-        title: result.topic.title,
-        label: getSection(result.topic.section)?.label ?? result.topic.section,
-        summary: result.topic.summary,
-      };
-    case 'caseStudy':
-      return {
-        key: `system-design/${result.caseStudy.slug}`,
-        path: `/system-design/${result.caseStudy.slug}`,
-        title: result.caseStudy.title,
-        label: 'System Design',
-        summary: result.caseStudy.summary,
-      };
-    case 'dsa':
-      return {
-        key: `dsa/${result.entry.slug}`,
-        path: `/dsa/${result.entry.slug}`,
-        title: result.entry.title,
-        label: 'DSA',
-        summary: result.entry.summary,
-      };
-  }
-}
 
 interface SearchDialogProps {
   onClose: () => void;
@@ -120,7 +82,7 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
             const composing = event.nativeEvent.isComposing || event.keyCode === 229;
             if (event.key === 'Enter' && !composing && results.length > 0) {
               event.preventDefault();
-              goTo(describeResult(results[0]).path);
+              goTo(results[0].path);
             }
           }}
           type="text"
@@ -147,23 +109,20 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
               No topics match &ldquo;{query}&rdquo;.
             </li>
           )}
-          {results.map((result) => {
-            const { key, path, title, label, summary } = describeResult(result);
-            return (
-              <li key={key}>
-                <button
-                  type="button"
-                  onClick={() => goTo(path)}
-                  className="block w-full px-4 py-2 text-left hover:bg-bg-secondary"
-                >
-                  <div className="text-sm font-medium text-text-primary">{title}</div>
-                  <div className="text-xs text-text-tertiary">
-                    {label} · {summary}
-                  </div>
-                </button>
-              </li>
-            );
-          })}
+          {results.map(({ key, path, title, label, summary }) => (
+            <li key={key}>
+              <button
+                type="button"
+                onClick={() => goTo(path)}
+                className="block w-full px-4 py-2 text-left hover:bg-bg-secondary"
+              >
+                <div className="text-sm font-medium text-text-primary">{title}</div>
+                <div className="text-xs text-text-tertiary">
+                  {label} · {summary}
+                </div>
+              </button>
+            </li>
+          ))}
         </ul>
         <div className="border-t border-border px-4 py-2 text-xs text-text-tertiary">
           <kbd className="rounded border border-border bg-bg-secondary px-1">Enter</kbd>{' '}

@@ -3,7 +3,7 @@ import { SECTIONS } from '@/content/registry';
 import type { DsaEntry, DsaKind } from '@/types';
 import { RAW_DSA_ENTRIES as RAW, rawDsaEntry as rawFor, without } from '@/test/content';
 import { parseFrontmatter } from './frontmatter';
-import { dsaPrerequisites, proseWordCount } from './markdown.mjs';
+import { dsaPrerequisites } from './markdown.mjs';
 import {
   DSA_ENTRIES,
   DSA_GROUPS,
@@ -34,6 +34,7 @@ const REFERENCE_ENTRIES: [string, DsaKind][] = [
 // --- Criterion 1: parseDsaEntry ---
 
 const VALID_PATH = '/src/dsa/entries/my-entry.md';
+const NAME = 'dsa/entries/my-entry.md';
 
 const VALID_FIELDS: Record<string, string> = {
   title: 'Binary Search',
@@ -68,20 +69,30 @@ describe('parseDsaEntry (criterion 1)', () => {
     'throws naming the file and the field when %s is missing',
     (field) => {
       expect(() => parseDsaEntry(VALID_PATH, without(VALID_FIELDS, field))).toThrow(
-        /my-entry\.md/,
-      );
-      expect(() => parseDsaEntry(VALID_PATH, without(VALID_FIELDS, field))).toThrow(
-        new RegExp(field),
+        new Error(`${NAME} is missing required frontmatter field "${field}"`),
       );
     },
   );
 
   it.each(['title', 'summary', 'date', 'kind'] as const)(
-    'throws naming the file and the field when %s is present but empty',
+    'throws the same message when %s is present but empty',
     (field) => {
       const data = { ...VALID_FIELDS, [field]: '' };
-      expect(() => parseDsaEntry(VALID_PATH, data)).toThrow(/my-entry\.md/);
-      expect(() => parseDsaEntry(VALID_PATH, data)).toThrow(new RegExp(field));
+      expect(() => parseDsaEntry(VALID_PATH, data)).toThrow(
+        new Error(`${NAME} is missing required frontmatter field "${field}"`),
+      );
+    },
+  );
+
+  // docs/specs/content-dedupe.md, criterion 1: the allowed-key check moves from
+  // the structure test into the loader, so an unknown key, `template` included,
+  // fails at load time.
+  it.each(['template', 'tags', 'order'])(
+    'throws naming the file and the key for an unknown frontmatter field %s',
+    (key) => {
+      expect(() => parseDsaEntry(VALID_PATH, { ...VALID_FIELDS, [key]: '2' })).toThrow(
+        new Error(`${NAME} has an unknown frontmatter field "${key}"`),
+      );
     },
   );
 
@@ -345,6 +356,53 @@ describe('dsaPrerequisites (criterion 3)', () => {
   });
 });
 
+// docs/specs/content-dedupe.md, criterion 3: dsaPrerequisites moves onto the
+// shared `sectionNodes` walk with unchanged output. The reference here reads
+// the real entries line by line instead (they write their prerequisites as
+// plain inline links, outside code), so it shares no code with the parser.
+describe('dsaPrerequisites over the real entries (content-dedupe criterion 3)', () => {
+  /** The /dsa/<slug> inline links between `## Prerequisites` and the next #
+   * or ## heading, skipping fenced code, first appearance first. */
+  function referencePrerequisites(body: string): string[] {
+    const slugs: string[] = [];
+    let inFence = false;
+    let inSection = false;
+    for (const line of body.split(/\r?\n/)) {
+      if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+      if (inFence) continue;
+      const heading = /^(#{1,2})\s+(.*?)\s*#*\s*$/.exec(line);
+      if (heading) {
+        inSection = heading[1] === '##' && heading[2] === 'Prerequisites';
+        continue;
+      }
+      if (!inSection) continue;
+      const prose = line.replace(/`[^`]*`/g, '');
+      for (const [, slug] of prose.matchAll(
+        /\]\(\/dsa\/([a-z0-9]+(?:-[a-z0-9]+)*)(?:#[^)]*)?\)/g,
+      )) {
+        if (!slugs.includes(slug)) slugs.push(slug);
+      }
+    }
+    return slugs;
+  }
+
+  it.each(Object.entries(RAW).map(([path, raw]) => [path, raw] as const))(
+    '%s',
+    (_path, raw) => {
+      const { content } = parseFrontmatter(raw);
+      expect(dsaPrerequisites(content)).toEqual(referencePrerequisites(content));
+    },
+  );
+
+  it('finds prerequisites in at least one real entry, so the comparison means something', () => {
+    expect(
+      Object.values(RAW).some(
+        (raw) => referencePrerequisites(parseFrontmatter(raw).content).length > 0,
+      ),
+    ).toBe(true);
+  });
+});
+
 // --- Criteria 2 and 4: the real entries ---
 
 describe('DSA_ENTRIES and getDsaEntry (criteria 2 and 4)', () => {
@@ -366,22 +424,6 @@ describe('DSA_ENTRIES and getDsaEntry (criteria 2 and 4)', () => {
         'words',
       ]);
     }
-  });
-
-  it('gives every entry a positive integer words: its body’s prose word count (five-minute criterion 3)', () => {
-    for (const e of DSA_ENTRIES) {
-      expect(Number.isInteger(e.words), e.slug).toBe(true);
-      expect(e.words, e.slug).toBeGreaterThan(0);
-      expect(e.words, e.slug).toBe(
-        proseWordCount(parseFrontmatter(rawFor(e.slug)).content),
-      );
-    }
-  });
-
-  it('ignores a template line in the frontmatter (five-minute design: the loaders ignore it)', () => {
-    expect(parseDsaEntry(VALID_PATH, { ...VALID_FIELDS, template: '2' })).toEqual(
-      parseDsaEntry(VALID_PATH, VALID_FIELDS),
-    );
   });
 
   it('matches each file’s frontmatter', () => {
@@ -565,14 +607,6 @@ describe('loadDsaEntryBody (criterion 4)', () => {
         parseFrontmatter(rawFor(e.slug)).content,
       );
     }
-  });
-
-  it('returns the same promise for the same entry', () => {
-    expect(loadDsaEntryBody('binary-search')).toBe(loadDsaEntryBody('binary-search'));
-  });
-
-  it('rejects for an unknown slug, naming it', async () => {
-    await expect(loadDsaEntryBody('no-such-entry')).rejects.toThrow(/no-such-entry/);
   });
 
   it('loadAllDsaBodies returns every body keyed by slug', async () => {

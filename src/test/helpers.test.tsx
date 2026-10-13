@@ -60,6 +60,16 @@ describe('shared test helpers (dedupe criterion 8)', () => {
     },
   );
 
+  // docs/specs/content-dedupe.md, design item 4: the structure tests' shared
+  // plumbing lives once, in src/test/structure.ts.
+  it.each(['blocksAfter', 'frontmatterProblems', 'budgetProblems', 'wordBudgetProblems'])(
+    'no test file defines its own %s (shared in src/test/structure.ts)',
+    (name) => {
+      expect(existsSync(join(ROOT, 'src/test/structure.ts'))).toBe(true);
+      expect(definitions(defines(name))).toEqual([]);
+    },
+  );
+
   it('no test file renders its own location probe or inlines the RegExp escape', () => {
     expect(definitions(/data-testid=["']location-display["']/)).toEqual([]);
     expect(definitions(/\[\.\*\+\?\^\$\{\}\(\)\|\[\\\]\\\\\]/)).toEqual([]);

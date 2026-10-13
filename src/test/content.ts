@@ -81,15 +81,16 @@ export function fuzzyMatchesFrontmatter(
  * first. Read from the files at test time, so a search test pins no published
  * phrase (docs/specs/harness-follow-ups.md, criterion 9). */
 export function bodyOnlyWord(section: string, slug: string): string {
-  const path = `/src/content/${section}/${slug}.md`;
-  const raw = rawTopic(section, slug);
-  const { data, content } = parseFrontmatter(raw);
+  return bodyOnlyWordAt(`/src/content/${section}/${slug}.md`);
+}
+
+/** `bodyOnlyWord` for any published file (topic, case study or DSA entry),
+ * named by its glob path, e.g. `/src/dsa/entries/binary-search.md`. */
+export function bodyOnlyWordAt(path: string): string {
+  const files = { ...RAW_TOPICS, ...RAW_CASE_STUDIES, ...RAW_DSA_ENTRIES };
+  const { data, content } = parseFrontmatter(rawAt(files, path, path));
   const frontmatter = Object.values(data).join(' ').toLowerCase();
-  const all = Object.entries({
-    ...RAW_TOPICS,
-    ...RAW_CASE_STUDIES,
-    ...RAW_DSA_ENTRIES,
-  });
+  const all = Object.entries(files);
   const others = all
     .filter(([other]) => other !== path)
     .map(([, text]) => text.toLowerCase());
@@ -106,7 +107,7 @@ export function bodyOnlyWord(section: string, slug: string): string {
         others.every((text) => !text.includes(candidate)) &&
         !fuzzyMatchesFrontmatter(candidate, entries),
     );
-  if (!word) throw new Error(`${section}/${slug} has no word of its own to search for`);
+  if (!word) throw new Error(`${path} has no word of its own to search for`);
   return word;
 }
 
