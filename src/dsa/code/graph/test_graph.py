@@ -3,7 +3,7 @@
 API: ``build_list(n, edges, directed=False)`` and ``build_matrix(...)`` (both
 raise ValueError for a vertex outside 0..n-1), ``has_edge_list``,
 ``has_edge_matrix``, ``neighbors_matrix`` and the ``edges_of_list`` /
-``edges_of_matrix`` generators, which yield each stored (u, v) pair.
+``edges_of_matrix``, which return each stored (u, v) pair in a list.
 """
 
 import random
@@ -62,7 +62,7 @@ def test_example_matrix():
 def test_empty_and_single_vertex():
     assert build_list(0, []) == [] and build_matrix(0, []) == []
     assert build_list(1, []) == [[]] and build_matrix(1, []) == [[0]]
-    assert list(edges_of_list([])) == [] and list(edges_of_matrix([])) == []
+    assert edges_of_list([]) == [] and edges_of_matrix([]) == []
 
 
 def test_rows_are_not_shared():
@@ -75,7 +75,7 @@ def test_rows_are_not_shared():
 def test_self_loop_is_one_entry_in_both_layouts():
     assert build_list(2, [(1, 1)]) == [[], [1]]
     assert build_matrix(2, [(1, 1)]) == [[0, 0], [0, 1]]
-    assert list(edges_of_list(build_list(2, [(1, 1)]))) == [(1, 1)]
+    assert edges_of_list(build_list(2, [(1, 1)])) == [(1, 1)]
 
 
 def test_duplicate_edge_is_kept_in_the_list_and_idempotent_in_the_matrix():
@@ -135,11 +135,11 @@ def test_matrix_has_edge_reads_one_cell():
 def test_matrix_visits_every_cell_but_list_only_its_entries():
     n, edges = 40, [(i, i + 1) for i in range(39)]
     m = counted(build_matrix(n, edges))
-    assert len(list(edges_of_matrix(m))) == 2 * len(edges)
+    assert len(edges_of_matrix(m)) == 2 * len(edges)
     assert Row.reads == n * n
     adj = [Row(r) for r in build_list(n, edges)]
     Row.reads = 0
-    assert len(list(edges_of_list(adj))) == 2 * len(edges)
+    assert len(edges_of_list(adj)) == 2 * len(edges)
     assert Row.reads == 2 * len(edges)
 
 

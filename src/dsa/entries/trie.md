@@ -79,7 +79,7 @@ word found there.
 | Operation                   | Average             | Worst case          |
 | --------------------------- | ------------------- | ------------------- |
 | `insert(word)`              | O(L)                | O(σL)               |
-| `word in trie`              | O(L)                | O(σL)               |
+| `contains(word)`            | O(L)                | O(σL)               |
 | `starts_with(prefix)`       | O(P)                | O(σP)               |
 | `words_with_prefix(prefix)` | O(P + k·d)          | O(σP + k·d)         |
 | `delete(word)`              | O(L)                | O(σL)               |
@@ -129,8 +129,7 @@ node.
 On the example, `"ap"` is not stored but `starts_with("ap")` is true, and
 `"apples"` fails at the sixth step. Listing the words below a prefix means
 visiting every node under it, so it uses an explicit **stack** (a list where
-the last item pushed is the first popped; see [stacks and queues](/dsa/stacks-and-queues)). Each entry carries the string
-spelled so far.
+the last item pushed is the first popped; see [stacks and queues](/dsa/stacks-and-queues)). Each entry carries the string spelled so far.
 
 ```python region=words-with-prefix
 
@@ -172,9 +171,9 @@ alone.
 
 ## Pitfalls
 
-- **Treating a reached node as a stored word.** `return node is not None` in
-  `__contains__` says `"app"` is stored when only `"apple"` is. The flag check
-  on that line is what separates a word from a step toward one.
+- **Treating a reached node as a stored word.** Returning `True` as soon
+  as `_find` gives a node, instead of `return node.is_word` in `contains`, says
+  `"app"` is stored when only `"apple"` is. The flag check on that line is what separates a word from a step toward one.
 - **Pruning past a marked node.** Without `not node.is_word` in `delete`'s
   loop, removing `"apple"` keeps cutting through the `p` of `"app"`, which has
   no children by then, and deletes `"app"` too.

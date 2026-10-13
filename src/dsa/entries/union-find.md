@@ -15,7 +15,7 @@ Union-find, also called a **disjoint-set union**, keeps elements in groups that 
 
 Each group is a **set**, named by one of its own members, its **representative**. Two operations matter. `find(x)` returns the name of the set holding `x`, so two elements are together exactly when their `find` results match. `union(a, b)` merges the two sets holding `a` and `b`.
 
-The trick is how it stores who belongs where. Every element keeps one pointer, its **parent**, to another element of its set. Following parents always ends at the representative, the **root**, which is its own parent. So each set is a tree, and the whole structure is a forest in one array, `parent[i]`. At the start every element is its own root. `find` walks up to the root; `union` finds both roots and, if they differ, makes one the parent of the other. One write merges two whole sets, however big.
+Every element keeps one pointer, its **parent**, to another element of its set. Following parents always ends at the representative, the **root**, which is its own parent. So each set is a tree, and the whole structure is a forest in one array, `parent[i]`. At the start every element is its own root. `find` walks up to the root; `union` finds both roots and, if they differ, makes one the parent of the other. One write merges two whole sets, however big.
 
 Run six elements through `union(0, 1)`, `union(2, 3)`, `union(4, 5)` and `union(2, 4)`:
 
@@ -71,13 +71,13 @@ With both changes, m operations cost O(m · α(n)) in total (Tarjan, 1975), so r
 
 ## Implementation
 
-`sizes[r]` means something only when `r` is a root; elsewhere it's a stale value nothing reads. The TypeScript version uses `Int32Array`, a fixed-length array of 32-bit integers, because the length never changes.
+`sizes[r]` means something only when `r` is a root; elsewhere it's a stale value nothing reads.
 
-```python region=union-find
+```python region=setup
 
 ```
 
-```typescript region=union-find
+```typescript region=setup
 
 ```
 
@@ -111,11 +111,22 @@ On the example, `union(1, 5)` finds roots 0 and 2, swaps because 2 holds more, a
 
 ```
 
+`connected` compares roots, and `size_of` reads the size stored at the root. One more function uses `union`'s return value.
+
+```python region=has-cycle
+
+```
+
+```typescript region=has-cycle
+
+```
+
 `has_cycle(3, [(0, 1), (1, 2), (2, 0)])` merges on the first two edges, then finds 2 and 0 already together and returns true. A self-loop or a repeated edge counts as a cycle too. Unioning every edge and reading `count` gives the number of connected components.
 
 ## Pitfalls
 
-- **Pointing `b` instead of its root.** `self._parent[root_b] = root_a` moves a whole set. Write `self._parent[b] = root_a` and only `b` and what hangs below it move, leaving the rest of its old set behind under the old root, so `connected` gives wrong answers.
+- **Pointing `b` instead of its root.** `self.parent[root_b] = root_a` moves a whole set. Write `self.parent[b] = root_a` and only `b` and what hangs below it move, leaving the rest of its old set behind under the old root, so `connected` gives wrong answers.
 - **Dropping the same-root check.** Without `if root_a == root_b: return False`, a repeated `union(0, 1)` adds the set's size to itself and decrements `count` again, so `size_of` and `count` drift and `has_cycle` never fires.
-- **Overwriting a parent before saving it.** In `find`, `next_x` is read before `self._parent[x] = root`. Swap them and `x` jumps straight to the root after one step, so only the first element on the path gets compressed.
-- **Comparing parents instead of roots in `connected`.** `self._parent[a] == self._parent[b]` looks one step up, not at the root. After the four unions in the example, 3 and 5 share a set but their parents are 2 and 4, so `connected(3, 5)` returns false.
+- **Overwriting a parent before saving it.** In `find`, `next_x` is read before `self.parent[x] = root`. Swap them and `x` jumps straight to the root after one step, so only the first element on the path gets compressed.
+- **Comparing parents instead of roots in `connected`.** `self.parent[a] == self.parent[b]` looks one step up, not at the root. After the four unions in the example, 3 and 5 share a set but their parents are 2 and 4, so `connected(3, 5)` returns false.
+- **Labels 1 to n.** Use `x - 1` with `UnionFind(n)`. Element n is past the end: Python raises, but TypeScript quietly corrupts the sets.

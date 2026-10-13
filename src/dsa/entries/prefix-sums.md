@@ -112,11 +112,11 @@ The loop needs only the current `total` and a tally of earlier ones, so the
 prefix array is never built. The seed is the row marked "start" in the table:
 without it the first `3` looks up 0, finds nothing, and `[3]` is missed.
 
-```python region=part-4
+```python region=count-loop
 
 ```
 
-```typescript region=part-4
+```typescript region=count-loop
 
 ```
 

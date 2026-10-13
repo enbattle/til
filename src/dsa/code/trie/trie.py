@@ -1,7 +1,5 @@
 # region trie-node
 class TrieNode:
-    __slots__ = ("children", "is_word")
-
     def __init__(self) -> None:
         self.children: dict[str, TrieNode] = {}
         self.is_word = False
@@ -15,34 +13,39 @@ class Trie:
     def insert(self, word: str) -> None:
         node = self._root
         for ch in word:
-            # Not setdefault(ch, TrieNode()): that builds a node on every
-            # step, even when the child already exists.
-            if ch not in node.children:
-                node.children[ch] = TrieNode()
-            node = node.children[ch]
+            child = node.children.get(ch)
+            if child is None:
+                child = TrieNode()
+                node.children[ch] = child
+            node = child
         # The node may exist already as a step toward a longer word.
         node.is_word = True
 # endregion
 
     # region find
     def _find(self, prefix: str) -> TrieNode | None:
-        node: TrieNode | None = self._root
+        node = self._root
         for ch in prefix:
-            node = node.children.get(ch)
-            if node is None:
+            child = node.children.get(ch)
+            if child is None:
                 return None
+            node = child
         return node
 
-    def __contains__(self, word: str) -> bool:
+    def contains(self, word: str) -> bool:
         node = self._find(word)
+        if node is None:
+            return False
         # Reaching the node isn't enough: "app" is a step toward "apple".
-        return node is not None and node.is_word
+        return node.is_word
 
     def starts_with(self, prefix: str) -> bool:
         node = self._find(prefix)
+        if node is None:
+            return False
         # An unmarked node with no children is only the root of an empty
         # trie, which has no word to start with "".
-        return node is not None and (node.is_word or bool(node.children))
+        return node.is_word or len(node.children) > 0
     # endregion
 
     # region words-with-prefix
@@ -55,28 +58,31 @@ class Trie:
         # A stack, not recursion: one frame per character would overflow
         # on a very long word.
         stack = [(start, prefix)]
-        while stack:
+        while len(stack) > 0:
             node, word = stack.pop()
             if node.is_word:
                 found.append(word)
-            stack.extend((c, word + ch) for ch, c in node.children.items())
+            for ch, child in node.children.items():
+                stack.append((child, word + ch))
         return found
     # endregion
 
     # region delete
     def delete(self, word: str) -> bool:
+        # Each pair is a node and the character we left it by.
         path: list[tuple[TrieNode, str]] = []
         node = self._root
         for ch in word:
-            if ch not in node.children:
+            child = node.children.get(ch)
+            if child is None:
                 return False
             path.append((node, ch))
-            node = node.children[ch]
+            node = child
         if not node.is_word:
             return False
         node.is_word = False
         # Stop at a marked node: deleting "apple" must keep "app".
-        while path and not node.is_word and not node.children:
+        while len(path) > 0 and not node.is_word and len(node.children) == 0:
             parent, ch = path.pop()
             del parent.children[ch]
             node = parent

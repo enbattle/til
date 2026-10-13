@@ -1,4 +1,4 @@
-// #region part-1
+// #region build-list
 export type Edge = [number, number];
 
 function check(n: number, edges: Edge[]): void {
@@ -13,8 +13,11 @@ function check(n: number, edges: Edge[]): void {
 /** Adjacency list: adj[u] holds the neighbors of u. */
 export function buildList(n: number, edges: Edge[], directed = false): number[][] {
   check(n, edges);
-  // Array.from calls the function per slot; fill([]) would share one array.
-  const adj: number[][] = Array.from({ length: n }, () => []);
+  // A new [] per vertex; fill([]) would share one array.
+  const adj: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    adj.push([]);
+  }
   for (const [u, v] of edges) {
     adj[u].push(v);
     // An undirected edge is stored from both ends, or only one end sees it.
@@ -30,7 +33,10 @@ export function buildList(n: number, edges: Edge[], directed = false): number[][
 export function buildMatrix(n: number, edges: Edge[], directed = false): number[][] {
   check(n, edges);
   // Every cell exists up front, which is the V * V space cost.
-  const m = Array.from({ length: n }, () => new Array<number>(n).fill(0));
+  const m: number[][] = [];
+  for (let i = 0; i < n; i++) {
+    m.push(new Array<number>(n).fill(0));
+  }
   for (const [u, v] of edges) {
     m[u][v] = 1;
     if (!directed) m[v][u] = 1;
@@ -39,7 +45,7 @@ export function buildMatrix(n: number, edges: Edge[], directed = false): number[
 }
 // #endregion
 
-// #region has-edge-list
+// #region queries
 export function hasEdgeList(adj: number[][], u: number, v: number): boolean {
   return adj[u].includes(v); // a scan of u's list, so O(deg(u))
 }
@@ -51,25 +57,31 @@ export function hasEdgeMatrix(m: number[][], u: number, v: number): boolean {
 export function neighborsMatrix(m: number[][], u: number): number[] {
   // No list to return: the whole row must be read to find the 1s.
   const out: number[] = [];
-  m[u].forEach((cell, v) => {
-    if (cell) out.push(v);
-  });
+  for (let v = 0; v < m.length; v++) {
+    if (m[u][v] === 1) out.push(v);
+  }
   return out;
 }
 // #endregion
 
-// #region edges-of-list
-export function* edgesOfList(adj: number[][]): Generator<Edge> {
-  for (const [u, row] of adj.entries()) {
-    for (const v of row) yield [u, v];
-  }
-}
-
-export function* edgesOfMatrix(m: number[][]): Generator<Edge> {
-  for (const [u, row] of m.entries()) {
-    for (const [v, cell] of row.entries()) {
-      if (cell) yield [u, v]; // every cell is read, including the zeros
+// #region all-edges
+export function edgesOfList(adj: number[][]): Edge[] {
+  const edges: Edge[] = [];
+  for (let u = 0; u < adj.length; u++) {
+    for (const v of adj[u]) {
+      edges.push([u, v]);
     }
   }
+  return edges;
+}
+
+export function edgesOfMatrix(m: number[][]): Edge[] {
+  const edges: Edge[] = [];
+  for (let u = 0; u < m.length; u++) {
+    for (let v = 0; v < m.length; v++) {
+      if (m[u][v] === 1) edges.push([u, v]); // every cell is read, including the zeros
+    }
+  }
+  return edges;
 }
 // #endregion
