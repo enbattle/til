@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   type Graph,
-  type TreeNode,
+  TreeNode,
   countComponents,
   diameter,
   explore,
@@ -45,25 +45,23 @@ function directed(n: number, edges: Edge[]): Graph {
   return adj;
 }
 
-/** Rows that count how many times each one is scanned. */
+/** An adjacency list that counts how many times each row is read. */
 function counted(adj: Graph): { rows: Graph; scans: number[] } {
   const scans = adj.map(() => 0);
-  const rows = adj.map((row, u) => {
-    const copy = [...row];
-    Object.defineProperty(copy, Symbol.iterator, {
-      value: function* () {
-        scans[u]++;
-        for (let i = 0; i < copy.length; i++) yield copy[i];
-      },
-    });
-    return copy;
+  const rows = new Proxy(adj, {
+    get(target, key, receiver) {
+      if (typeof key === 'string' && /^\d+$/.test(key)) {
+        scans[Number(key)] += 1;
+      }
+      return Reflect.get(target, key, receiver);
+    },
   });
   return { rows, scans };
 }
 
 function build(values: (number | null)[]): TreeNode | null {
   if (values.length === 0 || values[0] === null) return null;
-  const root: TreeNode = { value: values[0], left: null, right: null };
+  const root = new TreeNode(values[0]);
   const waiting = [root];
   let i = 1;
   for (const node of waiting) {
@@ -71,7 +69,7 @@ function build(values: (number | null)[]): TreeNode | null {
       const v = i < values.length ? values[i] : null;
       i++;
       if (v !== null) {
-        node[side] = { value: v, left: null, right: null };
+        node[side] = new TreeNode(v);
         waiting.push(node[side]!);
       }
     }
@@ -327,16 +325,24 @@ describe('tree depth-first search', () => {
 
   it('visits each node once', () => {
     let reads = 0;
-    const chain = (n: number): TreeNode => {
-      const make = (i: number): TreeNode => ({
-        value: 1,
-        get left() {
-          reads++;
+    const countingNode = (): TreeNode => {
+      const node = new TreeNode(1);
+      Object.defineProperty(node, 'left', {
+        get() {
+          reads += 1;
           return null;
         },
-        right: i + 1 < n ? make(i + 1) : null,
       });
-      return make(0);
+      return node;
+    };
+    const chain = (n: number): TreeNode => {
+      const root = countingNode();
+      let node = root;
+      for (let i = 1; i < n; i++) {
+        node.right = countingNode();
+        node = node.right;
+      }
+      return root;
     };
     expect(diameter(chain(60))).toBe(59);
     expect(reads).toBe(60); // one left read per node, not a re-walk each

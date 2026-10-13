@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { MinHeap, bellmanFord, dijkstra, type Graph } from './shortest-paths';
+import { MinHeap } from '../heap/heap';
+import { bellmanFord, dijkstra, type Graph } from './shortest-paths';
 
 // The shortest-paths entry's TypeScript code. API: `dijkstra(graph, source)`
 // and `bellmanFord(graph, source)` take `graph[u]` as a list of [v, weight]
@@ -190,7 +191,7 @@ describe('dijkstra', () => {
     const big: Graph = Array.from({ length: n }, (_, u) =>
       Array.from({ length: n }, (_, v) => v)
         .filter((v) => v !== u)
-        .map((v): [number, number] => [v, 1 + ((u * v) % 5)]),
+        .map((v) => [v, 1 + ((u * v) % 5)]),
     );
     const { graph, c } = counted(big);
     dijkstra(graph, 0);

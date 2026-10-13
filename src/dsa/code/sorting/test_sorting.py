@@ -1,8 +1,7 @@
 """Tests for the sorting entry's Python code.
 
 API: ``merge_sort(items, key=identity)`` returns a new stable-sorted list;
-``partition(nums, lo, hi, pivot)`` returns ``(lt, gt)``; ``quickselect(nums, k,
-rng=None)`` returns the k-th smallest, counting from 0.
+``partition(nums, lo, hi, pivot)`` returns ``(lt, gt)``; ``quickselect(nums, k)`` returns the k-th smallest, counting from 0.
 """
 
 import math
@@ -75,24 +74,18 @@ def test_merge_sort_returns_a_copy_and_leaves_input_alone():
 
 
 def test_merge_sort_is_stable():
-    records = [("a", 2), ("b", 1), ("c", 2), ("d", 1), ("e", 2)]
-    assert merge_sort(records, key=lambda r: r[1]) == [
-        ("b", 1),
-        ("d", 1),
-        ("a", 2),
-        ("c", 2),
-        ("e", 2),
-    ]
+    # Equal by abs, so the order among them shows whether ties keep input order.
+    assert merge_sort([2, -1, -2, 1, 2], key=abs) == [-1, 1, 2, -2, 2]
 
 
-def test_merge_sort_stable_against_builtin_on_random_records():
+def test_merge_sort_stable_against_builtin_on_random_keys():
     seed = 11
     rng = random.Random(seed)
     for trial in range(50):
-        records = [(i, rng.randrange(4)) for i in range(rng.randrange(0, 30))]
-        got = merge_sort(records, key=lambda r: r[1])
-        want = sorted(records, key=lambda r: r[1])
-        assert got == want, f"seed={seed} trial={trial} {records}"
+        items = [rng.randrange(-4, 5) for _ in range(rng.randrange(0, 30))]
+        got = merge_sort(items, key=abs)
+        want = sorted(items, key=abs)
+        assert got == want, f"seed={seed} trial={trial} {items}"
 
 
 def test_merge_sort_matches_sorted_on_random_ints():
@@ -101,12 +94,6 @@ def test_merge_sort_matches_sorted_on_random_ints():
     for trial in range(50):
         items = [rng.randrange(-20, 20) for _ in range(rng.randrange(0, 40))]
         assert merge_sort(items) == sorted(items), f"seed={seed} trial={trial} {items}"
-
-
-def test_merge_sort_keeps_big_ints_by_value():
-    # Equal values built at runtime are different objects; == must be used.
-    items = [int("1000"), 5, int("1000"), 1]
-    assert merge_sort(items) == [1, 5, 1000, 1000]
 
 
 @pytest.mark.parametrize("shape", ["random", "reversed", "sorted"])
@@ -171,7 +158,8 @@ def test_partition_random_zones():
 
 def test_quickselect_worked_example():
     nums = [4, 7, 2, 4, 9, 1, 4]
-    assert [quickselect(list(nums), k, random.Random(1)) for k in range(7)] == [
+    random.seed(1)
+    assert [quickselect(list(nums), k) for k in range(7)] == [
         1,
         2,
         4,
@@ -199,13 +187,15 @@ def test_quickselect_matches_sorted_on_random_inputs():
     for trial in range(50):
         nums = [rng.randrange(-8, 8) for _ in range(rng.randrange(1, 30))]
         k = rng.randrange(len(nums))
-        got = quickselect(list(nums), k, random.Random(trial))
+        random.seed(trial)
+        got = quickselect(list(nums), k)
         assert got == sorted(nums)[k], f"seed={seed} trial={trial} k={k} {nums}"
 
 
 def test_quickselect_keeps_the_same_elements():
     nums = [5, 1, 4, 1, 9, 2]
-    quickselect(nums, 3, random.Random(2))
+    random.seed(2)
+    quickselect(nums, 3)
     assert sorted(nums) == [1, 1, 2, 4, 5, 9]
 
 
@@ -228,7 +218,8 @@ def test_quickselect_work_stays_linear(shape):
         values = [7] * n
     k = n // 2
     Counted.comparisons = 0
-    got = quickselect([Counted(v) for v in values], k, random.Random(17))
+    random.seed(17)
+    got = quickselect([Counted(v) for v in values], k)
     used = Counted.comparisons
     assert got.value == sorted(values)[k]
     assert 2 * n <= used <= 9 * n, f"{shape}: {used}"

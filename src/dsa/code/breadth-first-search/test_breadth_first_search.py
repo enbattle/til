@@ -9,6 +9,8 @@ source first, or None; ``minutes_to_rot(grid)`` takes rows of 0 (empty), 1
 
 import random
 
+import pytest
+
 from breadth_first_search import minutes_to_rot, shortest_path
 
 # The running example: two shortest routes from 0 to 5 exist, and 3 is reached
@@ -119,11 +121,17 @@ class TestShortestPath:
         assert shortest_path([[1, 1, 2], [0, 2], [0, 1]], 0, 2) == [0, 2]
         assert shortest_path([[1], [2], [0]], 0, 2) == [0, 1, 2]
 
-    def test_large_vertex_ids_compare_by_value(self):
-        n = int("1001")
+    def test_long_chain(self):
+        n = 1001
         adj = [[v + 1] if v + 1 < n else [] for v in range(n)]
-        path = shortest_path(adj, int("0"), int("1000"))
-        assert path == list(range(1001))
+        assert shortest_path(adj, 0, 1000) == list(range(1001))
+
+    def test_rejects_vertices_outside_the_graph(self):
+        for source, target in ((0, 2), (2, 0), (-1, 0), (0, -1)):
+            with pytest.raises(ValueError):
+                shortest_path([[1], [0]], source, target)
+        with pytest.raises(ValueError):
+            shortest_path([], 0, 0)
 
     def test_matches_brute_force_on_random_graphs(self):
         seed = 11

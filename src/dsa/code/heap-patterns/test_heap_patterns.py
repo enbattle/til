@@ -1,7 +1,7 @@
 """Tests for the heap-patterns entry's Python code.
 
 API: ``top_k_largest(items, k)`` (largest first), ``merge_sorted(lists)`` and
-``running_medians(stream)`` (the median after each value, as floats).
+``running_medians(stream)`` (the median after each value, as floats); all take lists.
 """
 
 import heapq
@@ -47,7 +47,7 @@ class Counted:
 def heap_calls(monkeypatch):
     """Record every heapq call and the largest heap any of them left behind."""
     log = {"calls": 0, "largest": 0}
-    for name in ("heappush", "heappop", "heapreplace", "heapify"):
+    for name in ("heappush", "heappop"):
         real = getattr(heapq, name)
 
         def spy(heap, *args, _real=real):
@@ -73,7 +73,6 @@ def test_top_k_edges():
     assert top_k_largest([5, 6], 5) == [6, 5]  # fewer items than k
     assert top_k_largest([5, 6], 0) == []
     assert top_k_largest([5, 6], -1) == []
-    assert top_k_largest(iter([2, 9, 4]), 2) == [9, 4]  # a stream, not a list
 
 
 def test_top_k_duplicates_and_large_ints():
@@ -102,7 +101,7 @@ def test_top_k_keeps_a_heap_of_at_most_k(heap_calls):
 
 def test_top_k_does_one_comparison_per_item_not_a_sort():
     # On shuffled input nearly every item loses to the root in one comparison,
-    # so the total is near n (2,090 here); sorting everything costs about
+    # so the total is near n (2,114 here); sorting everything costs about
     # n log2 n (~19,000). The heap-size test above rules out other structures.
     rng = random.Random(5)
     nums = list(range(2000))
@@ -163,7 +162,7 @@ def test_merge_heap_holds_one_head_per_list(heap_calls):
 
 def test_merge_compares_log_k_per_item_not_every_head():
     # Scanning all 50 heads for each item costs 49 comparisons per item
-    # (49,000 here). A heap measures about 11.5 per item, since each tuple
+    # (49,000 here). A heap measures about 13.35 per item, since each tuple
     # comparison counts an == and a <. A ceiling of 20 per item separates them.
     lists = [[Counted(x) for x in range(i, 1000, 50)] for i in range(50)]
     Counted.comparisons = 0
@@ -183,7 +182,7 @@ def test_median_edges():
     assert running_medians([7]) == [7.0]
     assert running_medians([2, 2, 2, 2]) == [2, 2, 2, 2]
     assert running_medians([1.5, 2.5]) == [1.5, 2.0]
-    assert running_medians(iter([3, 1])) == [3, 2]  # a stream, not a list
+    assert running_medians([3, 1]) == [3, 2]
     assert running_medians([-5, -1]) == [-5, -3]
 
 

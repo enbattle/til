@@ -223,18 +223,6 @@ describe('DSA code files (criterion 12)', () => {
   );
 });
 
-// Entries whose code predates docs/dsa.md's plain-code rule. Shrink-only:
-// each rewrite batch removes its entries, and the list goes when it's empty.
-const PENDING_PLAIN = new Set([
-  'breadth-first-search',
-  'depth-first-search',
-  'heap-patterns',
-  'prim-kruskal',
-  'shortest-paths',
-  'sorting',
-  'topological-sort',
-]);
-
 // The constructs docs/dsa.md's plain-code rule names, as they're spelled in
 // code. Comments are stripped first, so a comment may name one.
 const NOT_PLAIN: Record<Language, [string, RegExp][]> = {
@@ -265,22 +253,15 @@ function withoutComments(source: string, language: Language): string {
 }
 
 describe("DSA code follows docs/dsa.md's plain-code rule", () => {
-  it('lists only entries that exist (PENDING_PLAIN only shrinks)', () => {
-    expect([...PENDING_PLAIN].filter((slug) => !SLUGS.includes(slug))).toEqual([]);
+  it.each(SLUGS)('%s uses none of the constructs the rule excludes', (slug) => {
+    for (const language of LANGUAGES) {
+      const code = withoutComments(CODE[codePath(slug, language)], language);
+      const found = NOT_PLAIN[language]
+        .filter(([, pattern]) => pattern.test(code))
+        .map(([name]) => name);
+      expect(found, `${slug} (${language})`).toEqual([]);
+    }
   });
-
-  it.each(SLUGS.filter((slug) => !PENDING_PLAIN.has(slug)))(
-    '%s uses none of the constructs the rule excludes',
-    (slug) => {
-      for (const language of LANGUAGES) {
-        const code = withoutComments(CODE[codePath(slug, language)], language);
-        const found = NOT_PLAIN[language]
-          .filter(([, pattern]) => pattern.test(code))
-          .map(([name]) => name);
-        expect(found, `${slug} (${language})`).toEqual([]);
-      }
-    },
-  );
 
   it.each([
     [

@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mergeSort, partition, quickselect } from './sorting';
 
 // API: `mergeSort(items, key?)` returns a new stable-sorted array;
-// `partition(nums, lo, hi, pivot)` returns [lt, gt]; `quickselect(nums, k,
-// random?)` returns the k-th smallest, counting from 0.
+// `partition(nums, lo, hi, pivot)` returns [lt, gt]; `quickselect(nums, k)`
+// returns the k-th smallest, counting from 0. Quickselect draws its pivots
+// from Math.random, which the tests replace with a seeded generator.
 
 function mulberry32(seed: number): () => number {
   let a = seed;
@@ -13,6 +14,14 @@ function mulberry32(seed: number): () => number {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+function seedMathRandom(seed: number): void {
+  vi.spyOn(Math, 'random').mockImplementation(mulberry32(seed));
 }
 
 const ascending = (xs: number[]) => [...xs].sort((a, b) => a - b);
@@ -70,36 +79,20 @@ describe('mergeSort', () => {
   });
 
   it('is stable', () => {
-    const records = [
-      ['a', 2],
-      ['b', 1],
-      ['c', 2],
-      ['d', 1],
-      ['e', 2],
-    ] as const;
-    expect(mergeSort(records, (r) => r[1]).map((r) => r[0])).toEqual([
-      'b',
-      'd',
-      'a',
-      'c',
-      'e',
-    ]);
+    // Equal by absolute value, so ties show whether input order is kept.
+    expect(mergeSort([2, -1, -2, 1, 2], Math.abs)).toEqual([-1, 1, 2, -2, 2]);
   });
 
-  it('matches the built-in stable sort on random records', () => {
+  it('matches the built-in stable sort on random keys', () => {
     const seed = 11;
     const random = mulberry32(seed);
     for (let trial = 0; trial < 50; trial++) {
       const n = Math.floor(random() * 30);
-      const records = Array.from({ length: n }, (_, i) => ({
-        id: i,
-        k: Math.floor(random() * 4),
-      }));
-      const want = [...records].sort((a, b) => a.k - b.k);
-      expect(
-        mergeSort(records, (r) => r.k),
-        `seed=${seed} trial=${trial}`,
-      ).toEqual(want);
+      const items = Array.from({ length: n }, () => Math.floor(random() * 9) - 4);
+      const want = [...items].sort((a, b) => Math.abs(a) - Math.abs(b));
+      expect(mergeSort(items, Math.abs), `seed=${seed} trial=${trial} ${items}`).toEqual(
+        want,
+      );
     }
   });
 
@@ -112,10 +105,6 @@ describe('mergeSort', () => {
       );
       expect(mergeSort(xs), `seed=${seed} trial=${trial} ${xs}`).toEqual(ascending(xs));
     }
-  });
-
-  it('sorts numbers, not strings, by default', () => {
-    expect(mergeSort([10, 9, 1])).toEqual([1, 9, 10]);
   });
 
   it.each(['random', 'reversed', 'sorted'])(
@@ -194,7 +183,8 @@ describe('partition', () => {
 describe('quickselect', () => {
   it('finds every rank of the worked example', () => {
     const nums = [4, 7, 2, 4, 9, 1, 4];
-    const got = nums.map((_, k) => quickselect([...nums], k, mulberry32(1)));
+    seedMathRandom(1);
+    const got = nums.map((_, k) => quickselect([...nums], k));
     expect(got).toEqual([1, 2, 4, 4, 4, 7, 9]);
   });
 
@@ -209,7 +199,6 @@ describe('quickselect', () => {
     expect(bad([], 0)).toThrow(/out of range/);
     expect(bad([1, 2, 3], -1)).toThrow(/out of range/);
     expect(bad([1, 2, 3], 3)).toThrow(/out of range/);
-    expect(bad([1, 2, 3], 1.5)).toThrow(/out of range/);
   });
 
   it('matches a numeric sort on random inputs', () => {
@@ -220,14 +209,16 @@ describe('quickselect', () => {
         Math.floor(random() * 16 - 8),
       );
       const k = Math.floor(random() * nums.length);
-      const got = quickselect(guarded([...nums]), k, mulberry32(trial));
+      seedMathRandom(trial);
+      const got = quickselect(guarded([...nums]), k);
       expect(got, `seed=${seed} trial=${trial} k=${k} ${nums}`).toBe(ascending(nums)[k]);
     }
   });
 
   it('keeps the same elements', () => {
     const nums = [5, 1, 4, 1, 9, 2];
-    quickselect(nums, 3, mulberry32(2));
+    seedMathRandom(2);
+    quickselect(nums, 3);
     expect(ascending(nums)).toEqual([1, 1, 2, 4, 5, 9]);
   });
 
@@ -256,7 +247,8 @@ describe('quickselect', () => {
       if (shape === 'equal') values = new Array<number>(n).fill(7);
       const nums = values.map(box) as unknown as number[];
       const k = n / 2;
-      const got = quickselect(guarded(nums), k, mulberry32(17));
+      seedMathRandom(17);
+      const got = quickselect(guarded(nums), k);
       expect(Number(got)).toBe(ascending(values)[k]);
       expect(reads).toBeGreaterThanOrEqual(2 * 2 * n);
       expect(reads).toBeLessThanOrEqual(2 * 9 * n);

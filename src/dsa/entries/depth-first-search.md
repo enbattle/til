@@ -36,31 +36,31 @@ A tree needs no seen set, since each node has one parent, so you just recurse. T
 
 ## Walkthrough
 
-```python region=part-1
+```python region=components
 
 ```
 
-```typescript region=part-1
+```typescript region=components
 
 ```
 
 On the example, `explore(adj, 0, seen)` visits 0, 1 and 2; the starts 3 and 5 follow, for a count of 3.
 
-```python region=part-2
+```python region=has-cycle
 
 ```
 
-```typescript region=part-2
+```typescript region=has-cycle
 
 ```
 
 On the diamond the search enters 0, 1 and 3, finishes 3 and 1, then enters 2. Its edge to 3 meets a finished vertex and is ignored, so the answer is `False`; with 3→0 added, vertex 3 meets 0 on the path and returns `True`. This version recurses to the length of the current path. An explicit-stack version must also remember each vertex's place in its neighbor list, which makes it longer, so reach for `explore` when a graph is deep and only reachability matters.
 
-```python region=tree-node
+```python region=path-sum
 
 ```
 
-```typescript region=part-3
+```typescript region=path-sum
 
 ```
 
@@ -74,7 +74,7 @@ With a target of 22, `remaining` goes 17 at node 5, 13 at 4 and 2 at 11; leaf 7 
 
 ```
 
-Each call returns its height up and records a candidate on the side. Node 11 sees heights 0 and 0, a candidate of 2; node 8 sees 0 and 1, a candidate of 3; the root sees 2 and 2, giving 6, the largest. The best path needn't pass through the root, which is why `best` is kept apart from the return value.
+Each call returns two numbers up: its height, which a parent can extend, and the longest path found anywhere below it. Node 11 sees heights 0 and 0, giving a path of 2 through itself; node 8 sees 0 and 1, giving 3; the root sees 2 and 2, giving 6, the largest. The best path needn't pass through the root, which is why it travels as its own number.
 
 ## Complexity
 
@@ -87,4 +87,4 @@ The tree functions take O(n) time and O(h) space for the recursion, where h is t
 - **Marking on pop without the skip check in `explore`.** In a triangle 0, 1, 2 started at 0, vertices 1 and 2 are both pushed, and 1 pushes 2 again before 2 is marked, so 2 is popped and scanned twice. `if u in seen: continue` prevents it. Marking on push instead scans once but is not depth-first. On `[[1, 2, 3], [0, 3], [0], [0, 1]]` from 0, it visits 0, 1, 2, 3 with the reversal and 0, 3, 2, 1 without, where depth-first visits 0, 1, 3, 2.
 - **Treating "seen" as "on the path" in `has_cycle`.** With `state[v] != UNVISITED` as the test, the diamond reports a cycle when vertex 2 reaches the finished 3. Resetting a vertex to unvisited on exit avoids that but re-walks shared subgraphs.
 - **Ending the path sum at `None`.** If `has_path_sum` returned `remaining == 0` for an empty child, `[1, 2]` with target 1 would be `True`: node 1's empty right side hits 0, yet the only real path adds to 3.
-- **Returning the candidate from `diameter`.** Returning `left + right + 2` lets a parent count both sides of a child, and the example gives 9, not 6.
+- **Returning `through_here` as the height.** Returning `left_height + right_height + 2` upward lets a parent count both sides of a child, and the example gives 9, not 6.

@@ -62,15 +62,15 @@ When every weight is the same, the heap hands vertices out in the order a queue 
 
 ## Walkthrough
 
-```python region=part-1
+```python region=graph
 
 ```
 
-```typescript region=min-heap
+```typescript region=graph
 
 ```
 
-JavaScript has no built-in heap, so this is the [heap](/dsa/heap) entry's class, trimmed: no heapify, no peek and no empty checks, since the caller tests `size` first.
+Python has `heapq`; JavaScript has no built-in heap, so the TypeScript imports the [heap](/dsa/heap) entry's `MinHeap`, whose items are number arrays ordered like Python tuples: `push([cost, vertex])`.
 
 ```python region=dijkstra
 

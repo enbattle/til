@@ -46,7 +46,7 @@ Vertex 5 is found while scanning 3, so the search stops. Following parents back,
 
 ## Walkthrough
 
-The graph search needs a queue and a record of what it has reached. A dictionary from vertex to parent does both jobs.
+The graph search needs a queue and a record of what it has reached. A list holding each vertex's parent, with -1 for "not reached yet", does both jobs. The source is its own parent, which marks it as reached.
 
 ```python region=shortest-path
 
@@ -56,17 +56,17 @@ The graph search needs a queue and a record of what it has reached. A dictionary
 
 ```
 
-In the table, vertex 3 is queued while scanning 1, so when 2 scans it later, 3 is already in `parent` and is skipped. This run popped 4 of the 6 vertices and read 10 of the 14 adjacency entries before it stopped. The queue only found the target; the path comes from walking the parents.
+In the table, vertex 3 is queued while scanning 1, so when 2 scans it later, 3 already has a parent and is skipped. This run popped 4 of the 6 vertices and read 10 of the 14 adjacency entries before it stopped. The queue only found the target; the path comes from walking the parents.
 
-```python region=part-2
-
-```
-
-```typescript region=part-2
+```python region=path-from-parents
 
 ```
 
-A target the search never reached is absent from `parent`, which is how unreachable shows up. The source's parent is `None`, which ends the walk, so `source == target` returns `[source]` without scanning anything. Now several sources at once, on a grid, where the answer is how many rounds the spread takes.
+```typescript region=path-from-parents
+
+```
+
+A target the search never reached still has -1 in `parent`, which is how unreachable shows up. The walk stops on reaching the source. Because the source is its own parent, it counts as reached, so `source == target` returns `[source]` without scanning anything. Now several sources at once, on a grid, where the answer is how many rounds the spread takes.
 
 ```python region=minutes-to-rot
 
@@ -88,5 +88,5 @@ Take the grid `[[2, 1, 1], [1, 1, 0], [0, 1, 2]]`, with two rotten cells. Minute
 
 - **Marking a vertex when you pop it.** In `shortest_path`, `parent[w] = v` is on the line that queues `w`. Move it to the pop and 3 enters the queue twice in the example, and its neighbors are scanned twice; on a dense graph the repeats multiply.
 - **Removing from the front of a list.** `queue.pop(0)` in Python and `queue.shift()` in TypeScript move every remaining item, so each pop costs O(n) and a long search becomes quadratic. `deque.popleft` and the head index are O(1).
-- **Asking the queue's length again inside the minute loop.** In `minutes_to_rot`, `range(len(queue))` is evaluated once. A loop that re-read the length would run the cells just rotted in the same minute, and the example would come back as 1.
-- **Indexing before the bounds check.** In `minutes_to_rot`, a neighbor at row -1 reads `grid[-1]`, the last row, in Python, so rot leaks across the edge; in TypeScript the same read throws. The `0 <= nr < rows` test comes first for both.
+- **Asking the queue's length again inside the minute loop.** In `minutes_to_rot`, `count = len(queue)` is read once, before the loop. A loop that re-read the length would run the cells just rotted in the same minute, and the example would come back as 1.
+- **Indexing before the bounds check.** In `minutes_to_rot`, a neighbor at row -1 reads `grid[-1]`, the last row, in Python, so rot leaks across the edge; in TypeScript the same read throws. The `nr < 0 or nr >= rows` test comes first for both.

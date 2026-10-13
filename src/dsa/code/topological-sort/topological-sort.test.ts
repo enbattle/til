@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import {
-  type Graph,
-  courseOrder,
-  topologicalSort,
-  topologicalSortDfs,
-} from './topological-sort';
+import { courseOrder, topologicalSort, topologicalSortDfs } from './topological-sort';
 
 // The topological-sort entry's TypeScript code. API: `topologicalSort(adj)` is
 // Kahn's algorithm and `topologicalSortDfs(adj)` reverses a depth-first finishing
 // order; both return an order with every edge going forward, or null on a cycle.
 // `courseOrder(n, prerequisites)` takes [course, prerequisite] pairs. `adj[u]`
 // lists the vertices u points at.
+
+type Graph = number[][];
 
 const BOTH: [string, (adj: Graph) => number[] | null][] = [
   ['topologicalSort', topologicalSort],
