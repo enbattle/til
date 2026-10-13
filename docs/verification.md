@@ -139,8 +139,9 @@ after Stage 2 (a config part the snapshot lacks counts as `added`):
   `src/test/` (the shared setup, render and guard-test helpers) and every vitest snapshot
   (`__snapshots__/*.snap`);
 - the test runners' config: any `vitest.config.*` or `vitest.workspace.*`
-  file, the `test` block of `vite.config.ts`, the `test*` scripts and
-  `scripts/test-python.mjs`;
+  file, the `test` block of `vite.config.ts`, the `test*` scripts, the
+  `pre`/`post` scripts npm runs around them and around `verify` (`pretest:run`,
+  `preverify`), and `scripts/test-python.mjs`;
 - the gate itself: the `check:test-lock` script string, the whole `verify`
   script string (one hash, so any edit to it, including a new check step,
   trips the lock; a new `verify` step belongs to the Stage 2 test-writer), and

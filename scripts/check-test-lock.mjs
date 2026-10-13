@@ -10,8 +10,9 @@
 //
 // - every test file (`*.test.*`, `*.spec.*`), vitest snapshot and
 //   `vitest.config|workspace.*`, and everything under src/test/;
-// - the `test` block of vite.config.ts, package.json's `test*` scripts and
-//   its `check:test-lock` script string;
+// - the `test` block of vite.config.ts, package.json's `test*` scripts, the
+//   `pre`/`post` scripts npm runs around them and around `verify`, and its
+//   `check:test-lock` script string;
 // - the whole `verify` script string, as one hash: any edit to it counts, so
 //   a new `verify` step belongs to the Stage 2 test-writer;
 // - every `.gitignore` (any depth, including one that ignores itself) and
@@ -120,7 +121,10 @@ function configParts(root, exclude) {
   const { scripts = {} } = existsSync(pkgPath)
     ? JSON.parse(readFileSync(pkgPath, 'utf8'))
     : {};
-  const testScripts = Object.entries(scripts).filter(([name]) => name.startsWith('test'));
+  // `pre`/`post` too: npm runs them around `npm run <name>`.
+  const testScripts = Object.entries(scripts).filter(([name]) =>
+    /^(?:pre|post)?test|^(?:pre|post)verify$/.test(name),
+  );
   return {
     'vite.config.ts#test': sha(braceBlock(vite, /\n\s*test:\s*\{/) ?? vite),
     'package.json#scripts.test*': sha(JSON.stringify(testScripts)),

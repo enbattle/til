@@ -138,22 +138,28 @@ it('fails, saying so, when there is no build output', () => {
   expect(slashes(bundleProblems(root)).join('\n')).toMatch(/dist\/assets/);
 });
 
-// The real repository is checked only when it has been built: `verify` runs
-// the tests before `npm run build`, and CI's checkout has no dist/.
-describe.skipIf(!existsSync(resolve('dist/assets')))(
-  'check-bundle on the built repository',
-  () => {
-    it('returns no problems', () => {
-      expect(slashes(bundleProblems(resolve('.')))).toEqual([]);
-    });
+// The real repository's bundle is checked only when it has been built:
+// `verify` runs the tests before `npm run build`, and CI's checkout has no
+// dist/.
+const BUILT = existsSync(resolve('dist/assets'));
+describe.skipIf(!BUILT)('check-bundle on the built repository', () => {
+  it('returns no problems', () => {
+    expect(slashes(bundleProblems(resolve('.')))).toEqual([]);
+  });
+});
 
-    // docs/specs/in-process-checks.md, criterion 2: the one run as a script.
-    it('exits 0 with its success message, run as a script', () => {
-      const result = spawnSync(process.execPath, [resolve('scripts/check-bundle.mjs')], {
-        encoding: 'utf8',
-      });
-      expect(result.status, result.stderr).toBe(0);
-      expect(result.stdout).toMatch(/outside the main chunk/);
-    });
-  },
-);
+// docs/specs/in-process-checks.md, criterion 2: the one run as a script. It
+// runs with or without a build, so CI still proves the CLI part runs: built,
+// it passes; unbuilt, it fails naming dist/assets.
+it('runs as a script: exit 0 when built, exit 1 naming dist/assets when not', () => {
+  const result = spawnSync(process.execPath, [resolve('scripts/check-bundle.mjs')], {
+    encoding: 'utf8',
+  });
+  if (BUILT) {
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toMatch(/outside the main chunk/);
+  } else {
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/dist[\\/]assets/);
+  }
+});

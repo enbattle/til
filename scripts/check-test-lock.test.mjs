@@ -308,6 +308,27 @@ describe('check-test-lock', () => {
     });
   });
 
+  // npm runs `pre<name>` and `post<name>` around `npm run <name>`, so one
+  // added beside a test script or verify runs inside the gate.
+  describe('npm lifecycle scripts around the test scripts and verify', () => {
+    it.each(['pretest:run', 'posttest:run', 'pretest:py', 'preverify', 'postverify'])(
+      'reports an added %s',
+      (name) => {
+        const root = snapshotted();
+        write(root, 'package.json', pkg({ [name]: 'node -e "0"' }));
+        expect(changes(root)).toEqual([
+          expect.stringMatching(line('modified', 'package\\.json')),
+        ]);
+      },
+    );
+
+    it('reports nothing for a lifecycle script around another script', () => {
+      const root = snapshotted();
+      write(root, 'package.json', pkg({ prebuild: 'node -e "0"' }));
+      expect(changes(root)).toEqual([]);
+    });
+  });
+
   describe('reports nothing outside the lock (criterion 5)', () => {
     it.each([
       [

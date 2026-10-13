@@ -130,7 +130,9 @@ describe('scripts/test-python.mjs', () => {
         );
         fixed = { result, left };
       });
-    });
+      // A real pytest run: vitest's default 10 s hook timeout is too tight
+      // on a loaded machine.
+    }, 60_000);
 
     it('passes when the code is right', () => {
       const { result } = fixed;
