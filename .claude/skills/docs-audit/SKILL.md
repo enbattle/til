@@ -16,13 +16,9 @@ with merges.
 
 ## Why an independent read, not a self-check
 
-Whoever just made a change is the worst-positioned person to notice a
-doc gap it left behind — they already hold the new state in mind, so an
-omission looks unremarkable to them the same way a typo you just typed is
-invisible to your own proofreading. That's exactly the bias a fresh
-`general-purpose` agent (never `fork`) removes: no memory of what was
-just built, so a stale claim reads as wrong on sight instead of "obviously
-fine, I was just there."
+The audit runs in fresh `general-purpose` agents, never `fork`
+([why](../../../docs/SDLC.md#why-a-fresh-agent-never-a-fork)): whoever just
+made a change is the worst-placed to notice the doc gap it left behind.
 
 ## Stage 1 — Enumerate the documentation surface
 

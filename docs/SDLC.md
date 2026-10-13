@@ -67,6 +67,20 @@ single-purpose agents join only when a stage calls for one: a finding triager an
 fixer when review finds something, and a reader of process edits at the
 retrospective.
 
+## Why a fresh agent, never a fork
+
+Every independent step in this repo (the pipeline's agents, the content
+skills' reviews, both audits, the evals and the completeness audit below)
+runs as a fresh `general-purpose` agent, never a `fork`, because a fork
+inherits the calling session's context. Whoever just wrote or changed
+something is the worst-placed to see what's wrong with it: the new state
+already reads as normal to them, so a stale claim, an AI-patterned phrase or a
+missed case reads as "obviously fine, I just wrote that", the way a typo you
+just typed is invisible to your own proofreading. A fork also carries the
+session's guess at the answer and, in an eval, the knowledge that something
+was planted. A fresh agent given only what the step needs reads those on
+sight, and opens with a near-empty context, where attention is best (above).
+
 ## The stages
 
 1. **Spec.** Requirements and the intended approach, written down before

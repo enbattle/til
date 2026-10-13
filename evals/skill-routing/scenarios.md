@@ -7,10 +7,8 @@ work — and compare against **Expected**. The `skill-routing-eval` skill has
 the procedure, and `../README.md` the grading philosophy (some of these are
 ambiguous by design).
 
-A prompt that names real content states what it relies on as
-`<!-- premise: … -->` comments, which `npm run check:eval-premises` (in
-`verify`) checks. When one fails, refresh the prompt so it still asks what
-the scenario means to ask.
+A prompt that names real content states what it relies on as premise
+comments ([`../README.md`, "Running any eval"](../README.md#running-any-eval)).
 
 ---
 

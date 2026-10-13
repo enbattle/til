@@ -34,11 +34,8 @@ don't edit another entry except to link to the new one from prose where it
 belongs (a link from an older entry's `## Prerequisites` would make the older
 entry depend on the newer one, so it goes elsewhere in the body).
 
-Merging several entries into one (docs/dsa.md, "Scope") also follows this
-skill. A merge
-deletes the old entries and their code folders in the same change and repoints
-every `/dsa/<old-slug>` link (`git grep -n "/dsa/<old-slug>"`). Treat the old
-text and code as research notes, not a draft to trim.
+Merging several entries into one also follows this skill; docs/dsa.md's
+"Scope" has what a merge does.
 
 `npm run test:py` needs Python and pytest (docs/dsa.md has the version). If
 they aren't installed, say so and give the install command from docs/dsa.md; don't finish an entry whose
@@ -52,23 +49,12 @@ length, the voice and how comments carry the reasons.
 Read the Writing Standard's "Case studies and DSA entries" section too: it
 sets the five-minute budget and the voice.
 
-1. **Code.** `src/dsa/code/<slug>/<slug_underscored>.py` (stdlib only, type
-   hints) and `<slug>.ts` (no imports, exported API). Each is
-   idiomatic in its own language, not a line-by-line transliteration of the
-   other, but the APIs match in shape. Keep lines under 90 characters. One
-   core implementation, about 30–60 lines per language without comments, with
-   a comment giving the reason at each line where the obvious alternative
-   would break (docs/dsa.md, "Code pairs and the code files").
+1. **Code.** `src/dsa/code/<slug>/<slug_underscored>.py` and `<slug>.ts`,
+   following the code-file rules in docs/dsa.md's "Code pairs and the code
+   files" (languages, length, line width, comments, slug names).
 2. **Tests.** `test_<slug_underscored>.py` (pytest) and `<slug>.test.ts`
-   (vitest), importing the real files. Cover empty input, single elements,
-   duplicates, boundaries (the smallest and largest answers), the failure
-   case (nothing found, a missing key), and where there's a brute-force or
-   standard-library answer, compare against it on seeded random inputs: one
-   test per property that loops over at most 50 trials from a fixed seed,
-   with the seed (and step) in each assertion's message so a failure can be
-   replayed, no parametrizing over seeds, and empty input and size 1 still
-   as explicit fixed cases (docs/dsa.md, "Code pairs"; `heap` is the model).
-   Run `npm run test:py` and `npx vitest run src/dsa/code/<slug>` until both
+   (vitest), following the test rules in the same section (the edge cases to
+   cover, and how a seeded randomized comparison is written). Run `npm run test:py` and `npx vitest run src/dsa/code/<slug>` until both
    pass, and check that a deliberately broken line makes each fail. Break a
    returned value or a comparison outside any loop header, never what decides
    whether a loop ends (its condition, or the step that moves it forward): a

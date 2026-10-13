@@ -33,34 +33,14 @@ entry; adopted practices are documented where they live, not here.
 run unless a verification script passes first, enforced locally rather
 than relying on the agent choosing to run checks.
 
-**Why deferred:** Investigated directly (see
-`docs/specs/` history and the session that produced this file) and
-rejected for a specific, verified reason: Claude Code's PreToolUse hooks
-**fail open on timeout** — if the check doesn't finish inside its
-configured timeout, the tool call proceeds anyway, block or no block.
-`til`'s existing hooks use a 10-second timeout (the one that denies,
-`block-powershell-writes.js`, blocks a PowerShell command that writes a file, not a commit, and
-decides from the command text alone, so it never nears it); the full verification
-suite (`npm run verify`; docs/verification.md describes each check) can exceed that, which means a naive version of this hook would
-silently stop blocking the first time a check ran slow — a false sense
-of security, which is worse than no hook. A narrower version (gating
-only the fast checks — `format:check` + `lint`) avoids the timeout risk
-but only protects commits made through this exact hook config on this
-exact machine; it's trivially bypassed and duplicates gate logic that
-the skills already own (the final gate of every skill that changes the repo runs `npm run verify`).
-The mechanism that
-actually matches "don't let a bad change get merged" is GitHub branch
-protection requiring the existing CI check to pass — server-side,
-doesn't fail open, can't be bypassed by local config. Branch protection is
-enabled, and every change now lands through a pull request (CLAUDE.md, "How changes
-land"); before that rule, commits were pushed straight to `main` (as of
-2026-09-24, no human-authored change had arrived through a PR; Dependabot's
-auto-merged PRs are the exception), and on 2026-09-21 two commits whose CI failed
-(fdd0db5, 00f2f84) reached `main` and deployed. That was this entry's
-revisit condition firing. The response was a second server-side layer rather
-than this local hook: the deploy workflow now runs `npm run verify` itself,
-so a red commit can land on `main` but can't go live. The local hook's
-fail-open problem is unchanged, so it stays deferred.
+**Why deferred:** Claude Code's PreToolUse hooks **fail open on timeout**,
+and `npm run verify` can exceed the hooks' 10-second timeout, so the hook
+would silently stop blocking the first time a check ran slow. A version gating
+only the fast checks is trivially bypassed and duplicates the skills' own
+final gate. The server-side layers already cover it and don't fail open:
+branch protection with every change landing through a pull request
+(CLAUDE.md, "How changes land"), and the deploy workflow running
+`npm run verify` before publishing.
 **Revisit when:** The server-side layers prove insufficient in practice: a
 commit that fails `verify` goes live despite the deploy gate, or red commits
 on `main` keep costing enough (broken history to bisect, reverts) that
@@ -72,39 +52,26 @@ catching them before the push is worth the hook's complexity.
 graded by another model, with a required pass threshold blocking merge —
 the automated version of what the eval skills (see `evals/README.md`)
 currently do manually.
-**Why deferred:** `evals/README.md` already states the reasoning:
-manual/periodic is deliberate here, since a full eval run costs real
-time and tokens per scenario, and this is a personal site's process
-check, not a safety-critical gate. An automatic CI-gated version also
-needs a tolerance for eval-grading false positives/negatives that a
-"revisit when something surprises you" cadence doesn't.
-**Revisit when:** Manual/periodic runs are missed often enough in
-practice that real routing or review-quality drift goes unnoticed for a
-long stretch — that would be evidence the cadence, not just the
-mechanism, needs to change.
+**Why deferred:** A run costs real time and tokens per scenario, for a
+personal site's process check rather than a safety-critical gate
+(`evals/README.md`, "How this is run"), and a gate would need a tolerance for
+grading errors that manual runs don't.
+**Revisit when:** Manual runs are missed often enough that real routing or
+review-quality drift goes unnoticed for a long stretch.
 
 ### Sandboxed/ephemeral execution per agent run
 
 **What it is:** Running each agent invocation in an isolated, disposable
 environment (a container, a fresh VM) rather than directly against the
 working machine.
-**Why deferred:** This defends against an agent executing untrusted or
-unpredictable code at meaningful blast radius — relevant when many
-people's agents touch shared infrastructure. `til` is a static site with
-no backend, no secrets of consequence beyond what's already
-git-ignored, and a single operator; the existing "never `fork` for an
-independent review" pattern already provides the isolation that
-actually matters here (fresh reasoning context), just not OS-level
-isolation. The one real blast radius is that a push to `main` deploys the
-public site. That is covered without a sandbox: `.claude/settings.json`
-denies force-pushes and asks before any `git push` (permission rules, unlike
-hooks, don't fail open on a timeout), and the deploy workflow runs
-`npm run verify` before publishing. The rules are a guardrail against a
-mistake, not a security boundary: they match command text, so they cover
-`git push`, `git -C <dir> push` and the same forms in the PowerShell tool
-(`Bash(...)` rules don't apply to it, so each rule is written for both), but
-Claude Code's own docs note forms like `git -c key=value push` or a quoted
-`'push'` slip past any such rule.
+**Why deferred:** `til` is a static site with no backend, no secrets of
+consequence and a single operator. Its one real blast radius, a push to
+`main` deploying the site, is covered without a sandbox: `.claude/settings.json`
+denies force-pushes and asks before any `git push`, and the deploy workflow
+runs `npm run verify` before publishing. The rules are a guardrail matched on
+command text, not a security boundary: each is written for both the Bash and
+PowerShell tools, but forms like `git -c key=value push` or a quoted `'push'`
+slip past them.
 **Revisit when:** This repo (or a fork of it) starts running agents
 against something with real blast radius — deployment credentials,
 production data, another system's API keys.
@@ -114,29 +81,14 @@ production data, another system's API keys.
 **What it is:** A derived index sitting between an agent and the
 codebase — embeddings for RAG-style retrieval, a symbol/dependency
 graph, or a generated repo map — so a session queries a compressed
-representation instead of reading source files fresh each time. This is
-the pattern behind several public "give your coding agent long-term
-memory" projects.
-**Why deferred:** Solves a scale problem `til` doesn't have. `src/` is
-a modest codebase that `CLAUDE.md` plus `Glob`/`Grep` orient a fresh
-session in quickly — there's no re-reading cost here to amortize. It also
-wouldn't have fixed the actual drift this repo has hit repeatedly (a
-fact hand-duplicated across docs going stale): a derived graph is itself
-a second representation of the truth that needs its own invalidation the
-moment the source changes, which relocates that exact risk into a new
-artifact rather than removing it. `CLAUDE.md`, `docs/SDLC.md`,
-`docs/DESIGN.md`, and the skills already are `til`'s persistent knowledge
-base for a session — hand-curated and human/agent-verified, which is
-more reliable at this size than something auto-extracted.
-**Revisit when:** The codebase or SDLC tooling surface grows large
-enough that reading it fresh every session becomes genuinely slow or
-costly — not a fixed file count, but the point where `CLAUDE.md` plus
-`Glob`/`Grep` stop being enough to orient a fresh session quickly. A
-related but distinct idea — a graph of relationships between _published
-topics_, for readers rather than agents — is a different, content-facing
-version of this same instinct, already covered by `CLAUDE.md`'s scope
-exclusions (tags, and no tracks or ordered curricula over the catalog); that's a product-scope call, not
-a process-tooling one, so it isn't repeated here.
+representation instead of reading source files fresh each time.
+**Why deferred:** `src/` is small enough that `CLAUDE.md` plus `Glob`/`Grep`
+orient a fresh session quickly, and a derived index is a second copy of the
+truth that goes stale like a hand-duplicated doc does. (A graph of published
+topics for readers is a product-scope call, covered by `CLAUDE.md`'s scope
+exclusions.)
+**Revisit when:** `CLAUDE.md` plus `Glob`/`Grep` stop being enough to orient
+a fresh session quickly.
 
 ### Prompt/spec diff-review enforcement (e.g., a hook flagging an eval scenario file edit)
 
@@ -144,13 +96,10 @@ a process-tooling one, so it isn't repeated here.
 with the same enforced review rigor as source code — e.g., a hook that
 flags when `evals/**/scenarios.md` changes without a corresponding
 results-log entry.
-**Why deferred:** `til` already gets most of this benefit from
-the eval skills' own "add a scenario first" step ("add a
-scenario first, then run it") and the `nudge-sdlc` hook's reminder on
-skill, hook and process-doc edits (it doesn't fire on `evals/` files) — adding a dedicated enforcement mechanism on top would be
-gating an already-lightly-gated process a second time for a solo
-repo where the existing skill discipline hasn't actually been skipped
-in practice.
+**Why deferred:** The eval skills' "add a scenario first" step and the
+`nudge-sdlc` hook's reminder on skill, hook and process-doc edits (not
+`evals/` files) already cover most of it, and that discipline hasn't been
+skipped in practice in a solo repo.
 **Revisit when:** A scenario file is edited without a corresponding run
 in practice — evidence the existing discipline alone isn't holding.
 
@@ -209,13 +158,12 @@ script.
 **What it is:** Running [knip](https://knip.dev) (unused files, exports and
 dependencies) in `verify`, so dead code fails CI instead of waiting for
 someone to look.
-**Why deferred:** It was run by hand on 2026-09-28 and found a handful of
-internal-only exports, since removed; everything else it reported was a false
-positive, now recorded in `knip.json` (see docs/verification.md).
-As a gate, every false positive (a new hook entry point, a type-only file, an
-external binary) would fail CI until someone taught `knip.json` about it,
-and it isn't a dependency, so `npx` would fetch it on every CI run. Dead code
-in a repo this size costs little and is visible in review.
+**Why deferred:** As a gate, every false positive (a new hook entry point, a
+type-only file, an external binary) would fail CI until `knip.json` learned
+it, and `npx` would fetch it on every run; dead code in a repo this size costs
+little and is visible in review. It runs on demand (docs/verification.md);
+the first hand run, on 2026-09-28, found only a few internal-only exports
+(since removed) and false positives, now in `knip.json`.
 **Revisit when:** A review or retro finds dead code (an unused export, file
 or dependency) that shipped after this entry's date, or `npx knip` reports
 real findings on two separate on-demand runs.
@@ -227,12 +175,11 @@ and failing it by name, with `pytest-timeout` (thread method, which works on
 Windows) or an outer kill in `scripts/test-python.mjs`, and an equivalent for
 vitest.
 **Why deferred:** Measured on 2026-10-02: vitest's `testTimeout` can't stop a
-synchronous loop in either the threads or the forks pool, and pytest's built-in
-`faulthandler_timeout` names the stuck test but leaves it running. A real stop
-needs a new dependency or an outer kill in locked test tooling (a `/feature`
-run), and would cover Python only. Every hang so far came from a drafter's
-deliberate break check that broke what decides whether a loop ends, which
-`add-dsa-entry` Stage 1 now tells drafters not to touch, and CI's 10-minute job
-timeout still fails a run with broken code.
+synchronous loop, and
+pytest's `faulthandler_timeout` names the stuck test but leaves it running, so
+a real stop needs a new dependency or an outer kill in locked test tooling,
+for Python only. Every hang so far came from a deliberate break check, which
+`add-dsa-entry` Stage 1 now steers away from loop conditions, and CI's
+10-minute job timeout still fails a run.
 **Revisit when:** a hang reaches CI, or a hanging test costs another agent run
 after this entry's date.

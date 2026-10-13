@@ -24,15 +24,6 @@ studies under `src/system-design/case-studies/` and the DSA entries under
 the [Writing Standard](../../../docs/writing-standard.md). Neither one's scope
 includes the other's.
 
-## Why an independent read, not a self-check
-
-The same reasoning `docs-audit` gives applies here, doubled: whoever
-wrote or last edited a topic is the worst-positioned person to notice it
-reads as AI-patterned, because the phrasing already sounds normal to the
-mind that produced it. A fresh `general-purpose` agent (never `fork`)
-that never held the draft in mind reads the tic on sight instead of
-"obviously fine, I just wrote that."
-
 ## Stage 0 — Scope the run
 
 Default: every file under `src/content/**/*.md`,
@@ -50,18 +41,18 @@ first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
 section is unusually large. The case studies get batches of their
 own, split so each agent can read its share in full (about five per agent,
-with their `.d2` sources); check 4 below applies to them. The DSA
+with their `.d2` sources). The DSA
 entries get batches of their own too, about five entries per agent, since each
-comes with four code and test files under `src/dsa/code/<slug>/`; check 6
-below applies to them.
+comes with four code and test files under `src/dsa/code/<slug>/`.
 
 ## Stage 2 — Independent audit, per batch
 
-Spawn a **fresh** `general-purpose` agent per batch (never `fork` — it
-must not inherit any prior read of these files). Give each agent its
+Spawn a **fresh** `general-purpose` agent per batch (never `fork`;
+[why](../../../docs/SDLC.md#why-a-fresh-agent-never-a-fork)). Give each agent its
 batch's file list, the [Writing Standard](../../../docs/writing-standard.md), the path of
 `docs/NON_NEGOTIABLES.md` (a violation there is always a real finding),
-and this instruction, close to verbatim:
+and this instruction, close to verbatim, with each owning skill's Stage 3
+`<checklist>` copied from its `SKILL.md`:
 
 > Read every file in your batch in full. Audit each one against these
 > criteria. Report findings grouped by file, each with a quote, which
@@ -95,48 +86,22 @@ and this instruction, close to verbatim:
 > being wrong, or internally inconsistent — quote the claim, say what's
 > wrong, and say what's actually true.
 >
-> **4. Case studies only (skip for a catalog topic) — does it apply
-> topics, or re-teach them, and do its numbers hold?** A System Design case
-> study under `src/system-design/case-studies/` applies catalog topics to
-> one design and links to them; it doesn't carry a topic's mechanism. Flag a
-> passage that walks through how a topic works instead of saying what the
-> choice buys and costs in this design, then linking. Recompute every
-> estimate line by line and flag arithmetic that's wrong or doesn't follow
-> from the stated requirements; flag a decision that picks an option without
-> saying why the alternative a reader would suggest loses here; flag a diagram
-> (read the `.d2` source under `src/system-design/diagrams/`) that disagrees
-> with the prose; and flag any claim about how a specific named company builds
-> its system. Check each follow-up answer against the decisions and numbers
-> above it. Read the linked topic when deciding.
+> **4. The checklist for the file's kind.** Apply the Stage 3 checklist
+> below from the skill that owns the file's kind: `add-topic` for a catalog
+> topic, `add-case-study` for a case study, `add-dsa-entry` for a DSA entry,
+> and hold the file to every bullet of docs/writing-standard.md, including its
+> "Catalog topics" and "Case studies and DSA entries" sections.
+> Skip an item that only fits a new draft (a link-only diff, rewrite mode);
+> add-topic's "Where you'll meet this" item applies only to
+> `systems-and-infrastructure` topics, whose closing section names kinds of
+> systems from the reference set in docs/content.md. Read what an item needs: a case
+> study's `.d2` sources under `src/system-design/diagrams/` and the topics it
+> links; a DSA entry's whole code files and tests under
+> `src/dsa/code/<slug>/`, not only the regions it shows (an empty
+> `region=<name>` fence shows the text between that region's markers;
+> docs/dsa.md has the rule).
 >
-> **4b. Case studies and DSA entries — are they digestible?** Hold each to
-> docs/writing-standard.md's "Case studies and DSA entries" section. Flag a
-> passage that reads as a lecture to sit through rather than someone talking
-> to the reader, an edge case or exception that spends words without changing
-> a decision, a claim compression made false (an absolute "never" or "always"
-> the design doesn't deliver), and a page a reader would finish unable to
-> defend its main choice.
->
-> **5. Systems topics only (skip for other sections and case studies) —
-> is the closing `## Where you'll meet this` section general and true?**
-> It should name kinds of systems (the reference set in docs/content.md) and say what the
-> topic does
-> there, without re-teaching the mechanism. Flag any claim about how a
-> specific named company builds something (it can't be verified), any
-> sentence that isn't true of the generic system described, and any
-> section that just restates the topic's own definition.
->
-> **6. DSA entries only (skip for topics and case studies) — do the code
-> claims hold?** An entry under `src/dsa/entries/` shows code from
-> `src/dsa/code/<slug>/` (Python and TypeScript, each with its tests). Check
-> every claim the prose makes about that code (what it returns, its edge
-> cases, its complexity) against the whole code files and their tests, not
-> only the regions the markdown shows, and recompute every worked example.
-> An empty `region=<name>` fence shows the text between that region's
-> markers in the code file (docs/dsa.md has the rule).
-> Flag a walkthrough or code comment that narrates what a line does without
-> saying why, and a tricky line (a boundary, a loop direction) with no
-> comment giving its reason.
+> <the Stage 3 `<checklist>` of each skill that owns a kind in this batch>
 >
 > Your batch: <Stage 1's file list for this batch>
 

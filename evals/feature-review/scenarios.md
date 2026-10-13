@@ -15,30 +15,40 @@ planted defect** (same file, different bug), so the instruction can't drift
 toward the specific bugs listed here.
 
 Each fenced `diff` block must apply to the current code, and each scenario
-states the other real-code facts it relies on as `<!-- premise: … -->`
-comments; `npm run check:eval-premises` (in `verify`) checks both. When a
-check fails, update the scenario so it tests what it says it tests.
+states the other real-code facts it relies on as premise comments
+([`../README.md`, "Running any eval"](../README.md#running-any-eval)).
 
 ---
 
-### FR-01 — correctness: a quoted value with a trailing comment
+### FR-01 — correctness: a quoted value that contains its own quote
 
-**Planted defect:** comment stripping is skipped for any quoted value, but a
-quoted value followed by a comment no longer looks quoted, so it is stripped
-from the first ` #`, which is inside the quotes:
-`summary: 'Use # for comments' # draft` parses as `'Use` (and the opening
-quote stays, since `unquote` no longer sees a closing one). Criteria 1 and 3
-together say the result should be `Use # for comments`; each criterion's own
-example passes, so only a reviewer that combines them finds it. The trigger
-is realistic: the spec adds comments to frontmatter, and this repo quotes
-values (eight titles under `src/content/` are single-quoted), so an author
-annotating a quoted value hits it.
+<!-- premise: docs/content.md contains "optional matching quotes around the value" -->
+
+**Planted defect:** a quoted value now ends at the first matching quote after
+the opening one (`/^(['"])(.*?)\1/`, with nothing anchoring the rest), and
+whatever follows is dropped as if it were a comment. So a quoted value that
+contains its own kind of quote is cut short even with no comment at all:
+`summary: 'Retries won't double-charge: use a key'` parses as `Retries won`,
+and `summary: "Why "exactly once" is a lie"` as `Why `. Today's parser, which
+strips only the outer pair, reads both whole, so the diff regresses values
+that already work. All five criteria and the diff's own tests pass, because
+none of their quoted values contains a quote. The trigger is realistic:
+`docs/content.md` documents quoting a value, an author quotes one because it
+holds punctuation such as a colon, and the catalog's summaries are full of
+apostrophes ("won't", "can't", "it's").
 
 History: the first FR-01 cut at any `#` (`split('#')`), which broke three of
 the spec's four examples and was always the top finding. The second (rotated
 2026-09-29) exempted only double-quoted values, and its guard had two more
-real defects than the planted one. This third version (rotated 2026-10-01)
-checks both quote types correctly, so the planted defect is the only one.
+real defects than the planted one. The third (rotated 2026-10-01) tested the
+whole raw value, comment included, for surrounding quotes, so a quoted value
+followed by a comment was cut inside its quotes. This fourth version was
+rotated 2026-10-13 because `docs/NON_NEGOTIABLES.md` #6 changed; the spec
+gained criterion 5 (a quoted value with a comment), which the third version
+failed, so the old defect is now a stated criterion this diff meets. It was
+checked with the diff applied: `tsc -b`, `oxlint --deny-warnings`, prettier
+and vitest pass, and a probe parsed the two values above as `Retries won` and
+`Why `.
 
 **Spec:**
 
@@ -49,48 +59,87 @@ checks both quote types correctly, so the planted defect is the only one.
 > parses unchanged. (3) A `#` inside a quoted value is kept:
 > `summary: "Use # for comments"` parses as `Use # for comments`. (4) A
 > value that starts with `#` keeps it: `title: #1 tip` parses as `#1 tip`.
+> (5) A quoted value can have a comment too:
+> `summary: 'Use # for comments' # draft` parses as `Use # for comments`.
 
 **Diff:**
 
 ```diff
 --- a/src/lib/frontmatter.ts
 +++ b/src/lib/frontmatter.ts
-@@ -16,5 +16,7 @@ export interface ParsedMarkdown {
+@@ -15,6 +15,8 @@ export interface ParsedMarkdown {
+  * everything after the *first* colon, so a value containing its own colon
   * (e.g. a summary like "Note: do X") still parses correctly. A value can
   * optionally be wrapped in matching single or double quotes (handy when it
 - * ends with punctuation that could be misread), which are stripped.
 + * ends with punctuation that could be misread), which are stripped. A
-+ * trailing inline comment (whitespace, then `#`, then anything) is dropped
-+ * unless the value is quoted.
++ * trailing inline comment (whitespace, then `#`, then anything) is dropped;
++ * a `#` inside a quoted value is kept.
   */
  export function parseFrontmatter(raw: string): ParsedMarkdown {
-@@ -36,5 +38,7 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
+@@ -35,7 +37,10 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
+     const separator = lines[i].indexOf(':');
      if (separator === -1) continue;
      const key = lines[i].slice(0, separator).trim();
 -    const value = unquote(lines[i].slice(separator + 1).trim());
 +    const rawValue = lines[i].slice(separator + 1).trim();
-+    const isQuoted = /^(['"]).*\1$/.test(rawValue);
-+    const value = unquote(isQuoted ? rawValue : stripComment(rawValue));
++    // A quoted value is what's inside its quotes; a comment can follow them.
++    const quoted = /^(['"])(.*?)\1/.exec(rawValue);
++    const value = quoted ? quoted[2] : stripComment(rawValue);
      if (key) data[key] = value;
    }
-@@ -59,2 +63,7 @@ function unquote(value: string): string {
-   return isQuoted ? value.slice(1, -1) : value;
+
+@@ -74,10 +79,7 @@ export function checkFields(
+   }
  }
-+
+
+-function unquote(value: string): string {
+-  const isQuoted =
+-    value.length >= 2 &&
+-    ((value.startsWith('"') && value.endsWith('"')) ||
+-      (value.startsWith("'") && value.endsWith("'")));
+-  return isQuoted ? value.slice(1, -1) : value;
+-}
 +/** Drops a trailing inline comment: whitespace, then `#`, then anything. */
 +function stripComment(value: string): string {
 +  return value.replace(/\s+#.*$/, '');
 +}
+--- a/src/lib/frontmatter.test.ts
++++ b/src/lib/frontmatter.test.ts
+@@ -61,4 +61,16 @@ describe('parseFrontmatter', () => {
+
+     expect(data).toEqual({ title: 'Fine' });
+   });
++
++  it.each([
++    ['title: Caching # draft', 'Caching'],
++    ['title: C# in five minutes', 'C# in five minutes'],
++    ['summary: "Use # for comments"', 'Use # for comments'],
++    ['title: #1 tip', '#1 tip'],
++    ["summary: 'Use # for comments' # draft", 'Use # for comments'],
++  ])('parses %s as %s', (line, value) => {
++    const { data } = parseFrontmatter(['---', line, '---', 'Body'].join('\n'));
++
++    expect(Object.values(data)).toEqual([value]);
++  });
+ });
 ```
 
-**Expected finding:** a quoted value followed by a comment is cut at the `#`
-inside its quotes (`'Use # for comments' # draft` → `'Use`), because
-`isQuoted` tests the whole raw value, comment included, and
-`stripComment` then removes from the first ` #`. The same cause has a mirror
-symptom, which also counts: a comment that ends in a quote
-(`"Caching" # was "Cache"`) makes the whole raw value look quoted, so the
-comment is kept as part of it. Medium severity or higher. A reviewer that names it but labels it theoretical grades AMBIGUOUS,
-since no doc yet says authors comment quoted values.
+**Expected finding:** a quoted value that contains its own kind of quote is
+truncated at that inner quote (`'Retries won't double-charge: use a key'` →
+`Retries won`; `"Why "exactly once" is a lie"` → `Why `), because the lazy
+`(.*?)\1` stops at the first matching quote and nothing checks that what
+follows is empty or a comment, so the rest is silently dropped. It counts
+whether the reviewer names the apostrophe case, the inner-double-quote case,
+or the general "anything after the first closing quote is discarded, comment
+or not" (for example `"Quoted" word` → `Quoted`), and whether or not it notes
+that this regresses values the current parser reads whole. Medium severity or
+higher.
+
+**Fails if:** the truncation is missed, rated low or cosmetic, or labelled
+theoretical (values with apostrophes are everywhere in this catalog and
+quoting is documented). A finding that only says "untested: quotes inside
+quoted values" without naming the truncation is AMBIGUOUS.
 
 ---
 
@@ -263,7 +312,7 @@ summary left the dialog.
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -171,6 +171,17 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -117,6 +117,17 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
            <kbd className="rounded border border-border bg-bg-secondary px-1">Esc</kbd> to
            close · searches title, summary, and body text
          </div>
@@ -283,7 +332,7 @@ summary left the dialog.
    );
 --- a/src/components/SearchDialog.test.tsx
 +++ b/src/components/SearchDialog.test.tsx
-@@ -48,6 +48,16 @@ describe('SearchDialog', () => {
+@@ -114,6 +114,16 @@ describe('SearchDialog', () => {
      expect(screen.getByText('Esc')).toBeInTheDocument();
    });
 
@@ -404,7 +453,7 @@ section page's header or lists `content.ts`'s exports.
 ```diff
 --- a/src/lib/content.ts
 +++ b/src/lib/content.ts
-@@ -208,3 +208,8 @@ export function getTopic(section: string, slug: string): Topic | undefined {
+@@ -230,3 +230,8 @@ export function getTopic(section: string, slug: string): Topic | undefined {
  export function recentTopics(count: number): Topic[] {
    return [...TOPICS].sort((a, b) => b.date.localeCompare(a.date)).slice(0, count);
  }
@@ -429,7 +478,7 @@ section page's header or lists `content.ts`'s exports.
  import { neighbours } from './neighbours';
 
  describe('content loader', () => {
-@@ -68,3 +74,13 @@ describe('content loader', () => {
+@@ -89,3 +95,13 @@ describe('Topic.path', () => {
      }
    });
  });
@@ -453,7 +502,7 @@ section page's header or lists `content.ts`'s exports.
  import { TopicCard } from '@/components/TopicCard';
  // The site's one-line description; vite.config.ts fills index.html's meta tags
  // from the same field.
-@@ -20,8 +20,8 @@ export function HomePage() {
+@@ -18,8 +18,8 @@ export function HomePage() {
            til
          </h1>
          <p className="mt-3 max-w-xl text-text-secondary">
@@ -464,7 +513,7 @@ section page's header or lists `content.ts`'s exports.
          </p>
        </section>
 
-@@ -41,7 +41,7 @@ export function HomePage() {
+@@ -39,7 +39,7 @@ export function HomePage() {
                      {section.label}
                    </h3>
                    <span className="shrink-0 text-xs text-text-tertiary">
