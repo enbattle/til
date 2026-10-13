@@ -5,15 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { getTopic } from '@/lib/content';
-import { getDsaEntry } from '@/lib/dsa';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { h2Headings } from '@/lib/headings';
 import { CASE_STUDIES, getCaseStudy } from '@/lib/system-design';
-import { caseStudyBody, dsaEntryBody, rawTopic } from '@/test/content';
+import { caseStudyBody, rawTopic } from '@/test/content';
 import { escapeRegExp, renderAt } from '@/test/render';
 
-// The "On this page" navigation, through the real App on a case study, a DSA
-// entry and a catalog topic:
+// The "On this page" navigation, through the real App on a case study and a
+// catalog topic:
 // - docs/specs/on-this-page-nav.md: the wider shell and the right-hand nav
 //   (outside <main>);
 // - docs/specs/on-this-page-bar.md: below `xl`, a sticky bar at the top of the
@@ -86,7 +85,6 @@ vi.mock('@/lib/system-design', async () => {
 
 const TOPIC = getTopic('systems-and-infrastructure', 'caching')!;
 const CASE_STUDY = getCaseStudy('url-shortener')!;
-const DSA_ENTRY = getDsaEntry('binary-search')!;
 
 const PAGES = [
   {
@@ -94,12 +92,6 @@ const PAGES = [
     path: `/system-design/${CASE_STUDY.slug}`,
     title: CASE_STUDY.title,
     body: () => caseStudyBody(CASE_STUDY.slug),
-  },
-  {
-    kind: 'DSA entry',
-    path: `/dsa/${DSA_ENTRY.slug}`,
-    title: DSA_ENTRY.title,
-    body: () => dsaEntryBody(DSA_ENTRY.slug),
   },
   {
     kind: 'catalog topic',
@@ -573,7 +565,6 @@ describe('pages without sections (nav criterion 4, bar criterion 10)', () => {
     ['/', 'til'],
     ['/ai-and-ml', 'AI and Machine Learning'],
     ['/system-design', 'System Design'],
-    ['/dsa', 'Data Structures & Algorithms'],
     ['/not-found', /page not found/i],
   ] as const)(
     '%s renders no "On this page" nav, button or disclosure, but keeps an empty right column',

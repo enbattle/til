@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { getSection } from '@/content/registry';
 import { bodyOnlyWordAt } from '@/test/content';
 import { TOPICS } from './content';
-import { DSA_ENTRIES } from './dsa';
 import {
   ensureFullTextSearch,
   isFullTextSearchReady,
@@ -26,9 +25,13 @@ const row = (title: string, path: string, label: string) => ({ title, path, labe
 
 // Recorded on 2026-10-12 from the code before this change (each result's
 // title, its dialog path and its dialog label, in order), with full text not
-// yet loaded. Each query below matches a topic, a case study and a DSA entry
-// at once, or is the exact title of one kind. A content change that moves
-// these results is a reason to re-record them, not to change search.
+// yet loaded, and re-recorded on 2026-10-13 against the corpus left once the
+// DSA tab is removed (docs/specs/remove-dsa-tab.md, criterion 3): search
+// indexes only topics and case studies, so "binary search", which used to
+// match only DSA entries, now matches nothing. Each other query below matches
+// a topic and a case study at once, or is the exact title of one kind. A
+// content change that moves these results is a reason to re-record them, not
+// to change search.
 const RECORDED: [string, ReturnType<typeof row>[]][] = [
   [
     'prompt engineering',
@@ -50,29 +53,20 @@ const RECORDED: [string, ReturnType<typeof row>[]][] = [
       ),
     ],
   ],
-  [
-    'binary search',
-    [
-      row('Binary Search', '/dsa/binary-search', 'DSA'),
-      row('Binary Search Tree', '/dsa/binary-search-tree', 'DSA'),
-    ],
-  ],
+  ['binary search', []],
   [
     'queue',
     [
-      row('Stacks and Queues', '/dsa/stacks-and-queues', 'DSA'),
       row(
         'Message Queues and Dead Letter Queues',
         '/systems-and-infrastructure/message-queues',
         'Systems and Infrastructure',
       ),
-      row('Heap and Priority Queue', '/dsa/heap', 'DSA'),
       row(
         'Design a Notification System (like a push, email and SMS service)',
         '/system-design/notification-system',
         'System Design',
       ),
-      row('Breadth-First Search', '/dsa/breadth-first-search', 'DSA'),
       row(
         'Worker Pools',
         '/systems-and-infrastructure/worker-pools',
@@ -83,7 +77,6 @@ const RECORDED: [string, ReturnType<typeof row>[]][] = [
   [
     'hash',
     [
-      row('Hash Map', '/dsa/hash-map', 'DSA'),
       row(
         'Consistent Hashing',
         '/systems-and-infrastructure/consistent-hashing',
@@ -119,16 +112,17 @@ const RECORDED: [string, ReturnType<typeof row>[]][] = [
         '/system-design/ticket-booking',
         'System Design',
       ),
+      row(
+        'Backpressure',
+        '/systems-and-infrastructure/backpressure',
+        'Systems and Infrastructure',
+      ),
     ],
   ],
   [
     'search',
     [
       row('Vector Search', '/ai-and-ml/vector-search', 'AI and Machine Learning'),
-      row('Binary Search', '/dsa/binary-search', 'DSA'),
-      row('Breadth-First Search', '/dsa/breadth-first-search', 'DSA'),
-      row('Depth-First Search', '/dsa/depth-first-search', 'DSA'),
-      row('Binary Search Tree', '/dsa/binary-search-tree', 'DSA'),
       row(
         'Hybrid Search and Reranking',
         '/ai-and-ml/hybrid-search-and-reranking',
@@ -144,13 +138,18 @@ const RECORDED: [string, ReturnType<typeof row>[]][] = [
         '/focus-and-attention/why-you-cant-focus-anymore',
         'Focus and Attention',
       ),
+      row('RAG Evaluation', '/ai-and-ml/rag-evaluation', 'AI and Machine Learning'),
+      row(
+        'Design a Docs Q&A Assistant (like a help-center chatbot)',
+        '/system-design/docs-qa-assistant',
+        'System Design',
+      ),
     ],
   ],
 ];
 
 // Every item the index holds, as the dialog showed it before this change: a
-// topic under its section's label, a case study under "System Design", a DSA
-// entry under "DSA".
+// topic under its section's label and a case study under "System Design".
 const EVERY_ITEM = [
   ...TOPICS.map((t) => ({
     ...row(t.title, `/${t.section}/${t.slug}`, getSection(t.section)?.label ?? t.section),
@@ -159,10 +158,6 @@ const EVERY_ITEM = [
   ...CASE_STUDIES.map((c) => ({
     ...row(c.title, `/system-design/${c.slug}`, 'System Design'),
     summary: c.summary,
-  })),
-  ...DSA_ENTRIES.map((e) => ({
-    ...row(e.title, `/dsa/${e.slug}`, 'DSA'),
-    summary: e.summary,
   })),
 ];
 
@@ -180,7 +175,6 @@ const BODY_ONLY: [string, string, string][] = [
     '/src/system-design/case-studies/url-shortener.md',
     '/system-design/url-shortener',
   ],
-  ['DSA entry', '/src/dsa/entries/binary-search.md', '/dsa/binary-search'],
 ];
 
 describe('searchContent before full text loads (content-dedupe criterion 6)', () => {
@@ -253,4 +247,26 @@ describe('searchContent once full text has loaded (content-dedupe criterion 6)',
       }).toEqual(EVERY_ITEM.find((item) => item.path === path));
     },
   );
+
+  // docs/specs/remove-dsa-tab.md, criterion 3: with every body loaded, every
+  // result is a topic or a case study the index lists, and none is a DSA entry.
+  it.each(['binary search', 'heap', 'graph', 'search', 'queue'])(
+    'gives only topic and case-study results for "%s"',
+    async (query) => {
+      await ensureFullTextSearch();
+      const paths = new Set(EVERY_ITEM.map((item) => item.path));
+      for (const result of searchContent(query, 50)) {
+        expect(paths.has(result.path), result.path).toBe(true);
+        expect(result.label).not.toBe('DSA');
+      }
+    },
+  );
+
+  it('holds exactly the topics and case studies, nothing else', async () => {
+    await ensureFullTextSearch();
+    const found = searchContent('the', 1000).map((r) => r.path);
+    expect(found.length).toBeGreaterThan(20);
+    const paths = new Set(EVERY_ITEM.map((item) => item.path));
+    for (const path of found) expect(paths.has(path), path).toBe(true);
+  });
 });

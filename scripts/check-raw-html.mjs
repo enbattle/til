@@ -3,8 +3,8 @@
 // and `dangerouslySetInnerHTML` only takes output from an escaping source.
 // Fails if package.json depends on a package that renders raw HTML from
 // markdown or an HTML string (RAW_HTML_PACKAGES), or if a non-test
-// .js/.jsx/.mjs/.cjs/.ts/.tsx/.mts/.cts file under src/ (except src/dsa/code/
-// and src/test/, never shipped to the browser) names an HTML sink: any of
+// .js/.jsx/.mjs/.cjs/.ts/.tsx/.mts/.cts file under src/ (except src/test/,
+// never shipped to the browser) names an HTML sink: any of
 // SINKS as a case-insensitive substring, or the whole word `write`/`writeln`
 // (case-sensitive), which `document.write` can't be called without, however
 // the document is reached. `dangerouslySetInnerHTML` is allowed only in
@@ -50,7 +50,7 @@ const WRITE_WORD = /\bwrite(?:ln)?\b/;
 const ALLOWED = { 'src/components/CodeBlock.tsx': ['dangerouslySetInnerHTML'] };
 const EXTENSIONS = ['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts', '.cts'];
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
-const NOT_SHIPPED = /^src\/(?:dsa\/code|test)\//;
+const NOT_SHIPPED = /^src\/test\//;
 const ESCAPE = /\\u\{([0-9a-f]+)\}|\\u([0-9a-f]{4})|\\x([0-9a-f]{2})/gi;
 
 /** `source` with its JavaScript escape sequences decoded (a code point out

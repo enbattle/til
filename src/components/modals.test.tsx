@@ -16,7 +16,7 @@ import { SearchDialog } from './SearchDialog';
 // both move onto one shared hook.
 //
 // jsdom does no layout: the mobile nav's Tab-wrap cases use the System Design
-// and DSA navs, whose links are all shown, since the catalog's collapsed
+// nav, whose links are all shown, since the catalog's collapsed
 // section lists are hidden in a way only a real browser's layout reflects.
 
 type Kind = 'nav' | 'search';
@@ -56,22 +56,24 @@ async function openModal(kind: Kind, path = '/') {
 }
 
 describe('mobile nav as a modal dialog', () => {
-  it.each(['/', '/ai-and-ml/prompt-engineering', '/system-design', '/dsa/binary-search'])(
-    'moves focus on open to the first focusable element inside, at %s',
-    async (path) => {
-      const { dialog } = await openModal('nav', path);
-      // The links and buttons the panel shows, in document order.
-      const [first] = [
-        ...within(dialog).getAllByRole('link'),
-        ...within(dialog).queryAllByRole('button'),
-      ].sort((a, b) =>
-        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
-      );
-      expect(first).toHaveFocus();
-    },
-  );
+  it.each([
+    '/',
+    '/ai-and-ml/prompt-engineering',
+    '/system-design',
+    '/system-design/url-shortener',
+  ])('moves focus on open to the first focusable element inside, at %s', async (path) => {
+    const { dialog } = await openModal('nav', path);
+    // The links and buttons the panel shows, in document order.
+    const [first] = [
+      ...within(dialog).getAllByRole('link'),
+      ...within(dialog).queryAllByRole('button'),
+    ].sort((a, b) =>
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+    );
+    expect(first).toHaveFocus();
+  });
 
-  it.each(['/system-design', '/dsa'])(
+  it.each(['/system-design', '/system-design/url-shortener'])(
     'wraps Tab from the last link to the first, and Shift+Tab from the first to the last, at %s',
     async (path) => {
       const { user, dialog } = await openModal('nav', path);
@@ -101,7 +103,7 @@ describe('mobile nav as a modal dialog', () => {
     }
   });
 
-  it.each(['/', '/system-design', '/dsa'])(
+  it.each(['/', '/system-design', '/system-design/url-shortener'])(
     'closes on Escape and returns focus to the opener, at %s',
     async (path) => {
       const { user, opener } = await openModal('nav', path);
@@ -112,7 +114,7 @@ describe('mobile nav as a modal dialog', () => {
   );
 
   it('returns focus to the opener after Tab has moved around inside', async () => {
-    const { user, opener } = await openModal('nav', '/dsa');
+    const { user, opener } = await openModal('nav', '/system-design/url-shortener');
     await user.tab();
     await user.tab({ shift: true });
     await user.tab({ shift: true });

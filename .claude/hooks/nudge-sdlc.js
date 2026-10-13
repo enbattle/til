@@ -9,8 +9,7 @@ const ROUTING_REMINDER =
   'topic (including merging or moving one) in an existing section under ' +
   'src/content/, use the add-topic ' +
   'skill; for a System Design case study under src/system-design/case-studies/ ' +
-  '(and its diagrams), use the add-case-study skill; for a DSA entry under ' +
-  'src/dsa/entries/ (and its code), use the add-dsa-entry skill. Genuinely small, ' +
+  '(and its diagrams), use the add-case-study skill. Genuinely small, ' +
   'unambiguous changes (a typo, a ' +
   "one-line fix) can skip these skills, per CLAUDE.md's own carve-out.";
 

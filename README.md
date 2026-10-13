@@ -1,8 +1,7 @@
 # til
 
 A searchable reference of programming, systems, AI and learning topics, plus
-worked System Design case studies and data structures & algorithms entries for
-interview prep.
+worked System Design case studies.
 
 Topics are grouped into sections, and the whole thing is deployed as a static
 site.
@@ -24,13 +23,8 @@ site.
   topics it uses, and each of those topics links back. Diagrams are written in
   [D2](https://d2lang.com) and rendered at build time to static SVGs in the
   site's own colors, one per theme.
-- **DSA** — a third tab of data structures, patterns and algorithms at
-  interview depth, grouped by those three kinds, with each group listed so
-  that an entry comes after the ones in it that it builds on. Every code example is shown in Python and TypeScript (one switch sets
-  the language for the whole site and is remembered), and the code is the
-  same code the entry's own tests run, with vitest and pytest.
-- **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's, case
-  study's and DSA entry's title, summary, and body
+- **Search** — `Ctrl`/`Cmd`+`K` fuzzy-searches every topic's and case
+  study's title, summary, and body
   ([Fuse.js](https://www.fusejs.io)).
 - **Markdown content** — fenced code blocks are syntax-highlighted (via
   [Shiki](https://shiki.style)) with a copy button; long-form writing reads
@@ -50,9 +44,7 @@ npm run dev
 ```
 
 Then open the printed `localhost` URL. The supported Node versions are
-`engines` in `package.json`. `npm run verify` and `npm run test:run` also need
-Python and pytest for the DSA entries' tests; [docs/dsa.md](docs/dsa.md) has
-the version and the install command.
+`engines` in `package.json`.
 
 ## Commands
 
@@ -61,8 +53,7 @@ npm run dev             # Start the dev server
 npm run build            # Type-check + production build → dist/
 npm run preview          # Preview the production build locally
 npm run test              # Vitest, watch mode
-npm run test:run          # Vitest, run once; needs Python and pytest too
-npm run test:py           # pytest over the DSA entries' Python code
+npm run test:run          # Vitest, run once
 npm run format            # Prettier write
 npm run diagrams          # Render the .d2 sources to SVGs (needs d2 v0.9.x)
 npm run verify            # Everything CI runs: types, lint, format, every check, tests, build, sizes
@@ -76,8 +67,7 @@ What each `check:*` script proves, and the commands outside `verify`, are in
 There's no in-app editor — topics are markdown files added to the
 repository and shipped with the next build. Topics and sections are covered in [docs/content.md](docs/content.md),
 System Design case studies and their diagrams in
-[docs/case-studies.md](docs/case-studies.md), DSA entries and their code in
-[docs/dsa.md](docs/dsa.md), and the bar all prose meets in
+[docs/case-studies.md](docs/case-studies.md), and the bar all prose meets in
 [docs/writing-standard.md](docs/writing-standard.md);
 [CLAUDE.md](CLAUDE.md) routes to them.
 
@@ -98,8 +88,7 @@ These live in GitHub, not in the code, so they are listed here:
   Deploy). Dependency bumps don't change the site's content, so that delay
   is accepted rather than giving the workflow a personal token.
 - GitHub Actions are pinned to full commit SHAs; Dependabot updates them
-  weekly as one grouped pull request. It also watches `requirements-dev.txt`
-  (the pinned pytest) through its `pip` ecosystem.
+  weekly as one grouped pull request.
 
 ## Design
 
@@ -110,6 +99,6 @@ accessibility checklist behind the UI.
 
 Features and nontrivial app changes go through a spec → TDD →
 implementation (+ docs) → adversarial review (code + UI) pipeline — see
-[docs/SDLC.md](docs/SDLC.md). Adding a topic, a System Design case study or a
-DSA entry gets a lighter, separate process instead (draft → an independent
+[docs/SDLC.md](docs/SDLC.md). Adding a topic or a System Design case study gets
+a lighter, separate process instead (draft → an independent
 review, with a capped fix loop) — see [docs/content-review.md](docs/content-review.md).

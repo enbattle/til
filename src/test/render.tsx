@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import { render } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
-import { CodeLanguageProvider } from '@/contexts/CodeLanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SearchDialog } from '@/components/SearchDialog';
 import App from '@/App';
@@ -22,19 +21,13 @@ export function LocationDisplay() {
 /**
  * Renders `ui` (the whole app by default) inside a `MemoryRouter` that starts
  * at `path`, followed by a `LocationDisplay` probe. A component is wrapped in
- * the providers `App` normally supplies (theme, code language); the app
+ * the provider `App` normally supplies (the theme); the app
  * brings its own, so it isn't wrapped twice.
  */
 export function renderAt(path: string, ui?: ReactNode) {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      {ui === undefined ? (
-        <App />
-      ) : (
-        <ThemeProvider>
-          <CodeLanguageProvider>{ui}</CodeLanguageProvider>
-        </ThemeProvider>
-      )}
+      {ui === undefined ? <App /> : <ThemeProvider>{ui}</ThemeProvider>}
       <LocationDisplay />
     </MemoryRouter>,
   );

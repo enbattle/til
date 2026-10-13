@@ -122,7 +122,7 @@ interface Collection<T> {
 }
 
 /**
- * One kind of content (topics, case studies, DSA entries) from its two globs:
+ * One kind of content (topics, case studies) from its two globs:
  * `meta`, the eager `?meta` glob (path -> frontmatter), every path of which
  * goes through `parse`, so a malformed file throws at load; and `bodies`, the
  * lazy `?raw` glob. `key(path)` gives an item's key, or undefined for a path

@@ -43,7 +43,7 @@ export interface HastNode {
 }
 
 /** A hast node's text content, all descendants' text joined. */
-export function hastText(node: HastNode): string {
+function hastText(node: HastNode): string {
   if (node.type === 'text') return node.value ?? '';
   return (node.children ?? []).map(hastText).join('');
 }

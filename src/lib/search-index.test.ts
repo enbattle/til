@@ -5,11 +5,10 @@ import { createSearchIndex, type SearchResult, type SearchSource } from './searc
 // docs/specs/content-dedupe.md, design item 6 and criterion 6: the index takes
 // a list of sources, `createSearchIndex(sources)`, each `{ items, loadBodies }`.
 // An item is `{ key, path, label, title, summary }`; a result is the item
-// itself, so there is one result shape for topics, case studies and DSA
-// entries. `loadBodies()` resolves every body of that source in a Map keyed by
-// the items' `key`. Titles and summaries are searchable at once; bodies join
-// once `ensureFullTextSearch` has loaded every source. (search-dsa.test.ts's
-// cases are the DSA row of the describe.each below.)
+// itself, so there is one result shape for topics and case studies.
+// `loadBodies()` resolves every body of that source in a Map keyed by the
+// items' `key`. Titles and summaries are searchable at once; bodies join once
+// `ensureFullTextSearch` has loaded every source.
 
 // Fixture words are deliberately long and unlike each other so fuzzy matching
 // (threshold 0.3) can't cross-match between fixture entries.
@@ -37,14 +36,6 @@ const CASE_STUDY: SearchResult = {
   summary: 'Diagnosing temporal hardware.',
 };
 
-const ENTRY: SearchResult = {
-  key: 'dsa/quokka-heap',
-  path: '/dsa/quokka-heap',
-  label: 'DSA',
-  title: 'Quokka Heap',
-  summary: 'A marsupial priority queue.',
-};
-
 const TOPIC_BODIES = new Map([
   [TOPIC_A.key, 'The obsidianlattice reconciliation step runs at dawn.\n'],
   [TOPIC_B.key, 'Nothing distinctive here beyond quokka habitats.\n'],
@@ -52,20 +43,16 @@ const TOPIC_BODIES = new Map([
 const CASE_STUDY_BODIES = new Map([
   [CASE_STUDY.key, 'Replace the tungstenresonance coil before anything else.\n'],
 ]);
-const DSA_BODIES = new Map([
-  [ENTRY.key, 'The zirconiumpendulum sift-down runs in logarithmic time.\n'],
-]);
 
 type Loader = () => Promise<Map<string, string>>;
 
 interface Loaders {
   topics?: Loader;
   caseStudies?: Loader;
-  dsa?: Loader;
 }
 
-/** The three fixture sources in the app's order (topics, case studies, DSA),
- * each loader replaceable. */
+/** The two fixture sources in the app's order (topics, case studies), each
+ * loader replaceable. */
 function sources(loaders: Loaders = {}): SearchSource[] {
   return [
     {
@@ -76,7 +63,6 @@ function sources(loaders: Loaders = {}): SearchSource[] {
       items: [CASE_STUDY],
       loadBodies: loaders.caseStudies ?? (async () => CASE_STUDY_BODIES),
     },
-    { items: [ENTRY], loadBodies: loaders.dsa ?? (async () => DSA_BODIES) },
   ];
 }
 
@@ -156,7 +142,7 @@ describe('createSearchIndex over sources (content-dedupe criterion 6)', () => {
   it('reads each source’s bodies by its own items’ keys', async () => {
     // The same key in two sources: each item gets its own source's body.
     const left = { ...TOPIC_A, key: 'shared', path: '/left' };
-    const right = { ...ENTRY, key: 'shared', path: '/right' };
+    const right = { ...CASE_STUDY, key: 'shared', path: '/right' };
     const index = createSearchIndex([
       {
         items: [left],
@@ -187,18 +173,16 @@ describe('createSearchIndex over sources (content-dedupe criterion 6)', () => {
   it('loads every source’s bodies once across repeated and concurrent calls', async () => {
     const topics = vi.fn(async () => TOPIC_BODIES);
     const caseStudies = vi.fn(async () => CASE_STUDY_BODIES);
-    const dsa = vi.fn(async () => DSA_BODIES);
-    const index = makeIndex({ topics, caseStudies, dsa });
+    const index = makeIndex({ topics, caseStudies });
     await Promise.all([index.ensureFullTextSearch(), index.ensureFullTextSearch()]);
     await index.ensureFullTextSearch();
     expect(topics).toHaveBeenCalledTimes(1);
     expect(caseStudies).toHaveBeenCalledTimes(1);
-    expect(dsa).toHaveBeenCalledTimes(1);
   });
 });
 
-// One row per kind: what used to be three result variants and three loader
-// dependencies is one source shape, so each kind gets the same cases.
+// One row per kind: what used to be a result variant and a loader dependency
+// per kind is one source shape, so each kind gets the same cases.
 describe.each([
   {
     kind: 'topic',
@@ -215,14 +199,6 @@ describe.each([
     bodyWord: 'tungstenresonance',
     loader: 'caseStudies' as const,
     bodies: CASE_STUDY_BODIES,
-  },
-  {
-    kind: 'DSA entry',
-    item: ENTRY,
-    summaryQuery: 'marsupial priority',
-    bodyWord: 'zirconiumpendulum',
-    loader: 'dsa' as const,
-    bodies: DSA_BODIES,
   },
 ])(
   'a $kind source (content-dedupe criterion 6)',

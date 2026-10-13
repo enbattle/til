@@ -10,8 +10,6 @@ Picture one line in a shopping cart: three cups of "Café 👍🏽" at $19.99 ea
 
 A **bit** is a single 0 or 1. A **byte** is eight bits, so it can hold 256 different patterns. Memory has no idea what a pattern means. The same byte can be the number 65 or the letter "A", and only the program reading it decides which. Everything below is a set of agreements about how to read patterns.
 
-For bit-level tricks on integers, see [bit manipulation](/dsa/bit-manipulation).
-
 ## Fixed-width integers and overflow
 
 The quantity, 3, is stored as an integer. Most languages give integers a fixed width, such as 32 bits. Why fixed? Because the hardware does arithmetic on fixed-size chunks, which is fast. The cost is a ceiling. A signed 32-bit integer (one that can be negative) tops out at 2,147,483,647.

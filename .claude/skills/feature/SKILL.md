@@ -119,7 +119,7 @@ this instruction, close to verbatim:
 > new `test*` script in `package.json` and its `npm run` step in `verify` if
 > the tests need one, any `verify` step the spec assigns, any locked script the
 > spec assigns to you, and test fixture
-> content under `src/content/`, `src/system-design/` or `src/dsa/` only if the spec
+> content under `src/content/` or `src/system-design/` only if the spec
 > requires new seed content to test against. Do not write or modify
 > any implementation file. Run the suite yourself when done and confirm the
 > new tests fail — report exactly which tests are red and why (missing
@@ -258,15 +258,14 @@ subagent reports or framing of yours. Instruction, close to verbatim:
 > trigger (triage rules on each vector). For every
 > finding, say whether this diff introduced it or it was already there, and
 > name a realistic trigger: for app behavior, real inputs or content; for a
-> guard or check, an edit an author following docs/content.md,
-> docs/case-studies.md or docs/dsa.md could plausibly make, or a shape a doc says the check
+> guard or check, an edit an author following docs/content.md or
+> docs/case-studies.md could plausibly make, or a shape a doc says the check
 > covers (a doc/code mismatch is itself a finding). Label a finding without
 > one "theoretical". If the spec has a `## Review decisions` list, re-raise a
 > listed decision only with new evidence. If this change adds or edits topic
-> content (`src/content/**/*.md`, `src/system-design/case-studies/*.md` or
-> `src/dsa/entries/*.md`), also hold the prose to every bullet of
-> docs/writing-standard.md, including its "Case studies and DSA entries"
-> section; a test fixture planted to break a rule is exempt. Also check whether
+> content (`src/content/**/*.md` or `src/system-design/case-studies/*.md`),
+> also hold the prose to every bullet of docs/writing-standard.md, including
+> its "Case studies" section; a test fixture planted to break a rule is exempt. Also check whether
 > this diff makes any documentation elsewhere in the repo (CLAUDE.md,
 > README.md, docs/**, other SKILL.md files) inaccurate or incomplete —
 > a convention this change establishes that isn't written down anywhere,
@@ -291,8 +290,8 @@ spec, the findings and `npm run review:diff`. Instruction, close to verbatim:
 > `git worktree add` or `cp -R` into the scratchpad), and is it reachable?
 > Reachable means:
 > for app behavior, with real inputs or content; for a guard or check, by an
-> edit an author following docs/content.md, docs/case-studies.md or
-> docs/dsa.md could plausibly make, or in a shape a doc says the check covers (a doc/code
+> edit an author following docs/content.md or docs/case-studies.md could
+> plausibly make, or in a shape a doc says the check covers (a doc/code
 > mismatch is itself a finding). Anything else is theoretical. Quote the file
 > and line, or the command and its output, for each. Do not edit any file in
 > the working tree.

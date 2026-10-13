@@ -1,11 +1,10 @@
 /** The header tabs, in header order, each with the landing route it links to.
- * System Design and DSA own their landing route and every route under it;
+ * System Design owns its landing route and every route under it;
  * Catalog owns every other route (topic pages included). The one definition
  * the header, the sidebar and the mobile nav share. */
 export const TABS = [
   { id: 'catalog', label: 'Catalog', to: '/' },
   { id: 'system-design', label: 'System Design', to: '/system-design' },
-  { id: 'dsa', label: 'DSA', to: '/dsa' },
 ] as const;
 
 export type TabId = (typeof TABS)[number]['id'];

@@ -1,6 +1,6 @@
 ---
 name: content-audit
-description: Sweep published topic(s) under src/content/**/*.md, System Design case studies under src/system-design/case-studies/*.md, and DSA entries under src/dsa/entries/*.md, for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic, case study and DSA entry (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic, case study or DSA entry. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics, case studies or DSA entries "sound AI-written," or a quality check or revision of one specific already-published topic, case study or DSA entry (not a brand-new topic being drafted, nor a rewrite of a topic to the catalog standard — both are add-topic's job — not a brand-new case study — that's add-case-study's job — not a brand-new DSA entry — that's add-dsa-entry's job — not a merge of DSA entries, which add-dsa-entry owns — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
+description: Sweep published topic(s) under src/content/**/*.md and System Design case studies under src/system-design/case-studies/*.md for content-quality problems the per-topic review doesn't structurally catch — prose that reads as generically AI-generated, figurative language over-explained instead of trusted to land, and technical claims that were never independently verified. Defaults to every published topic and case study (a corpus-wide sweep) but also scopes to a single already-published file or section when asked to check the content quality of one existing topic or case study. Use when asked for a corpus-wide content-quality sweep, a check of whether existing topics or case studies "sound AI-written," or a quality check or revision of one specific already-published topic or case study (not a brand-new topic being drafted, nor a rewrite of a topic to the catalog standard — both are add-topic's job — not a brand-new case study — that's add-case-study's job — and not meta-documentation staleness like CLAUDE.md/docs/SKILL.md files — that's docs-audit's job).
 ---
 
 # Content audit
@@ -18,16 +18,15 @@ where this repo does and doesn't spend a separate agent, and
 this one is structurally parallel to — that one covers meta-documentation
 staleness (`CLAUDE.md`, `docs/`, `evals/`, every `SKILL.md`) against
 current repo state; this one covers the prose _quality_ of the published
-topics themselves under `src/content/**`, the System Design case
-studies under `src/system-design/case-studies/` and the DSA entries under
-`src/dsa/entries/`, against
+topics themselves under `src/content/**` and the System Design case
+studies under `src/system-design/case-studies/`, against
 the [Writing Standard](../../../docs/writing-standard.md). Neither one's scope
 includes the other's.
 
 ## Stage 0 — Scope the run
 
-Default: every file under `src/content/**/*.md`,
-`src/system-design/case-studies/*.md` and `src/dsa/entries/*.md` (glob at run time — don't trust a cached
+Default: every file under `src/content/**/*.md` and
+`src/system-design/case-studies/*.md` (glob at run time — don't trust a cached
 file list, the corpus grows). If invoked with
 specific file or section names as arguments, scope to those instead and
 say so before starting.
@@ -41,9 +40,7 @@ first full sweep split 52 files across 4 agents by section). A batch of
 roughly 10-15 files per agent is a reasonable target; adjust down if a
 section is unusually large. The case studies get batches of their
 own, split so each agent can read its share in full (about five per agent,
-with their `.d2` sources). The DSA
-entries get batches of their own too, about five entries per agent, since each
-comes with four code and test files under `src/dsa/code/<slug>/`.
+with their `.d2` sources).
 
 ## Stage 2 — Independent audit, per batch
 
@@ -88,19 +85,15 @@ and this instruction, close to verbatim, with each owning skill's Stage 3
 >
 > **4. The checklist for the file's kind.** Apply the Stage 3 checklist
 > below from the skill that owns the file's kind: `add-topic` for a catalog
-> topic, `add-case-study` for a case study, `add-dsa-entry` for a DSA entry,
-> and hold the file to every bullet of docs/writing-standard.md, including its
-> "Catalog topics" and "Case studies and DSA entries" sections.
+> topic and `add-case-study` for a case study, and hold the file to every
+> bullet of docs/writing-standard.md, including its "Catalog topics" and
+> "Case studies" sections.
 > Skip an item that only fits a new draft (a link-only diff, rewrite mode);
 > add-topic's "Where you'll meet this" item applies only to
 > `systems-and-infrastructure` topics, whose closing section names kinds of
 > systems from the reference set in docs/content.md. Read what an item needs: a case
 > study's `.d2` sources under `src/system-design/diagrams/` and the topics it
-> links; a DSA entry's whole code files and tests under
-> `src/dsa/code/<slug>/` (plus `src/dsa/code/heap/heap.ts` when the
-> `.ts` imports `MinHeap`), not only the regions it shows (an empty
-> `region=<name>` fence shows the text between that region's markers;
-> docs/dsa.md has the rule).
+> links.
 >
 > <the Stage 3 `<checklist>` of each skill that owns a kind in this batch>
 >
@@ -121,9 +114,7 @@ mirroring how the first full sweep (2026-09-15) applied its fixes in
 batches rather than one at a time. For a finding you disagree with, or a
 correctness claim that needs a judgment call the audit agent couldn't
 make on its own, resolve it yourself or ask the user rather than
-applying it blindly. A fix to a DSA entry's code changes the code file
-(the entry shows it through a region, so it has no copy to update) and a test
-that would have caught it together, as `add-dsa-entry`'s fix step does.
+applying it blindly.
 
 ## Stage 4 — Final gate
 

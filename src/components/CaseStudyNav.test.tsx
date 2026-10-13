@@ -4,14 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { CASE_STUDIES } from '@/lib/system-design';
 import { renderAt } from '@/test/render';
 import { CaseStudyNav } from './CaseStudyNav';
-import { DsaNav } from './DsaNav';
 
-// CaseStudyNav's own data and order (criterion 9). The behaviour it shares with
-// DsaNav (landmark, aria-current, onNavigate, className, nothing current on the
-// landing page) is tested once in OrderedNav.test.tsx (docs/specs/ui-dedupe.md,
-// design item 6). OrderedNav.test.tsx can't see whether each wrapper forwards
-// className and onNavigate to it, so the last block here checks that for both
-// CaseStudyNav and DsaNav; App.tabs.test.tsx checks that App and MobileNav pass
+// CaseStudyNav's own data and order (criterion 9). The list behaviour it gets
+// from OrderedNav (landmark, aria-current, onNavigate, className, nothing
+// current on the landing page) is tested in OrderedNav.test.tsx
+// (docs/specs/ui-dedupe.md, design item 6). OrderedNav.test.tsx can't see
+// whether CaseStudyNav forwards className and onNavigate to it, so the last
+// block here checks that; App.tabs.test.tsx checks that App and MobileNav pass
 // them in.
 
 function nav() {
@@ -32,7 +31,7 @@ describe('CaseStudyNav (criterion 9)', () => {
     });
   });
 
-  // docs/specs/dsa-kind-groups.md, criterion 5: grouping is DSA-only.
+  // docs/specs/remove-dsa-tab.md, criterion 6: unchanged in behaviour.
   it('renders one flat numbered list, 1..N, with no group labels and no disclosure buttons', () => {
     renderAt('/system-design/url-shortener', <CaseStudyNav />);
     const lists = within(nav()).getAllByRole('list');
@@ -55,22 +54,17 @@ describe('CaseStudyNav (criterion 9)', () => {
   });
 });
 
-// docs/specs/ui-dedupe.md, design item 6: each wrapper forwards the props
+// docs/specs/ui-dedupe.md, design item 6: the wrapper forwards the props
 // OrderedNav handles.
-describe.each([
-  {
-    name: 'CaseStudyNav',
-    Nav: CaseStudyNav,
-    label: 'Case studies',
-    path: '/system-design',
-  },
-  { name: 'DsaNav', Nav: DsaNav, label: 'DSA entries', path: '/dsa' },
-])('$name forwards className and onNavigate to OrderedNav', ({ Nav, label, path }) => {
+describe('CaseStudyNav forwards className and onNavigate to OrderedNav', () => {
   it('puts the given className on the nav element and calls onNavigate on a link click', async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
-    renderAt(path, <Nav className="given-class lg:block" onNavigate={onNavigate} />);
-    const navEl = screen.getByRole('navigation', { name: label });
+    renderAt(
+      '/system-design',
+      <CaseStudyNav className="given-class lg:block" onNavigate={onNavigate} />,
+    );
+    const navEl = screen.getByRole('navigation', { name: 'Case studies' });
     expect(navEl.className).toBe('given-class lg:block');
     expect(onNavigate).not.toHaveBeenCalled();
     await user.click(within(navEl).getAllByRole('link')[0]);

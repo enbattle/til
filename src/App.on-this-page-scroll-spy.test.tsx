@@ -2,16 +2,15 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTopic } from '@/lib/content';
-import { getDsaEntry } from '@/lib/dsa';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { h2Headings } from '@/lib/headings';
 import { getCaseStudy } from '@/lib/system-design';
-import { caseStudyBody, dsaEntryBody, rawTopic } from '@/test/content';
+import { caseStudyBody, rawTopic } from '@/test/content';
 import { renderAt } from '@/test/render';
 
 // docs/specs/on-this-page-scroll-spy.md, criteria 2-8: the "On this page" nav
-// marks the section being read, through the real App on a case study, a DSA
-// entry and a catalog topic. jsdom does no layout, so each heading's
+// marks the section being read, through the real App on a case study and a
+// catalog topic. jsdom does no layout, so each heading's
 // getBoundingClientRect top is stubbed (by id), as are the root's computed
 // scroll-padding-top (80px; docs/specs/focus-not-obscured.md, criterion 3),
 // each heading's computed scroll-margin-top (0), window.scrollY, innerHeight
@@ -29,7 +28,6 @@ const CURRENT = ['font-bold', 'border-accent', 'text-text-primary'];
 
 const TOPIC = getTopic('systems-and-infrastructure', 'caching')!;
 const CASE_STUDY = getCaseStudy('url-shortener')!;
-const DSA_ENTRY = getDsaEntry('binary-search')!;
 
 const PAGES = [
   {
@@ -37,12 +35,6 @@ const PAGES = [
     path: `/system-design/${CASE_STUDY.slug}`,
     title: CASE_STUDY.title,
     body: () => caseStudyBody(CASE_STUDY.slug),
-  },
-  {
-    kind: 'DSA entry',
-    path: `/dsa/${DSA_ENTRY.slug}`,
-    title: DSA_ENTRY.title,
-    body: () => dsaEntryBody(DSA_ENTRY.slug),
   },
   {
     kind: 'catalog topic',

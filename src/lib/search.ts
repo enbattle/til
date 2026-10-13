@@ -1,7 +1,6 @@
 import Fuse from 'fuse.js';
 import { getSection } from '@/content/registry';
 import { TOPICS, loadAllTopicBodies } from './content';
-import { DSA_ENTRIES, loadAllDsaBodies } from './dsa';
 import { CASE_STUDIES, loadAllCaseStudyBodies } from './system-design';
 
 /** Exported so tests can ask whether a word fuzzy-matches the way the app's
@@ -19,8 +18,8 @@ export const FUSE_OPTIONS = {
 
 /** One searchable item and what its result row shows: `key` is unique across
  * every source (the dialog's list key), `path` is where it goes, `label` is
- * the section label a topic shows, or the header tab (System Design, DSA) for
- * a case study or DSA entry. */
+ * the section label a topic shows, or the header tab (System Design) for a
+ * case study. */
 export interface SearchResult {
   key: string;
   path: string;
@@ -135,16 +134,6 @@ const defaultIndex = createSearchIndex([
     })),
     loadBodies: () =>
       loadAllCaseStudyBodies().then((bodies) => prefixKeys('system-design', bodies)),
-  },
-  {
-    items: DSA_ENTRIES.map((entry) => ({
-      key: `dsa/${entry.slug}`,
-      path: entry.path,
-      label: 'DSA',
-      title: entry.title,
-      summary: entry.summary,
-    })),
-    loadBodies: () => loadAllDsaBodies().then((bodies) => prefixKeys('dsa', bodies)),
   },
 ]);
 

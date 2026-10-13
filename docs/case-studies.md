@@ -4,9 +4,9 @@ How case studies and their diagrams are stored, structured, linked and
 checked. Read this before adding or changing a case study or its diagrams;
 [CLAUDE.md](../CLAUDE.md) routes here, and the `add-case-study` skill follows it.
 
-The header has three tabs: **Catalog** (the topics in [content.md](content.md)),
-**System Design**, a numbered list of worked design case studies ("Design a
-URL Shortener (like TinyURL)"), and **DSA** ([dsa.md](dsa.md)). Each case study takes a product through the standard
+The header has two tabs: **Catalog** (the topics in [content.md](content.md))
+and **System Design**, a numbered list of worked design case studies ("Design a
+URL Shortener (like TinyURL)"). Each case study takes a product through the standard
 interview approach in about five minutes of reading and links into the catalog
 wherever it uses a topic; it never holds a copy of a topic.
 
@@ -29,7 +29,7 @@ fails if a body lands in the main chunk); the prose word count
 is eager too (the build-time `?words` view, `proseWordCount` in
 `src/lib/markdown.mjs`), so the page's "N min read" label (`readingMinutes` in
 `src/lib/reading-time.ts`, at the reading speed in the
-[Writing Standard](writing-standard.md#case-studies-and-dsa-entries)) shows
+[Writing Standard](writing-standard.md#case-studies)) shows
 before the body loads, on every case study.
 Frontmatter is the usual flat `key: value`, with one more required field,
 `order`:
@@ -50,13 +50,13 @@ order: 1
   fails a duplicate `order`.
 - **These four keys and no others.** `parseCaseStudy` also throws at load
   time on any other key, naming the file and the key (`checkFields` in
-  `src/lib/frontmatter.ts`, shared by all three loaders), and
+  `src/lib/frontmatter.ts`, shared by both loaders), and
   `case-study-structure.test.ts` checks the same allowlist.
 - **A case study is a five-minute read.** The whole page is the summary a
   reader takes into an interview, with enough reasoning under each decision to
   defend it and to guess well at a question it never asked. It meets the
-  Writing Standard's "Case studies and DSA entries" section: within the
-  [word budget](writing-standard.md#case-studies-and-dsa-entries) (diagrams and
+  Writing Standard's "Case studies" section: within the
+  [word budget](writing-standard.md#case-studies) (diagrams and
   code don't count), one rejected alternative per
   decision, and the voice of a good lecturer. Depth beyond that lives in the
   catalog topics it links.

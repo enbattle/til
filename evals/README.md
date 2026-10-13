@@ -3,7 +3,7 @@
 `docs/SDLC.md` and the skills under `.claude/skills/` define how a Claude
 Code session is supposed to build changes in this repo — spec → TDD →
 implementation → review for a real feature, a lighter draft → review
-loop for a new topic, case study or DSA entry, direct edits for anything genuinely small. This
+loop for a new topic or case study, direct edits for anything genuinely small. This
 directory answers a different question: **does that machinery actually
 work, and does a fresh session actually follow it?**
 
@@ -33,7 +33,7 @@ own safety nets instead of a running service.
 - `content-review/` — once a content skill's Stage 3 review
   ([docs/content-review.md](../docs/content-review.md)) actually runs, does
   it catch a deliberately planted content-quality violation (the current set
-  is in its `scenarios.md`: topics, case studies and DSA entries), or
+  is in its `scenarios.md`: topics and case studies), or
   rubber-stamp the draft? A different failure surface than `skill-routing`:
   that category checks whether the right skill gets chosen, this one checks
   whether the chosen skill's review step actually works, including
@@ -78,7 +78,7 @@ Which eval to run depends on what changed:
 
 | You changed                                                                                                                     | Run                                                                                                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLAUDE.md` or a doc its routing table points to, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added a skill            | `skill-routing-eval`                                                                                                                           |
+| `CLAUDE.md` or a doc its routing table points to, any `SKILL.md`, `docs/SDLC.md`, `.claude/hooks/`, or added or removed a skill | `skill-routing-eval`                                                                                                                           |
 | The Writing Standard, `docs/content-review.md`, a content skill's Stage 3 checklist, or `docs/NON_NEGOTIABLES.md`               | `content-review-eval`                                                                                                                          |
 | `/feature`'s Stage 4 reviewer or finding-triage instruction, `docs/NON_NEGOTIABLES.md`, or a defect escaped a `/feature` review | `feature-review-eval`                                                                                                                          |
 | Added or widened a `check:*` script, or made lint stricter                                                                      | re-read `evals/feature-review/scenarios.md`: rotate any planted defect a check now catches mechanically, since it no longer tests the reviewer |

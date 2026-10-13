@@ -35,21 +35,21 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
 - **`title`, `summary`, and `date` are required, and are the only keys** —
   `src/lib/content.ts` throws at load time, naming the file and the field, if
   any is missing or empty or if there's any other key (`checkFields` in
-  `src/lib/frontmatter.ts`, shared with case studies and DSA entries), so
+  `src/lib/frontmatter.ts`, shared with case studies), so
   `src/lib/content.test.ts`, which loads every topic, fails.
 - **Frontmatter is eager, bodies are lazy.** `content.ts` reads each file's
   frontmatter at load through a `?meta` Vite query (the `markdownMeta` plugin
   in `vite.config.ts`), and each body's prose word count through a `?words`
   query (the read-time label), so `TOPICS` is metadata only and `Topic` has no
   `body`. Each loaded item carries its page route as `path` (`/<section>/<slug>`;
-  `/system-design/<slug>` for a case study, `/dsa/<slug>` for a DSA entry),
+  `/system-design/<slug>` for a case study),
   set by its loader: link to an item with `item.path`, never a route built by
   hand.
   A body is fetched as its own small chunk by `loadTopicBody(section, slug)`
   (topic page) or `loadAllTopicBodies()` (full-text search, which starts
-  loading when the search dialog opens). Case studies and DSA entries work the
+  loading when the search dialog opens). Case studies work the
   same way. Don't reintroduce an eager `?raw` glob over any of them:
-  `npm run check:bundle` fails if any topic, case-study or DSA entry body ends
+  `npm run check:bundle` fails if any topic or case-study body ends
   up in the main chunk.
 - The frontmatter parser (`src/lib/frontmatter.ts`) is intentionally not a
   real YAML parser — it only understands flat `key: value` lines, with
@@ -110,10 +110,10 @@ external link never breaks.
 1. Move the file with `git mv` (to another section's folder, or to a new
    slug), so history follows it. For a merge, fold the old topic's content into
    the surviving one and delete the old file in the same change.
-2. Repoint every link to the old path across `src/content`, `src/system-design`
-   and `src/dsa` (`git grep -n "/<section>/<old-slug>"`).
-   `src/lib/catalog-gaps.test.ts` fails on a dead internal link (to a topic,
-   case study or DSA entry) in any topic, case-study or DSA body, so it
+2. Repoint every link to the old path across `src/content` and
+   `src/system-design` (`git grep -n "/<section>/<old-slug>"`).
+   `src/lib/catalog-gaps.test.ts` fails on a dead internal link (to a topic or
+   case study) in any topic or case-study body, so it
    catches any link this step misses; `src/lib/system-design.test.ts` also
    fails a case study's link to a topic that no longer exists.
 3. Add an entry to `REDIRECTS` in `src/content/redirects.ts`, from the old

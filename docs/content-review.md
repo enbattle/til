@@ -1,6 +1,6 @@
 # Content review: the shared stages
 
-`add-topic`, `add-case-study` and `add-dsa-entry` draft their content
+`add-topic` and `add-case-study` draft their content
 directly (Stages 0–2 of each skill), then all follow the stages below. Each
 skill fills in what is its own: the `<kind>` of content, the files the
 reviewer gets, its `<checklist>`, its extra final-gate checks and what goes in
@@ -32,8 +32,8 @@ replace a checklist item that doesn't apply to this draft with "none"):
 > checklist below; assume nothing about it is fine until you've checked it
 > yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line there
 > is always a real finding. Writing Standard: hold it to every bullet of
-> docs/writing-standard.md, including its "Catalog topics" and "Case studies
-> and DSA entries" sections. Checklist: <checklist> Also check it isn't a
+> docs/writing-standard.md, including its "Catalog topics" and "Case studies"
+> sections. Checklist: <checklist> Also check it isn't a
 > near-duplicate of an existing <kind> (listed below). For each finding, quote
 > the text or code, or name a realistic input that breaks it; label anything
 > else "theoretical". Re-raise a decision listed below as already made only
@@ -46,8 +46,7 @@ replace a checklist item that doesn't apply to this draft with "none"):
   (a finding about app code or a check goes to a fresh agent), and give it one
   of `/feature` Stage 4's outcomes. Record each Reject and Known limitation
   with a one-line reason in the handoff, and give the re-review that list. A
-  Reject must quote the text, code or source that disproves the finding. (An
-  entry's own code under `src/dsa/code` is content here, not app code.) Fix
+  Reject must quote the text, code or source that disproves the finding. Fix
   the rest yourself (no separate fix agent for content; the skill names any
   extra fix step), then re-run this stage with a new fresh agent on the
   updated files. **Cap at 2 rounds**, matching `/feature`'s fix loop; if
@@ -74,8 +73,8 @@ don't ship it.
 
 ## Batch mode
 
-`add-topic`, `add-case-study` and `add-dsa-entry` can add (or, for
-`add-topic`, rewrite) several items at once; the skill adds any ordering or
+`add-topic` and `add-case-study` can add (or, for `add-topic`, rewrite)
+several items at once; the skill adds any ordering or
 integration step of its own.
 
 1. One drafter agent per item, in parallel, each in its own worktree
@@ -87,8 +86,8 @@ integration step of its own.
    reporting, the drafter also runs Stage 3's rule-of-thumb check on its page. Drafters run on Sonnet (`model: "sonnet"`) from one brief you write
    out of the skill and its doc; reviewers run on Opus (`model: "opus"`),
    because catching a wrong claim is the step that needs the stronger model.
-   Five Sonnet-drafted DSA batches drew review findings comparable to the Opus
-   ones before them (the pipeline log has the counts). Each drafter runs
+   As of 2026-10-02, five Sonnet-drafted batches had drawn review findings
+   comparable to the Opus ones before them (the pipeline log has the counts). Each drafter runs
    `npm ci` in its own worktree first (under 30 seconds, even with six
    installing at once), so no worktree shares the main checkout's
    `node_modules`. Worktrees start from `main`, not from your branch, so start

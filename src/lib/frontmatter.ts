@@ -52,10 +52,10 @@ export function parseFrontmatter(raw: string): ParsedMarkdown {
 }
 
 /**
- * The frontmatter contract the three loaders share. Throws, naming the file
+ * The frontmatter contract the two loaders share. Throws, naming the file
  * (`name`), for the first required field that is missing or empty, in
  * `required` order, then for the first key that isn't in `allowed`. Checks of
- * a field's value (an `order` or a `kind`) stay with the loader that has it.
+ * a field's value (an `order`) stay with the loader that has it.
  */
 export function checkFields(
   name: string,

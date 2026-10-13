@@ -56,6 +56,14 @@ describe('site description', () => {
     expect(readmeProblem(readme, description)).toBeNull();
   });
 
+  // docs/specs/remove-dsa-tab.md, criterion 13: the description, and so the
+  // README intro it must equal, names only the catalog and the case studies.
+  it('describes no data structures and algorithms tab', () => {
+    for (const text of [description, introParagraph(readme)]) {
+      expect(text).not.toMatch(/\bDSA\b|data structures|algorithms|interview prep/i);
+    }
+  });
+
   it('reads the intro across wrapped lines, up to the blank line', () => {
     const wrapped = description.replace(/ (?=\S{6,})/, '\n');
     expect(

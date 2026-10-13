@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Heading, Nodes, Paragraph, Root, RootContent } from 'mdast';
 import { TOPICS, loadAllTopicBodies } from '@/lib/content';
-import { markdownParser, proseWordCount, sectionNodes, textOf } from '@/lib/markdown.mjs';
+import { markdownParser, proseWordCount } from '@/lib/markdown.mjs';
 import { CATALOG_WORD_BUDGET } from '@/lib/reading-time';
 import { wordBudgetProblems } from '@/test/structure';
 
@@ -39,6 +39,33 @@ interface TopicSource {
 }
 
 const parser = markdownParser();
+
+// textOf and sectionNodes used to come from src/lib/markdown.mjs; that module
+// drops them (docs/specs/remove-dsa-tab.md, criterion 7), so this test keeps
+// its own.
+
+/** The text of a markdown node and everything under it, joined with nothing
+ * added: a text or code node's value, or its children's text. */
+function textOf(node: Nodes): string {
+  if ('value' in node) return node.value;
+  return 'children' in node ? node.children.map((c) => textOf(c)).join('') : '';
+}
+
+/** The top-level nodes of `tree` under its `## heading` (matched by the
+ * heading's trimmed text), up to the next `#` or `##` heading; a deeper
+ * heading inside stays part of the section. [] when there's no such section. */
+function sectionNodes(tree: Root, heading: string): RootContent[] {
+  const nodes: RootContent[] = [];
+  let inSection = false;
+  for (const node of tree.children) {
+    if (node.type === 'heading' && node.depth <= 2) {
+      inSection = node.depth === 2 && textOf(node).trim() === heading;
+    } else if (inSection) {
+      nodes.push(node);
+    }
+  }
+  return nodes;
+}
 
 /** Every paragraph in the tree (nested ones included) that opens with bold
  * `Rule of thumb.`. */

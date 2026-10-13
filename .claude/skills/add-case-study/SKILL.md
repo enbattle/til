@@ -39,7 +39,7 @@ Write it yourself, directly, as `add-topic` does. Read
 before Stage 2: it lists the problems reviews most often find. Read
 `src/system-design/case-studies/url-shortener.md` first: it is the reference
 example for length, voice and how key numbers are laid out. Read the Writing
-Standard's "Case studies and DSA entries" section too: it sets the budget and
+Standard's "Case studies" section too: it sets the budget and
 the voice.
 
 - File at `src/system-design/case-studies/<slug>.md`, slug kebab-case.

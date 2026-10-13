@@ -18,8 +18,6 @@
 // - every `.gitignore` (any depth, including one that ignores itself) and
 //   `.git/info/exclude`, since a path ignored after the snapshot would drop
 //   out of git's listing unseen;
-// - pytest's test files (`test_*.py`, `*_test.py`, `conftest.py`) and config
-//   files, and scripts/test-python.mjs, the runner `test:py` calls;
 // - this script and scripts/lib.mjs, which it imports, so a later stage can't
 //   weaken the lock and then pass it;
 // - the fixture paths given to `--snapshot`.
@@ -42,9 +40,7 @@ const LOCKED = [
   /^vitest\.(config|workspace)\.[cm]?[jt]s$/,
   /^src\/test\//,
   /(^|\/)\.gitignore$/,
-  /(^|\/)(test_[^/]*|[^/]*_test|conftest)\.py$/,
-  /(^|\/)(\.?pytest\.toml|\.?pytest\.ini|pyproject\.toml|tox\.ini|setup\.cfg)$/,
-  /^scripts\/(test-python|check-test-lock|lib)\.mjs$/,
+  /^scripts\/(check-test-lock|lib)\.mjs$/,
 ];
 
 function git(root, args) {

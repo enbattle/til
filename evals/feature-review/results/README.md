@@ -18,34 +18,37 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-06 | Stage 4 Writing Standard clause (FR-05 rotated, FR-04 control rebuilt)                                                           | 16   | 0    | 0         | Old FR-04 drifted (voided, 2 runs); new control clean twice.       |
 | 2026-10-07 | FR-06 re-grounded (its summary premise was gone); Stage 0 checks content premises                                                | 2    | 0    | 0         | FR-06 only, twice; both proposed Fix with a test from real titles. |
 | 2026-10-13 | NON_NEGOTIABLES #6 (#119), /feature Stages 1-3 edits, eval skill cut to its own parts, FR-02/03/04/05 re-anchored; FR-01 rotated | 16   | 0    | 0         | All scenarios, twice each; both runs agreed on every scenario.     |
+| 2026-10-13 | DSA tab removed: Stage 4 reviewer and triage instructions edited; FR-03 rotated                                                  | 16   | 0    | 0         | All scenarios, twice.                                              |
 
-## Latest run: 2026-10-13, after the cleanup and docs dedupe
+## Latest run: 2026-10-13, DSA tab removed
 
-- **Run by:** Claude (the orchestrating session). One helper agent rotated FR-01 and assembled each scenario's brief (spec, diff, the NON_NEGOTIABLES path and Stage 4's reviewer or triage instruction, copied verbatim) into a neutrally named file; 16 fresh `general-purpose` agents then ran, two per scenario, each given only its brief's path.
-- **Trigger:** NON_NEGOTIABLES #6 changed in #119 (check:raw-html as a name search plus react/no-danger); /feature Stage 1 (guard inventory), Stage 2 (removed-test mutation clause) and Stage 3 (listed mutations) edits; the eval skill cut to its own parts; FR-02/03/04/05 diffs re-anchored to the code from #123-#124.
-- **Rotation:** FR-01's planted defect (rotated for the NON_NEGOTIABLES edit) is now a quoted value cut at its first inner quote (`'Don't panic'` parses as `Don`); before, the quote check ran on the raw value comment included.
+- **Run by:** Claude (the orchestrating session). One helper agent rotated FR-03, re-read every diff against the branch and wrote each scenario's brief (spec, diff and, for triage, the finding) under neutral names; 16 fresh `general-purpose` agents then reviewed or triaged, each given the NON_NEGOTIABLES path and Stage 4's reviewer or triage instruction, copied verbatim.
+- **Trigger:** `docs/specs/remove-dsa-tab.md` edited /feature's Stage 4 reviewer and finding-triage instructions (the DSA paths and docs/dsa.md dropped; the Writing Standard section is now "Case studies").
+- **Rotation:** FR-03's planted defect, a stale `queryRef` since 2026-10-01, is now an Escape the input handles with `preventDefault()` while `useModal`'s window listener still closes the dialog. The diff's test uses a mock `onClose`, so it passes.
+- **Drift:** hunk headers refreshed for FR-02, FR-06, FR-07 (hunk 2) and FR-08 after the branch moved lines; no planted defect changed.
 - **Scope:** all scenarios, twice.
 
-| ID    | Run | Finding summary                                                                                                                                | Grade |
-| ----- | --- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| FR-01 | A   | High: lazy quote regex truncates values with an inner quote, e.g. `'Don't panic'` → `Don`; checked against all 121 files (none affected today) | PASS  |
-| FR-01 | B   | High: same truncation, plus text after a closing quote dropped                                                                                 | PASS  |
-| FR-02 | A   | High: `target="_blank"` without `rel="noreferrer"` breaks NON_NEGOTIABLES #7                                                                   | PASS  |
-| FR-02 | B   | High: same, citing the other new-tab links that set it                                                                                         | PASS  |
-| FR-03 | A   | High: `queryRef` never updated, so Escape always closes                                                                                        | PASS  |
-| FR-03 | B   | High: same stale ref; also an existing test that only passes because of the bug                                                                | PASS  |
-| FR-04 | A   | Clean control: one true Low (no rendered test for the empty-section count)                                                                     | PASS  |
-| FR-04 | B   | Clean control: nothing at Medium or above; one true Low                                                                                        | PASS  |
-| FR-05 | A   | High: `<summary>` not in `FOCUSABLE_SELECTOR`, so the trap skips it and Tab can leave the dialog                                               | PASS  |
-| FR-05 | B   | High: same, traced through `useModal` → `useFocusTrap`                                                                                         | PASS  |
-| FR-06 | A   | Fix with a test: 13 real `vs.` titles truncate the description (reproduced)                                                                    | PASS  |
-| FR-06 | B   | Fix with a test: same evidence                                                                                                                 | PASS  |
-| FR-07 | A   | Reject: `checkFields` throws at import for a missing summary (reproduced)                                                                      | PASS  |
-| FR-07 | B   | Reject: same, reproduced by deleting a real summary line                                                                                       | PASS  |
-| FR-08 | A   | High: the strip's height isn't in `scroll-padding-top` from `xl`, hiding focus (WCAG 2.4.11)                                                   | PASS  |
-| FR-08 | B   | High: same, with the scroll-spy and hash-hold knock-ons                                                                                        | PASS  |
+| ID    | Run | Finding summary                                                                                       | Grade |
+| ----- | --- | ----------------------------------------------------------------------------------------------------- | ----- |
+| FR-01 | A   | High: lazy quote regex cuts `'What's a CRDT?'` to `What`; all 93 files compared old vs new            | PASS  |
+| FR-01 | B   | High: same truncation, four triggers run in node                                                      | PASS  |
+| FR-02 | A   | High: `target="_blank"` without `rel="noreferrer"` breaks NON_NEGOTIABLES #7                          | PASS  |
+| FR-02 | B   | High: same, citing MarkdownRenderer and Diagram, which set it                                         | PASS  |
+| FR-03 | A   | High: `useModal`'s window listener ignores `defaultPrevented`, so the first Escape closes; reproduced | PASS  |
+| FR-03 | B   | High: same, reproduced with `toHaveBeenCalledTimes(0)`; second High on the mock-based test            | PASS  |
+| FR-04 | A   | Clean control: two true Lows (count position and the empty case untested)                             | PASS  |
+| FR-04 | B   | Clean control: same two true Lows                                                                     | PASS  |
+| FR-05 | A   | High: `<summary>` not in `FOCUSABLE_SELECTOR`; Tab can't reach it and escapes from it                 | PASS  |
+| FR-05 | B   | High: same, both triggers traced                                                                      | PASS  |
+| FR-06 | A   | Fix with a test: 13 real `vs.` titles cut to "SQL vs." (reproduced)                                   | PASS  |
+| FR-06 | B   | Fix with a test: same evidence                                                                        | PASS  |
+| FR-07 | A   | Reject: `checkFields` throws at import for a missing summary (reproduced in a worktree)               | PASS  |
+| FR-07 | B   | Reject: same, from the loader code and docs                                                           | PASS  |
+| FR-08 | A   | High: the strip's height isn't in xl `scroll-padding-top`, hiding focus (WCAG 2.4.11)                 | PASS  |
+| FR-08 | B   | High: same, with the scroll-spy knock-on                                                              | PASS  |
 
 Notes:
 
-- FR-05 now reaches its cause through `useModal` (the UI dedupe moved Escape and initial focus there); both runs still traced it two hops from the diff.
-- FR-02's hunk header is six lines off the current file; it still applies at an offset (one reviewer noticed). FR-01 hunk 3, FR-06, FR-07 hunk 2 and FR-08 apply at offsets too.
+- The rotated FR-03 was caught at High by both runs, and both also flagged the test that can't see the bug.
+- FR-02 and FR-08 runs each added a Medium/High that the diff ships no tests; true of those fixtures (their diffs never carried tests) and not graded.
+- Two reviewers left scratch copies under the session scratchpad and one an extra worktree, all outside the repo; none touched the working tree.

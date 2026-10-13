@@ -66,41 +66,6 @@ describe('check-bundle covers case-study bodies (criterion 5)', () => {
   });
 });
 
-describe('check-bundle covers DSA entry bodies (DSA criterion 4)', () => {
-  const DSA_LINE =
-    'Binary search keeps a half-open range and halves it until one index is left.';
-  const files = {
-    ...TOPIC,
-    'src/dsa/entries/binary-search.md': `---\ntitle: B\nsummary: S.\ndate: 2026-09-30\nkind: algorithm\n---\n\n## Prerequisites\n\n${DSA_LINE}\n`,
-  };
-
-  it('passes when the DSA body is in its own lazy chunk', () => {
-    expect(
-      problems(files, {
-        'index-abc.js': 'import("./topic-1.js"); import("./binary-search-1.js");',
-        'topic-1.js': `export default ${JSON.stringify(TOPIC_LINE)};`,
-        'binary-search-1.js': `export default ${JSON.stringify(DSA_LINE)};`,
-      }),
-    ).toEqual([]);
-  });
-
-  it('fails, naming the file, when a DSA body is inlined in the main chunk', () => {
-    const found = problems(files, {
-      'index-abc.js': `const body = ${JSON.stringify(DSA_LINE)}; import("./topic-1.js");`,
-      'topic-1.js': `export default ${JSON.stringify(TOPIC_LINE)};`,
-    });
-    expect(found.join('\n')).toMatch(/binary-search\.md/);
-  });
-
-  it('fails, naming the file, when a DSA body is in no chunk at all', () => {
-    const found = problems(files, {
-      'index-abc.js': 'import("./topic-1.js");',
-      'topic-1.js': `export default ${JSON.stringify(TOPIC_LINE)};`,
-    });
-    expect(found.join('\n')).toMatch(/binary-search\.md/);
-  });
-});
-
 describe('check-bundle reads frontmatter with parseFrontmatter (dedupe criterion 6)', () => {
   // A summary long enough to qualify as a fragment: if the frontmatter were
   // not stripped, it would be picked instead of the body line and found in no

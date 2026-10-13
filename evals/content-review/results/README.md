@@ -28,19 +28,24 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-07 | Writing Standard: one general Named companies rule                                                                                                   | 3    | 0    | 0         | Controls only: CR-05, CS-03, DS-03; CS base order moved 17 to 99.          |
 | 2026-10-13 | Docs dedupe (content-review.md, content-audit, add-dsa-entry pointers, Writing Standard line), NON_NEGOTIABLES #6, DS fixture moved to region fences | 12   | 0    | 0         | All scenarios; first run with region fences in the DS base.                |
 | 2026-10-13 | add-dsa-entry checklist item (2): plain tutorial-style code; DS base moved from Counter to dict                                                      | 3    | 0    | 0         | DS-01, DS-02, DS-03; the new item flagged the base's Counter, now fixed.   |
+| 2026-10-13 | DSA tab removed (docs/specs/remove-dsa-tab.md): Writing Standard section renamed, code bullet cut; DS-* retired                                      | 9    | 0    | 0         | All live scenarios.                                                        |
 
-## Latest run: 2026-10-13, add-dsa-entry's plain-code checklist item
+## Latest run: 2026-10-13, DSA tab removed
 
-- **Run by:** Claude (the orchestrating session), with 3 fresh `general-purpose` reviewers given rebuilt briefs carrying the new checklist item.
-- **Trigger:** `add-dsa-entry` checklist item (2) now asks for code that reads like a good tutorial's, per docs/dsa.md's new code rules.
-- **Scope:** DS-* only (one skill's checklist).
+- **Run by:** Claude (the orchestrating session), with 9 fresh `general-purpose` reviewers.
+- **Trigger:** `docs/specs/remove-dsa-tab.md` renamed the Writing Standard's "Case studies and DSA entries" section to "Case studies", deleted its "Code explains itself" bullet and the "a problem" framing, and edited `docs/content-review.md` and the add-case-study checklist's reference to that section. The DS-* scenarios are retired.
+- **Scope:** every live scenario (CR-01 to CR-05, CS-01 to CS-04), since the Writing Standard and the shared Stage 3 instruction changed.
 
-| ID    | Planted violation                                      | Caught?                                                            | Grade |
-| ----- | ------------------------------------------------------ | ------------------------------------------------------------------ | ----- |
-| DS-01 | TS `buildPrefix` drops the last element; tests miss it | Yes, High, with failing inputs                                     | PASS  |
-| DS-02 | Walkthrough paragraph that only narrates               | Yes, High                                                          | PASS  |
-| DS-03 | None (control)                                         | Findings all true; top one the base's `Counter` under the new rule | PASS  |
+| ID    | Planted violation                                 | Caught?                                                                       | Grade |
+| ----- | ------------------------------------------------- | ----------------------------------------------------------------------------- | ----- |
+| CR-01 | "Hash function" never defined                     | Yes, top finding (Medium)                                                     | PASS  |
+| CR-02 | "Not just X — it's Y" closer, filler intensifiers | Yes, both High                                                                | PASS  |
+| CR-03 | Over-explained "rubber duck" paragraph            | Yes, top finding, quoting "To be clear, the duck…"                            | PASS  |
+| CR-04 | Temperature 0 is fully deterministic              | Yes, blocking, with provider documentation                                    | PASS  |
+| CR-05 | None (control)                                    | Three true Low polish notes; no false defect                                  | PASS  |
+| CS-01 | Read rate off by ten                              | Yes, top finding (High), recomputed                                           | PASS  |
+| CS-02 | Contents decision names no alternative            | Yes, top finding (High)                                                       | PASS  |
+| CS-03 | None (control)                                    | All figures confirmed; findings true (expiry vs lifecycle rule, rule wording) | PASS  |
+| CS-04 | "Nobody can ever guess a valid link"              | Yes, top finding (High), from the page's own odds                             | PASS  |
 
-Notes:
-
-- All three reviewers applied the new item and flagged the base's `Counter` (outside the rule's library list, and its missing-key default is invisible to a beginner). True of the base, so DS-03 stays a pass; the base now uses a plain `dict` with `.get(key, 0)`, and its stale aside and control notes were updated, so the next run's control is clean of it.
+Notes: three of the four case-study reviewers independently raised the same true gaps in the base draft: the 200-byte metadata figure isn't derived from the schema, "365 million live pastes" is an upper bound stated as a fact, and the byte-cap follow-up ignores the botnet from the line above. Two raised the expiry decision's unargued lifecycle-rule alternative. These are real polish gaps in the fixture, not false positives; worth a fixture touch-up if they start outranking a planted problem.

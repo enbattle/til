@@ -57,13 +57,11 @@ const SCRIPTS = {
   build: 'vite build',
   'check:colors': 'node scripts/check-hex-colors.mjs',
   'test:run': 'vitest run',
-  'test:py': 'node scripts/test-python.mjs',
   'check:test-lock': 'node scripts/check-test-lock.mjs',
-  verify: 'npm run typecheck && npm run test:run && npm run test:py && npm run build',
+  verify: 'npm run typecheck && npm run lint && npm run test:run && npm run build',
 };
 const pkg = (scripts = {}, extra = {}) =>
   `${JSON.stringify({ scripts: { ...SCRIPTS, ...scripts }, dependencies: {}, ...extra }, null, 2)}\n`;
-const CODE = 'src/dsa/code/x';
 
 /** A throwaway repository holding one of each kind of locked file, plus app
  * files that aren't locked. */
@@ -77,10 +75,6 @@ function repo() {
     'src/lib/__snapshots__/a.test.ts.snap': 'exports[`a 1`] = `"a"`;\n',
     'src/test/setup.ts': 'export {};\n',
     'src/content/s/topic.md': '# A topic\n',
-    [`${CODE}/x.py`]: 'def f():\n    return 1\n',
-    [`${CODE}/test_x.py`]: 'from x import f\n\n\ndef test_f():\n    assert f() == 1\n',
-    'pytest.ini': '[pytest]\ntestpaths = src/dsa/code\n',
-    'scripts/test-python.mjs': '// runs pytest\n',
     'scripts/check-test-lock.mjs': '// the lock\n',
     'scripts/lib.mjs': '// shared helpers\n',
     'README.md': '# notes\n',
@@ -213,7 +207,7 @@ describe('check-test-lock', () => {
       ],
       [
         'an edited root .gitignore',
-        (root) => append(root, '.gitignore', 'conftest.py\n'),
+        (root) => append(root, '.gitignore', 'vitest.config.ts\n'),
         line('modified', '\\.gitignore'),
       ],
       [
@@ -225,36 +219,6 @@ describe('check-test-lock', () => {
         'an added nested .gitignore that ignores itself',
         (root) => write(root, 'src/lib/.gitignore', '.gitignore\n'),
         line('added', 'src/lib/\\.gitignore'),
-      ],
-      [
-        'an added conftest.py',
-        (root) => write(root, `${CODE}/conftest.py`, 'collect_ignore = ["."]\n'),
-        line('added', 'src/dsa/code/x/conftest\\.py'),
-      ],
-      [
-        'an edited test_x.py',
-        (root) => write(root, `${CODE}/test_x.py`, 'def test_f():\n    assert True\n'),
-        line('modified', 'src/dsa/code/x/test_x\\.py'),
-      ],
-      [
-        'an edited pytest.ini',
-        (root) => write(root, 'pytest.ini', '[pytest]\ntestpaths = src/none\n'),
-        line('modified', 'pytest\\.ini'),
-      ],
-      [
-        'an added pyproject.toml',
-        (root) =>
-          write(
-            root,
-            'pyproject.toml',
-            '[tool.pytest.ini_options]\naddopts = "-k nothing"\n',
-          ),
-        line('added', 'pyproject\\.toml'),
-      ],
-      [
-        'an edited scripts/test-python.mjs',
-        (root) => append(root, 'scripts/test-python.mjs', 'process.exit(0);\n'),
-        line('modified', 'scripts/test-python\\.mjs'),
       ],
       [
         'an edited scripts/check-test-lock.mjs',
@@ -290,12 +254,12 @@ describe('check-test-lock', () => {
       ['a plain step appended', `${SCRIPTS.verify} && npm run check:x`],
       [
         'a plain step inserted',
-        'npm run typecheck && npm run check:x && npm run test:run && npm run test:py && npm run build',
+        'npm run typecheck && npm run check:x && npm run lint && npm run test:run && npm run build',
       ],
-      ['a step removed', 'npm run typecheck && npm run test:run && npm run test:py'],
+      ['a step removed', 'npm run typecheck && npm run lint && npm run test:run'],
       [
         'the test steps reordered',
-        'npm run typecheck && npm run test:py && npm run test:run && npm run build',
+        'npm run typecheck && npm run test:run && npm run lint && npm run build',
       ],
       ['|| true appended', `${SCRIPTS.verify} || true`],
       ['whitespace changed', SCRIPTS.verify.replace(' && ', '  &&  ')],
@@ -311,7 +275,7 @@ describe('check-test-lock', () => {
   // npm runs `pre<name>` and `post<name>` around `npm run <name>`, so one
   // added beside a test script or verify runs inside the gate.
   describe('npm lifecycle scripts around the test scripts and verify', () => {
-    it.each(['pretest:run', 'posttest:run', 'pretest:py', 'preverify', 'postverify'])(
+    it.each(['pretest:run', 'posttest:run', 'pretest', 'preverify', 'postverify'])(
       'reports an added %s',
       (name) => {
         const root = snapshotted();
@@ -337,10 +301,6 @@ describe('check-test-lock', () => {
       ],
       ['an added app file', (root) => write(root, 'src/lib/b.ts', 'export {};\n')],
       ['an edited README', (root) => append(root, 'README.md', 'More.\n')],
-      [
-        'an added Python module beside the tests',
-        (root) => write(root, `${CODE}/helpers.py`, 'def g():\n    return 2\n'),
-      ],
       [
         'an edit to vite.config.ts outside the test block',
         (root) =>

@@ -18,7 +18,7 @@ Why mention it here? Because Base64 looks scrambled, and people mistake it for p
 
 A **hash function** turns any input into a fixed-size output called a hash or digest. SHA-256 always gives 256 bits (64 hex characters), whether the input is one letter or a movie. Two properties matter. The same input always gives the same output. And you can't run it backward to recover the input, short of guessing inputs and comparing.
 
-That fits two jobs. One is **integrity**: hash a file before and after a download, and a changed byte gives a completely different hash. The other is **lookup**, which is how a [hash map](/dsa/hash-map) finds a key's bucket. There the hash only needs to spread keys evenly, not resist attackers.
+That fits two jobs. One is **integrity**: hash a file before and after a download, and a changed byte gives a completely different hash. The other is **lookup**, which is how a hash map (a key-value table, like a Python `dict`) picks the slot where each key is stored. There the hash only needs to spread keys evenly, not resist attackers.
 
 Now the password. You never need to read it back, only to check that a login attempt matches. So store a hash and compare hashes. If your database leaks, the attacker gets hashes, not passwords.
 

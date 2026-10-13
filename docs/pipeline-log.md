@@ -2,7 +2,9 @@
 
 One row per `/feature`, `add-topic`, `add-case-study` or `add-dsa-entry` run,
 appended by the run itself (`/feature` Stage 6, `add-topic` Stage 4,
-`add-case-study` Stage 4, `add-dsa-entry` Stage 4).
+`add-case-study` Stage 4, `add-dsa-entry` Stage 4). `add-dsa-entry` is
+retired (historical rows only): the DSA tab and that skill were removed by
+`docs/specs/remove-dsa-tab.md`, and the check still accepts its old rows.
 Each retrospective only sees its own run; this table is what lets a pattern
 across runs show up (`docs-audit` Stage 2b periodically reads it as a set), and what
 makes a retro checkable: a run with failed gates
@@ -52,8 +54,9 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
   names their kinds instead, as `kinds: a, b` from: `jargon`, `tone`,
   `figurative`, `wrong-claim`, `estimate`, `no-alternative`, `compression`,
   `code-bug`, `test-gap`, `narration`, `duplication`, `inconsistency`,
-  `structure`. `KINDS` in `scripts/check-pipeline-log.mjs` is the source of
-  this list.
+  `structure`. `code-bug`, `test-gap` and `narration` are retired
+  (historical `add-dsa-entry` rows only). `KINDS` in
+  `scripts/check-pipeline-log.mjs` is the source of this list.
 - **Escaped defect** — empty until a later fix traces a bug to this run.
 
 | Date | Run | Gate failures | Findings (H/M/L, pre) | Fix rounds | Agents | Retro | Escaped defect |
@@ -294,3 +297,4 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
 | 2026-10-13 | add-dsa-entry src/dsa/entries/heap-patterns.md | 0 | 0/2/0 | 1 | 2 | kinds: test-gap |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/prim-kruskal.md | 0 | 0/0/2 | 0 | 2 | kinds: narration, no-alternative |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/shortest-paths.md | 0 | 0/0/1 | 0 | 2 | kinds: inconsistency |  |
+| 2026-10-13 | /feature docs/specs/remove-dsa-tab.md | 1 (spec ambiguity: a test read "no redirect" as /dsa keeping its URL) | 0/0/3, pre:1 | 2 | 54 | Nothing to change: the one re-run came from this spec's wording and the implementer reported it as designed; both fix rounds caught Lows the previous round introduced. Evals were 43 of 54 agents, all required by the triggers. | |

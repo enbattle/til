@@ -27,7 +27,7 @@ Stored as 8-byte numbers in an array, your prices fit eight to a line, so one mi
 
 A list node holds a price plus the address of the next node, 16 bytes in a language like C, double the array's 8 per price. The nodes were allocated one at a time and, in a long-running program, can sit anywhere in memory. Reading one tells you nothing about where the next is, so most of each cache line is wasted. And the CPU can't prefetch: it learns the next address only by finishing the read of the current node. Each step can be a full trip to RAM.
 
-So both are O(n), but big-O ignores the constant cost per step, and here the constants can differ many times over. That's why an [array](/dsa/arrays-and-strings) is the default and a [linked list](/dsa/linked-list) earns its place only when you need cheap insertion in the middle. Measure before you decide.
+So both are O(n), but big-O ignores the constant cost per step, and here the constants can differ many times over. That's why an array is the default and a linked list earns its place only when you need cheap insertion in the middle. Measure before you decide.
 
 ## Virtual memory
 

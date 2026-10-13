@@ -389,3 +389,44 @@ describe('MarkdownRenderer tables never scroll the page sideways (retro)', () =>
     expect(nestingErrors(error)).toEqual([]);
   });
 });
+
+// docs/specs/remove-dsa-tab.md, criterion 5: there is no code-tabs mode, so a
+// python fence followed by a typescript fence is two ordinary code blocks,
+// each with its own copy button, and nothing is a tab.
+describe('MarkdownRenderer has no code-tabs mode (criterion 5)', () => {
+  const PAIR = [
+    '```python',
+    'total = sum(values)',
+    '```',
+    '',
+    '```typescript',
+    'const total = values.reduce((a, b) => a + b, 0);',
+    '```',
+  ].join('\n');
+
+  function expectTwoPlainBlocks(container: HTMLElement) {
+    expect(container.querySelectorAll('pre')).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /copy/i })).toHaveLength(2);
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument();
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
+    expect(container.textContent).toContain('total = sum(values)');
+    expect(container.textContent).toContain('values.reduce');
+  }
+
+  it('renders a python and a typescript fence as two plain code blocks', () => {
+    const { container } = renderMarkdown(PAIR);
+    expectTwoPlainBlocks(container);
+  });
+
+  it('takes no codeTabs prop, and renders the same pair as two plain blocks', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <ThemeProvider>
+          {/* @ts-expect-error MarkdownRenderer has no codeTabs prop. */}
+          <MarkdownRenderer content={PAIR} codeTabs />
+        </ThemeProvider>
+      </MemoryRouter>,
+    );
+    expectTwoPlainBlocks(container);
+  });
+});

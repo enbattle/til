@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { RAW_CASE_STUDIES, RAW_DSA_ENTRIES, RAW_TOPICS } from '@/test/content';
+import { RAW_CASE_STUDIES, RAW_TOPICS } from '@/test/content';
 import { TOPICS } from './content';
-import { DSA_ENTRIES } from './dsa';
 import { parseFrontmatter } from './frontmatter';
 import { proseWordCount } from './markdown.mjs';
 import { CASE_STUDIES } from './system-design';
@@ -20,11 +19,6 @@ const CASE_STUDY_WORDS = import.meta.glob<number>(
     eager: true,
   },
 );
-const DSA_WORDS = import.meta.glob<number>('/src/dsa/entries/*.md', {
-  query: '?words',
-  import: 'default',
-  eager: true,
-});
 const TOPIC_WORDS = import.meta.glob<number>('/src/content/**/*.md', {
   query: '?words',
   import: 'default',
@@ -34,7 +28,6 @@ const TOPIC_WORDS = import.meta.glob<number>('/src/content/**/*.md', {
 describe('the ?words view (five-minute criterion 3)', () => {
   it.each([
     ['a real case study', CASE_STUDY_WORDS, RAW_CASE_STUDIES, 'url-shortener.md'],
-    ['a real DSA entry', DSA_WORDS, RAW_DSA_ENTRIES, 'binary-search.md'],
   ])(
     'gives %s the counter’s number for its body without frontmatter',
     (_, views, raws, file) => {
@@ -46,15 +39,15 @@ describe('the ?words view (five-minute criterion 3)', () => {
     },
   );
 
-  it.each([
-    ['case study', CASE_STUDY_WORDS, RAW_CASE_STUDIES],
-    ['DSA entry', DSA_WORDS, RAW_DSA_ENTRIES],
-  ])('covers every %s file, each with its body’s count', (_, views, raws) => {
-    expect(Object.keys(views).sort()).toEqual(Object.keys(raws).sort());
-    for (const [path, raw] of Object.entries(raws)) {
-      expect(views[path], path).toBe(proseWordCount(parseFrontmatter(raw).content));
-    }
-  });
+  it.each([['case study', CASE_STUDY_WORDS, RAW_CASE_STUDIES]])(
+    'covers every %s file, each with its body’s count',
+    (_, views, raws) => {
+      expect(Object.keys(views).sort()).toEqual(Object.keys(raws).sort());
+      for (const [path, raw] of Object.entries(raws)) {
+        expect(views[path], path).toBe(proseWordCount(parseFrontmatter(raw).content));
+      }
+    },
+  );
 
   it('does not count the frontmatter', () => {
     const [path, raw] = Object.entries(RAW_CASE_STUDIES)[0];
@@ -65,7 +58,7 @@ describe('the ?words view (five-minute criterion 3)', () => {
 // docs/specs/content-dedupe.md, criterion 2: `words` is set by createCollection
 // from the `?words` view instead of by a wrapper in each loader, and every item
 // still carries its own file's count. (This replaces the per-loader words tests
-// in content-loading.test.ts, system-design.test.ts and dsa.test.ts.)
+// in content-loading.test.ts and system-design.test.ts.)
 describe('the loaded items carry their file’s ?words count (content-dedupe criterion 2)', () => {
   it.each([
     [
@@ -79,11 +72,6 @@ describe('the loaded items carry their file’s ?words count (content-dedupe cri
         (c) => [`/src/system-design/case-studies/${c.slug}.md`, c.words] as const,
       ),
       CASE_STUDY_WORDS,
-    ],
-    [
-      'DSA entry',
-      DSA_ENTRIES.map((e) => [`/src/dsa/entries/${e.slug}.md`, e.words] as const),
-      DSA_WORDS,
     ],
   ])('every %s, one per file, with a positive integer count', (_, items, views) => {
     expect(items.map(([path]) => path).sort()).toEqual(Object.keys(views).sort());

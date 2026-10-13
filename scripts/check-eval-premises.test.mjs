@@ -330,8 +330,10 @@ describe('check-eval-premises', () => {
     it('has the premises the spec seeds', () => {
       const routing = readFileSync(resolve('evals/skill-routing/scenarios.md'), 'utf8');
       const feature = readFileSync(resolve('evals/feature-review/scenarios.md'), 'utf8');
-      // SR-18 relies on there being no LRU cache entry yet.
-      expect(routing).toContain('<!-- premise: src/dsa/entries/lru-cache.md missing -->');
+      // SR-15 relies on there being no collaborative-editor case study yet.
+      expect(routing).toContain(
+        '<!-- premise: src/system-design/case-studies/collaborative-editor.md missing -->',
+      );
       // SR-06 relies on a sentence in caching.md.
       expect(routing).toMatch(
         /<!-- premise: src\/content\/systems-and-infrastructure\/caching\.md contains "[^"]+" -->/,
