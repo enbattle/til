@@ -12,7 +12,7 @@ import {
 // The binary-search-tree entry's TypeScript code. API: `new Node(key)` with
 // `left` and `right`; `insert(root, key)` and `remove(root, key)` return the
 // (possibly new) root; `contains(root, key)`; `find(root, key)` returns
-// [parent, node]; `inOrder(root)` yields keys ascending; `isValid(root)`
+// [parent, node]; `inOrder(root)` returns the keys ascending; `isValid(root)`
 // checks the ordering rule against every ancestor.
 
 /** A small seeded generator (mulberry32), so a failing case can be replayed. */
@@ -37,7 +37,7 @@ function build(keys: number[]): Node | null {
   return root;
 }
 
-const keysOf = (root: Node | null) => [...inOrder(root)];
+const keysOf = (root: Node | null) => inOrder(root);
 
 function height(root: Node | null): number {
   let level = root === null ? [] : [root];

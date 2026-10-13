@@ -1,59 +1,85 @@
 // #region tree-node
 /** One node: a value and a left and a right child, or null. */
-export class TreeNode<T> {
+export class TreeNode {
+  value: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+
   constructor(
-    public value: T,
-    public left: TreeNode<T> | null = null,
-    public right: TreeNode<T> | null = null,
-  ) {}
+    value: number,
+    left: TreeNode | null = null,
+    right: TreeNode | null = null,
+  ) {
+    this.value = value;
+    this.left = left;
+    this.right = right;
+  }
 }
 // #endregion
 
 // #region build-tree
 /** Build a tree from its level order, where null marks a missing child. */
-export function buildTree<T>(values: readonly (T | null)[]): TreeNode<T> | null {
-  let i = 0;
-  const take = (): T | null => (i < values.length ? values[i++] : null);
-  const child = (value: T | null, born: TreeNode<T>[]): TreeNode<T> | null => {
-    // === null, not falsy: 0 and "" are real values that must get a node.
-    if (value === null) return null;
-    const node = new TreeNode(value);
-    born.push(node);
-    return node;
-  };
-  const first = take();
-  const root: TreeNode<T> | null = first === null ? null : new TreeNode<T>(first);
-  let level: TreeNode<T>[] = root === null ? [] : [root];
-  while (level.length > 0) {
-    const born: TreeNode<T>[] = [];
-    // Values come in pairs, and only for nodes that exist, so a gap
-    // costs two entries fewer one level down, not two nulls.
-    for (const node of level) {
-      node.left = child(take(), born);
-      node.right = child(take(), born);
-    }
-    level = born;
+export function buildTree(values: (number | null)[]): TreeNode | null {
+  if (values.length === 0) {
+    return null;
   }
+  if (values[0] === null) {
+    if (values.length > 1) {
+      throw new RangeError('a value has no parent');
+    }
+    return null;
+  }
+
+  const root = new TreeNode(values[0]);
+  let level: TreeNode[] = [root]; // the nodes of one level, waiting for their children
+  let i = 1;
+  // Values come in pairs, and only for nodes that exist, so a gap
+  // costs two entries fewer one level down, not two nulls.
+  while (level.length > 0 && i < values.length) {
+    const nextLevel: TreeNode[] = [];
+    for (const node of level) {
+      // !== null, not truthiness: 0 is a real value that must get a node.
+      const leftValue = values[i];
+      if (i < values.length && leftValue !== null) {
+        node.left = new TreeNode(leftValue);
+        nextLevel.push(node.left);
+      }
+      i += 1;
+
+      const rightValue = values[i];
+      if (i < values.length && rightValue !== null) {
+        node.right = new TreeNode(rightValue);
+        nextLevel.push(node.right);
+      }
+      i += 1;
+    }
+    level = nextLevel;
+  }
+
   // Values left over once no node is waiting for children have no parent.
-  if (i < values.length) throw new RangeError('a value has no parent');
+  if (i < values.length) {
+    throw new RangeError('a value has no parent');
+  }
   return root;
 }
 // #endregion
 
 // #region height
-export function height<T>(node: TreeNode<T> | null): number {
+export function height(node: TreeNode | null): number {
   // -1 for the empty tree, so a leaf is 0 and the formula needs no special
   // case. Recursion is as deep as the tree is tall, so a chain overflows.
-  if (node === null) return -1;
+  if (node === null) {
+    return -1;
+  }
   return 1 + Math.max(height(node.left), height(node.right));
 }
 // #endregion
 
 // #region inorder
 /** Left subtree, node, right subtree, with an explicit stack, not recursion. */
-export function inorder<T>(root: TreeNode<T> | null): T[] {
-  const out: T[] = [];
-  const stack: TreeNode<T>[] = [];
+export function inorder(root: TreeNode | null): number[] {
+  const out: number[] = [];
+  const stack: TreeNode[] = [];
   let node = root;
   while (stack.length > 0 || node !== null) {
     // Ancestors wait on the stack until their left side is done. The array
@@ -62,7 +88,8 @@ export function inorder<T>(root: TreeNode<T> | null): T[] {
       stack.push(node);
       node = node.left;
     }
-    const top = stack.pop()!;
+    const top = stack[stack.length - 1];
+    stack.pop();
     out.push(top.value);
     node = top.right; // else every right subtree is dropped
   }
@@ -72,14 +99,29 @@ export function inorder<T>(root: TreeNode<T> | null): T[] {
 
 // #region level-order
 /** Values grouped by depth, left to right. */
-export function levelOrder<T>(root: TreeNode<T> | null): T[][] {
-  const levels: T[][] = [];
-  let level: TreeNode<T>[] = root === null ? [] : [root];
+export function levelOrder(root: TreeNode | null): number[][] {
+  const levels: number[][] = [];
+  if (root === null) {
+    return levels;
+  }
+
+  let level: TreeNode[] = [root];
   while (level.length > 0) {
-    levels.push(level.map((node) => node.value));
-    // The next level comes from the whole current one, so depths never mix;
-    // a flat queue would have to count where each level ends.
-    level = level.flatMap((n) => [n.left, n.right]).filter((c) => c !== null);
+    const values: number[] = [];
+    // Children go in a fresh array, so the next level never mixes with
+    // this one, and only one level is held at a time.
+    const nextLevel: TreeNode[] = [];
+    for (const node of level) {
+      values.push(node.value);
+      if (node.left !== null) {
+        nextLevel.push(node.left);
+      }
+      if (node.right !== null) {
+        nextLevel.push(node.right);
+      }
+    }
+    levels.push(values);
+    level = nextLevel;
   }
   return levels;
 }

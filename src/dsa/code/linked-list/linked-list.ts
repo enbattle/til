@@ -1,37 +1,45 @@
 // #region list-node
 /** One link: a value and the next node, or null at the end. */
-export class ListNode<T> {
-  value: T;
-  next: ListNode<T> | null = null;
+export class ListNode {
+  value: number;
+  next: ListNode | null = null;
 
-  constructor(value: T) {
+  constructor(value: number) {
     this.value = value;
   }
 }
 
 /** A singly linked list that keeps pointers to both ends. */
-export class LinkedList<T> implements Iterable<T> {
-  head: ListNode<T> | null = null;
-  tail: ListNode<T> | null = null;
+export class LinkedList {
+  head: ListNode | null = null;
+  tail: ListNode | null = null;
+  // #endregion
 
-  *[Symbol.iterator](): Iterator<T> {
-    for (let node = this.head; node !== null; node = node.next) {
-      yield node.value;
+  // #region to-list
+  toArray(): number[] {
+    const values: number[] = [];
+    let node = this.head;
+    while (node !== null) {
+      values.push(node.value);
+      node = node.next;
     }
+    return values;
   }
   // #endregion
 
   // #region push-front
-  pushFront(value: T): void {
+  pushFront(value: number): void {
     const node = new ListNode(value);
     // Aim the new node at the old head before moving head. The other order
     // makes it point at itself and drops the rest of the list.
     node.next = this.head;
     this.head = node;
-    this.tail ??= node;
+    if (this.tail === null) {
+      this.tail = node;
+    }
   }
 
-  pushBack(value: T): void {
+  pushBack(value: number): void {
     const node = new ListNode(value);
     if (this.tail === null) {
       this.head = node;
@@ -44,21 +52,23 @@ export class LinkedList<T> implements Iterable<T> {
   // #endregion
 
   // #region pop-front
-  popFront(): T | undefined {
+  popFront(): number | undefined {
     const node = this.head;
     if (node === null) return undefined;
     this.head = node.next;
-    // Left alone, tail keeps the popped node and the next pushBack links
-    // after it, so head never gets set.
-    if (this.head === null) this.tail = null;
+    if (this.head === null) {
+      // Left alone, tail keeps the popped node and the next pushBack links
+      // after it, so head never gets set.
+      this.tail = null;
+    }
     return node.value;
   }
   // #endregion
 
   // #region remove
-  remove(value: T): boolean {
+  remove(value: number): boolean {
     // A node can't say who points at it, so carry that node along.
-    let prev: ListNode<T> | null = null;
+    let prev: ListNode | null = null;
     let node = this.head;
     while (node !== null && node.value !== value) {
       prev = node;
@@ -70,21 +80,23 @@ export class LinkedList<T> implements Iterable<T> {
     } else {
       prev.next = node.next;
     }
-    // Left alone, pushBack would link after a node that's gone.
-    if (node === this.tail) this.tail = prev;
+    if (node === this.tail) {
+      // Left alone, pushBack would link after a node that's gone.
+      this.tail = prev;
+    }
     return true;
   }
   // #endregion
 
   // #region reverse
   reverse(): void {
-    let prev: ListNode<T> | null = null;
+    let prev: ListNode | null = null;
     let node = this.head;
     // The old head ends up last, and nothing will point at it afterward.
     this.tail = node;
     while (node !== null) {
       // Saved first: the next line overwrites the only way forward.
-      const following: ListNode<T> | null = node.next;
+      const following: ListNode | null = node.next;
       node.next = prev;
       prev = node;
       node = following;

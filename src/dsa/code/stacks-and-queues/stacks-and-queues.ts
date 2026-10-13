@@ -1,16 +1,17 @@
-// #region deque
-/** Push at the back, pop at either end, in a ring that doubles when full. */
-export class Deque<T> {
-  private slots: (T | undefined)[];
+// #region deque-state
+/** Add at the back, remove from either end, in a ring that doubles when full. */
+export class Deque {
+  private slots: number[];
   private head = 0; // the slot holding the front item
   private count = 0;
 
   constructor(capacity = 4) {
     // At least 1: doubling zero slots would never make room.
-    this.slots = new Array<T | undefined>(Math.max(capacity, 1)).fill(undefined);
+    if (capacity < 1) capacity = 1;
+    this.slots = new Array<number>(capacity).fill(0);
   }
 
-  get size(): number {
+  size(): number {
     return this.count;
   }
 
@@ -20,39 +21,38 @@ export class Deque<T> {
   }
   // #endregion
 
-  // #region push-back
-  pushBack(item: T): void {
-    // Full: the slot after the back is the front's, so grow before writing.
-    if (this.count === this.slots.length) this.grow();
+  // #region add-at-back
+  pushBack(item: number): void {
+    if (this.count === this.slots.length) {
+      this.grow(); // full: the slot after the back is the front's
+    }
     this.slots[this.slot(this.count)] = item;
-    this.count++;
+    this.count += 1;
   }
   // #endregion
 
-  // #region peek-front
-  peekFront(): T {
-    // Check the size, not the slot: undefined could be a stored item.
+  // #region read-and-remove
+  peekFront(): number {
+    // Check the count, not the slot: any value, even 0, could be an item.
     if (this.count === 0) throw new RangeError('empty deque');
-    return this.slots[this.head] as T;
+    return this.slots[this.head];
   }
 
-  peekBack(): T {
+  peekBack(): number {
     if (this.count === 0) throw new RangeError('empty deque');
-    return this.slots[this.slot(this.count - 1)] as T;
+    return this.slots[this.slot(this.count - 1)];
   }
 
-  popFront(): T {
+  popFront(): number {
     const item = this.peekFront();
-    this.slots[this.head] = undefined; // don't keep a removed item alive
     this.head = this.slot(1);
-    this.count--;
+    this.count -= 1;
     return item;
   }
 
-  popBack(): T {
+  popBack(): number {
     const item = this.peekBack();
-    this.slots[this.slot(this.count - 1)] = undefined;
-    this.count--;
+    this.count -= 1;
     return item;
   }
   // #endregion
@@ -61,7 +61,7 @@ export class Deque<T> {
   private grow(): void {
     // Unroll the ring so the front lands in slot 0 of the bigger array.
     const old = this.slots;
-    this.slots = new Array<T | undefined>(old.length * 2).fill(undefined);
+    this.slots = new Array<number>(old.length * 2).fill(0);
     for (let i = 0; i < this.count; i++) {
       this.slots[i] = old[(this.head + i) % old.length];
     }
@@ -70,19 +70,25 @@ export class Deque<T> {
 }
 // #endregion
 
-// #region part-5
-const PAIRS: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
+// #region is-balanced
+const OPENERS = '([{';
+const PARTNER = new Map([
+  [')', '('],
+  [']', '['],
+  ['}', '{'],
+]); // each closer maps to its opener
 
 /** True if every bracket is closed by its partner, innermost first. */
 export function isBalanced(text: string): boolean {
   const stack: string[] = []; // a plain array: push and pop work at the end
   for (const ch of text) {
-    if (Object.values(PAIRS).includes(ch)) {
+    if (OPENERS.includes(ch)) {
       stack.push(ch);
-    } else if (ch in PAIRS) {
-      // pop() on an empty array returns undefined, which never equals a
-      // bracket, so a closer with nothing open is a mismatch.
-      if (stack.pop() !== PAIRS[ch]) return false;
+    } else if (PARTNER.has(ch)) {
+      // A closer with nothing open is a mismatch; check before popping.
+      if (stack.length === 0) return false;
+      const top = stack.pop();
+      if (top !== PARTNER.get(ch)) return false;
     }
   }
   return stack.length === 0; // an opener still on the stack was never closed
@@ -93,12 +99,12 @@ export function isBalanced(text: string): boolean {
 /** The maximum of every run of k consecutive items, in O(n). */
 export function windowMax(nums: number[], k: number): number[] {
   if (k < 1) throw new RangeError('k must be at least 1');
-  const window = new Deque<number>(); // indices; their values fall front to back
+  const window = new Deque(); // indices; their values fall front to back
   const out: number[] = [];
   for (let i = 0; i < nums.length; i++) {
     // An earlier item no bigger than nums[i] leaves the window before it
     // does, so it can never be the maximum again.
-    while (window.size > 0 && nums[window.peekBack()] <= nums[i]) {
+    while (window.size() > 0 && nums[window.peekBack()] <= nums[i]) {
       window.popBack();
     }
     window.pushBack(i);

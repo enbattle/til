@@ -84,7 +84,7 @@ An append's worst case is a resize that copies all n items. Doubling is what kee
 
 The array's storage is a list that the code never resizes in place: it only ever replaces it with a bigger one, as a fixed block of memory would be.
 
-```python region=part-1
+```python region=dynamic-array
 
 ```
 
@@ -92,7 +92,7 @@ The array's storage is a list that the code never resizes in place: it only ever
 
 ```
 
-Capacity and length are separate numbers: capacity is how many slots exist, length how many hold items. Starting at capacity 1 matches the table above. TypeScript can't overload `a[i]` on a class, so it uses `get`.
+Capacity and size are separate numbers: capacity is how many slots exist, size how many hold items. Starting at capacity 1 matches the table above.
 
 ```python region=insert
 
@@ -112,21 +112,21 @@ Appending is an insert whose shifting loop runs zero times, so one method covers
 
 ```
 
-`new StringBuilder().append("ab").append("😀").build()` gives `"ab😀"` and copies each character once. Last, the code-point trap, using the running example:
+Appending `"ab"` and `"cd"` then calling `build()` gives `"abcd"`, copying each character once. Last, a string can't be edited in place, so reversing one means copying it into a list and swapping the ends inward:
 
-```python region=reverse-code-points
-
-```
-
-```typescript region=reverse-code-points
+```python region=reverse-string
 
 ```
 
-Both return `"😀ba"`. `s.split('').reverse().join('')` in JavaScript would put the low half of the pair first and produce an invalid string.
+```typescript region=reverse-string
+
+```
+
+Both turn `"abcd"` into `"dcba"` in two swaps and one join.
 
 ## Pitfalls
 
-- **Checking an index against the capacity.** In `__getitem__`, `0 <= i < len(self._data)` accepts slots past the length, so `a[3]` on `[a b c]` returns `None` instead of raising. Compare with `self._size`.
-- **Shifting left to right.** Running `insert`'s loop as `for j in range(i + 1, self._size + 1)` copies `data[i]` into `data[i + 1]`, then that copy into `data[i + 2]`, so every item after `i` becomes a copy of the same one. Keep the loop `range(self._size, i, -1)`, from the right end.
-- **Building a string with `+=`.** `self._parts.append(piece)` is the fix. In a loop, `s += piece` can be quadratic, and it is on any engine that doesn't hide the copying.
-- **Treating a length as a count of characters.** `"ab😀"` is 3 in Python and 4 in JavaScript. Loops that stop at `s.length` or split on `''` cut emoji in half; spread the string, as `reverseCodePoints` does.
+- **Checking an index against the capacity.** In `get`, `0 <= i < len(self.data)` accepts slots past the size, so `get(3)` on `[a b c]` returns an empty spare slot instead of raising. Compare with `self.count`.
+- **Shifting left to right.** Running `insert`'s loop as `for j in range(i + 1, self.count + 1)` copies `data[i]` into `data[i + 1]`, then that copy into `data[i + 2]`, so every item after `i` becomes a copy of the same one. Keep the loop `range(self.count, i, -1)`, from the right end.
+- **Building a string with `+=`.** `self.parts.append(piece)` is the fix. In a loop, `s += piece` can be quadratic, and it is on any engine that doesn't hide the copying.
+- **Treating a length as a count of characters.** `"ab😀"` is 3 in Python and 4 in JavaScript. Loops that stop at `s.length` or split on `''` cut emoji in half; use `Array.from(s)` to walk code points.

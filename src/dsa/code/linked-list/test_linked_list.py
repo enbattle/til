@@ -3,7 +3,7 @@
 API: ``LinkedList()`` with ``head`` and ``tail`` (nodes or None), ``push_front``,
 ``push_back``, ``pop_front`` (raises IndexError when empty), ``remove`` (the
 first occurrence; returns whether it was there), ``reverse`` (in place) and
-iteration over the values from head to tail.
+``to_list()`` (the values from head to tail).
 """
 
 import random
@@ -27,7 +27,7 @@ def nodes(lst):
     return out
 
 def assert_consistent(lst, model, message=""):
-    assert list(lst) == model, message
+    assert lst.to_list() == model, message
     chain = nodes(lst)
     if model:
         assert lst.tail is chain[-1], message
@@ -37,7 +37,7 @@ def assert_consistent(lst, model, message=""):
 
 def test_empty_list():
     lst = LinkedList()
-    assert list(lst) == []
+    assert lst.to_list() == []
     assert lst.head is None and lst.tail is None
     with pytest.raises(IndexError):
         lst.pop_front()
@@ -113,10 +113,10 @@ def test_reverse_flips_arrows_without_copying_nodes():
 
 def test_remove_compares_values_not_identity():
     # 1000 is outside CPython's small-int cache, so int("1000") is a distinct
-    # object with an equal value: `is not` in remove would miss it.
+    # object with an equal value: comparing with `is` in remove would miss it.
     lst = build([1000, 2000])
     assert lst.remove(int("1000")) is True
-    assert list(lst) == [2000]
+    assert lst.to_list() == [2000]
 
 def test_random_operations_match_a_python_list():
     seed = 11

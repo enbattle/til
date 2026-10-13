@@ -1,38 +1,52 @@
 # region node
-from collections.abc import Iterator
-from math import inf
-
 class Node:
     def __init__(self, key: int) -> None:
         self.key = key
         self.left: Node | None = None
         self.right: Node | None = None
+# endregion
 
+
+# region find
 def find(root: Node | None, key: int) -> tuple[Node | None, Node | None]:
-    """The node holding key (None if absent) and its parent."""
+    """The parent and the node holding key (None for each if absent)."""
     # A node can't unlink itself, so the walk carries its parent along.
-    parent, node = None, root
+    parent = None
+    node = root
     while node is not None and node.key != key:
-        parent, node = node, (node.left if key < node.key else node.right)
+        parent = node
+        if key < node.key:
+            node = node.left
+        else:
+            node = node.right
     return parent, node
+
 
 def contains(root: Node | None, key: int) -> bool:
     return find(root, key)[1] is not None
+# endregion
 
+
+# region insert
 def insert(root: Node | None, key: int) -> Node:
     """Returns the root, which is new only when the tree was empty."""
-    parent, node = find(root, key)
-    if node is not None:
-        # A second copy would break the strict smaller/larger rule.
-        return root
-    new = Node(key)
-    if parent is None:
-        return new
-    if key < parent.key:
-        parent.left = new
-    else:
-        parent.right = new
-    return root
+    if root is None:
+        return Node(key)
+    node = root
+    while True:
+        if key == node.key:
+            # A second copy would break the strict smaller/larger rule.
+            return root
+        if key < node.key:
+            if node.left is None:
+                node.left = Node(key)
+                return root
+            node = node.left
+        else:
+            if node.right is None:
+                node.right = Node(key)
+                return root
+            node = node.right
 # endregion
 
 
@@ -46,14 +60,19 @@ def remove(root: Node | None, key: int) -> Node | None:
         # The smallest key on the right is the only one that can take this
         # node's place with every left key still smaller. Start the parent
         # at node: the successor may be node.right itself.
-        parent, successor = node, node.right
+        parent = node
+        successor = node.right
         while successor.left is not None:
-            parent, successor = successor, successor.left
+            parent = successor
+            successor = successor.left
         # Copy the key up rather than relink, so node's links stay valid.
         node.key = successor.key
         node = successor
     # Zero or one child now: a successor has no left child by construction.
-    child = node.left if node.left is not None else node.right
+    if node.left is not None:
+        child = node.left
+    else:
+        child = node.right
     if parent is None:
         return child
     if parent.left is node:
@@ -65,29 +84,40 @@ def remove(root: Node | None, key: int) -> Node | None:
 
 
 # region in-order
-def in_order(root: Node | None) -> Iterator[int]:
+def in_order(root: Node | None) -> list[int]:
+    keys = []
     # An explicit stack: recursion overflows on a long chain of nodes.
-    stack: list[Node] = []
+    stack = []
     node = root
-    while stack or node is not None:
+    while len(stack) > 0 or node is not None:
         while node is not None:
             stack.append(node)
             node = node.left
         node = stack.pop()
-        yield node.key
+        keys.append(node.key)
         node = node.right
+    return keys
+# endregion
+
+
+# region is-valid
+from math import inf
+
 
 def is_valid(root: Node | None) -> bool:
-    # Bounds come from every ancestor, not just the parent: 50 with left
-    # child 30 and 30's right child 60 passes every parent-child check.
+    if root is None:
+        return True
+    # An explicit stack: recursion overflows on a long chain of nodes.
     stack = [(root, -inf, inf)]
-    while stack:
-        node, lo, hi = stack.pop()
-        if node is None:
-            continue
-        if not lo < node.key < hi:
+    while len(stack) > 0:
+        node, low, high = stack.pop()
+        # Bounds come from every ancestor, not just the parent: 50 with left
+        # child 30 and 30's right child 60 passes every parent-child check.
+        if node.key <= low or node.key >= high:
             return False
-        stack.append((node.left, lo, node.key))
-        stack.append((node.right, node.key, hi))
+        if node.left is not None:
+            stack.append((node.left, low, node.key))
+        if node.right is not None:
+            stack.append((node.right, node.key, high))
     return True
 # endregion

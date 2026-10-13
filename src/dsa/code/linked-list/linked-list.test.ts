@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { LinkedList, type ListNode } from './linked-list';
 
-// The linked-list entry's TypeScript code. API: `new LinkedList<T>()` with
+// The linked-list entry's TypeScript code. API: `new LinkedList()` with
 // `head` and `tail` (nodes or null), `pushFront`, `pushBack`, `popFront`
 // (undefined when empty), `remove` (the first occurrence; returns whether it
-// was there), `reverse` (in place) and iteration from head to tail.
+// was there), `reverse` (in place) and `toArray()` (the values, head to tail).
 
 /** A small seeded generator (mulberry32), so a failing sequence can be replayed. */
 function seeded(seed: number): () => number {
@@ -18,20 +18,20 @@ function seeded(seed: number): () => number {
   };
 }
 
-function build<T>(values: T[]): LinkedList<T> {
-  const list = new LinkedList<T>();
+function build(values: number[]): LinkedList {
+  const list = new LinkedList();
   for (const value of values) list.pushBack(value);
   return list;
 }
 
-function nodes<T>(list: LinkedList<T>): ListNode<T>[] {
-  const out: ListNode<T>[] = [];
+function nodes(list: LinkedList): ListNode[] {
+  const out: ListNode[] = [];
   for (let node = list.head; node !== null; node = node.next) out.push(node);
   return out;
 }
 
-function expectConsistent<T>(list: LinkedList<T>, model: T[], message = ''): void {
-  expect([...list], message).toEqual(model);
+function expectConsistent(list: LinkedList, model: number[], message = ''): void {
+  expect(list.toArray(), message).toEqual(model);
   const chain = nodes(list);
   if (model.length > 0) {
     expect(list.tail, message).toBe(chain[chain.length - 1]);
@@ -44,7 +44,7 @@ function expectConsistent<T>(list: LinkedList<T>, model: T[], message = ''): voi
 
 describe('LinkedList', () => {
   it('handles the empty list', () => {
-    const list = new LinkedList<number>();
+    const list = new LinkedList();
     expect(list.popFront()).toBeUndefined();
     expect(list.remove(1)).toBe(false);
     list.reverse();
@@ -52,9 +52,9 @@ describe('LinkedList', () => {
   });
 
   it('makes one node both ends', () => {
-    const a = new LinkedList<number>();
+    const a = new LinkedList();
     a.pushBack(5);
-    const b = new LinkedList<number>();
+    const b = new LinkedList();
     b.pushFront(5);
     for (const list of [a, b]) {
       expect(list.head).toBe(list.tail);
@@ -100,7 +100,8 @@ describe('LinkedList', () => {
   });
 
   it('reverses empty, single, pair and longer lists', () => {
-    for (const values of [[], [1], [1, 2], [1, 2, 3, 4]]) {
+    const cases: number[][] = [[], [1], [1, 2], [1, 2, 3, 4]];
+    for (const values of cases) {
       const list = build(values);
       list.reverse();
       expectConsistent(list, [...values].reverse(), values.join());
@@ -137,7 +138,7 @@ describe('LinkedList', () => {
     const pick = (n: number) => Math.floor(random() * n);
     const ops = ['front', 'back', 'pop', 'remove', 'reverse'];
     for (let trial = 0; trial < 50; trial++) {
-      const list = new LinkedList<number>();
+      const list = new LinkedList();
       const model: number[] = [];
       for (let step = 0; step < 30; step++) {
         const op = ops[pick(ops.length)];

@@ -62,13 +62,33 @@ A **self-balancing** tree (AVL, red-black) rotates nodes after an insert or remo
 
 ## Implementation
 
-Search, insert and remove all start by walking to a key, so `find` does that once and returns the node and its parent.
+A node holds a key and two links.
 
 ```python region=node
 
 ```
 
 ```typescript region=node
+
+```
+
+Search and remove both start by walking to a key, so `find` does that once and returns the parent and the node as a pair (a tuple in Python, a two-item array in TypeScript).
+
+```python region=find
+
+```
+
+```typescript region=find
+
+```
+
+Inserting writes the same walk out again, because it stops somewhere else: at the first empty link, where the new node goes.
+
+```python region=insert
+
+```
+
+```typescript region=insert
 
 ```
 
@@ -84,7 +104,7 @@ Remove has three cases by how many children the node has. A leaf like 20 is just
 
 ```
 
-Two more functions finish the entry. `in_order` is [binary tree's `inorder`](/dsa/binary-tree) loop written as a generator, so a caller can stop early: that answers "k-th smallest" and "all keys in a range". `is_valid` checks the invariant, a common interview question in its own right.
+Two more functions finish the entry. `in_order` is [binary tree's `inorder`](/dsa/binary-tree) loop, collecting the keys into a list: sorted output, no sort step. For "k-th smallest", stop the loop once `keys` holds k keys; for a range, skip a left subtree when the node's key is below the range's start, and a right subtree when it is above the end.
 
 ```python region=in-order
 
@@ -94,11 +114,19 @@ Two more functions finish the entry. `in_order` is [binary tree's `inorder`](/ds
 
 ```
 
-Each node carries the open interval its key must fall in: the root allows anything, going left lowers `hi` to the parent's key, going right raises `lo`. That is how 60 under 30 under 50 gets caught, since its interval is (30, 50).
+`is_valid` checks the invariant, a common interview question in its own right. Each stack entry carries the open interval its node's key must fall in: the root allows anything, going left lowers `high` to the parent's key, going right raises `low`. That is how 60 under 30 under 50 gets caught, since its interval is (30, 50).
+
+```python region=is-valid
+
+```
+
+```typescript region=is-valid
+
+```
 
 ## Pitfalls
 
-- **Checking only parent and child in `is_valid`.** Without the `lo` and `hi` bounds, the tree 50, left child 30, whose right child is 60 passes: each pair is ordered, yet 60 sits left of 50, and a search for 60 goes right at the root and misses it.
-- **Starting `parent` at the original parent in `remove`.** The line `parent, successor = node, node.right` makes the successor's parent the right starting point. Leave `parent` as it was and removing 70, whose successor 80 is its own right child, makes 50 drop its entire right subtree: 60, 65, 70 and 80 vanish.
-- **Recursing where the tree can be deep.** A recursive `in_order` is fine on the 8-key chain but overflows the call stack on a long sorted chain, as [binary tree](/dsa/binary-tree) explains. The explicit `stack` has no such limit.
-- **Letting `insert` add a duplicate.** `find` stops at the existing node, so without the early `return root` the new node is attached to that node's parent and replaces it. Inserting 30 again would cut off 20 and 40 along with it.
+- **Checking only parent and child in `is_valid`.** Without the `low` and `high` bounds, the tree 50, left child 30, whose right child is 60 passes: each pair is ordered, yet 60 sits left of 50, and a search for 60 goes right at the root and misses it.
+- **Starting `parent` at the original parent in `remove`.** The lines `parent = node` and `successor = node.right` make the successor's parent the right starting point. Leave `parent` as it was and removing 70, whose successor 80 is its own right child, makes 50 drop its entire right subtree: 60, 65, 70 and 80 vanish.
+- **Recursing where the tree can be deep.** A recursive `in_order` is fine on the 8-key chain but overflows the call stack on a long sorted chain, as [binary tree](/dsa/binary-tree) explains. The explicit `stack` in `in_order` has no such limit, and neither does `is_valid`'s.
+- **Letting `insert` add a duplicate.** The walk reaches the existing node, and without the early `return root` it would carry on past it and attach a second copy, breaking the strict rule.

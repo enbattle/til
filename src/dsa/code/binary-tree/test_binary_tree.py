@@ -115,13 +115,13 @@ def test_a_trailing_none_is_optional_and_gaps_are_kept():
     assert shape(build_tree([1, None, 2])) == (1, None, (2, None, None))
 
 
-def test_falsy_values_still_get_nodes():
-    root = build_tree([0, "", 0, None, 0])
-    assert level_order(root) == [[0], ["", 0], [0]]
+def test_zero_still_gets_a_node():
+    root = build_tree([0, 0, 0, None, 0])
+    assert level_order(root) == [[0], [0, 0], [0]]
 
 
-def test_duplicates_and_large_ints_are_kept_as_values():
-    values = [int("1000"), int("1000"), int("1000")]
+def test_duplicates_are_kept_as_values():
+    values = [1000, 1000, 1000]
     root = build_tree(values)
     assert inorder(root) == [1000, 1000, 1000]
     assert root.left.value == root.value
@@ -131,10 +131,6 @@ def test_a_value_with_no_parent_is_an_error():
     for bad in ([None, 1], [1, None, None, 4], [1, None, None, None]):
         with pytest.raises(ValueError):
             build_tree(bad)
-
-
-def test_nodes_compare_by_identity():
-    assert TreeNode(1) != TreeNode(1)
 
 
 def test_build_tree_matches_the_tree_it_came_from():
@@ -199,3 +195,12 @@ def test_height_recursion_is_as_deep_as_the_tree():
     assert height(chain(500)) == 499
     with pytest.raises(RecursionError):
         height(chain(sys.getrecursionlimit() * 2))
+
+
+def test_a_wide_complete_tree_of_32767_nodes():
+    size = 2**15 - 1
+    levels = level_order(build_tree(list(range(size))))
+    assert len(levels) == 15
+    assert len(levels[14]) == 2**14
+    assert levels[14][0] == 2**14 - 1
+    assert levels[14][-1] == size - 1

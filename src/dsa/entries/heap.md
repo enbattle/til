@@ -59,9 +59,19 @@ Heapify being O(n), not O(n log n), is the surprising row. A node sifting down f
 
 ## Implementation
 
-The Python heap compares with `<` alone, as `heapq` does. JavaScript's `<` only means something for numbers and strings, so the TypeScript heap takes a `less` function.
+Python's `<` works on numbers and on tuples. TypeScript has no tuples, so its heap stores arrays of numbers and `lessThan` compares them the same way; a plain number is `[5]`. The same class orders `[priority, item]` pairs, as later entries do.
 
-```python region=supports-less-than
+```python region=less-than
+
+```
+
+```typescript region=less-than
+
+```
+
+The constructor is heapify.
+
+```python region=min-heap
 
 ```
 
@@ -69,13 +79,13 @@ The Python heap compares with `<` alone, as `heapq` does. JavaScript's `<` only 
 
 ```
 
-The constructor is heapify, and `peek` is one array read. Push and pop touch only the end of the array and leave the rest to a sift.
+Push and pop touch only the array's end; a sift does the rest.
 
-```python region=push
+```python region=push-and-pop
 
 ```
 
-```typescript region=push
+```typescript region=push-and-pop
 
 ```
 
@@ -89,7 +99,7 @@ Moving the last item to the root leaves one item out of place, the case sift dow
 
 ```
 
-Sift up compares once per level, since an item has one parent. Going down is harder: a node has two children to choose between.
+Sift up compares once per level, since an item has one parent. Going down must choose between two children.
 
 ```python region=sift-down
 
@@ -99,11 +109,11 @@ Sift up compares once per level, since an item has one parent. Going down is har
 
 ```
 
-In Python, use `heapq` rather than this class: it works on a plain list with `heapify`, `heappush`, `heappop` and `nsmallest`. It is a min-heap; Python 3.14 added max-heap versions, and older versions push negated numbers. JavaScript has no built-in heap, so you write one like this.
+In Python, use `heapq` rather than this class: it works on a plain list with `heapify`, `heappush`, `heappop` and `nsmallest`. It is a min-heap; Python 3.14 added max-heap versions. JavaScript has no built-in heap, so you write one like this.
 
 ## Pitfalls
 
-- **Sifting nodes in the wrong order.** The constructor's `reversed(range(...))` goes from the last parent to the root. Going forward on `[7, 6, 5, 4, 3, 2, 1]` sifts index 0 before its subtrees are heaps and ends as `[5, 3, 1, 4, 6, 2, 7]`: `peek` returns 5 when the smallest is 1.
-- **Swapping with the first child that beats the item.** In `_sift_down`, taking the left child on a pop from `[1, 3, 2, 4, 6, 7, 5]` swaps 5 with 3, not 2, and ends as `[3, 4, 2, 5, 6, 7]`: the new root, 3, sits above its child 2.
+- **Sifting nodes in the wrong order.** The constructor's loop goes from the last parent back to the root. Going forward on `[7, 6, 5, 4, 3, 2, 1]` sifts index 0 before its subtrees are heaps and ends as `[5, 3, 1, 4, 6, 2, 7]`: `peek` returns 5 when the smallest is 1.
+- **Swapping with the first child that beats the item.** In the sift-down loop, taking the left child on a pop from `[1, 3, 2, 4, 6, 7, 5]` swaps 5 with 3, not 2, and ends as `[3, 4, 2, 5, 6, 7]`: the new root, 3, sits above its child 2.
 - **Removing index 0 directly.** `pop` takes the last item instead. Deleting the front shifts every item left, an O(n) move that breaks every parent-child pair, and the one-line `items[0] = items.pop()` fails on a one-item heap: Python raises `IndexError`, and in TypeScript the heap never empties.
-- **Halving with `/` in TypeScript.** `(i - 1) / 2` makes the parent of index 4 `1.5`, and `items[1.5]` is `undefined`. The comparison is `false`, so the sift stops without an error, and `peek` returns the wrong item. `>> 1` rounds down.
+- **Halving with `/` in TypeScript.** `(i - 1) / 2` makes the parent of index 4 `1.5`, and `items[1.5]` is `undefined`, and comparing against it throws a `TypeError`. `Math.floor` rounds down, as Python's `//` does.

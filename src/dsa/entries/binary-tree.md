@@ -70,7 +70,7 @@ Every operation touches each node a constant number of times, so all are O(n). A
 
 The node is a small class. There is no tree class: a tree is a reference to its root, and the empty tree is `None` (`null`), which keeps every function a plain function of a node.
 
-```python region=part-1
+```python region=tree-node
 
 ```
 
@@ -78,9 +78,9 @@ The node is a small class. There is no tree class: a tree is a reference to its 
 
 ```
 
-Building takes the list a level at a time. After the root, each node of the current level takes the next two values, left then right, and a gap gets no node, so it has no pair below. On the example, 1 takes 2 and 3; 2 takes 4 and a gap; 3 takes 5 and 6; 4 takes a gap and 7. That's all 9 values.
+Building takes the list in order, with the nodes of the current level waiting for children. Each of them gets the next two values, left then right, and a gap gets no node, so it has no pair below. On the example, 1 takes 2 and 3; 2 takes 4 and a gap; 3 takes 5 and 6; 4 takes a gap and 7. That's all 9 values.
 
-```python region=child
+```python region=build-tree
 
 ```
 
@@ -122,7 +122,7 @@ The example gives `[[1], [2, 3], [4, 5, 6], [7]]`, and the number of levels is t
 
 ## Pitfalls
 
-- **Testing a value for falsiness in `_child`.** Writing `if not value` skips a node holding 0 or an empty string, and the tree silently loses it. Test `is None`.
+- **Testing a value for falsiness in `build_tree`.** Writing `if values[i]` skips a node holding 0, and the tree silently loses it. Test `is not None`.
 - **Recursing on a tree you didn't build.** `height` uses one frame per level, so a chain of about a thousand nodes overflows the stack in Python (default limit 1,000 frames) and a longer one in Node. Use the loop in `inorder`.
-- **Forgetting `node = node.right` in `inorder`.** In Python, without it, `node` is still the node just popped, so the inner loop pushes it and its left spine again, and the function never returns. In TypeScript `node` is already `null`, so the walk drops every right subtree (4, 2, 1 on the example).
+- **Forgetting `node = top.right` in `inorder`.** Without it `node` is still `None` (`null`) after the inner loop, so the walk drops every right subtree (4, 2, 1 on the example).
 - **Starting `height` at 0 for the empty tree.** With `return 0` at the base case, a leaf has height 1 and every answer is one too high, which matches the node-counting convention rather than the edge-counting one this entry uses.
