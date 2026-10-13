@@ -1,42 +1,55 @@
+// #region less-than
+function lessThan(a: number[], b: number[]): boolean {
+  // Like Python tuples: compare the first numbers, and look at the next ones
+  // only on a tie. A heap of plain numbers is a heap of one-number arrays, [5].
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i];
+    const y = b[i];
+    if (x < y) return true;
+    if (x > y) return false;
+  }
+  // Equal so far: the shorter array comes first, as with tuples.
+  return a.length < b.length;
+}
+// #endregion
+
 // #region min-heap
 /** A binary min-heap in an array: the node at i has children 2i+1 and 2i+2. */
-export class MinHeap<T> {
-  private items: T[];
+export class MinHeap {
+  private items: number[][];
 
-  /** `less(a, b)` is true when `a` should come out first; `>` makes a max-heap. */
-  constructor(
-    private readonly less: (a: T, b: T) => boolean,
-    items: Iterable<T> = [],
-  ) {
-    // The spread copies, so the caller's array isn't rearranged behind their back.
-    this.items = [...items];
-    // Indexes n >> 1 and up are leaves, already one-node heaps. Going backward
+  constructor(items: number[][] = []) {
+    // Copy, so the caller's array isn't rearranged behind their back.
+    this.items = items.slice();
+    // Indexes n / 2 and up are leaves, already one-node heaps. Going backward
     // means both subtrees of a node are heaps by the time it sifts down.
-    for (let i = (this.items.length >> 1) - 1; i >= 0; i--) this.siftDown(i);
+    for (let i = Math.floor(this.items.length / 2) - 1; i >= 0; i--) {
+      this.siftDown(i);
+    }
   }
 
-  get size(): number {
+  size(): number {
     return this.items.length;
   }
 
-  peek(): T {
+  peek(): number[] {
     // Throw rather than return undefined, which a caller may have pushed.
     if (this.items.length === 0) throw new RangeError('peek at an empty heap');
     return this.items[0];
   }
   // #endregion
 
-  // #region push
-  push(item: T): void {
+  // #region push-and-pop
+  push(item: number[]): void {
     this.items.push(item);
     this.siftUp(this.items.length - 1);
   }
 
-  pop(): T {
-    if (this.items.length === 0) throw new RangeError('pop from an empty heap');
-    // Take the last item, not index 0: deleting the front shifts every item.
-    const last = this.items.pop() as T;
-    // With one item, items[0] = last would quietly refill the emptied array.
+  pop(): number[] {
+    const last = this.items.pop();
+    if (last === undefined) throw new RangeError('pop from an empty heap');
+    // Took the last item, not index 0: deleting the front shifts every item.
+    // With one item, the array is empty now and there is no root to refill.
     if (this.items.length === 0) return last;
     const top = this.items[0];
     this.items[0] = last;
@@ -49,10 +62,10 @@ export class MinHeap<T> {
   private siftUp(i: number): void {
     const items = this.items;
     while (i > 0) {
-      const parent = (i - 1) >> 1; // / doesn't round: items[1.5] is undefined
-      // Strict: an equal parent stays. Stopping is safe, since the parent was
+      const parent = Math.floor((i - 1) / 2); // plain / would give a fraction
+      // An equal parent stays. Stopping is safe, since the parent was
       // already no larger than everything above it.
-      if (!this.less(items[i], items[parent])) return;
+      if (!lessThan(items[i], items[parent])) return;
       [items[i], items[parent]] = [items[parent], items[i]];
       i = parent;
     }
@@ -63,11 +76,14 @@ export class MinHeap<T> {
   private siftDown(i: number): void {
     const items = this.items;
     const n = items.length;
-    for (let child = 2 * i + 1; child < n; child = 2 * i + 1) {
+    while (2 * i + 1 < n) {
+      let child = 2 * i + 1;
       // The smaller child, not the first one that beats the item: it moves
       // up and becomes the other child's parent.
-      if (child + 1 < n && this.less(items[child + 1], items[child])) child++;
-      if (!this.less(items[child], items[i])) return;
+      if (child + 1 < n && lessThan(items[child + 1], items[child])) {
+        child = child + 1;
+      }
+      if (!lessThan(items[child], items[i])) return;
       [items[i], items[child]] = [items[child], items[i]];
       i = child;
     }

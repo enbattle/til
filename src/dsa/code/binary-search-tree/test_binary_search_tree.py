@@ -2,7 +2,7 @@
 
 API: nodes are `Node(key)` with `left` and `right`; `insert(root, key)` and
 `remove(root, key)` return the (possibly new) root, `contains(root, key)` is
-a bool, `find(root, key)` returns (parent, node), `in_order(root)` yields keys
+a bool, `find(root, key)` returns (parent, node), `in_order(root)` returns the keys
 ascending and `is_valid(root)` checks the ordering rule against every ancestor.
 """
 
@@ -24,7 +24,7 @@ def build(keys):
 
 
 def keys_of(root):
-    return list(in_order(root))
+    return in_order(root)
 
 
 def height(root):
@@ -103,8 +103,8 @@ def test_duplicate_insert_changes_nothing():
     assert shape(root) == before
 
 
-def test_keys_compare_by_value_not_identity():
-    # int("1000") builds a fresh object each time; small ints are cached.
+def test_keys_above_256_are_compared_by_value():
+    # int("1000") makes a new object each time, so `is` would say "different".
     root = build([int("1000"), int("500"), int("1500")])
     assert contains(root, int("1000"))
     assert contains(root, int("1500"))

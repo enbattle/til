@@ -75,12 +75,12 @@ growth costs almost nothing, as you'll see below.
 
 With n entries and a decent hash function:
 
-| Operation                | Average        | Worst case |
-| ------------------------ | -------------- | ---------- |
-| `get(key)`, `key in map` | O(1)           | O(n)       |
-| `put(key, value)`        | O(1) amortized | O(n)       |
-| `delete(key)`            | O(1)           | O(n)       |
-| Space                    | O(n)           | O(n)       |
+| Operation                   | Average        | Worst case |
+| --------------------------- | -------------- | ---------- |
+| `get(key)`, `contains(key)` | O(1)           | O(n)       |
+| `put(key, value)`           | O(1) amortized | O(n)       |
+| `delete(key)`               | O(1)           | O(n)       |
+| Space                       | O(n)           | O(n)       |
 
 The worst case is every key in one bucket: the map is a single list and each
 operation scans all n pairs. Someone who controls the keys, such as the field
@@ -97,24 +97,37 @@ amount instead would resize every few inserts and make the total quadratic.
 
 ## Implementation
 
-Both versions take the hash function as a constructor argument, which the tests
-use to force collisions. Python hashes any hashable key with the built-in
-`hash`. The TypeScript map takes string keys and brings Java's string hash,
-`h = 31 * h + code` per character kept to 32 bits, since JavaScript doesn't
-expose the one its engine uses.
+Both versions share one small hash function so they behave the same way. Real
+code would use the built-in one (Python's `hash`, or just a `dict`), which is
+tuned and, for Python strings, salted on each run; a plain one makes the idea
+visible. The map stores string keys and int values, and `get` takes the value
+to return on a miss.
 
-```python region=hash-map
+```python region=hash-function
 
 ```
 
-```typescript region=string-hash
+```typescript region=hash-function
+
+```
+
+The hash walks the characters, multiplying the running total by 31 before adding
+each character's code, so "ab" and "ba" differ. The `%` at each step keeps the
+number small: a JavaScript number past `2 ** 53` loses its low digits, and long keys
+would land in the same few buckets.
+
+```python region=buckets
+
+```
+
+```typescript region=buckets
 
 ```
 
 `_bucket` is the whole idea in one line: hash, remainder, index. The count lives
-in its own field so `len(m)` doesn't walk every bucket.
+in its own field so `size()` doesn't walk every bucket.
 
-```python region=get
+```python region=find
 
 ```
 
@@ -145,7 +158,7 @@ comes before the resize itself.
 
 ```
 
-Returning whether the key was there saves callers a separate `in` check. The
+Returning whether the key was there saves callers a separate `contains` check. The
 last method is the resize.
 
 ```python region=resize
@@ -165,12 +178,14 @@ bucket 2. Four pairs, four different buckets, so every chain has length one.
 - **Building buckets with `[[]] * capacity`.** It repeats one list, so every
   key shares a single bucket. Answers stay right at first, only slow, until a
   resize files each pair once per reference and `delete` removes just one
-  copy. The same trap is `new Array(n).fill([])` in TypeScript.
-- **Reusing the bucket after `_resize`.** The `bucket` found at the top of
-  `put` belongs to the array the resize just discarded. Appending to it
-  loses the new key silently, which is why `put` looks it up again.
-- **Trusting `%` in JavaScript.** `-3 % 8` is `-3`, not an index, and a hash
-  can be negative. The `+ n` and second `%` in `bucketFor` fix it; Python's `%`
-  needs no fix.
-- **Using `get` to test membership.** A stored `None` or `undefined` is
-  indistinguishable from a miss, so `in` and `has` look for the key itself.
+  copy. The same trap is `new Array(n).fill([])` in TypeScript, which is why
+  the constructor pushes a fresh array per bucket.
+- **Reusing the bucket after `_resize`.** A `bucket` found at the top of
+  `put` would belong to the list the resize just discarded. Appending to it
+  loses the new key silently, which is why `put` looks the bucket up after the
+  resize.
+- **A hash that ignores order.** Adding up the character codes gives "ab" and
+  "ba" the same hash, so anagrams pile into one bucket. The `* 31` in
+  `hash_code` makes position matter.
+- **Using `get` to test membership.** A stored value equal to the default is
+  indistinguishable from a miss, so `contains` looks for the key itself.

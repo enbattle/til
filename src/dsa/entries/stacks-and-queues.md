@@ -18,7 +18,7 @@ A **stack** is last in, first out (LIFO): `push` adds on top, `pop` removes the 
 
 A **queue** is first in, first out (FIFO): `enqueue` adds at the back, `dequeue` removes at the front. The obvious array version, `items.pop(0)` in Python or `shift()` in JavaScript, fails quietly: the array keeps its items packed from index 0, so removing the front shifts every other item left, which is O(n) per dequeue. A linked list fixes that but allocates a node per item and scatters them across memory. A **ring buffer** (circular buffer) fixes it inside the array: leave the items where they are, remember which slot holds the front (the **head**), and let positions wrap around the end. With `capacity` slots, the item `offset` places behind the front is in slot `(head + offset) % capacity`.
 
-Here is a ring of 4 slots (`_` is empty), which is the example the code below runs:
+Here is a ring of 4 slots (`_` is a slot no item uses, though it may still hold an old value), which is the example the code below runs:
 
 ```text
 append 1, 2, 3     [1, 2, 3, _]   head 0, size 3
@@ -56,37 +56,37 @@ The O(n) case is an append that finds every slot full and copies all n items int
 
 ## Implementation
 
-The stack is a plain list in Python and array in JavaScript, with nothing to wrap, so the code starts with the queue. Python names it `Deque` and uses the method names of `collections.deque` (`append`, `popleft`). TypeScript has no deque, so it spells the ends out (`pushBack`, `popFront`). Pushing at the front is the mirror of `popleft`, moving the head one slot back, and the code leaves it out.
+The stack is a plain list in Python and array in JavaScript, with nothing to wrap, so the code starts with the queue. Python names it `Deque` and uses the method names of `collections.deque` (`append`, `popleft`). TypeScript has no deque, so it spells the ends out (`pushBack`, `popFront`). Both hold integers. Pushing at the front is the mirror of `popleft`, moving the head one slot back, and the code leaves it out.
 
-```python region=part-1
+```python region=deque-state
 
 ```
 
-```typescript region=deque
+```typescript region=deque-state
 
 ```
 
 The state is three things: the slots, the head and the size. The back isn't stored. It's `size - 1` places behind the front, which avoids a second index that has to agree with the first and can't tell a full ring from an empty one.
 
-```python region=append
+```python region=add-at-back
 
 ```
 
-```typescript region=push-back
+```typescript region=add-at-back
 
 ```
 
 Growing happens before the write, so the new item always lands in a free slot. Reading the ends comes next.
 
-```python region=peekleft
+```python region=read-and-remove
 
 ```
 
-```typescript region=peek-front
+```typescript region=read-and-remove
 
 ```
 
-Each pop clears its slot and moves the head or the size, so nothing shifts. An empty deque raises rather than returning `None` or `undefined`, because those could be stored items. All that's left is the grow.
+Each pop moves the head or the size, so nothing shifts; the old value stays in its slot until a later append overwrites it. An empty deque raises instead of returning a value, because any value, even 0, could be a stored item. All that's left is the grow.
 
 ```python region=grow
 
@@ -98,11 +98,11 @@ Each pop clears its slot and moves the head or the size, so nothing shifts. An e
 
 Only a full ring grows, and then the items are the slots from the head to the end followed by slots 0 up to the head. In the example, `[5, 6, 3, 4]` with head 2 becomes `[3, 4]` plus `[5, 6]` plus four empty slots. Now the stack: brackets are the textbook use, since each closer must match the most recent opener still open.
 
-```python region=part-5
+```python region=is-balanced
 
 ```
 
-```typescript region=part-5
+```typescript region=is-balanced
 
 ```
 
@@ -121,6 +121,6 @@ The deque holds indices whose values fall from front to back, so the front is al
 ## Pitfalls
 
 - **Writing before growing.** In `append`, the check comes first because a full ring's next free slot is the head's slot. Writing there overwrites the front item, and the size passes the capacity.
-- **Copying the slots in storage order when you grow.** `old[self._head :] + old[: self._head]` puts the front at slot 0. Copy the slots as they are and the example becomes `[5, 6, 3, 4, ...]` with head 0, so the deque now starts with 5.
-- **Forgetting the final emptiness check.** `return not stack` is what rejects `"(("`: every closer matched, but an opener was never closed. Likewise `not stack or` has to come before `stack.pop()`, since `[].pop()` raises in Python and returns `undefined` in JavaScript, which only the TypeScript line relies on.
+- **Copying the slots in storage order when you grow.** The loop in `_grow` reads `old[(head + i) % len(old)]`, which puts the front at slot 0. Copy the slots as they are and the example becomes `[5, 6, 3, 4, ...]` with head 0, so the deque now starts with 5.
+- **Forgetting the final emptiness check.** `return len(stack) == 0` is what rejects `"(("`: every closer matched, but an opener was never closed. Likewise the empty-stack check has to come before `stack.pop()`, since `[].pop()` raises in Python and returns `undefined` in JavaScript.
 - **Storing values instead of indices in the window.** The line `window.peekleft() <= i - k` needs positions to know when the front left the window. A value alone can't say, and duplicates make it ambiguous.

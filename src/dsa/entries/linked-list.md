@@ -95,14 +95,24 @@ extra space is O(1).
 ## Implementation
 
 Python's `pop_front` raises `IndexError` on an empty list, as `list.pop` does;
-TypeScript's returns `undefined`, as `Array.prototype.shift` does. Both lists
-iterate from head to tail, so a `for` loop works on either.
+TypeScript's returns `undefined`, as `Array.prototype.shift` does. The values
+are numbers.
 
-```python region=part-1
+```python region=list-node
 
 ```
 
 ```typescript region=list-node
+
+```
+
+`to_list` (`toArray` in TypeScript) follows the arrows and collects the values.
+
+```python region=to-list
+
+```
+
+```typescript region=to-list
 
 ```
 
@@ -173,14 +183,14 @@ head: 3, 2, 1. An empty list skips the loop, and a single node's arrow stays `No
 
 - **Moving `head` before aiming the new node.** In `push_front`, writing
   `self.head = node` first makes `node.next = self.head` point the node at
-  itself, so iterating 1, 2, 3 after `push_front(0)` never ends and the old
+  itself, so reading the list 1, 2, 3 after `push_front(0)` never ends and the old
   list is unreachable. Set `node.next` first.
 - **Forgetting the tail in `pop_front`.** Popping the only node without
   `self.tail = None` leaves `tail` on the popped node. The next `push_back`
-  links after it and never sets `head`, so the list iterates as empty.
+  links after it and never sets `head`, so the list reads as empty.
 - **Leaving the tail behind in `remove`.** Without `if node is self.tail`,
   `remove(3)` on 1, 2, 3 leaves `tail` on node 3, now outside the list.
-  `push_back(4)` links after it, and the list iterates as `[1, 2]`.
+  `push_back(4)` links after it, and the list reads as `[1, 2]`.
 - **Overwriting `next` before saving it in `reverse`.** Without
   `following = node.next`, the line `node.next = prev` destroys the only way
   forward, and the loop can't continue past node 1. The tail line matters too:

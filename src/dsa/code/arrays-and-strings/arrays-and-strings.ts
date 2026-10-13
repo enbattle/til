@@ -1,38 +1,43 @@
 // #region dynamic-array
 /** A growable array on fixed-size storage that doubles when it fills. */
-export class DynamicArray<T> {
-  private data: (T | undefined)[] = [undefined];
-  private count = 0;
+export class DynamicArray {
+  data: string[] = [''];
+  count = 0;
 
-  get length(): number {
+  size(): number {
     return this.count;
   }
 
-  get capacity(): number {
+  capacity(): number {
     return this.data.length;
   }
 
-  get(i: number): T {
-    // Check against the length, not the capacity: the spare slots past it
-    // would hand back undefined as if it were an item.
-    if (!Number.isInteger(i) || i < 0 || i >= this.count) {
+  get(i: number): string {
+    // Check against the size, not the capacity: spare slots aren't items.
+    if (i < 0 || i >= this.count) {
       throw new RangeError(`index ${i} out of range`);
     }
-    return this.data[i] as T;
+    return this.data[i];
   }
   // #endregion
 
   // #region insert
-  insert(i: number, item: T): void {
-    // i === length is allowed: that is an append.
-    if (!Number.isInteger(i) || i < 0 || i > this.count) {
+  insert(i: number, item: string): void {
+    // i === size is allowed: that is an append.
+    if (i < 0 || i > this.count) {
       throw new RangeError(`index ${i} out of range`);
     }
     if (this.count === this.data.length) {
       // Double rather than add a fixed number of slots: a fixed step
       // copies everything every few appends, so n appends cost O(n^2).
-      const spare = new Array<T | undefined>(this.data.length).fill(undefined);
-      this.data = this.data.concat(spare);
+      const bigger: string[] = [];
+      for (let j = 0; j < 2 * this.data.length; j++) {
+        bigger.push('');
+      }
+      for (let j = 0; j < this.count; j++) {
+        bigger[j] = this.data[j];
+      }
+      this.data = bigger;
     }
     // Shift from the right end: from the left, each item would overwrite
     // its neighbor before that neighbor had moved.
@@ -43,7 +48,7 @@ export class DynamicArray<T> {
     this.count += 1;
   }
 
-  append(item: T): void {
+  append(item: string): void {
     this.insert(this.count, item);
   }
 }
@@ -52,12 +57,11 @@ export class DynamicArray<T> {
 // #region string-builder
 /** Collects pieces and joins them once, in time linear in the total. */
 export class StringBuilder {
-  private parts: string[] = [];
+  parts: string[] = [];
 
-  append(piece: string): this {
+  append(piece: string): void {
     // Storing the piece copies no text; += on a string would copy it all.
     this.parts.push(piece);
-    return this;
   }
 
   build(): string {
@@ -69,10 +73,19 @@ export class StringBuilder {
 }
 // #endregion
 
-// #region reverse-code-points
-export function reverseCodePoints(s: string): string {
-  // split('') cuts an emoji's surrogate pair in two; spread walks code points.
-  // It still splits an "e" from the combining accent written after it.
-  return [...s].reverse().join('');
+// #region reverse-string
+export function reverseString(s: string): string {
+  // A string can't be edited, so swap inside an array and join once at the end.
+  // Array.from splits by code point. s.split('') would split an emoji
+  // into its two halves, and the swaps would put them in the wrong order.
+  const chars = Array.from(s);
+  let left = 0;
+  let right = chars.length - 1;
+  while (left < right) {
+    [chars[left], chars[right]] = [chars[right], chars[left]];
+    left += 1;
+    right -= 1;
+  }
+  return chars.join('');
 }
 // #endregion

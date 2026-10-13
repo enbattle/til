@@ -2,7 +2,7 @@
 
 API: ``Deque(capacity=4)`` with ``append``, ``pop``,
 ``popleft``, ``peek``, ``peekleft`` (the last four raise IndexError when
-empty), and ``len()``; ``is_balanced(text)``; and
+empty), and ``size()``; ``is_balanced(text)``; and
 ``window_max(nums, k)``.
 """
 
@@ -11,11 +11,12 @@ import random
 
 import pytest
 
+import stacks_and_queues
 from stacks_and_queues import Deque, is_balanced, window_max
 
-def drain(d: Deque) -> list:
+def drain(d):
     out = []
-    while len(d):
+    while d.size() > 0:
         out.append(d.popleft())
     return out
 
@@ -25,13 +26,13 @@ def test_empty_deque_raises_on_every_read():
         with pytest.raises(IndexError):
             method()
 
-def test_one_item_is_both_ends_and_can_be_none():
+def test_one_item_is_both_ends_even_when_it_is_zero():
     d = Deque()
-    d.append(None)
-    assert len(d) == 1
-    assert d.peek() is None and d.peekleft() is None
-    assert d.popleft() is None
-    assert len(d) == 0
+    d.append(0)
+    assert d.size() == 1
+    assert d.peek() == 0 and d.peekleft() == 0
+    assert d.popleft() == 0
+    assert d.size() == 0
     with pytest.raises(IndexError):
         d.pop()
 
@@ -56,9 +57,9 @@ def test_wraps_around_without_growing():
 
 def test_capacity_floor_is_one():
     d = Deque(0)
-    d.append("a")
-    d.append("b")
-    assert drain(d) == ["a", "b"]
+    d.append(7)
+    d.append(8)
+    assert drain(d) == [7, 8]
 
 def test_growing_a_wrapped_ring_keeps_the_order():
     d = Deque(4)
@@ -86,17 +87,19 @@ def test_mechanism_capacity_doubles_and_stays_proportional():
     sizes = {len(d._slots)}
     for i in range(1000):
         d.append(i)
-        assert len(d._slots) < 2 * len(d) + 1
+        assert len(d._slots) < 2 * d.size() + 1
         sizes.add(len(d._slots))
     assert sizes == {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 
-def test_popped_slots_do_not_keep_items_alive():
-    d = Deque(4)
-    d.append(object())
-    d.append(object())
+def test_mechanism_popleft_shifts_nothing():
+    # A front pop that shifted items would rewrite the slots; a ring only
+    # moves the head.
+    d = Deque(1024)
+    for i in range(1, 1001):
+        d.append(i)
+    before = list(d._slots)
     d.popleft()
-    d.pop()
-    assert all(slot is None for slot in d._slots)
+    assert d._slots == before
 
 def test_matches_collections_deque_on_random_operations():
     for seed in range(50):
@@ -109,10 +112,11 @@ def test_matches_collections_deque_on_random_operations():
                 mine.append(step)
                 real.append(step)
             elif real:
-                assert (mine.pop() if op == "p" else mine.popleft()) == (
-                    real.pop() if op == "p" else real.popleft()
-                ), where
-            assert len(mine) == len(real), where
+                if op == "p":
+                    assert mine.pop() == real.pop(), where
+                else:
+                    assert mine.popleft() == real.popleft(), where
+            assert mine.size() == len(real), where
             if real:
                 assert (mine.peekleft(), mine.peek()) == (real[0], real[-1]), where
 
@@ -128,7 +132,7 @@ def test_not_balanced(text):
     assert not is_balanced(text)
 
 def test_balanced_matches_repeated_pair_removal():
-    def by_removal(text: str) -> bool:
+    def by_removal(text):
         while True:
             shorter = text.replace("()", "").replace("[]", "").replace("{}", "")
             if shorter == text:
@@ -179,8 +183,6 @@ def test_mechanism_window_max_touches_each_item_a_constant_number_of_times():
             Counting.ops += 1
             return super().popleft()
 
-    import stacks_and_queues
-
     original = stacks_and_queues.Deque
     stacks_and_queues.Deque = Counting
     try:
@@ -194,12 +196,3 @@ def test_mechanism_window_max_touches_each_item_a_constant_number_of_times():
     # And every index really goes through the deque: a brute-force max over
     # slices would make no appends at all.
     assert Counting.appends == 2 * n
-
-def test_mechanism_popleft_writes_one_slot():
-    # A front pop that shifted items would rewrite every slot; a ring writes one.
-    d = Deque(1024)
-    for i in range(1000):
-        d.append(i)
-    before = list(d._slots)
-    d.popleft()
-    assert sum(a is not b for a, b in zip(before, d._slots)) == 1

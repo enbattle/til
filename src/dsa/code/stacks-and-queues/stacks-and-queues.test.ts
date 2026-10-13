@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { Deque, isBalanced, windowMax } from './stacks-and-queues';
 
-// API: `new Deque<T>(capacity = 4)` with `pushBack`, `popBack`,
+// API: `new Deque(capacity = 4)` with `pushBack`, `popBack`,
 // `popFront`, `peekBack`, `peekFront` (the last four throw a RangeError when
-// empty), and `size`; `isBalanced(text)`; `windowMax(nums, k)`.
+// empty), and `size()`; `isBalanced(text)`; `windowMax(nums, k)`.
 
 /** A small seeded generator (mulberry32), so a failing case can be replayed. */
 function rng(seed: number): () => number {
@@ -20,17 +20,17 @@ function rng(seed: number): () => number {
 const int = (r: () => number, lo: number, hi: number) =>
   lo + Math.floor(r() * (hi - lo + 1));
 
-function drain<T>(d: Deque<T>): T[] {
-  const out: T[] = [];
-  while (d.size > 0) out.push(d.popFront());
+function drain(d: Deque): number[] {
+  const out: number[] = [];
+  while (d.size() > 0) out.push(d.popFront());
   return out;
 }
 
-const slotsOf = (d: Deque<unknown>) => (d as unknown as { slots: unknown[] }).slots;
+const slotsOf = (d: Deque) => (d as unknown as { slots: number[] }).slots;
 
 describe('Deque', () => {
   it('throws on every read when empty', () => {
-    const d = new Deque<number>();
+    const d = new Deque();
     for (const read of [
       () => d.popBack(),
       () => d.popFront(),
@@ -41,18 +41,19 @@ describe('Deque', () => {
     }
   });
 
-  it('treats one item as both ends, even when it is undefined', () => {
-    const d = new Deque<number | undefined>();
-    d.pushBack(undefined);
-    expect(d.size).toBe(1);
-    expect(d.peekBack()).toBeUndefined();
-    expect(d.popFront()).toBeUndefined();
-    expect(d.size).toBe(0);
+  it('treats one item as both ends, even when it is zero', () => {
+    const d = new Deque();
+    d.pushBack(0);
+    expect(d.size()).toBe(1);
+    expect(d.peekBack()).toBe(0);
+    expect(d.peekFront()).toBe(0);
+    expect(d.popFront()).toBe(0);
+    expect(d.size()).toBe(0);
     expect(() => d.popBack()).toThrow(RangeError);
   });
 
   it('works as a queue and as a stack', () => {
-    const d = new Deque<number>();
+    const d = new Deque();
     for (let i = 0; i < 3; i++) d.pushBack(i);
     expect([d.peekFront(), d.peekBack()]).toEqual([0, 2]);
     expect(d.popBack()).toBe(2);
@@ -60,7 +61,7 @@ describe('Deque', () => {
   });
 
   it('wraps around without growing', () => {
-    const d = new Deque<number>(4);
+    const d = new Deque(4);
     for (let i = 0; i < 4; i++) d.pushBack(i);
     d.popFront();
     d.popFront();
@@ -71,14 +72,14 @@ describe('Deque', () => {
   });
 
   it('floors the capacity at one', () => {
-    const d = new Deque<string>(0);
-    d.pushBack('a');
-    d.pushBack('b');
-    expect(drain(d)).toEqual(['a', 'b']);
+    const d = new Deque(0);
+    d.pushBack(7);
+    d.pushBack(8);
+    expect(drain(d)).toEqual([7, 8]);
   });
 
   it('keeps the order when it grows from a wrapped ring', () => {
-    const d = new Deque<number>(4);
+    const d = new Deque(4);
     for (let i = 0; i < 4; i++) d.pushBack(i);
     d.popFront();
     d.pushBack(4); // the ring is full and wrapped
@@ -88,7 +89,7 @@ describe('Deque', () => {
   });
 
   it('mechanism: a steady queue reuses its slots', () => {
-    const d = new Deque<number>(4);
+    const d = new Deque(4);
     const slots = slotsOf(d);
     d.pushBack(0);
     for (let i = 1; i < 1000; i++) {
@@ -100,29 +101,30 @@ describe('Deque', () => {
   });
 
   it('mechanism: capacity doubles and stays proportional to size', () => {
-    const d = new Deque<number>(1);
+    const d = new Deque(1);
     const sizes = new Set([slotsOf(d).length]);
     for (let i = 0; i < 1000; i++) {
       d.pushBack(i);
-      expect(slotsOf(d).length).toBeLessThan(2 * d.size + 1);
+      expect(slotsOf(d).length).toBeLessThan(2 * d.size() + 1);
       sizes.add(slotsOf(d).length);
     }
     expect([...sizes]).toEqual([1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]);
   });
 
-  it('clears popped slots', () => {
-    const d = new Deque<object>(4);
-    d.pushBack({});
-    d.pushBack({});
+  it('mechanism: a front pop shifts nothing', () => {
+    // A front pop that shifted items would rewrite the slots; a ring only
+    // moves the head.
+    const d = new Deque(1024);
+    for (let i = 1; i <= 1000; i++) d.pushBack(i);
+    const before = slotsOf(d).slice();
     d.popFront();
-    d.popBack();
-    expect(slotsOf(d).every((s) => s === undefined)).toBe(true);
+    expect(slotsOf(d)).toEqual(before);
   });
 
   it('matches a plain array on random operations', () => {
     for (let seed = 0; seed < 50; seed++) {
       const r = rng(seed);
-      const mine = new Deque<number>(2);
+      const mine = new Deque(2);
       const real: number[] = [];
       for (let step = 0; step < 200; step++) {
         const op = int(r, 0, 3);
@@ -135,7 +137,7 @@ describe('Deque', () => {
           const want = op === 2 ? real.pop() : real.shift();
           expect(got, where).toBe(want);
         }
-        expect(mine.size, where).toBe(real.length);
+        expect(mine.size(), where).toBe(real.length);
         if (real.length > 0) {
           expect([mine.peekFront(), mine.peekBack()], where).toEqual([
             real[0],
@@ -213,15 +215,5 @@ describe('windowMax', () => {
       }
       expect(windowMax(nums, k), `seed=11 trial=${trial} ${nums} k=${k}`).toEqual(want);
     }
-  });
-
-  it('mechanism: ring pops stay constant-time (no shifting)', () => {
-    // A front pop that shifted items would rewrite every slot; count writes.
-    const d = new Deque<number>(1024);
-    for (let i = 0; i < 1000; i++) d.pushBack(i);
-    const slots = slotsOf(d);
-    const before = slots.slice();
-    d.popFront();
-    expect(slots.filter((s, i) => s !== before[i]).length).toBe(1);
   });
 });
