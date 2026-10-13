@@ -1,3 +1,4 @@
+// #region list-node
 /** One link: a value and the next node, or null at the end. */
 export class ListNode<T> {
   value: T;
@@ -18,7 +19,9 @@ export class LinkedList<T> implements Iterable<T> {
       yield node.value;
     }
   }
+  // #endregion
 
+  // #region push-front
   pushFront(value: T): void {
     const node = new ListNode(value);
     // Aim the new node at the old head before moving head. The other order
@@ -38,7 +41,9 @@ export class LinkedList<T> implements Iterable<T> {
     }
     this.tail = node;
   }
+  // #endregion
 
+  // #region pop-front
   popFront(): T | undefined {
     const node = this.head;
     if (node === null) return undefined;
@@ -48,7 +53,9 @@ export class LinkedList<T> implements Iterable<T> {
     if (this.head === null) this.tail = null;
     return node.value;
   }
+  // #endregion
 
+  // #region remove
   remove(value: T): boolean {
     // A node can't say who points at it, so carry that node along.
     let prev: ListNode<T> | null = null;
@@ -67,7 +74,9 @@ export class LinkedList<T> implements Iterable<T> {
     if (node === this.tail) this.tail = prev;
     return true;
   }
+  // #endregion
 
+  // #region reverse
   reverse(): void {
     let prev: ListNode<T> | null = null;
     let node = this.head;
@@ -83,3 +92,4 @@ export class LinkedList<T> implements Iterable<T> {
     this.head = prev;
   }
 }
+// #endregion

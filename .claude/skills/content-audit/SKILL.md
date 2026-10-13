@@ -130,8 +130,10 @@ and this instruction, close to verbatim:
 > claims hold?** An entry under `src/dsa/entries/` shows code from
 > `src/dsa/code/<slug>/` (Python and TypeScript, each with its tests). Check
 > every claim the prose makes about that code (what it returns, its edge
-> cases, its complexity) against the code files and their tests, not only
-> the chunk quoted in the markdown, and recompute every worked example.
+> cases, its complexity) against the whole code files and their tests, not
+> only the regions the markdown shows, and recompute every worked example.
+> An empty `region=<name>` fence shows the text between that region's
+> markers in the code file (docs/dsa.md has the rule).
 > Flag a walkthrough or code comment that narrates what a line does without
 > saying why, and a tricky line (a boundary, a loop direction) with no
 > comment giving its reason.
@@ -153,9 +155,9 @@ mirroring how the first full sweep (2026-09-15) applied its fixes in
 batches rather than one at a time. For a finding you disagree with, or a
 correctness claim that needs a judgment call the audit agent couldn't
 make on its own, resolve it yourself or ask the user rather than
-applying it blindly. A fix to a DSA entry's code changes the code file, the
-chunk quoted in the entry and a test that would have caught it together, as
-`add-dsa-entry`'s fix step does.
+applying it blindly. A fix to a DSA entry's code changes the code file
+(the entry shows it through a region, so it has no copy to update) and a test
+that would have caught it together, as `add-dsa-entry`'s fix step does.
 
 ## Stage 4 — Final gate
 

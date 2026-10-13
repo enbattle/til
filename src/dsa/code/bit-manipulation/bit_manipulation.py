@@ -1,3 +1,4 @@
+# region count-set-bits
 def count_set_bits(n: int) -> int:
     """Number of 1 bits in the binary form of n, for n >= 0."""
     # A negative int has infinitely many leading 1s, so the loop below would
@@ -11,16 +12,20 @@ def count_set_bits(n: int) -> int:
         n &= n - 1
         count += 1
     return count
+# endregion
 
 
+# region is-power-of-two
 def is_power_of_two(n: int) -> bool:
     """True when n is 1, 2, 4, 8, ...; zero and negatives are not."""
     # n > 0 first: 0 & -1 is 0, so zero would pass the AND test. The
     # parentheses are optional in Python but required in JavaScript, where
     # === binds tighter than &; keep them in both.
     return n > 0 and (n & (n - 1)) == 0
+# endregion
 
 
+# region single-number
 def single_number(nums: list[int]) -> int:
     """The value that appears once when every other value appears twice."""
     # An empty list has no lone value; returning 0 would look like an answer.
@@ -31,8 +36,10 @@ def single_number(nums: list[int]) -> int:
     for num in nums:
         result ^= num
     return result
+# endregion
 
 
+# region subsets
 def subsets(items: list[int]) -> list[list[int]]:
     """All 2**len(items) subsets; mask m picks items[i] where bit i of m is 1."""
     result = []
@@ -47,3 +54,4 @@ def subsets(items: list[int]) -> list[list[int]]:
             rest ^= low
         result.append(subset)
     return result
+# endregion

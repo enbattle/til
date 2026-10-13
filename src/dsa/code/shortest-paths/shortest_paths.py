@@ -1,9 +1,12 @@
+# region part-1
 import heapq
 import math
 
 Graph = list[list[tuple[int, int]]]  # graph[u] holds a (v, weight) pair per edge
+# endregion
 
 
+# region dijkstra
 def dijkstra(graph: Graph, source: int) -> list[float]:
     """Cheapest cost from source to every vertex, inf if unreachable.
     Weights must not be negative."""
@@ -22,8 +25,10 @@ def dijkstra(graph: Graph, source: int) -> list[float]:
                 dist[v] = d + w
                 heapq.heappush(heap, (d + w, v))
     return dist
+# endregion
 
 
+# region bellman-ford
 def bellman_ford(graph: Graph, source: int) -> list[float] | None:
     """Cheapest cost from source to every vertex, inf if unreachable, or None
     if a negative cycle is reachable from source. Weights may be negative."""
@@ -44,3 +49,4 @@ def bellman_ford(graph: Graph, source: int) -> list[float] | None:
         if not changed:
             return dist
     return None
+# endregion

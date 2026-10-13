@@ -61,167 +61,42 @@ Heapify being O(n), not O(n log n), is the surprising row. A node sifting down f
 
 The Python heap compares with `<` alone, as `heapq` does. JavaScript's `<` only means something for numbers and strings, so the TypeScript heap takes a `less` function.
 
-```python
-from collections.abc import Iterable
-from typing import Any, Generic, Protocol, TypeVar
+```python region=supports-less-than
 
-
-class SupportsLessThan(Protocol):
-    def __lt__(self, other: Any, /) -> bool: ...
-
-
-T = TypeVar("T", bound=SupportsLessThan)
-
-
-class MinHeap(Generic[T]):
-    """A binary min-heap in a list: the node at i has children 2i+1 and 2i+2."""
-
-    def __init__(self, items: Iterable[T] = ()) -> None:
-        # list() copies, so the caller's list isn't rearranged behind their back.
-        self._items: list[T] = list(items)
-        # Indexes n // 2 and up are leaves, already one-node heaps. Going backward
-        # means both subtrees of a node are heaps by the time it sifts down.
-        for i in reversed(range(len(self._items) // 2)):
-            self._sift_down(i)
-
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def peek(self) -> T:
-        # Raise rather than return None, which a caller may have pushed.
-        if not self._items:
-            raise IndexError("peek at an empty heap")
-        return self._items[0]
 ```
 
-```typescript
-/** A binary min-heap in an array: the node at i has children 2i+1 and 2i+2. */
-export class MinHeap<T> {
-  private items: T[];
+```typescript region=min-heap
 
-  /** `less(a, b)` is true when `a` should come out first; `>` makes a max-heap. */
-  constructor(
-    private readonly less: (a: T, b: T) => boolean,
-    items: Iterable<T> = [],
-  ) {
-    // The spread copies, so the caller's array isn't rearranged behind their back.
-    this.items = [...items];
-    // Indexes n >> 1 and up are leaves, already one-node heaps. Going backward
-    // means both subtrees of a node are heaps by the time it sifts down.
-    for (let i = (this.items.length >> 1) - 1; i >= 0; i--) this.siftDown(i);
-  }
-
-  get size(): number {
-    return this.items.length;
-  }
-
-  peek(): T {
-    // Throw rather than return undefined, which a caller may have pushed.
-    if (this.items.length === 0) throw new RangeError('peek at an empty heap');
-    return this.items[0];
-  }
 ```
 
 The constructor is heapify, and `peek` is one array read. Push and pop touch only the end of the array and leave the rest to a sift.
 
-```python
-    def push(self, item: T) -> None:
-        self._items.append(item)
-        self._sift_up(len(self._items) - 1)
+```python region=push
 
-    def pop(self) -> T:
-        if not self._items:
-            raise IndexError("pop from an empty heap")
-        # Take the last item, not index 0: deleting the front shifts every item.
-        last = self._items.pop()
-        # With one item, items[0] = items.pop() would fail: the list is empty.
-        if not self._items:
-            return last
-        top = self._items[0]
-        self._items[0] = last
-        self._sift_down(0)
-        return top
 ```
 
-```typescript
-  push(item: T): void {
-    this.items.push(item);
-    this.siftUp(this.items.length - 1);
-  }
+```typescript region=push
 
-  pop(): T {
-    if (this.items.length === 0) throw new RangeError('pop from an empty heap');
-    // Take the last item, not index 0: deleting the front shifts every item.
-    const last = this.items.pop() as T;
-    // With one item, items[0] = last would quietly refill the emptied array.
-    if (this.items.length === 0) return last;
-    const top = this.items[0];
-    this.items[0] = last;
-    this.siftDown(0);
-    return top;
-  }
 ```
 
 Moving the last item to the root leaves one item out of place, the case sift down handles. Sift up handles the mirror case, a new item at the bottom.
 
-```python
-    def _sift_up(self, i: int) -> None:
-        items = self._items
-        while i > 0:
-            parent = (i - 1) // 2  # // rounds down; / would give a float index
-            # Strict <: an equal parent stays. Stopping is safe, since the
-            # parent was already no larger than everything above it.
-            if not items[i] < items[parent]:
-                return
-            items[i], items[parent] = items[parent], items[i]
-            i = parent
+```python region=sift-up
+
 ```
 
-```typescript
-  private siftUp(i: number): void {
-    const items = this.items;
-    while (i > 0) {
-      const parent = (i - 1) >> 1; // / doesn't round: items[1.5] is undefined
-      // Strict: an equal parent stays. Stopping is safe, since the parent was
-      // already no larger than everything above it.
-      if (!this.less(items[i], items[parent])) return;
-      [items[i], items[parent]] = [items[parent], items[i]];
-      i = parent;
-    }
-  }
+```typescript region=sift-up
+
 ```
 
 Sift up compares once per level, since an item has one parent. Going down is harder: a node has two children to choose between.
 
-```python
-    def _sift_down(self, i: int) -> None:
-        items = self._items
-        n = len(items)
-        while (child := 2 * i + 1) < n:
-            # The smaller child, not the first one that beats the item: it moves
-            # up and becomes the other child's parent.
-            if child + 1 < n and items[child + 1] < items[child]:
-                child += 1
-            if not items[child] < items[i]:
-                return
-            items[i], items[child] = items[child], items[i]
-            i = child
+```python region=sift-down
+
 ```
 
-```typescript
-  private siftDown(i: number): void {
-    const items = this.items;
-    const n = items.length;
-    for (let child = 2 * i + 1; child < n; child = 2 * i + 1) {
-      // The smaller child, not the first one that beats the item: it moves
-      // up and becomes the other child's parent.
-      if (child + 1 < n && this.less(items[child + 1], items[child])) child++;
-      if (!this.less(items[child], items[i])) return;
-      [items[i], items[child]] = [items[child], items[i]];
-      i = child;
-    }
-  }
-}
+```typescript region=sift-down
+
 ```
 
 In Python, use `heapq` rather than this class: it works on a plain list with `heapify`, `heappush`, `heappop` and `nsmallest`. It is a min-heap; Python 3.14 added max-heap versions, and older versions push negated numbers. JavaScript has no built-in heap, so you write one like this.

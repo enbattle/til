@@ -1,3 +1,4 @@
+// #region dynamic-array
 /** A growable array on fixed-size storage that doubles when it fills. */
 export class DynamicArray<T> {
   private data: (T | undefined)[] = [undefined];
@@ -19,7 +20,9 @@ export class DynamicArray<T> {
     }
     return this.data[i] as T;
   }
+  // #endregion
 
+  // #region insert
   insert(i: number, item: T): void {
     // i === length is allowed: that is an append.
     if (!Number.isInteger(i) || i < 0 || i > this.count) {
@@ -44,7 +47,9 @@ export class DynamicArray<T> {
     this.insert(this.count, item);
   }
 }
+// #endregion
 
+// #region string-builder
 /** Collects pieces and joins them once, in time linear in the total. */
 export class StringBuilder {
   private parts: string[] = [];
@@ -62,9 +67,12 @@ export class StringBuilder {
     return text;
   }
 }
+// #endregion
 
+// #region reverse-code-points
 export function reverseCodePoints(s: string): string {
   // split('') cuts an emoji's surrogate pair in two; spread walks code points.
   // It still splits an "e" from the combining accent written after it.
   return [...s].reverse().join('');
 }
+// #endregion

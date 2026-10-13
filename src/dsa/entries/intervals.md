@@ -90,85 +90,24 @@ instead of re-sorting each time.
 
 ## Walkthrough
 
-```python
-Interval = tuple[int, int]  # (start, end), both ends included
+```python region=part-1
 
-
-def merge_intervals(intervals: list[Interval]) -> list[Interval]:
-    """Merge intervals that share at least one point; result sorted, disjoint."""
-    merged: list[Interval] = []
-    # Sorted by start: that order is what lets one look at merged[-1] decide.
-    for start, end in sorted(intervals):
-        # <=, not <: with inclusive ends, [2, 6] and [6, 7] share the point 6.
-        if merged and start <= merged[-1][1]:
-            # max, not end: a nested [2, 3] inside [1, 10] must not shrink it.
-            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
-        else:
-            merged.append((start, end))
-    return merged
 ```
 
-```typescript
-/** [start, end], both ends included. */
-export type Interval = [number, number];
+```typescript region=part-1
 
-/** Merges intervals that share at least one point; the result is sorted and disjoint. */
-export function mergeIntervals(intervals: Interval[]): Interval[] {
-  const merged: Interval[] = [];
-  // Sorted by start, on a copy, numerically: sort() mutates, and with no
-  // comparator it compares text, so [10, 12] would land before [2, 3].
-  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);
-  for (const [start, end] of sorted) {
-    const last = merged[merged.length - 1];
-    // <=, not <: with inclusive ends, [2, 6] and [6, 7] share the point 6.
-    if (last !== undefined && start <= last[1]) {
-      // max, not end: a nested [2, 3] inside [1, 10] must not shrink it.
-      last[1] = Math.max(last[1], end);
-    } else {
-      merged.push([start, end]);
-    }
-  }
-  return merged;
-}
 ```
 
 On the five bookings it returns `[(1, 7), (8, 10), (15, 18)]`, the last row of
 the first table. The sorted copy is why the caller's list keeps its order.
 Counting is the same idea with the starts and ends pulled apart.
 
-```python
-def max_overlap(intervals: list[Interval]) -> int:
-    """The most intervals that contain one common point (0 for no intervals)."""
-    # Sorted apart: which end belongs to which start never matters for counting.
-    starts = sorted(start for start, _ in intervals)
-    ends = sorted(end for _, end in intervals)
-    best = 0
-    finished = 0
-    for i, start in enumerate(starts):
-        # <, not <=: an end equal to this start still contains the point.
-        # finished never moves back, since later starts are no smaller.
-        while ends[finished] < start:
-            finished += 1
-        best = max(best, i + 1 - finished)
-    return best
+```python region=max-overlap
+
 ```
 
-```typescript
-/** The most intervals that contain one common point (0 for no intervals). */
-export function maxOverlap(intervals: Interval[]): number {
-  // Sorted apart: which end belongs to which start never matters for counting.
-  const starts = intervals.map(([start]) => start).sort((a, b) => a - b);
-  const ends = intervals.map(([, end]) => end).sort((a, b) => a - b);
-  let best = 0;
-  let finished = 0;
-  for (let i = 0; i < starts.length; i++) {
-    // <, not <=: an end equal to this start still contains the point.
-    // finished never moves back, since later starts are no smaller.
-    while (ends[finished] < starts[i]) finished++;
-    best = Math.max(best, i + 1 - finished);
-  }
-  return best;
-}
+```typescript region=max-overlap
+
 ```
 
 `i + 1` is the number started so far and `finished` the number ended, so the
@@ -177,41 +116,12 @@ difference is the second table's last column, and the maximum is 2. Because
 not n per start. Inserting skips the sort, because the list is already in
 order.
 
-```python
-def insert_interval(merged: list[Interval], new: Interval) -> list[Interval]:
-    """Add one interval to a sorted, disjoint list, fusing what it touches."""
-    start, end = new
-    out: list[Interval] = []
-    i = 0
-    # Strictly before: an interval ending at start still shares that point.
-    while i < len(merged) and merged[i][1] < start:
-        out.append(merged[i])
-        i += 1
-    while i < len(merged) and merged[i][0] <= end:
-        # min and max both: new may sit inside or stretch past either side.
-        start, end = min(start, merged[i][0]), max(end, merged[i][1])
-        i += 1
-    out.append((start, end))
-    return out + merged[i:]
+```python region=insert-interval
+
 ```
 
-```typescript
-/** Adds one interval to a sorted, disjoint list, fusing what it touches. */
-export function insertInterval(merged: Interval[], added: Interval): Interval[] {
-  let [start, end] = added;
-  const out: Interval[] = [];
-  let i = 0;
-  // Strictly before: an interval ending at start still shares that point.
-  while (i < merged.length && merged[i][1] < start) out.push(merged[i++]);
-  while (i < merged.length && merged[i][0] <= end) {
-    // min and max both: added may sit inside or stretch past either side.
-    start = Math.min(start, merged[i][0]);
-    end = Math.max(end, merged[i][1]);
-    i++;
-  }
-  out.push([start, end]);
-  return out.concat(merged.slice(i));
-}
+```typescript region=insert-interval
+
 ```
 
 Inserting `(7, 9)` into `[(1, 7), (8, 10), (15, 18)]` skips nothing, because

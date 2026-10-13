@@ -81,8 +81,9 @@ sets the five-minute budget and the voice.
    - **Prerequisites**: follow docs/dsa.md's "Prerequisites and order" (what
      each link must say), linking only entries that exist
      (`ls src/dsa/entries/`) or, in batch mode, a batch-mate.
-   - **Code chunks** are copied from the finished code files, in file order,
-     as pairs (docs/dsa.md, "Code pairs and the code files").
+   - **Code** is never copied: mark regions in the finished code files and
+     name each with an empty region fence, in file order, as pairs
+     (docs/dsa.md, "Code pairs and the code files").
    - **Walkthrough** and **Implementation**: the code's comments already say
      why each tricky line is written that way (`<` for `<=`, `mid + 1` for
      `mid`), so the prose doesn't repeat them.
@@ -123,7 +124,9 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 
 - **`<kind>`**: DSA entry and its code.
 - **Existing items**: the entries in `src/dsa/entries/`.
-- **Files**: the entry and its four code files, in full.
+- **Files**: the entry and its four code files, in full. An empty
+  `region=<name>` fence shows the text between that region's markers in the
+  code file ([docs/dsa.md](../../../docs/dsa.md) has the rule).
 - **`<checklist>`**: (1) the code is correct in both languages: trace it
   by hand on the entry's worked example and on the edge cases (empty input,
   one element, duplicates, the boundaries), and flag any input it gets wrong;
@@ -139,8 +142,8 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   standard function is true; (8) `When to use it` would let a reader spot
   this entry in a problem it never shows, and the entry spends no words on a
   variant or edge case that wouldn't change how they solve it.
-- **Fix step**: a code fix changes the code file and its chunk together,
-  plus a test that would have caught it.
+- **Fix step**: a code fix changes the code file, plus a test that would
+  have caught it; the entry shows the fixed region with no edit of its own.
 - **Pre-gate step**: delete any `__pycache__` or `.pytest_cache` a manual
   pytest run left (the code-folder allowlist test fails on them).
 - **Scope check**: `git status --porcelain -- src/content src/system-design`

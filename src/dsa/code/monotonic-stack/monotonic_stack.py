@@ -1,3 +1,4 @@
+# region next-greater
 def next_greater(nums: list[int]) -> list[int]:
     """For each i, the index of the first larger value to its right, or -1."""
     answer = [-1] * len(nums)
@@ -10,14 +11,18 @@ def next_greater(nums: list[int]) -> list[int]:
             answer[stack.pop()] = i
         stack.append(i)
     return answer
+# endregion
 
 
+# region days-until-warmer
 def days_until_warmer(temps: list[int]) -> list[int]:
     """For each day, how many days until a strictly warmer one; 0 if never."""
     # The -1 check matters: without it a day with no answer gets -1 - i.
     return [0 if j == -1 else j - i for i, j in enumerate(next_greater(temps))]
+# endregion
 
 
+# region largest-rectangle
 def largest_rectangle(heights: list[int]) -> int:
     """Area of the biggest rectangle that fits under the bars of a histogram."""
     best = 0
@@ -26,6 +31,8 @@ def largest_rectangle(heights: list[int]) -> int:
     # the bars left on the stack at the end are never measured.
     for i in range(len(heights) + 1):
         h = heights[i] if i < len(heights) else 0
+# endregion
+        # region part-4
         while stack and heights[stack[-1]] >= h:
             height = heights[stack.pop()]
             # The new top is the nearest shorter bar on the left, not the
@@ -34,3 +41,4 @@ def largest_rectangle(heights: list[int]) -> int:
             best = max(best, height * (i - left - 1))
         stack.append(i)
     return best
+        # endregion

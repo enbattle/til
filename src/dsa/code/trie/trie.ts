@@ -1,3 +1,4 @@
+// #region trie-node
 class TrieNode {
   readonly children = new Map<string, TrieNode>();
   isWord = false;
@@ -21,7 +22,9 @@ export class Trie {
     // The node may exist already as a step toward a longer word.
     node.isWord = true;
   }
+  // #endregion
 
+  // #region find
   private find(prefix: string): TrieNode | undefined {
     let node = this.root;
     for (const ch of prefix) {
@@ -43,7 +46,9 @@ export class Trie {
     // trie, which has no word to start with "".
     return node !== undefined && (node.isWord || node.children.size > 0);
   }
+  // #endregion
 
+  // #region words-with-prefix
   /** Every stored word that starts with prefix, in no fixed order. */
   wordsWithPrefix(prefix: string): string[] {
     const start = this.find(prefix);
@@ -59,7 +64,9 @@ export class Trie {
     }
     return found;
   }
+  // #endregion
 
+  // #region delete
   delete(word: string): boolean {
     const path: [TrieNode, string][] = [];
     let node = this.root;
@@ -80,3 +87,4 @@ export class Trie {
     return true;
   }
 }
+// #endregion

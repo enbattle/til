@@ -1,3 +1,4 @@
+// #region min-path-sum
 /** Smallest total of a right/down path from the top-left to the bottom-right. */
 export function minPathSum(grid: number[][]): number {
   if (grid.length === 0 || grid[0].length === 0) return 0;
@@ -15,7 +16,9 @@ export function minPathSum(grid: number[][]): number {
   }
   return row[row.length - 1];
 }
+// #endregion
 
+// #region knapsack01
 /** Best total value of items, each used at most once, weighing <= capacity. */
 export function knapsack01(
   weights: number[],
@@ -33,7 +36,9 @@ export function knapsack01(
   }
   return best[capacity];
 }
+// #endregion
 
+// #region min-coins
 /** Fewest coins, each usable any number of times, that sum to amount; -1 if none. */
 export function minCoins(coins: number[], amount: number): number {
   // amount + 1 is above every real answer (at most amount coins), and adding
@@ -49,7 +54,9 @@ export function minCoins(coins: number[], amount: number): number {
   }
   return fewest[amount] < unreachable ? fewest[amount] : -1;
 }
+// #endregion
 
+// #region edit-distance
 /** Fewest single-character inserts, deletes and replaces that turn a into b. */
 export function editDistance(a: ArrayLike<string>, b: ArrayLike<string>): number {
   // table[i][j] is the distance between a[:i] and b[:j]. The first row and
@@ -78,3 +85,4 @@ export function editDistance(a: ArrayLike<string>, b: ArrayLike<string>): number
   }
   return table[a.length][b.length];
 }
+// #endregion

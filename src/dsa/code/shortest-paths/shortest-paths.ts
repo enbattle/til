@@ -1,3 +1,4 @@
+// #region min-heap
 /** heap.ts's MinHeap without heapify, peek or empty checks: callers test `size` first. */
 export class MinHeap<T> {
   private readonly items: T[] = [];
@@ -37,7 +38,9 @@ export class MinHeap<T> {
 
 /** graph[u] holds a [v, weight] pair per edge. */
 export type Graph = [number, number][][];
+// #endregion
 
+// #region dijkstra
 /** Cheapest cost from source to every vertex, Infinity if unreachable.
  * Weights must not be negative. */
 export function dijkstra(graph: Graph, source: number): number[] {
@@ -60,7 +63,9 @@ export function dijkstra(graph: Graph, source: number): number[] {
   }
   return dist;
 }
+// #endregion
 
+// #region bellman-ford
 /** Cheapest cost from source to every vertex, Infinity if unreachable, or null
  * if a negative cycle is reachable from source. Weights may be negative. */
 export function bellmanFord(graph: Graph, source: number): number[] | null {
@@ -85,3 +90,4 @@ export function bellmanFord(graph: Graph, source: number): number[] | null {
   }
   return null;
 }
+// #endregion

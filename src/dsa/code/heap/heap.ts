@@ -1,3 +1,4 @@
+// #region min-heap
 /** A binary min-heap in an array: the node at i has children 2i+1 and 2i+2. */
 export class MinHeap<T> {
   private items: T[];
@@ -23,7 +24,9 @@ export class MinHeap<T> {
     if (this.items.length === 0) throw new RangeError('peek at an empty heap');
     return this.items[0];
   }
+  // #endregion
 
+  // #region push
   push(item: T): void {
     this.items.push(item);
     this.siftUp(this.items.length - 1);
@@ -40,7 +43,9 @@ export class MinHeap<T> {
     this.siftDown(0);
     return top;
   }
+  // #endregion
 
+  // #region sift-up
   private siftUp(i: number): void {
     const items = this.items;
     while (i > 0) {
@@ -52,7 +57,9 @@ export class MinHeap<T> {
       i = parent;
     }
   }
+  // #endregion
 
+  // #region sift-down
   private siftDown(i: number): void {
     const items = this.items;
     const n = items.length;
@@ -66,3 +73,4 @@ export class MinHeap<T> {
     }
   }
 }
+// #endregion

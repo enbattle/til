@@ -1,3 +1,4 @@
+// #region part-1
 /** [start, end], both ends included. */
 export type Interval = [number, number];
 
@@ -19,7 +20,9 @@ export function mergeIntervals(intervals: Interval[]): Interval[] {
   }
   return merged;
 }
+// #endregion
 
+// #region max-overlap
 /** The most intervals that contain one common point (0 for no intervals). */
 export function maxOverlap(intervals: Interval[]): number {
   // Sorted apart: which end belongs to which start never matters for counting.
@@ -35,7 +38,9 @@ export function maxOverlap(intervals: Interval[]): number {
   }
   return best;
 }
+// #endregion
 
+// #region insert-interval
 /** Adds one interval to a sorted, disjoint list, fusing what it touches. */
 export function insertInterval(merged: Interval[], added: Interval): Interval[] {
   let [start, end] = added;
@@ -52,3 +57,4 @@ export function insertInterval(merged: Interval[], added: Interval): Interval[] 
   out.push([start, end]);
   return out.concat(merged.slice(i));
 }
+// #endregion

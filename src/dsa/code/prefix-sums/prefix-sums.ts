@@ -1,3 +1,4 @@
+// #region build-prefix
 /** prefix[i] is the sum of the first i elements; prefix[0] is 0, length n + 1. */
 export function buildPrefix(nums: number[]): number[] {
   // Start at 0, not empty: prefix[left] must exist when left is 0, and
@@ -8,7 +9,9 @@ export function buildPrefix(nums: number[]): number[] {
   }
   return prefix;
 }
+// #endregion
 
+// #region range-sum
 /** Sum of nums[left..right], both ends included. */
 export function rangeSum(prefix: number[], left: number, right: number): number {
   // Check first: a bad index would return a wrong number, not fail
@@ -19,7 +22,9 @@ export function rangeSum(prefix: number[], left: number, right: number): number 
   // right + 1: prefix[right] stops one element short of nums[right].
   return prefix[right + 1] - prefix[left];
 }
+// #endregion
 
+// #region count-subarrays-with-sum
 /** How many non-empty contiguous subarrays of `nums` add up to exactly `k`. */
 export function countSubarraysWithSum(nums: number[], k: number): number {
   // Seed with the empty start: without [0, 1], a subarray that begins at
@@ -27,6 +32,8 @@ export function countSubarraysWithSum(nums: number[], k: number): number {
   const seen = new Map<number, number>([[0, 1]]);
   let total = 0;
   let count = 0;
+  // #endregion
+  // #region part-4
   for (const value of nums) {
     total += value;
     // Look up before inserting: with k === 0 the lookup would find the
@@ -38,3 +45,4 @@ export function countSubarraysWithSum(nums: number[], k: number): number {
   }
   return count;
 }
+// #endregion

@@ -1,3 +1,4 @@
+// #region part-1
 /** adj[u] lists the vertices u points at, the directed form of the graph entry's list. */
 export type Graph = number[][];
 
@@ -24,7 +25,9 @@ export function topologicalSort(adj: Graph): number[] | null {
   // not an answer.
   return order.length === adj.length ? order : null;
 }
+// #endregion
 
+// #region part-2
 const UNVISITED = 0;
 const ON_PATH = 1;
 const FINISHED = 2;
@@ -53,7 +56,9 @@ export function topologicalSortDfs(adj: Graph): number[] | null {
   // Finishing puts each vertex after what it points at; reverse to put it before.
   return finished.reverse();
 }
+// #endregion
 
+// #region course-order
 /** An order to take courses 0..n-1; each pair is [course, prerequisite]. */
 export function courseOrder(
   n: number,
@@ -66,3 +71,4 @@ export function courseOrder(
   }
   return topologicalSort(adj);
 }
+// #endregion

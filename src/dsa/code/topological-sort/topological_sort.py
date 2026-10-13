@@ -1,3 +1,4 @@
+# region part-1
 from collections import deque
 
 # adj[u] lists the vertices u points at, the directed form of the graph entry's list.
@@ -24,8 +25,10 @@ def topological_sort(adj: Graph) -> list[int] | None:
     # Vertices on a cycle wait on each other and never come out; a short order is
     # not an answer.
     return order if len(order) == len(adj) else None
+# endregion
 
 
+# region part-2
 UNVISITED, ON_PATH, FINISHED = 0, 1, 2
 
 
@@ -51,8 +54,10 @@ def topological_sort_dfs(adj: Graph) -> list[int] | None:
             return None
     # Finishing puts each vertex after what it points at; reverse to put it before.
     return finished[::-1]
+# endregion
 
 
+# region course-order
 def course_order(n: int, prerequisites: list[tuple[int, int]]) -> list[int] | None:
     """An order to take courses 0..n-1; each pair is (course, prerequisite)."""
     adj: Graph = [[] for _ in range(n)]
@@ -60,3 +65,4 @@ def course_order(n: int, prerequisites: list[tuple[int, int]]) -> list[int] | No
         # The arrow runs from what comes first to what depends on it.
         adj[prerequisite].append(course)
     return topological_sort(adj)
+# endregion

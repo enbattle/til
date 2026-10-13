@@ -73,139 +73,42 @@ With both changes, m operations cost O(m · α(n)) in total (Tarjan, 1975), so r
 
 `sizes[r]` means something only when `r` is a root; elsewhere it's a stale value nothing reads. The TypeScript version uses `Int32Array`, a fixed-length array of 32-bit integers, because the length never changes.
 
-```python
-from collections.abc import Iterable
+```python region=union-find
 
-
-class UnionFind:
-    """Disjoint sets over the elements 0..n-1: union by size, path compression."""
-
-    def __init__(self, n: int) -> None:
-        self._parent = list(range(n))  # a root is its own parent
-        self._size = [1] * n  # read only at roots; other entries go stale
-        # Kept up to date, so asking never means calling find on every element.
-        self.count = n
 ```
 
-```typescript
-/** Disjoint sets over the elements 0..n-1: union by size, path compression. */
-export class UnionFind {
-  private readonly parent: Int32Array;
-  private readonly sizes: Int32Array;
-  count: number;
+```typescript region=union-find
 
-  constructor(n: number) {
-    // A root is its own parent.
-    this.parent = Int32Array.from({ length: n }, (_, i) => i);
-    this.sizes = new Int32Array(n).fill(1); // read only at roots; others go stale
-    // Kept up to date, so asking never means calling find on every element.
-    this.count = n;
-  }
 ```
 
 Everything starts as its own root in a set of size 1, and `count` starts at n. It changes in one place, when a union merges two sets. `find` comes next.
 
-```python
-    def find(self, x: int) -> int:
-        # Python reads index -1 as the last element, so without this check
-        # find(-1) would quietly return the root of element n - 1.
-        if not 0 <= x < len(self._parent):
-            raise IndexError(f"element {x} is out of range")
-        root = x
-        while self._parent[root] != root:
-            root = self._parent[root]
-        # A second walk, because the root isn't known until the first ends.
-        while x != root:
-            next_x = self._parent[x]  # saved first: after the write, x's old
-            self._parent[x] = root  # parent is gone and the walk would stop
-            x = next_x
-        return root
+```python region=find
+
 ```
 
-```typescript
-  find(x: number): number {
-    // An Int32Array read past its end gives undefined, not an error, and two
-    // of them compare equal: connected(10, 11) would quietly say true.
-    if (!Number.isInteger(x) || x < 0 || x >= this.parent.length) {
-      throw new RangeError(`element ${x} is out of range`);
-    }
-    let root = x;
-    while (this.parent[root] !== root) root = this.parent[root];
-    // A second walk, because the root isn't known until the first ends.
-    let node = x;
-    while (node !== root) {
-      const next = this.parent[node]; // saved first: after the write, node's old
-      this.parent[node] = root; // parent is gone and the walk would stop
-      node = next;
-    }
-    return root;
-  }
+```typescript region=find
+
 ```
 
 The first loop climbs; the second walks the same path again and compresses it. `union` builds on it.
 
-```python
-    def union(self, a: int, b: int) -> bool:
-        root_a, root_b = self.find(a), self.find(b)
-        if root_a == root_b:
-            return False  # merging a set with itself would double its size
-        if self._size[root_a] < self._size[root_b]:
-            root_a, root_b = root_b, root_a  # smaller under larger: depth <= log2 n
-        self._parent[root_b] = root_a  # the root, not b: only a root speaks for its set
-        self._size[root_a] += self._size[root_b]
-        self.count -= 1
-        return True
+```python region=union
+
 ```
 
-```typescript
-  union(a: number, b: number): boolean {
-    let rootA = this.find(a);
-    let rootB = this.find(b);
-    if (rootA === rootB) return false; // merging a set with itself would double its size
-    if (this.sizes[rootA] < this.sizes[rootB]) {
-      [rootA, rootB] = [rootB, rootA]; // smaller under larger: depth <= log2 n
-    }
-    this.parent[rootB] = rootA; // the root, not b: only a root speaks for its set
-    this.sizes[rootA] += this.sizes[rootB];
-    this.count--;
-    return true;
-  }
+```typescript region=union
+
 ```
 
 On the example, `union(1, 5)` finds roots 0 and 2, swaps because 2 holds more, and hangs 0 under 2 with size 6. The return value says whether two sets really merged, which is how a cycle check learns an edge was redundant.
 
-```python
-    def connected(self, a: int, b: int) -> bool:
-        return self.find(a) == self.find(b)
+```python region=connected
 
-    def size_of(self, x: int) -> int:
-        return self._size[self.find(x)]
-
-
-def has_cycle(n: int, edges: Iterable[tuple[int, int]]) -> bool:
-    sets = UnionFind(n)
-    # An edge whose ends are already connected is a second way across.
-    return any(not sets.union(a, b) for a, b in edges)
 ```
 
-```typescript
-  connected(a: number, b: number): boolean {
-    return this.find(a) === this.find(b);
-  }
+```typescript region=connected
 
-  sizeOf(x: number): number {
-    return this.sizes[this.find(x)];
-  }
-}
-
-export function hasCycle(n: number, edges: Iterable<[number, number]>): boolean {
-  const sets = new UnionFind(n);
-  for (const [a, b] of edges) {
-    // An edge whose ends are already connected is a second way across.
-    if (!sets.union(a, b)) return true;
-  }
-  return false;
-}
 ```
 
 `has_cycle(3, [(0, 1), (1, 2), (2, 0)])` merges on the first two edges, then finds 2 and 0 already together and returns true. A self-loop or a repeated edge counts as a cycle too. Unioning every edge and reading `count` gives the number of connected components.

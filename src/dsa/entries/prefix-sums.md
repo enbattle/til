@@ -75,56 +75,24 @@ The four subarrays are `[3]`, `[3, -1, 2, 1, -2]`, `[2, 1]` and `[1, -2, 4]`.
 
 ## Walkthrough
 
-```python
-def build_prefix(nums: list[int]) -> list[int]:
-    """prefix[i] is the sum of nums[:i], so prefix[0] == 0 and len == n + 1."""
-    # Start at 0, not empty: prefix[left] must exist when left is 0, and
-    # without it a range from 0 needs prefix[-1], which reads the last total.
-    prefix = [0]
-    for value in nums:
-        prefix.append(prefix[-1] + value)
-    return prefix
+```python region=build-prefix
+
 ```
 
-```typescript
-/** prefix[i] is the sum of the first i elements; prefix[0] is 0, length n + 1. */
-export function buildPrefix(nums: number[]): number[] {
-  // Start at 0, not empty: prefix[left] must exist when left is 0, and
-  // without it a range from 0 needs prefix[-1], which reads undefined.
-  const prefix = [0];
-  for (const value of nums) {
-    prefix.push(prefix[prefix.length - 1] + value);
-  }
-  return prefix;
-}
+```typescript region=build-prefix
+
 ```
 
 Each entry is the previous one plus one element, so the whole table costs one
 pass, and the running example comes out as `[0, 3, 2, 4, 5, 3, 7]`. Now a
 query only has to read two entries.
 
-```python
-def range_sum(prefix: list[int], left: int, right: int) -> int:
-    """Sum of nums[left..right], both ends included."""
-    # Check first: a bad index would return a wrong number, not fail
-    # (Python reads a negative index from the end).
-    if not 0 <= left <= right < len(prefix) - 1:
-        raise IndexError("need 0 <= left <= right < len(nums)")
-    # right + 1: prefix[right] stops one element short of nums[right].
-    return prefix[right + 1] - prefix[left]
+```python region=range-sum
+
 ```
 
-```typescript
-/** Sum of nums[left..right], both ends included. */
-export function rangeSum(prefix: number[], left: number, right: number): number {
-  // Check first: a bad index would return a wrong number, not fail
-  // (JavaScript reads a missing entry as undefined, so the sum is NaN).
-  if (!(left >= 0 && left <= right && right < prefix.length - 1)) {
-    throw new RangeError('need 0 <= left <= right < nums.length');
-  }
-  // right + 1: prefix[right] stops one element short of nums[right].
-  return prefix[right + 1] - prefix[left];
-}
+```typescript region=range-sum
+
 ```
 
 The bound is `len(prefix) - 1`, the length of `nums`, because `right` indexes
@@ -132,54 +100,24 @@ The bound is `len(prefix) - 1`, the length of `nums`, because `right` indexes
 ranges at all, and must count the ranges that hit a target? You don't even need
 the table.
 
-```python
-def count_subarrays_with_sum(nums: list[int], k: int) -> int:
-    """How many non-empty contiguous subarrays of nums add up to exactly k."""
-    # Seed with the empty start: without {0: 1}, a subarray that begins at
-    # index 0 has no earlier total to pair with and is never counted.
-    seen = {0: 1}
-    total = 0
-    count = 0
+```python region=count-subarrays-with-sum
+
 ```
 
-```typescript
-/** How many non-empty contiguous subarrays of `nums` add up to exactly `k`. */
-export function countSubarraysWithSum(nums: number[], k: number): number {
-  // Seed with the empty start: without [0, 1], a subarray that begins at
-  // index 0 has no earlier total to pair with and is never counted.
-  const seen = new Map<number, number>([[0, 1]]);
-  let total = 0;
-  let count = 0;
+```typescript region=count-subarrays-with-sum
+
 ```
 
 The loop needs only the current `total` and a tally of earlier ones, so the
 prefix array is never built. The seed is the row marked "start" in the table:
 without it the first `3` looks up 0, finds nothing, and `[3]` is missed.
 
-```python
-    for value in nums:
-        total += value
-        # Look up before inserting: with k == 0 the lookup would find the
-        # current total itself and count an empty subarray.
-        count += seen.get(total - k, 0)
-        # A count, not a set: each earlier start with this total is its
-        # own subarray.
-        seen[total] = seen.get(total, 0) + 1
-    return count
+```python region=part-4
+
 ```
 
-```typescript
-  for (const value of nums) {
-    total += value;
-    // Look up before inserting: with k === 0 the lookup would find the
-    // current total itself and count an empty subarray.
-    count += seen.get(total - k) ?? 0;
-    // A count, not a set: each earlier start with this total is its
-    // own subarray.
-    seen.set(total, (seen.get(total) ?? 0) + 1);
-  }
-  return count;
-}
+```typescript region=part-4
+
 ```
 
 Run on the example, `count` climbs 1, 1, 1, 2, 3, 4, matching the table. The

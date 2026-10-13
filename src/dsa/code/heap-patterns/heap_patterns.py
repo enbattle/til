@@ -1,7 +1,10 @@
+# region part-1
 import heapq
 from collections.abc import Iterable
+# endregion
 
 
+# region top-k-largest
 def top_k_largest(items: Iterable[int], k: int) -> list[int]:
     """The k largest items, largest first; all of them if there are fewer."""
     if k <= 0:  # heap[0] below would raise on an empty heap
@@ -14,8 +17,10 @@ def top_k_largest(items: Iterable[int], k: int) -> list[int]:
         elif heap[0] < x:
             heapq.heapreplace(heap, x)
     return sorted(heap, reverse=True)  # a heap is only partly ordered
+# endregion
 
 
+# region merge-sorted
 def merge_sorted(lists: list[list[int]]) -> list[int]:
     """One sorted list holding every item of the sorted input lists."""
     # The list index breaks ties on value, so equal values come out in list
@@ -31,8 +36,10 @@ def merge_sorted(lists: list[list[int]]) -> list[int]:
         else:
             heapq.heappop(heap)  # a drained list must leave, or its head repeats
     return merged
+# endregion
 
 
+# region running-medians
 def running_medians(stream: Iterable[float]) -> list[float]:
     """The median after each value: the mean of the middle two when even."""
     low: list[float] = []  # max-heap of the smaller half, stored negated
@@ -51,3 +58,4 @@ def running_medians(stream: Iterable[float]) -> list[float]:
         else:
             medians.append((-low[0] + high[0]) / 2)
     return medians
+# endregion

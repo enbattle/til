@@ -86,52 +86,24 @@ direction removes duplicates from a sorted array in place.
 
 ## Walkthrough
 
-```python
-def pair_with_sum(nums: list[int], target: int) -> tuple[int, int] | None:
-    """Indices (i, j), i < j, of two values in sorted nums that add up to target."""
-    left, right = 0, len(nums) - 1
-    # < not <=: with equal pointers one element would be paired with itself.
-    while left < right:
-        total = nums[left] + nums[right]
-        if total == target:
-            return left, right
+```python region=pair-with-sum
+
 ```
 
-```typescript
-/** Indices [i, j], i < j, of two values in sorted `nums` that add up to `target`. */
-export function pairWithSum(nums: number[], target: number): [number, number] | null {
-  let left = 0;
-  let right = nums.length - 1;
-  // < not <=: with equal pointers one element would be paired with itself.
-  while (left < right) {
-    const total = nums[left] + nums[right];
-    if (total === target) return [left, right];
+```typescript region=pair-with-sum
+
 ```
 
 The function returns indices, not values, because a caller with the indices can
 always read the values. An empty array starts `right` at -1, so the loop never
 runs and the answer is "no pair", which is correct.
 
-```python
-        # Too small: nums[left] is too small even beside the largest value still
-        # in play, so no pair uses it. Too big: nums[right] fails the same way
-        # beside the smallest. Either move rules one element out for good.
-        if total < target:
-            left += 1
-        else:
-            right -= 1
-    return None
+```python region=part-2
+
 ```
 
-```typescript
-    // Too small: nums[left] is too small even beside the largest value still
-    // in play, so no pair uses it. Too big: nums[right] fails the same way
-    // beside the smallest. Either move rules one element out for good.
-    if (total < target) left++;
-    else right--;
-  }
-  return null;
-}
+```typescript region=part-2
+
 ```
 
 On the running example this is the five-row table above, ending at `(2, 3)`.
@@ -139,65 +111,23 @@ The loop falls through to `None` only after the pointers meet, which by the
 retiring argument means no pair existed. Now the other shape, which needs a
 node type to walk.
 
-```python
-class ListNode:
-    """One node of a singly linked list: a value and a link to the next node."""
+```python region=list-node
 
-    def __init__(self, val: int, next: "ListNode | None" = None) -> None:
-        self.val = val
-        self.next = next
-
-
-def has_cycle(head: ListNode | None) -> bool:
-    """True when following next from head never reaches the end."""
-    slow = fast = head
-    # Test fast and fast.next: fast.next.next reads the next of nothing when
-    # an odd-length list leaves fast on its last node.
-    while fast is not None and fast.next is not None:
 ```
 
-```typescript
-export class ListNode {
-  val: number;
-  next: ListNode | null;
+```typescript region=list-node
 
-  constructor(val: number, next: ListNode | null = null) {
-    this.val = val;
-    this.next = next;
-  }
-}
-
-/** True when following next from head never reaches the end. */
-export function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
-  // Test fast and fast.next: fast.next.next reads the next of nothing when
-  // an odd-length list leaves fast on its last node.
-  while (fast !== null && fast.next !== null) {
 ```
 
 An empty list and a single node never enter the loop, so both return `False`.
 Inside it, `fast` takes its two hops and `slow` its one.
 
-```python
-        slow = slow.next
-        fast = fast.next.next
-        # After moving, not before: both start at head, so before always matches.
-        # `is`, not ==: two different nodes can hold equal values.
-        if slow is fast:
-            return True
-    return False
+```python region=part-4
+
 ```
 
-```typescript
-    slow = slow!.next;
-    fast = fast.next.next;
-    // After moving, not before: both start at head, so before always matches.
-    // === compares nodes, not values: two different nodes can hold equal values.
-    if (slow === fast) return true;
-  }
-  return false;
-}
+```typescript region=part-4
+
 ```
 
 On the seven-node list the loop returns `True` at step 5, the last row of the

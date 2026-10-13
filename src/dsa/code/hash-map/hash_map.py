@@ -1,6 +1,6 @@
+# region hash-map
 from collections.abc import Callable, Hashable
 from typing import Any
-
 
 class HashMap:
     """A hash map with separate chaining: each bucket is a list of [key, value]."""
@@ -25,7 +25,9 @@ class HashMap:
         # Python's % is never negative for a positive divisor, so a negative
         # hash still gives a valid index (JavaScript's would not).
         return self._buckets[self._hash(key) % len(self._buckets)]
+# endregion
 
+    # region get
     def get(self, key: Hashable, default: Any = None) -> Any:
         for k, v in self._bucket(key):
             if k == key:
@@ -35,7 +37,9 @@ class HashMap:
     def __contains__(self, key: Hashable) -> bool:
         # Look for the key itself: get() can't tell a stored None from a miss.
         return any(k == key for k, _ in self._bucket(key))
+    # endregion
 
+    # region put
     def put(self, key: Hashable, value: Any) -> None:
         bucket = self._bucket(key)
         for pair in bucket:
@@ -48,7 +52,9 @@ class HashMap:
             bucket = self._bucket(key)  # the old bucket list was just discarded
         bucket.append([key, value])
         self._size += 1
+    # endregion
 
+    # region delete
     def delete(self, key: Hashable) -> bool:
         bucket = self._bucket(key)
         for i, (k, _) in enumerate(bucket):
@@ -60,7 +66,9 @@ class HashMap:
                 self._size -= 1
                 return True
         return False
+    # endregion
 
+    # region resize
     def _resize(self, new_capacity: int) -> None:
         old_buckets = self._buckets
         self._buckets = [[] for _ in range(new_capacity)]
@@ -69,3 +77,4 @@ class HashMap:
         for bucket in old_buckets:
             for pair in bucket:
                 self._bucket(pair[0]).append(pair)
+    # endregion

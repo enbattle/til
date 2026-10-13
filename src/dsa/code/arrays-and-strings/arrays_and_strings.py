@@ -1,7 +1,7 @@
+# region part-1
 from typing import Any, Generic, Self, TypeVar
 
 T = TypeVar("T")
-
 
 class DynamicArray(Generic[T]):
     """A growable array on fixed-size storage that doubles when it fills."""
@@ -23,7 +23,9 @@ class DynamicArray(Generic[T]):
         if not 0 <= i < self._size:
             raise IndexError(i)
         return self._data[i]
+# endregion
 
+    # region insert
     def insert(self, i: int, item: T) -> None:
         # i == length is allowed: that is an append.
         if not 0 <= i <= self._size:
@@ -43,8 +45,10 @@ class DynamicArray(Generic[T]):
 
     def append(self, item: T) -> None:
         self.insert(self._size, item)
+    # endregion
 
 
+# region string-builder
 class StringBuilder:
     """Collects pieces and joins them once, in time linear in the total."""
 
@@ -61,9 +65,12 @@ class StringBuilder:
         # Keep the result as one piece, so a second build won't join it all again.
         self._parts = [text]
         return text
+# endregion
 
 
+# region reverse-code-points
 def reverse_code_points(s: str) -> str:
     # Python indexes code points, so a slice keeps an emoji whole. It still
     # splits an "e" from the combining accent written after it.
     return s[::-1]
+# endregion

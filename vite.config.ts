@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, normalizePath, type Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -10,6 +10,7 @@ import {
   extractTopicRefs,
   proseWordCount,
 } from './src/lib/markdown.mjs';
+import { resolveCodeRegions } from './src/lib/code-regions.mjs';
 
 /**
  * Build-time views of a markdown file, so the app can list and cross-link
@@ -33,6 +34,15 @@ import {
  *   reader reads in the body (`proseWordCount` in `src/lib/markdown.mjs`), so
  *   topic, case-study and DSA pages show "N min read" before their body loads.
  *
+ * A DSA entry (`src/dsa/entries/<slug>.md`) names regions of its code files
+ * (`src/dsa/code/<slug>/<slug_underscored>.py` and `<slug>.ts`) with empty
+ * ` ```python region=<name> ` fences (docs/dsa.md). For every import of an
+ * entry, `?raw` (served here as `export default <JSON string>`) and each view
+ * above, the fences are filled in from the code files first
+ * (`resolveCodeRegions` in `src/lib/code-regions.mjs`), and both code files
+ * are watched, so a code edit reloads the entry in dev. Other markdown is read
+ * as it is on disk.
+ *
  * Each view is one entry below, keyed by its query name; adding a view is
  * adding an entry. Vitest reuses these plugins, so tests see the same modules.
  */
@@ -43,7 +53,50 @@ const MARKDOWN_VIEWS: Record<string, (file: ParsedMarkdown) => unknown> = {
   words: ({ content }) => proseWordCount(content),
 };
 
+const DSA_ENTRY = /^\/src\/dsa\/entries\/([^/]+)\.md$/;
+const ROOT = normalizePath(import.meta.dirname);
+
+/** The entry's slug when `file` is `src/dsa/entries/<slug>.md` in this repo. */
+function dsaEntrySlug(file: string): string | undefined {
+  const normalized = normalizePath(file);
+  if (!normalized.startsWith(`${ROOT}/`)) return undefined;
+  return DSA_ENTRY.exec(normalized.slice(ROOT.length))?.[1];
+}
+
+/** A DSA entry with its region fences filled in from its code files, which
+ * are watched so a code edit reloads the entry in dev. Each entry is imported
+ * several ways (`?raw` and each view), so the resolved text is cached per
+ * entry, keyed on the entry's and both code files' text: an edit to any of
+ * them misses the cache, and identical text resolves only once. */
+function resolvedDsaEntry(
+  markdown: string,
+  slug: string,
+  watch: (file: string) => void,
+  cache: Map<string, { key: string; resolved: string }>,
+): string {
+  const folder = path.join(ROOT, 'src/dsa/code', slug);
+  const files: { python?: string; typescript?: string; label: string } = {
+    label: `src/dsa/entries/${slug}.md (code in src/dsa/code/${slug}/)`,
+  };
+  const sources = {
+    python: path.join(folder, `${slug.replaceAll('-', '_')}.py`),
+    typescript: path.join(folder, `${slug}.ts`),
+  } as const;
+  for (const language of ['python', 'typescript'] as const) {
+    watch(sources[language]);
+    if (existsSync(sources[language]))
+      files[language] = readFileSync(sources[language], 'utf8');
+  }
+  const key = JSON.stringify([markdown, files.python ?? null, files.typescript ?? null]);
+  const cached = cache.get(slug);
+  if (cached?.key === key) return cached.resolved;
+  const resolved = resolveCodeRegions(markdown, files);
+  cache.set(slug, { key, resolved });
+  return resolved;
+}
+
 function markdownMeta(): Plugin {
+  const resolvedEntries = new Map<string, { key: string; resolved: string }>();
   return {
     name: 'markdown-meta',
     enforce: 'pre',
@@ -52,9 +105,19 @@ function markdownMeta(): Plugin {
       if (!file.endsWith('.md')) return null;
       const params = new URLSearchParams(query);
       const view = Object.keys(MARKDOWN_VIEWS).find((name) => params.has(name));
-      if (!view) return null;
+      const slug = dsaEntrySlug(file);
+      const raw = slug !== undefined && params.has('raw');
+      if (!view && !raw) return null;
       this.addWatchFile(file);
-      const value = MARKDOWN_VIEWS[view](parseFrontmatter(readFileSync(file, 'utf8')));
+      let markdown = readFileSync(file, 'utf8');
+      if (slug !== undefined)
+        markdown = resolvedDsaEntry(
+          markdown,
+          slug,
+          (f) => this.addWatchFile(f),
+          resolvedEntries,
+        );
+      const value = view ? MARKDOWN_VIEWS[view](parseFrontmatter(markdown)) : markdown;
       return `export default ${JSON.stringify(value)};`;
     },
   };

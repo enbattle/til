@@ -1,3 +1,4 @@
+# region supports-less-than
 from collections.abc import Iterable
 from typing import Any, Generic, Protocol, TypeVar
 
@@ -28,7 +29,9 @@ class MinHeap(Generic[T]):
         if not self._items:
             raise IndexError("peek at an empty heap")
         return self._items[0]
+# endregion
 
+    # region push
     def push(self, item: T) -> None:
         self._items.append(item)
         self._sift_up(len(self._items) - 1)
@@ -45,7 +48,9 @@ class MinHeap(Generic[T]):
         self._items[0] = last
         self._sift_down(0)
         return top
+    # endregion
 
+    # region sift-up
     def _sift_up(self, i: int) -> None:
         items = self._items
         while i > 0:
@@ -56,7 +61,9 @@ class MinHeap(Generic[T]):
                 return
             items[i], items[parent] = items[parent], items[i]
             i = parent
+    # endregion
 
+    # region sift-down
     def _sift_down(self, i: int) -> None:
         items = self._items
         n = len(items)
@@ -69,3 +76,4 @@ class MinHeap(Generic[T]):
                 return
             items[i], items[child] = items[child], items[i]
             i = child
+    # endregion

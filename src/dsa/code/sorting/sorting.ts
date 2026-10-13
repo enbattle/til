@@ -1,3 +1,4 @@
+// #region merge-sort
 /** A new array in ascending key order; equal keys keep their input order. */
 export function mergeSort<T>(
   items: readonly T[],
@@ -10,6 +11,8 @@ export function mergeSort<T>(
   const merged: T[] = [];
   let i = 0;
   let j = 0;
+  // #endregion
+  // #region part-2
   while (i < left.length && j < right.length) {
     // <=, not <: on a tie the left item came first in the input, so it
     // goes first. With < the sort still sorts, but stability is gone.
@@ -20,7 +23,9 @@ export function mergeSort<T>(
   // and no smaller than anything taken. Skip them and the tail vanishes.
   return merged.concat(left.slice(i), right.slice(j));
 }
+// #endregion
 
+// #region partition
 /**
  * Rearrange nums[lo, hi) so nums[lo, lt) < pivot, nums[lt, gt) == pivot and
  * nums[gt, hi) > pivot, and return [lt, gt].
@@ -50,7 +55,9 @@ export function partition(
   }
   return [lt, gt];
 }
+// #endregion
 
+// #region quickselect
 /** The k-th smallest of nums, counting from 0. Reorders nums in place. */
 export function quickselect(
   nums: number[],
@@ -73,3 +80,4 @@ export function quickselect(
     else return nums[k];
   }
 }
+// #endregion

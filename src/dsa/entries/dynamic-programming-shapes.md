@@ -69,170 +69,42 @@ The answer is 2: insert `y`, replace `c` with `d`. For the longest common subseq
 
 ## Walkthrough
 
-```python
-from collections.abc import Sequence
-from math import inf
+```python region=min-path-sum
 
-
-def min_path_sum(grid: list[list[int]]) -> int:
-    """Smallest total of a right/down path from the top-left to the bottom-right."""
-    if not grid or not grid[0]:
-        return 0
-    # One row is enough: a cell reads only the one above it and the one to
-    # its left. row[0] = 0 and inf elsewhere let the first row and column
-    # fall out of the same formula, with no special cases for the edges.
-    row: list[float] = [0] + [inf] * (len(grid[0]) - 1)
-    for r in range(len(grid)):
-        for c in range(len(grid[0])):
-            # Before row[c] is overwritten it still holds the cell above;
-            # row[c - 1] has just been overwritten, so it is the cell to the left.
-            best = row[c] if c == 0 else min(row[c], row[c - 1])
-            row[c] = grid[r][c] + best
-    return int(row[-1])
 ```
 
-```typescript
-/** Smallest total of a right/down path from the top-left to the bottom-right. */
-export function minPathSum(grid: number[][]): number {
-  if (grid.length === 0 || grid[0].length === 0) return 0;
-  // One row is enough: a cell reads only the one above it and the one to
-  // its left. row[0] = 0 and Infinity elsewhere let the first row and column
-  // fall out of the same formula, with no special cases for the edges.
-  const row = [0, ...new Array<number>(grid[0].length - 1).fill(Infinity)];
-  for (let r = 0; r < grid.length; r++) {
-    for (let c = 0; c < grid[0].length; c++) {
-      // Before row[c] is overwritten it still holds the cell above;
-      // row[c - 1] has just been overwritten, so it is the cell to the left.
-      const best = c === 0 ? row[c] : Math.min(row[c], row[c - 1]);
-      row[c] = grid[r][c] + best;
-    }
-  }
-  return row[row.length - 1];
-}
+```typescript region=min-path-sum
+
 ```
 
 On the example the row ends as `[6, 8, 7]`, the last row of the table above. The budget shape keeps a row too, indexed by capacity instead of column.
 
-```python
-def knapsack_01(weights: list[int], values: list[int], capacity: int) -> int:
-    """Best total value of items, each used at most once, weighing <= capacity."""
-    best = [0] * (capacity + 1)
-    for weight, value in zip(weights, values):
-        # Downward: best[c - weight] must still be the row from before this
-        # item. Upward would find it already updated and use the item twice.
-        for c in range(capacity, weight - 1, -1):
-            best[c] = max(best[c], best[c - weight] + value)
-    return best[capacity]
+```python region=knapsack-01
+
 ```
 
-```typescript
-/** Best total value of items, each used at most once, weighing <= capacity. */
-export function knapsack01(
-  weights: number[],
-  values: number[],
-  capacity: number,
-): number {
-  const best = new Array<number>(capacity + 1).fill(0);
-  for (let i = 0; i < weights.length; i++) {
-    const [weight, value] = [weights[i], values[i]];
-    // Downward: best[c - weight] must still be the row from before this
-    // item. Upward would find it already updated and use the item twice.
-    for (let c = capacity; c >= weight; c--) {
-      best[c] = Math.max(best[c], best[c - weight] + value);
-    }
-  }
-  return best[capacity];
-}
+```typescript region=knapsack01
+
 ```
 
 The row takes the values of the table above, one item at a time. Coin change keeps the same row and flips the direction.
 
-```python
-def min_coins(coins: list[int], amount: int) -> int:
-    """Fewest coins, each usable any number of times, that sum to amount; -1 if none."""
-    # amount + 1 is above every real answer (at most amount coins), and adding
-    # 1 to it keeps it above, so "impossible" never looks like a real count.
-    unreachable = amount + 1
-    fewest = [0] + [unreachable] * amount
-    for coin in coins:
-        # Upward, the opposite of knapsack_01: fewest[a - coin] may already
-        # include this coin, which is exactly what lets a coin repeat.
-        for a in range(coin, amount + 1):
-            fewest[a] = min(fewest[a], fewest[a - coin] + 1)
-    return fewest[amount] if fewest[amount] < unreachable else -1
+```python region=min-coins
+
 ```
 
-```typescript
-/** Fewest coins, each usable any number of times, that sum to amount; -1 if none. */
-export function minCoins(coins: number[], amount: number): number {
-  // amount + 1 is above every real answer (at most amount coins), and adding
-  // 1 to it keeps it above, so "impossible" never looks like a real count.
-  const unreachable = amount + 1;
-  const fewest = [0, ...new Array<number>(amount).fill(unreachable)];
-  for (const coin of coins) {
-    // Upward, the opposite of knapsack01: fewest[a - coin] may already
-    // include this coin, which is exactly what lets a coin repeat.
-    for (let a = coin; a <= amount; a++) {
-      fewest[a] = Math.min(fewest[a], fewest[a - coin] + 1);
-    }
-  }
-  return fewest[amount] < unreachable ? fewest[amount] : -1;
-}
+```typescript region=min-coins
+
 ```
 
 The row ends as `[0, 1, 2, 1, 1, 2, 2]`, so `min_coins([1, 3, 4], 6)` is 2. The last shape tracks two indexes at once.
 
-```python
-def edit_distance(a: Sequence[str], b: Sequence[str]) -> int:
-    """Fewest single-character inserts, deletes and replaces that turn a into b."""
-    # table[i][j] is the distance between a[:i] and b[:j]. The first row and
-    # column are the base cases: turning "" into j characters takes j inserts.
-    table = [[i] + [0] * len(b) for i in range(len(a) + 1)]
-    table[0] = list(range(len(b) + 1))
-    for i in range(1, len(a) + 1):
-        for j in range(1, len(b) + 1):
-            if a[i - 1] == b[j - 1]:
-                # Matching characters cost nothing; taking the diagonal is
-                # never worse than any insert or delete here.
-                table[i][j] = table[i - 1][j - 1]
-            else:
-                table[i][j] = 1 + min(
-                    table[i - 1][j],  # delete a[i - 1]
-                    table[i][j - 1],  # insert b[j - 1]
-                    table[i - 1][j - 1],  # replace a[i - 1] with b[j - 1]
-                )
-    return table[-1][-1]
+```python region=edit-distance
+
 ```
 
-```typescript
-/** Fewest single-character inserts, deletes and replaces that turn a into b. */
-export function editDistance(a: ArrayLike<string>, b: ArrayLike<string>): number {
-  // table[i][j] is the distance between a[:i] and b[:j]. The first row and
-  // column are the base cases: turning "" into j characters takes j inserts.
-  const table = Array.from({ length: a.length + 1 }, (_, i) => [
-    i,
-    ...new Array<number>(b.length).fill(0),
-  ]);
-  table[0] = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i++) {
-    for (let j = 1; j <= b.length; j++) {
-      if (a[i - 1] === b[j - 1]) {
-        // Matching characters cost nothing; taking the diagonal is
-        // never worse than any insert or delete here.
-        table[i][j] = table[i - 1][j - 1];
-      } else {
-        table[i][j] =
-          1 +
-          Math.min(
-            table[i - 1][j], // delete a[i - 1]
-            table[i][j - 1], // insert b[j - 1]
-            table[i - 1][j - 1], // replace a[i - 1] with b[j - 1]
-          );
-      }
-    }
-  }
-  return table[a.length][b.length];
-}
+```typescript region=edit-distance
+
 ```
 
 On `"abc"` and `"yabd"` it returns the corner, 2. To recover the edits themselves, walk back from the corner to the neighbor each cell came from, which needs the whole table. If you only want the distance, one row plus one saved diagonal value is enough.

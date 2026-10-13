@@ -85,143 +85,47 @@ result as unsigned, which is why `countSetBits` can test its range with it.
 
 ## Walkthrough
 
-```python
-def count_set_bits(n: int) -> int:
-    """Number of 1 bits in the binary form of n, for n >= 0."""
-    # A negative int has infinitely many leading 1s, so the loop below would
-    # never reach 0: -5 becomes -6, -8, -16, -32 and keeps going.
-    if n < 0:
-        raise ValueError("count_set_bits needs a non-negative integer")
-    count = 0
-    while n:
-        # n - 1 flips the lowest 1 and the 0s beneath it, so the AND clears
-        # exactly that one bit. One pass per set bit, not per bit position.
-        n &= n - 1
-        count += 1
-    return count
+```python region=count-set-bits
+
 ```
 
-```typescript
-const MAX_UINT32 = 0xffffffff;
+```typescript region=part-1
 
-/** Number of 1 bits in the binary form of `n`, an integer in 0..2**32 - 1. */
-export function countSetBits(n: number): number {
-  // Bitwise operators keep only 32 bits, so anything outside this range
-  // (a negative, a fraction, 2**32) would be silently truncated. >>> 0 gives
-  // back n only for an integer in 0..2**32 - 1.
-  if (n >>> 0 !== n) {
-    throw new RangeError('countSetBits needs an integer from 0 to 2**32 - 1');
-  }
-  let x = n;
-  let count = 0;
-  while (x !== 0) {
-    // x - 1 flips the lowest 1 and the 0s beneath it, so the AND clears
-    // exactly that one bit. One pass per set bit, not per bit position.
-    // (The result is a signed 32-bit value, which still reaches 0.)
-    x &= x - 1;
-    count++;
-  }
-  return count;
-}
 ```
 
 On 44 the loop goes 44, 40, 32, 0 and returns 3. Python 3.10 added
 `n.bit_count()`, but the clearing step is the part you reuse, as the next
 function does.
 
-```python
-def is_power_of_two(n: int) -> bool:
-    """True when n is 1, 2, 4, 8, ...; zero and negatives are not."""
-    # n > 0 first: 0 & -1 is 0, so zero would pass the AND test. The
-    # parentheses are optional in Python but required in JavaScript, where
-    # === binds tighter than &; keep them in both.
-    return n > 0 and (n & (n - 1)) == 0
+```python region=is-power-of-two
+
 ```
 
-```typescript
-/** True when `n` is 1, 2, 4, 8, ...; zero and negatives are not. Max 2**32 - 1. */
-export function isPowerOfTwo(n: number): boolean {
-  // 2**32 + 1 would be truncated to 1 and reported as a power of two.
-  if (!Number.isInteger(n) || n > MAX_UINT32) {
-    throw new RangeError('isPowerOfTwo needs an integer up to 2**32 - 1');
-  }
-  // n > 0 first: 0 & -1 is 0, so zero would pass the AND test. The
-  // parentheses are required here: === binds tighter than &, so
-  // n & (n - 1) === 0 would mean n & ((n - 1) === 0).
-  return n > 0 && (n & (n - 1)) === 0;
-}
+```typescript region=is-power-of-two
+
 ```
 
 Python needs no range guard because its integers never overflow; TypeScript
 needs one because of the 32-bit limit. XOR is the second tool.
 
-```python
-def single_number(nums: list[int]) -> int:
-    """The value that appears once when every other value appears twice."""
-    # An empty list has no lone value; returning 0 would look like an answer.
-    if not nums:
-        raise ValueError("single_number needs at least one number")
-    # Start at 0 because x ^ 0 == x; each pair cancels wherever it sits.
-    result = 0
-    for num in nums:
-        result ^= num
-    return result
+```python region=single-number
+
 ```
 
-```typescript
-/** The value that appears once when every other value appears twice. */
-export function singleNumber(nums: number[]): number {
-  // An empty list has no lone value; returning 0 would look like an answer.
-  if (nums.length === 0) throw new RangeError('singleNumber needs a number');
-  // Start at 0 because x ^ 0 === x; each pair cancels wherever it sits.
-  let result = 0;
-  for (const num of nums) {
-    // ^ works on 32-bit signed ints: 2**31 would wrap to -2**31 and a
-    // fraction would be truncated, both without an error.
-    if ((num | 0) !== num) throw new RangeError('singleNumber needs int32 values');
-    result ^= num;
-  }
-  return result;
-}
+```typescript region=single-number
+
 ```
 
 XOR on infinite two's complement still cancels equal values, so Python needs no
 extra check for negatives. If two values lack a partner, the result is the XOR
 of what's there: no error and no meaning. The last tool uses bits as a set.
 
-```python
-def subsets(items: list[int]) -> list[list[int]]:
-    """All 2**len(items) subsets; mask m picks items[i] where bit i of m is 1."""
-    result = []
-    for mask in range(1 << len(items)):
-        subset = []
-        rest = mask
-        while rest:
-            # rest & -rest isolates the lowest set bit; its position is the
-            # item. Looping over set bits skips the items that are out.
-            low = rest & -rest
-            subset.append(items[low.bit_length() - 1])
-            rest ^= low
-        result.append(subset)
-    return result
+```python region=subsets
+
 ```
 
-```typescript
-/** All 2**n subsets; mask m picks items[i] where bit i of m is 1. */
-export function subsets<T>(items: T[]): T[][] {
-  const result: T[][] = [];
-  // 2 ** n, not 1 << n: 1 << 31 is negative, so the loop would never run.
-  for (let mask = 0; mask < 2 ** items.length; mask++) {
-    const subset: T[] = [];
-    // rest & -rest isolates the lowest set bit; clz32 turns it into its
-    // position. Looping over set bits skips the items that are out.
-    for (let rest = mask; rest !== 0; rest &= rest - 1) {
-      subset.push(items[31 - Math.clz32(rest & -rest)]);
-    }
-    result.push(subset);
-  }
-  return result;
-}
+```typescript region=subsets
+
 ```
 
 Mask 6 is 110: its lowest set bit is 2 (bit 1, so `b`), and clearing it

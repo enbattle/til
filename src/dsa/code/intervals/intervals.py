@@ -1,3 +1,4 @@
+# region part-1
 Interval = tuple[int, int]  # (start, end), both ends included
 
 
@@ -13,8 +14,10 @@ def merge_intervals(intervals: list[Interval]) -> list[Interval]:
         else:
             merged.append((start, end))
     return merged
+# endregion
 
 
+# region max-overlap
 def max_overlap(intervals: list[Interval]) -> int:
     """The most intervals that contain one common point (0 for no intervals)."""
     # Sorted apart: which end belongs to which start never matters for counting.
@@ -29,8 +32,10 @@ def max_overlap(intervals: list[Interval]) -> int:
             finished += 1
         best = max(best, i + 1 - finished)
     return best
+# endregion
 
 
+# region insert-interval
 def insert_interval(merged: list[Interval], new: Interval) -> list[Interval]:
     """Add one interval to a sorted, disjoint list, fusing what it touches."""
     start, end = new
@@ -46,3 +51,4 @@ def insert_interval(merged: list[Interval], new: Interval) -> list[Interval]:
         i += 1
     out.append((start, end))
     return out + merged[i:]
+# endregion

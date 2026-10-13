@@ -1,3 +1,4 @@
+# region part-1
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generic, TypeVar
@@ -14,8 +15,10 @@ class TreeNode(Generic[T]):
     value: T
     left: "TreeNode[T] | None" = None
     right: "TreeNode[T] | None" = None
+# endregion
 
 
+# region child
 def _child(value: T | None, born: list[TreeNode[T]]) -> TreeNode[T] | None:
     # `is None`, not falsy: 0 and "" are real values that must get a node.
     if value is None:
@@ -43,14 +46,18 @@ def build_tree(values: Sequence[T | None]) -> TreeNode[T] | None:
     if list(items):
         raise ValueError("a value has no parent")
     return root
+# endregion
 
 
+# region height
 def height(node: TreeNode[T] | None) -> int:
     # -1 for the empty tree, so a leaf is 0 and the formula needs no special
     # case. Recursion is as deep as the tree is tall, so a chain overflows.
     return -1 if node is None else 1 + max(height(node.left), height(node.right))
+# endregion
 
 
+# region inorder
 def inorder(root: TreeNode[T] | None) -> list[T]:
     """Left subtree, node, right subtree, with an explicit stack, not recursion."""
     out: list[T] = []
@@ -66,8 +73,10 @@ def inorder(root: TreeNode[T] | None) -> list[T]:
         out.append(node.value)
         node = node.right  # else the loop re-walks the left spine forever
     return out
+# endregion
 
 
+# region level-order
 def level_order(root: TreeNode[T] | None) -> list[list[T]]:
     """Values grouped by depth, left to right."""
     levels: list[list[T]] = []
@@ -78,3 +87,4 @@ def level_order(root: TreeNode[T] | None) -> list[list[T]]:
         # a flat queue would have to count where each level ends.
         level = [c for n in level for c in (n.left, n.right) if c is not None]
     return levels
+# endregion

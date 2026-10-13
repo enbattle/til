@@ -57,187 +57,42 @@ Which one? Kruskal takes a plain edge list and pays for a sort. Prim needs an ad
 
 Python has `heapq`, so it needs only the edge type. JavaScript has no heap, so the TypeScript carries the [heap entry's](/dsa/heap) `MinHeap`, trimmed.
 
-```python
-import heapq
-from collections.abc import Iterable
+```python region=part-1
 
-Edge = tuple[int, int, int]  # (u, v, weight); undirected, vertices are 0..n-1
 ```
 
-```typescript
-/** An undirected weighted edge: [u, v, weight], with vertices numbered 0..n-1. */
-export type Edge = [u: number, v: number, weight: number];
+```typescript region=part-1
 
-/** heap.ts's MinHeap without heapify, peek or empty checks: test `size` first. */
-class MinHeap<T> {
-  private readonly items: T[] = [];
-
-  constructor(private readonly less: (a: T, b: T) => boolean) {}
-
-  get size(): number {
-    return this.items.length;
-  }
-
-  push(item: T): void {
-    const a = this.items;
-    a.push(item);
-    for (let i = a.length - 1; i > 0;) {
-      const parent = (i - 1) >> 1;
-      if (!this.less(a[i], a[parent])) return;
-      [a[i], a[parent]] = [a[parent], a[i]];
-      i = parent;
-    }
-  }
-
-  pop(): T {
-    const a = this.items;
-    const top = a[0];
-    const last = a.pop() as T;
-    if (a.length === 0) return top; // a[0] = last would refill the emptied array
-    a[0] = last;
-    for (let i = 0, c = 1; c < a.length; c = 2 * i + 1) {
-      if (c + 1 < a.length && this.less(a[c + 1], a[c])) c++; // the smaller child
-      if (!this.less(a[c], a[i])) break;
-      [a[i], a[c]] = [a[c], a[i]];
-      i = c;
-    }
-    return top;
-  }
-}
 ```
 
 Kruskal first. It's the [union-find](/dsa/union-find) entry's structure on bare arrays, except `find` uses path halving: one pass that points every other node on the path at its grandparent, instead of that entry's two-pass compression.
 
-```python
-def kruskal(n: int, edges: Iterable[Edge]) -> list[Edge] | None:
-    """A minimum spanning tree as a list of edges, or None if disconnected."""
-    parent = list(range(n))
-    size = [1] * n
+```python region=kruskal
 
-    def find(x: int) -> int:
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]  # halving: point at the grandparent
-            x = parent[x]
-        return x
-
-    chosen: list[Edge] = []
-    for u, v, w in sorted(edges, key=lambda e: e[2]):
-        root_u, root_v = find(u), find(v)
-        # Roots, not u and v: 0 and 1 can already be linked through 2.
-        if root_u == root_v:
-            continue
-        if size[root_u] < size[root_v]:
-            root_u, root_v = root_v, root_u  # smaller under larger: shallow trees
-        parent[root_v] = root_u
-        size[root_u] += size[root_v]
-        chosen.append((u, v, w))
-        # A tree has no room for more, and every edge left would close a cycle.
-        if len(chosen) == n - 1:
-            break
-    return chosen if len(chosen) == max(n - 1, 0) else None
 ```
 
-```typescript
-/** A minimum spanning tree as a list of edges, or null if disconnected. */
-export function kruskal(n: number, edges: Iterable<Edge>): Edge[] | null {
-  const parent = Array.from({ length: n }, (_, i) => i);
-  const size = new Array<number>(n).fill(1);
+```typescript region=kruskal
 
-  const find = (x: number): number => {
-    while (parent[x] !== x) {
-      parent[x] = parent[parent[x]]; // halving: point at the grandparent
-      x = parent[x];
-    }
-    return x;
-  };
-
-  const chosen: Edge[] = [];
-  for (const edge of [...edges].sort((a, b) => a[2] - b[2])) {
-    let rootU = find(edge[0]);
-    let rootV = find(edge[1]);
-    // Roots, not u and v: 0 and 1 can already be linked through 2.
-    if (rootU === rootV) continue;
-    if (size[rootU] < size[rootV]) [rootU, rootV] = [rootV, rootU]; // shallow trees
-    parent[rootV] = rootU;
-    size[rootU] += size[rootV];
-    chosen.push(edge);
-    // A tree has no room for more, and every edge left would close a cycle.
-    if (chosen.length === n - 1) break;
-  }
-  return chosen.length === Math.max(n - 1, 0) ? chosen : null;
-}
 ```
 
 The loop is the table above; the early `break` is why `(2,3,8)` was never looked at.
 
-```python
-def prim(n: int, edges: Iterable[Edge]) -> list[Edge] | None:
-    """A minimum spanning tree grown from vertex 0, or None if disconnected."""
-    if n == 0:  # adjacent[0] below would not exist
-        return []
-    adjacent: list[list[tuple[int, int, int]]] = [[] for _ in range(n)]
-    for u, v, w in edges:
-        # Weight first, so the heap orders by it. Both ends: an edge stored
-        # once is a one-way street, and Prim would miss vertices behind it.
-        adjacent[u].append((w, u, v))
-        adjacent[v].append((w, v, u))
+```python region=prim
+
 ```
 
-```typescript
-/** A minimum spanning tree grown from vertex 0, or null if disconnected. */
-export function prim(n: number, edges: Iterable<Edge>): Edge[] | null {
-  if (n === 0) return []; // adjacent[0] below would not exist
-  const adjacent: Edge[][] = Array.from({ length: n }, () => []);
-  for (const [u, v, w] of edges) {
-    // Both ends: an edge stored once is a one-way street, and Prim would
-    // miss vertices behind it.
-    adjacent[u].push([u, v, w]);
-    adjacent[v].push([v, u, w]);
-  }
+```typescript region=prim
+
 ```
 
 Prim needs "which edges leave this vertex?", so the edge list becomes an adjacency list.
 
-```python
-    in_tree = [False] * n
-    in_tree[0] = True
-    heap = list(adjacent[0])
-    heapq.heapify(heap)
-    chosen: list[Edge] = []
-    while heap and len(chosen) < n - 1:
-        w, u, v = heapq.heappop(heap)
-        # Stale: a cheaper edge already brought v in, and this one would
-        # close a cycle. Edges are never removed from the heap, only skipped.
-        if in_tree[v]:
-            continue
-        in_tree[v] = True
-        chosen.append((u, v, w))
-        for entry in adjacent[v]:
-            if not in_tree[entry[2]]:  # an edge back into the tree is never used
-                heapq.heappush(heap, entry)
-    return chosen if len(chosen) == n - 1 else None
+```python region=part-4
+
 ```
 
-```typescript
-  const inTree = new Array<boolean>(n).fill(false);
-  inTree[0] = true;
-  const heap = new MinHeap<Edge>((a, b) => a[2] < b[2]);
-  for (const edge of adjacent[0]) heap.push(edge);
-  const chosen: Edge[] = [];
-  while (heap.size > 0 && chosen.length < n - 1) {
-    const edge = heap.pop();
-    const v = edge[1];
-    // Stale: a cheaper edge already brought v in, and this one would
-    // close a cycle. Edges are never removed from the heap, only skipped.
-    if (inTree[v]) continue;
-    inTree[v] = true;
-    chosen.push(edge);
-    for (const next of adjacent[v]) {
-      if (!inTree[next[1]]) heap.push(next); // an edge back into the tree is never used
-    }
-  }
-  return chosen.length === n - 1 ? chosen : null;
-}
+```typescript region=part-4
+
 ```
 
 Each pop is the cheapest edge leaving the tree, unless it's stale, as `(4, 0, 1)` was. Edges come out oriented from the tree to the new vertex, so Prim reports `(2, 1, 2)` where Kruskal reports `(1, 2, 2)`: the same edge. If the heap empties early, the rest of the graph is unreachable from vertex 0.

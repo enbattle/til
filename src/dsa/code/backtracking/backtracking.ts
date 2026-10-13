@@ -1,3 +1,4 @@
+// #region subsets
 /** Every subset of distinct values, each in input order, depth first. */
 export function subsets(values: readonly number[]): number[][] {
   const result: number[][] = [];
@@ -19,7 +20,9 @@ export function subsets(values: readonly number[]): number[][] {
   visit(0);
   return result;
 }
+// #endregion
 
+// #region permutations
 /** Every ordering of distinct values, in lexicographic order of positions. */
 export function permutations(values: readonly number[]): number[][] {
   const result: number[][] = [];
@@ -47,7 +50,9 @@ export function permutations(values: readonly number[]): number[][] {
   visit();
   return result;
 }
+// #endregion
 
+// #region combination-sum
 /** Every combination of positive candidates, each reusable, adding to `target`. */
 export function combinationSum(
   candidates: readonly number[],
@@ -81,3 +86,4 @@ export function combinationSum(
   visit(0, target);
   return result;
 }
+// #endregion

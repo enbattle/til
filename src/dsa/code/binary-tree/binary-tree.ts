@@ -1,3 +1,4 @@
+// #region tree-node
 /** One node: a value and a left and a right child, or null. */
 export class TreeNode<T> {
   constructor(
@@ -6,7 +7,9 @@ export class TreeNode<T> {
     public right: TreeNode<T> | null = null,
   ) {}
 }
+// #endregion
 
+// #region build-tree
 /** Build a tree from its level order, where null marks a missing child. */
 export function buildTree<T>(values: readonly (T | null)[]): TreeNode<T> | null {
   let i = 0;
@@ -35,14 +38,18 @@ export function buildTree<T>(values: readonly (T | null)[]): TreeNode<T> | null 
   if (i < values.length) throw new RangeError('a value has no parent');
   return root;
 }
+// #endregion
 
+// #region height
 export function height<T>(node: TreeNode<T> | null): number {
   // -1 for the empty tree, so a leaf is 0 and the formula needs no special
   // case. Recursion is as deep as the tree is tall, so a chain overflows.
   if (node === null) return -1;
   return 1 + Math.max(height(node.left), height(node.right));
 }
+// #endregion
 
+// #region inorder
 /** Left subtree, node, right subtree, with an explicit stack, not recursion. */
 export function inorder<T>(root: TreeNode<T> | null): T[] {
   const out: T[] = [];
@@ -61,7 +68,9 @@ export function inorder<T>(root: TreeNode<T> | null): T[] {
   }
   return out;
 }
+// #endregion
 
+// #region level-order
 /** Values grouped by depth, left to right. */
 export function levelOrder<T>(root: TreeNode<T> | null): T[][] {
   const levels: T[][] = [];
@@ -74,3 +83,4 @@ export function levelOrder<T>(root: TreeNode<T> | null): T[][] {
   }
   return levels;
 }
+// #endregion

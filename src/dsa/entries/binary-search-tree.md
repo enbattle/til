@@ -64,197 +64,34 @@ A **self-balancing** tree (AVL, red-black) rotates nodes after an insert or remo
 
 Search, insert and remove all start by walking to a key, so `find` does that once and returns the node and its parent.
 
-```python
-from collections.abc import Iterator
-from math import inf
+```python region=node
 
-class Node:
-    def __init__(self, key: int) -> None:
-        self.key = key
-        self.left: Node | None = None
-        self.right: Node | None = None
-
-def find(root: Node | None, key: int) -> tuple[Node | None, Node | None]:
-    """The node holding key (None if absent) and its parent."""
-    # A node can't unlink itself, so the walk carries its parent along.
-    parent, node = None, root
-    while node is not None and node.key != key:
-        parent, node = node, (node.left if key < node.key else node.right)
-    return parent, node
-
-def contains(root: Node | None, key: int) -> bool:
-    return find(root, key)[1] is not None
-
-def insert(root: Node | None, key: int) -> Node:
-    """Returns the root, which is new only when the tree was empty."""
-    parent, node = find(root, key)
-    if node is not None:
-        # A second copy would break the strict smaller/larger rule.
-        return root
-    new = Node(key)
-    if parent is None:
-        return new
-    if key < parent.key:
-        parent.left = new
-    else:
-        parent.right = new
-    return root
 ```
 
-```typescript
-export class Node {
-  left: Node | null = null;
-  right: Node | null = null;
-  constructor(public key: number) {}
-}
+```typescript region=node
 
-/** The node holding key (null if absent) and its parent. */
-export function find(root: Node | null, key: number): [Node | null, Node | null] {
-  // A node can't unlink itself, so the walk carries its parent along.
-  let parent: Node | null = null;
-  let node = root;
-  while (node !== null && node.key !== key) {
-    parent = node;
-    node = key < node.key ? node.left : node.right;
-  }
-  return [parent, node];
-}
-
-export function contains(root: Node | null, key: number): boolean {
-  return find(root, key)[1] !== null;
-}
-
-/** Returns the root, which is new only when the tree was empty. */
-export function insert(root: Node | null, key: number): Node {
-  const [parent, node] = find(root, key);
-  // A second copy would break the strict smaller/larger rule.
-  if (node !== null) return root as Node;
-  const added = new Node(key);
-  if (parent === null) return added;
-  if (key < parent.key) parent.left = added;
-  else parent.right = added;
-  return root as Node;
-}
 ```
 
 Both `insert` and `remove` return the root, because inserting into an empty tree or removing the root changes which node that is. Callers write `root = insert(root, key)`.
 
 Remove has three cases by how many children the node has. A leaf like 20 is just unlinked. A node with one child, like 60, is replaced by that child, so 65 moves up to 70's left. A node with two children, like 50, can't be unlinked without orphaning a subtree. Instead it takes the key of its **successor**, the smallest key in its right subtree (60 here), and the successor, which has no left child, is removed in its place. The root becomes 60, and 65 moves up as before.
 
-```python
-def remove(root: Node | None, key: int) -> Node | None:
-    """Returns the root, which changes when the root itself was removed."""
-    parent, node = find(root, key)
-    if node is None:
-        return root
-    if node.left is not None and node.right is not None:
-        # The smallest key on the right is the only one that can take this
-        # node's place with every left key still smaller. Start the parent
-        # at node: the successor may be node.right itself.
-        parent, successor = node, node.right
-        while successor.left is not None:
-            parent, successor = successor, successor.left
-        # Copy the key up rather than relink, so node's links stay valid.
-        node.key = successor.key
-        node = successor
-    # Zero or one child now: a successor has no left child by construction.
-    child = node.left if node.left is not None else node.right
-    if parent is None:
-        return child
-    if parent.left is node:
-        parent.left = child
-    else:
-        parent.right = child
-    return root
+```python region=remove
+
 ```
 
-```typescript
-/** Returns the root, which changes when the root itself was removed. */
-export function remove(root: Node | null, key: number): Node | null {
-  let [parent, node] = find(root, key);
-  if (node === null) return root;
-  if (node.left !== null && node.right !== null) {
-    // The smallest key on the right is the only one that can take this
-    // node's place with every left key still smaller. Start the parent
-    // at node: the successor may be node.right itself.
-    parent = node;
-    let successor = node.right;
-    while (successor.left !== null) {
-      parent = successor;
-      successor = successor.left;
-    }
-    // Copy the key up rather than relink, so node's links stay valid.
-    node.key = successor.key;
-    node = successor;
-  }
-  // Zero or one child now: a successor has no left child by construction.
-  const child = node.left ?? node.right;
-  if (parent === null) return child;
-  if (parent.left === node) parent.left = child;
-  else parent.right = child;
-  return root;
-}
+```typescript region=remove
+
 ```
 
 Two more functions finish the entry. `in_order` is [binary tree's `inorder`](/dsa/binary-tree) loop written as a generator, so a caller can stop early: that answers "k-th smallest" and "all keys in a range". `is_valid` checks the invariant, a common interview question in its own right.
 
-```python
-def in_order(root: Node | None) -> Iterator[int]:
-    # An explicit stack: recursion overflows on a long chain of nodes.
-    stack: list[Node] = []
-    node = root
-    while stack or node is not None:
-        while node is not None:
-            stack.append(node)
-            node = node.left
-        node = stack.pop()
-        yield node.key
-        node = node.right
+```python region=in-order
 
-def is_valid(root: Node | None) -> bool:
-    # Bounds come from every ancestor, not just the parent: 50 with left
-    # child 30 and 30's right child 60 passes every parent-child check.
-    stack = [(root, -inf, inf)]
-    while stack:
-        node, lo, hi = stack.pop()
-        if node is None:
-            continue
-        if not lo < node.key < hi:
-            return False
-        stack.append((node.left, lo, node.key))
-        stack.append((node.right, node.key, hi))
-    return True
 ```
 
-```typescript
-export function* inOrder(root: Node | null): Generator<number> {
-  // An explicit stack: recursion overflows on a long chain of nodes.
-  const stack: Node[] = [];
-  let node = root;
-  while (stack.length > 0 || node !== null) {
-    while (node !== null) {
-      stack.push(node);
-      node = node.left;
-    }
-    node = stack.pop() as Node;
-    yield node.key;
-    node = node.right;
-  }
-}
+```typescript region=in-order
 
-export function isValid(root: Node | null): boolean {
-  // Bounds come from every ancestor, not just the parent: 50 with left
-  // child 30 and 30's right child 60 passes every parent-child check.
-  const stack: [Node | null, number, number][] = [[root, -Infinity, Infinity]];
-  while (stack.length > 0) {
-    const [node, lo, hi] = stack.pop() as [Node | null, number, number];
-    if (node === null) continue;
-    if (!(lo < node.key && node.key < hi)) return false;
-    stack.push([node.left, lo, node.key]);
-    stack.push([node.right, node.key, hi]);
-  }
-  return true;
-}
 ```
 
 Each node carries the open interval its key must fall in: the root allows anything, going left lowers `hi` to the parent's key, going right raises `lo`. That is how 60 under 30 under 50 gets caught, since its interval is (30, 50).

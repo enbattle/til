@@ -1,3 +1,4 @@
+// #region deque
 /** Push at the back, pop at either end, in a ring that doubles when full. */
 export class Deque<T> {
   private slots: (T | undefined)[];
@@ -17,14 +18,18 @@ export class Deque<T> {
     // % sends a position past the last slot back around to slot 0.
     return (this.head + offset) % this.slots.length;
   }
+  // #endregion
 
+  // #region push-back
   pushBack(item: T): void {
     // Full: the slot after the back is the front's, so grow before writing.
     if (this.count === this.slots.length) this.grow();
     this.slots[this.slot(this.count)] = item;
     this.count++;
   }
+  // #endregion
 
+  // #region peek-front
   peekFront(): T {
     // Check the size, not the slot: undefined could be a stored item.
     if (this.count === 0) throw new RangeError('empty deque');
@@ -50,7 +55,9 @@ export class Deque<T> {
     this.count--;
     return item;
   }
+  // #endregion
 
+  // #region grow
   private grow(): void {
     // Unroll the ring so the front lands in slot 0 of the bigger array.
     const old = this.slots;
@@ -61,7 +68,9 @@ export class Deque<T> {
     this.head = 0;
   }
 }
+// #endregion
 
+// #region part-5
 const PAIRS: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
 
 /** True if every bracket is closed by its partner, innermost first. */
@@ -78,7 +87,9 @@ export function isBalanced(text: string): boolean {
   }
   return stack.length === 0; // an opener still on the stack was never closed
 }
+// #endregion
 
+// #region window-max
 /** The maximum of every run of k consecutive items, in O(n). */
 export function windowMax(nums: number[], k: number): number[] {
   if (k < 1) throw new RangeError('k must be at least 1');
@@ -97,3 +108,4 @@ export function windowMax(nums: number[], k: number): number[] {
   }
   return out;
 }
+// #endregion

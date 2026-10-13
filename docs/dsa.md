@@ -20,7 +20,7 @@ src/dsa/
   code/<slug>/<slug>.ts                # its TypeScript code (no imports)
   code/<slug>/<slug>.test.ts
   dsa-structure.test.ts                # the heading templates
-  dsa-code-chunks.test.ts              # the chunks match the code files
+  dsa-code-chunks.test.ts              # the regions cover the code files
 ```
 
 Like case studies, entries live outside `src/content/`, so they are not a
@@ -108,14 +108,37 @@ A lone fence, a pair in the other order, or a pair split by a paragraph renders
 as plain code blocks, and the structure test fails it inside those two
 sections.
 
-The python fences in those sections, in order, must be the entry's `.py` file,
-and the typescript fences the `.ts` file, compared line by line with blank
-lines dropped (`src/dsa/dsa-code-chunks.test.ts`, which reads the fences with
-`markdownParser()`). So a chunk may stop anywhere, even in the middle of a
-function, and blank lines between chunks don't matter, but every other line of
-the file appears exactly once, in order. Write the code files first, run their
-tests, then copy them into chunks. Fences elsewhere in the entry (a usage
-example, a `text` diagram in `What it is`) aren't compared.
+The code lives once, in the code files; the entry names it. A code file marks
+named **regions**, `# region <name>` … `# endregion` in Python and
+`// #region <name>` … `// #endregion` in TypeScript (VS Code folds both).
+Every form VS Code folds is accepted (`#region`, `#  region`, `//#region`,
+`// region`), but only as a comment that starts its line, so a mid-line
+`# region` or a longer word like `# regional` stays code. Markers may be
+indented, to sit inside a class or a function; a name is
+lowercase kebab-case, unique in its file, and usually the same in both
+languages (`lower-bound`, after the function the region starts with, or
+`part-2`). A region's text is the lines between its markers, outer blank lines
+dropped. In `Implementation` and `Walkthrough` every python or typescript
+fence is an empty **region fence**, ` ```python region=lower-bound `, which
+Prettier writes with one blank line inside. The build fills each one in with
+its region's text (`src/lib/code-regions.mjs`, called from `vite.config.ts`'s
+`markdownMeta` plugin for every import of an entry), so the app, search and
+the tests all see the code, and a code edit reloads the entry in dev.
+
+The order rule: per language, the entry's region fences must name each region
+of the file exactly once, in file order, and every non-blank line of the file
+must sit inside a region (blank lines between regions don't count). So a
+region may stop anywhere, even in the middle of a function, but the entry
+still shows the whole tested file, in order. The build or test run fails,
+naming the entry, the file and the region, on an unknown, reused, unused or
+out-of-order region, an empty region, an uncovered line, a malformed marker, a region fence
+with a body, or a literal python/typescript fence in those two sections
+(`src/dsa/dsa-code-chunks.test.ts` checks the real entries too). Write the
+code files first, run their tests, then mark the regions. When a walkthrough
+wants a smaller step, split the region: close it where the step ends, open a
+new one with its own name on the next line, and add a fence pair for it in
+place. Fences elsewhere in the entry (a usage example, a `text` diagram in
+`What it is`) are left as written.
 
 The code files:
 
@@ -149,9 +172,10 @@ The code files:
   multiplies the test count and run time without adding coverage. Random
   inputs rarely hit the edges, so cover empty input and size 1 with explicit
   fixed cases. `src/dsa/code/heap/` shows the pattern in both languages.
-- Prettier formats the `.ts` file and leaves the markdown's code alone when a
-  chunk isn't a complete program, which is the usual case. Keep lines under 90
-  characters so the chunks scroll less on a phone.
+- Prettier formats the `.ts` file, markers included (it re-indents a marker
+  to the code around it). Blank lines inside a region show in the entry
+  exactly as in the file. Keep lines under 90 characters so the code scrolls
+  less on a phone.
 
 `npm run test:py` (`scripts/test-python.mjs`, part of `verify`) runs pytest
 over `src/dsa/code` with the first Python 3.11+ it finds (`python3`, `python`,

@@ -1,3 +1,4 @@
+# region min-path-sum
 from collections.abc import Sequence
 from math import inf
 
@@ -17,8 +18,10 @@ def min_path_sum(grid: list[list[int]]) -> int:
             best = row[c] if c == 0 else min(row[c], row[c - 1])
             row[c] = grid[r][c] + best
     return int(row[-1])
+# endregion
 
 
+# region knapsack-01
 def knapsack_01(weights: list[int], values: list[int], capacity: int) -> int:
     """Best total value of items, each used at most once, weighing <= capacity."""
     best = [0] * (capacity + 1)
@@ -28,8 +31,10 @@ def knapsack_01(weights: list[int], values: list[int], capacity: int) -> int:
         for c in range(capacity, weight - 1, -1):
             best[c] = max(best[c], best[c - weight] + value)
     return best[capacity]
+# endregion
 
 
+# region min-coins
 def min_coins(coins: list[int], amount: int) -> int:
     """Fewest coins, each usable any number of times, that sum to amount; -1 if none."""
     # amount + 1 is above every real answer (at most amount coins), and adding
@@ -42,8 +47,10 @@ def min_coins(coins: list[int], amount: int) -> int:
         for a in range(coin, amount + 1):
             fewest[a] = min(fewest[a], fewest[a - coin] + 1)
     return fewest[amount] if fewest[amount] < unreachable else -1
+# endregion
 
 
+# region edit-distance
 def edit_distance(a: Sequence[str], b: Sequence[str]) -> int:
     """Fewest single-character inserts, deletes and replaces that turn a into b."""
     # table[i][j] is the distance between a[:i] and b[:j]. The first row and
@@ -63,3 +70,4 @@ def edit_distance(a: Sequence[str], b: Sequence[str]) -> int:
                     table[i - 1][j - 1],  # replace a[i - 1] with b[j - 1]
                 )
     return table[-1][-1]
+# endregion

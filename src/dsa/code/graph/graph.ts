@@ -1,3 +1,4 @@
+// #region part-1
 export type Edge = [number, number];
 
 function check(n: number, edges: Edge[]): void {
@@ -22,7 +23,9 @@ export function buildList(n: number, edges: Edge[], directed = false): number[][
   }
   return adj;
 }
+// #endregion
 
+// #region build-matrix
 /** Adjacency matrix: m[u][v] is 1 when there is an edge from u to v. */
 export function buildMatrix(n: number, edges: Edge[], directed = false): number[][] {
   check(n, edges);
@@ -34,7 +37,9 @@ export function buildMatrix(n: number, edges: Edge[], directed = false): number[
   }
   return m;
 }
+// #endregion
 
+// #region has-edge-list
 export function hasEdgeList(adj: number[][], u: number, v: number): boolean {
   return adj[u].includes(v); // a scan of u's list, so O(deg(u))
 }
@@ -51,7 +56,9 @@ export function neighborsMatrix(m: number[][], u: number): number[] {
   });
   return out;
 }
+// #endregion
 
+// #region edges-of-list
 export function* edgesOfList(adj: number[][]): Generator<Edge> {
   for (const [u, row] of adj.entries()) {
     for (const v of row) yield [u, v];
@@ -65,3 +72,4 @@ export function* edgesOfMatrix(m: number[][]): Generator<Edge> {
     }
   }
 }
+// #endregion

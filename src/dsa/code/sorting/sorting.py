@@ -1,3 +1,4 @@
+# region part-1
 import random
 from collections.abc import Callable
 from typing import Any, TypeVar
@@ -14,6 +15,8 @@ def merge_sort(items: list[T], key: Callable[[T], Any] = lambda x: x) -> list[T]
     right = merge_sort(items[mid:], key)
     merged: list[T] = []
     i = j = 0
+# endregion
+    # region part-2
     while i < len(left) and j < len(right):
         # <=, not <: on a tie the left item came first in the input, so it
         # goes first. With < the sort still sorts, but stability is gone.
@@ -28,8 +31,10 @@ def merge_sort(items: list[T], key: Callable[[T], Any] = lambda x: x) -> list[T]
     merged.extend(left[i:])
     merged.extend(right[j:])
     return merged
+    # endregion
 
 
+# region partition
 def partition(nums: list[int], lo: int, hi: int, pivot: int) -> tuple[int, int]:
     """Rearrange nums[lo:hi] so nums[lo:lt] < pivot, nums[lt:gt] == pivot and
     nums[gt:hi] > pivot, and return (lt, gt)."""
@@ -47,8 +52,10 @@ def partition(nums: list[int], lo: int, hi: int, pivot: int) -> tuple[int, int]:
         else:
             i += 1
     return lt, gt
+# endregion
 
 
+# region quickselect
 def quickselect(nums: list[int], k: int, rng: random.Random | None = None) -> int:
     """The k-th smallest of nums, counting from 0. Reorders nums in place."""
     if not 0 <= k < len(nums):
@@ -66,3 +73,4 @@ def quickselect(nums: list[int], k: int, rng: random.Random | None = None) -> in
             lo = gt
         else:
             return nums[k]
+# endregion
