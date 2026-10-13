@@ -50,9 +50,9 @@ export function CaseStudyPage() {
                 </h2>
                 <ul className="mt-4 space-y-3">
                   {topics.map((topic) => (
-                    <li key={`${topic.section}/${topic.slug}`}>
+                    <li key={topic.path}>
                       <Link
-                        to={`/${topic.section}/${topic.slug}`}
+                        to={topic.path}
                         className="font-medium text-accent hover:text-accent-hover"
                       >
                         {topic.title}
@@ -68,8 +68,8 @@ export function CaseStudyPage() {
 
             <PrevNextNav
               label="More case studies"
-              prev={prev && { to: `/system-design/${prev.slug}`, title: prev.title }}
-              next={next && { to: `/system-design/${next.slug}`, title: next.title }}
+              prev={prev && { to: prev.path, title: prev.title }}
+              next={next && { to: next.path, title: next.title }}
             />
           </>
         )}

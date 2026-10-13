@@ -40,6 +40,7 @@ const DEMOS = vi.hoisted(() =>
   ).map(([kind, label, words, minutes]) => ({
     entry: {
       slug: `demo-${kind}-${words}`,
+      path: `/dsa/demo-${kind}-${words}`,
       title: `Demo ${label} of ${words} Words`,
       summary: 'A demo.',
       date: '2026-10-05',

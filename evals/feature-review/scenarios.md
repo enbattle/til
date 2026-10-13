@@ -124,8 +124,8 @@ checks every page's external links.
 --- a/src/pages/TopicPage.tsx
 +++ b/src/pages/TopicPage.tsx
 @@ -79,6 +79,13 @@ export function TopicPage() {
-               prev={prev && { to: `/${section.slug}/${prev.slug}`, title: prev.title }}
-               next={next && { to: `/${section.slug}/${next.slug}`, title: next.title }}
+               prev={prev && { to: prev.path, title: prev.title }}
+               next={next && { to: next.path, title: next.title }}
              />
 +            <a
 +              href={`https://github.com/enbattle/til/blob/main/src/content/${topic.section}/${topic.slug}.md`}
@@ -149,7 +149,7 @@ referrer the rule is about.
 
 ### FR-03 — React stale closure: the first Escape always closes
 
-**Planted defect:** the keydown handler reads the query from `queryRef`, a
+**Planted defect:** the Escape handler reads the query from `queryRef`, a
 ref set to the first render's query (`''`) and never updated, so the first
 Escape always closes the dialog, failing criterion 1. Lint can't see it:
 `exhaustive-deps` doesn't track a ref's `.current`.
@@ -157,7 +157,8 @@ Escape always closes the dialog, failing criterion 1. Lint can't see it:
 History: the first FR-03 left `query` out of the effect's dependency list.
 Once `npm run lint` ran with `--deny-warnings` (2026-10-01), `exhaustive-deps`
 caught that mechanically, so it was rotated to this ref, which lint can't
-check.
+check. On 2026-10-13 the dialog's own Escape listener moved into the shared
+`useModal` hook, so the handler became the `onClose` the diff passes it.
 
 **Spec:**
 
@@ -172,29 +173,38 @@ check.
 ```diff
 --- a/src/components/SearchDialog.tsx
 +++ b/src/components/SearchDialog.tsx
-@@ -49,6 +49,8 @@ interface SearchDialogProps {
+@@ -1,4 +1,4 @@
+-import { useEffect, useRef, useState } from 'react';
++import { useCallback, useEffect, useRef, useState } from 'react';
+ import { useNavigate } from 'react-router-dom';
+ import { ensureFullTextSearch, isFullTextSearchReady, searchContent } from '@/lib/search';
+ import { useModal } from '@/hooks/useFocusTrap';
+@@ -11,6 +11,8 @@ interface SearchDialogProps {
   * time means the query naturally starts empty, with no reset-on-open effect. */
  export function SearchDialog({ onClose }: SearchDialogProps) {
    const [query, setQuery] = useState('');
-+  // Read by the keydown handler, which is registered once.
++  // Read by the Escape handler, which is created once.
 +  const queryRef = useRef(query);
    const inputRef = useRef<HTMLInputElement>(null);
    const panelRef = useRef<HTMLDivElement>(null);
    const navigate = useNavigate();
-@@ -84,7 +86,12 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+@@ -26,7 +28,15 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
+
+   // Focus starts on the input; Tab stays inside, Escape closes, and focus
+   // returns to the opener on close.
+-  useModal(panelRef, { onClose, initialFocusRef: inputRef });
++  // Escape clears a non-empty query first, and closes only an empty one.
++  const onEscape = useCallback(() => {
++    if (queryRef.current) {
++      setQuery('');
++      return;
++    }
++    onClose();
++  }, [onClose]);
++  useModal(panelRef, { onClose: onEscape, initialFocusRef: inputRef });
 
    useEffect(() => {
-     function onKeyDown(event: KeyboardEvent) {
--      if (event.key === 'Escape') onClose();
-+      if (event.key !== 'Escape') return;
-+      if (queryRef.current) {
-+        setQuery('');
-+        return;
-+      }
-+      onClose();
-     }
-     window.addEventListener('keydown', onKeyDown);
-     return () => window.removeEventListener('keydown', onKeyDown);
+     let active = true;
 ```
 
 **Expected finding:** the stale ref: `queryRef.current` is never updated
@@ -205,15 +215,16 @@ closes the dialog.
 
 ### FR-05 — subtle: a disclosure the focus trap skips
 
-<!-- premise: src/components/SearchDialog.tsx contains "useFocusTrap(true, panelRef);" -->
+<!-- premise: src/components/SearchDialog.tsx contains "useModal(panelRef, { onClose, initialFocusRef: inputRef });" -->
 <!-- premise: src/hooks/useFocusTrap.ts lacks "summary" -->
 
 **Planted defect:** the new "Search tips" `<summary>` is never reached by
 Tab, and Tab from it (once a click has focused it) leaves the dialog, so
 criterion 3 can't be met. The cause isn't in the diff, which never mentions
-focus: `SearchDialog` calls `useFocusTrap(true, panelRef)`, whose keydown
-handler finds the dialog's focusable elements with `FOCUSABLE_SELECTOR` in
-`src/hooks/useFocusTrap.ts` (a helper `MobileNav` shares). That selector
+focus: `SearchDialog` calls `useModal(panelRef, …)`, whose Tab trap
+(`useFocusTrap`) finds the dialog's focusable elements with
+`FOCUSABLE_SELECTOR`, all in `src/hooks/useFocusTrap.ts` (hooks `MobileNav`
+shares). That selector
 lists `a[href]`, `button`, `input`, `select`, `textarea` and `[tabindex]`,
 but not `summary`, so the trap takes the last result (or, with no results,
 the input) as the last element: Tab from it wraps to the input, skipping the
@@ -221,15 +232,17 @@ summary, and Tab from a focused summary isn't caught at all. That also
 breaks DESIGN.md's keyboard-reachability item, so non-negotiable #1. The
 diff's test covers criteria 1 and 2 only. Nothing existing catches it: every
 current test still passes (`App.test.tsx`'s Tab-trap test only checks that
-focus stays inside the dialog), types check, and lint is clean.
+focus stays inside the dialog, and `modals.test.tsx` wraps between the input
+and the last result, which the trap still does), types check, and lint is
+clean.
 
 History: until 2026-10-06, FR-05 planted a "+N more results" line that could
 never render, because `searchContent(query)` caps at its default limit of 8.
 Every run named it first (2026-09-24), one hop from the diff. Rotated
 2026-10-06, after an edit to Stage 4's reviewer instruction, to put the cause
 two calls away in another module (`SearchDialog` → `useFocusTrap` → its
-keydown handler's `FOCUSABLE_SELECTOR`), which tests whether a reviewer
-follows the call chain rather than reading the diff alone. It was confirmed
+keydown handler's `FOCUSABLE_SELECTOR`; since 2026-10-13, `SearchDialog` →
+`useModal` → `useFocusTrap`), which tests whether a reviewer follows the call chain rather than reading the diff alone. It was confirmed
 against the code with the diff applied: in a jsdom probe (the test setup
 gives elements an `offsetParent`, so the trap runs), Tab from the input and
 from the last result both landed on the input, and Tab from the focused
@@ -435,8 +448,8 @@ section page's header or lists `content.ts`'s exports.
 @@ -1,6 +1,6 @@
  import { Link } from 'react-router-dom';
  import { SECTIONS, getSection } from '@/content/registry';
--import { TOPICS, recentTopics, topicsBySection } from '@/lib/content';
-+import { TOPICS, recentTopics, topicCountLabel, topicsBySection } from '@/lib/content';
+-import { TOPICS, recentTopics, topicsInSection } from '@/lib/content';
++import { TOPICS, recentTopics, topicCountLabel, topicsInSection } from '@/lib/content';
  import { TopicCard } from '@/components/TopicCard';
  // The site's one-line description; vite.config.ts fills index.html's meta tags
  // from the same field.
@@ -465,8 +478,8 @@ section page's header or lists `content.ts`'s exports.
 @@ -1,6 +1,6 @@
  import { Navigate, useParams } from 'react-router-dom';
  import { getSection } from '@/content/registry';
--import { TOPICS } from '@/lib/content';
-+import { TOPICS, topicCountLabel } from '@/lib/content';
+-import { topicsInSection } from '@/lib/content';
++import { topicCountLabel, topicsInSection } from '@/lib/content';
  import { TopicCard } from '@/components/TopicCard';
 
  export function SectionPage() {

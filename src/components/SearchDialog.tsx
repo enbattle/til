@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ensureFullTextSearch, isFullTextSearchReady, searchContent } from '@/lib/search';
-import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useModal } from '@/hooks/useFocusTrap';
 
 interface SearchDialogProps {
   onClose: () => void;
@@ -24,14 +24,9 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
   // above is what triggers this re-render. The index is small, so it's cheap.
   const results = searchContent(query);
 
-  // Called before the autofocus effect below (hook order = call order), so
-  // it captures whatever had focus before the dialog opened, not the input
-  // this component is about to focus itself.
-  useFocusTrap(true, panelRef);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  // Focus starts on the input; Tab stays inside, Escape closes, and focus
+  // returns to the opener on close.
+  useModal(panelRef, { onClose, initialFocusRef: inputRef });
 
   useEffect(() => {
     let active = true;
@@ -43,14 +38,6 @@ export function SearchDialog({ onClose }: SearchDialogProps) {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
 
   function goTo(path: string) {
     onClose();

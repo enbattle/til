@@ -18,7 +18,7 @@ export function SystemDesignPage() {
 
       <NumberedCardList
         cards={CASE_STUDIES.map((caseStudy) => ({
-          to: `/system-design/${caseStudy.slug}`,
+          to: caseStudy.path,
           number: caseStudy.order,
           title: caseStudy.title,
           summary: caseStudy.summary,

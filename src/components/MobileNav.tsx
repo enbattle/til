@@ -1,13 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useModal } from '@/hooks/useFocusTrap';
 import { tabForPath } from '@/lib/tabs';
 import { CaseStudyNav } from './CaseStudyNav';
 import { DsaNav } from './DsaNav';
 import { SectionNav } from './SectionNav';
-
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 interface MobileNavProps {
   onClose: () => void;
@@ -18,34 +15,15 @@ interface MobileNavProps {
  * left edge, containing the same nav tree the persistent desktop sidebar
  * uses (`CaseStudyNav` on System Design routes, `DsaNav` on DSA routes,
  * `SectionNav` everywhere else).
- * Mirrors `SearchDialog`'s overlay/focus-trap/close-on-navigate pattern,
+ * A modal like `SearchDialog` (`useModal`: focus moves to the first link on
+ * open, Tab stays inside, Escape closes, focus returns to the Menu button),
  * opening from the left edge instead of a centered panel.
  */
 export function MobileNav({ onClose }: MobileNavProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const tab = tabForPath(useLocation().pathname);
 
-  // Called before any other effect that might move focus, so it captures
-  // whatever had focus before the overlay opened (the Menu button) and
-  // restores it on close, exactly as SearchDialog does for its own trigger.
-  useFocusTrap(true, panelRef);
-
-  // Moves focus into the panel on open, mirroring SearchDialog's own
-  // input-focus effect — without this, Tab escapes straight into whatever's
-  // behind the backdrop since useFocusTrap only traps Tab once focus is
-  // already inside the container.
-  useEffect(() => {
-    const first = panelRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-    first?.focus();
-  }, []);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  useModal(panelRef, { onClose });
 
   return (
     <div

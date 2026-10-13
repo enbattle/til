@@ -230,7 +230,7 @@ count.
 grouped by kind: data structures, then patterns, then algorithms
 (`DSA_GROUPS`, from `groupDsaEntries` in `src/lib/dsa.ts`). The landing page
 and the sidebar show each group under its own heading, numbered in one
-sequence across them. The order comes from one topological pass over all
+sequence across them (each entry's `number`, set once in `src/lib/dsa.ts`). The order comes from one topological pass over all
 entries (`orderDsaEntries`): at each step it takes, among the entries whose
 prerequisites are all placed, the first by kind, then title, then slug. The
 groups then keep that order, kind by kind (`groupDsaEntries`). So a new entry

@@ -1,9 +1,10 @@
 import { useId, useRef, type KeyboardEvent } from 'react';
-import { useCodeLanguage, type CodeLanguage } from '@/contexts/useCodeLanguage';
+import {
+  CODE_LANGUAGES,
+  useCodeLanguage,
+  type CodeLanguage,
+} from '@/contexts/useCodeLanguage';
 import { CodeBlock } from './CodeBlock';
-
-/** The tabs, in order. */
-const CODE_LANGUAGES: readonly CodeLanguage[] = ['python', 'typescript'];
 
 const LABELS: Record<CodeLanguage, string> = {
   python: 'Python',

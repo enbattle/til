@@ -66,6 +66,7 @@ export function parseCaseStudy(
     summary: data.summary,
     date: data.date,
     order: Number(data.order),
+    path: `/system-design/${slug}`,
   };
 }
 
@@ -136,11 +137,4 @@ for (const caseStudy of CASE_STUDIES) {
 /** The case studies whose bodies link to the given topic, in `order`. */
 export function caseStudiesForTopic(section: string, slug: string): CaseStudy[] {
   return CASE_STUDIES_BY_TOPIC.get(`${section}/${slug}`) ?? [];
-}
-
-/** Whether `pathname` is the System Design landing page or one of its case
- * study pages. Shared by the header tabs and the sidebar so both switch on
- * exactly the same routes. */
-export function isSystemDesignPath(pathname: string): boolean {
-  return pathname === '/system-design' || pathname.startsWith('/system-design/');
 }

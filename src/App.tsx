@@ -74,7 +74,7 @@ function AppShell() {
   // mounted over a different page. Reset during render when the path changes
   // (React's pattern for adjusting state on a prop change), not in an effect.
   // Focus restoration on close is handled inside SearchDialog/MobileNav
-  // (useFocusTrap).
+  // (useModal).
   const [overlayPath, setOverlayPath] = useState(pathname);
   if (overlayPath !== pathname) {
     setOverlayPath(pathname);

@@ -57,6 +57,7 @@ export function parseTopicMeta(
     title: data.title,
     summary: data.summary,
     date: data.date,
+    path: `/${section}/${slug}`,
   };
 }
 
@@ -212,6 +213,13 @@ const TOPICS_BY_SECTION = SECTIONS.map((section) => ({
  * sections are omitted. The same array every call. */
 export function topicsBySection(): { section: Section; topics: Topic[] }[] {
   return TOPICS_BY_SECTION;
+}
+
+/** One section's topics, by title; [] for a section with none. */
+export function topicsInSection(sectionSlug: string): Topic[] {
+  return (
+    TOPICS_BY_SECTION.find((group) => group.section.slug === sectionSlug)?.topics ?? []
+  );
 }
 
 export function getTopic(section: string, slug: string): Topic | undefined {

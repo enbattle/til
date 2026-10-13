@@ -39,6 +39,7 @@ const DEMOS = vi.hoisted(() =>
   ].map(([words, minutes], i) => ({
     caseStudy: {
       slug: `demo-${words}-words`,
+      path: `/system-design/demo-${words}-words`,
       title: `Design a Demo of ${words} Words`,
       summary: 'A demo.',
       date: '2026-10-05',

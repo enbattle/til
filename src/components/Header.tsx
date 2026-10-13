@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { tabForPath } from '@/lib/tabs';
+import { TABS, tabForPath } from '@/lib/tabs';
 import { ThemeToggle } from './ThemeToggle';
 
 // Same non-color "current" signal as the sidebar navs (docs/DESIGN.md): bold
@@ -36,12 +36,6 @@ function useHeaderHeightVariable() {
   }, []);
   return ref;
 }
-
-const TABS = [
-  { id: 'catalog', to: '/', label: 'Catalog' },
-  { id: 'system-design', to: '/system-design', label: 'System Design' },
-  { id: 'dsa', to: '/dsa', label: 'DSA' },
-] as const;
 
 export function Header({ onOpenSearch, onOpenNav }: HeaderProps) {
   const active = tabForPath(useLocation().pathname);

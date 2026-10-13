@@ -7,7 +7,6 @@ import {
   CASE_STUDIES,
   caseStudiesForTopic,
   getCaseStudy,
-  isSystemDesignPath,
   loadCaseStudyBody,
   parseCaseStudy,
   topicsForCaseStudy,
@@ -129,16 +128,25 @@ describe('CASE_STUDIES and getCaseStudy (criteria 3 and 4)', () => {
     expect(CASE_STUDIES).toHaveLength(Object.keys(RAW).length);
   });
 
-  it('is metadata only: exactly slug, title, summary, date, order and words (five-minute criterion 3)', () => {
+  // ui-dedupe criterion 2 adds the page path.
+  it('is metadata only: exactly slug, title, summary, date, order, words and path (five-minute criterion 3)', () => {
     for (const caseStudy of CASE_STUDIES) {
       expect(Object.keys(caseStudy).sort()).toEqual([
         'date',
         'order',
+        'path',
         'slug',
         'summary',
         'title',
         'words',
       ]);
+    }
+  });
+
+  // docs/specs/ui-dedupe.md, criterion 2.
+  it('gives every case study its page route as path, /system-design/<slug>', () => {
+    for (const caseStudy of CASE_STUDIES) {
+      expect(caseStudy.path, caseStudy.slug).toBe(`/system-design/${caseStudy.slug}`);
     }
   });
 
@@ -255,6 +263,7 @@ describe('topicsForCaseStudy (criterion 6)', () => {
         date: '2026-09-28',
         order: 999,
         words: 1,
+        path: '/system-design/not-real',
       }),
     ).toEqual([]);
   });
@@ -320,19 +329,6 @@ describe('caseStudiesForTopic (criterion 6)', () => {
   it('returns [] for a topic that does not exist', () => {
     expect(caseStudiesForTopic('no-such-section', 'no-such-topic')).toEqual([]);
   });
-});
-
-describe('isSystemDesignPath', () => {
-  it.each(['/system-design', '/system-design/url-shortener'])('is true for %s', (p) => {
-    expect(isSystemDesignPath(p)).toBe(true);
-  });
-
-  it.each(['/', '/ai-and-ml', '/ai-and-ml/prompt-engineering', '/system-designer'])(
-    'is false for %s',
-    (p) => {
-      expect(isSystemDesignPath(p)).toBe(false);
-    },
-  );
 });
 
 // Invariants over the real corpus that hold for any content: the topic → case

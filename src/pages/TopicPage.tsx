@@ -1,7 +1,7 @@
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import { redirectFor } from '@/content/redirects';
 import { getSection } from '@/content/registry';
-import { TOPICS, getTopic, loadTopicBody } from '@/lib/content';
+import { getTopic, loadTopicBody, topicsInSection } from '@/lib/content';
 import { LazyBody } from '@/components/LazyBody';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { OnThisPage } from '@/components/OnThisPage';
@@ -24,10 +24,7 @@ export function TopicPage() {
     return <Navigate to={moved ? `${moved}${search}${hash}` : '/not-found'} replace />;
   }
 
-  const { prev, next } = neighbours(
-    TOPICS.filter((t) => t.section === topic.section),
-    topic,
-  );
+  const { prev, next } = neighbours(topicsInSection(topic.section), topic);
   const caseStudies = caseStudiesForTopic(topic.section, topic.slug);
 
   return (
@@ -42,10 +39,7 @@ export function TopicPage() {
           showing the previous topic's body until the new one arrives. The
           section links and the navigation are passed as children so they
           appear only after the body. */}
-      <LazyBody
-        key={`${topic.section}/${topic.slug}`}
-        load={() => loadTopicBody(topic.section, topic.slug)}
-      >
+      <LazyBody key={topic.path} load={() => loadTopicBody(topic.section, topic.slug)}>
         {(body) => (
           <>
             <OnThisPage headings={h2Headings(body)} />
@@ -63,7 +57,7 @@ export function TopicPage() {
                   {caseStudies.map((caseStudy) => (
                     <li key={caseStudy.slug}>
                       <Link
-                        to={`/system-design/${caseStudy.slug}`}
+                        to={caseStudy.path}
                         className="text-accent hover:text-accent-hover"
                       >
                         {caseStudy.title}
@@ -76,8 +70,8 @@ export function TopicPage() {
 
             <PrevNextNav
               label={`More in ${section.label}`}
-              prev={prev && { to: `/${section.slug}/${prev.slug}`, title: prev.title }}
-              next={next && { to: `/${section.slug}/${next.slug}`, title: next.title }}
+              prev={prev && { to: prev.path, title: prev.title }}
+              next={next && { to: next.path, title: next.title }}
             />
           </>
         )}

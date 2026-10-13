@@ -2,12 +2,14 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { DSA_ENTRIES, dsaKindLabel, getDsaEntry, getDsaPrerequisites } from '@/lib/dsa';
-import { h2Headings } from '@/lib/headings';
-import { chromeLinks, dsaEntryBody } from '@/test/content';
+import { chromeLinks } from '@/test/content';
 import { escapeRegExp, renderAt } from '@/test/render';
 
-// docs/specs/dsa-tab.md, criteria 6-8 on the whole app: the /dsa landing page,
-// the /dsa/:slug entry page and the sidebar choice.
+// docs/specs/dsa-tab.md, criteria 6-8 on the whole app: the /dsa landing page
+// and the /dsa/:slug entry page. Shared across the three kinds of page
+// (docs/specs/ui-dedupe.md, design item 6): "On this page" is tested in
+// App.on-this-page.test.tsx, Previous/Next and not-found in
+// App.page-kinds.test.tsx, and the sidebar choice in App.tabs.test.tsx.
 
 // The groups the landing page and the nav show (docs/specs/dsa-kind-groups.md),
 // computed from the entries' kinds: kind order, each group in DSA_ENTRIES order.
@@ -153,35 +155,6 @@ describe('DSA entry page (criterion 7)', () => {
     expect(chrome).toHaveTextContent(dsaKindLabel(entry.kind));
   });
 
-  it('has an "On this page" nav outside <main> linking to #<id> of every body ## heading, in order, and those ids exist', async () => {
-    const { main } = await openEntry('binary-search');
-    const expected = h2Headings(dsaEntryBody('binary-search')).map((h) => h.text);
-    expect(expected.length).toBeGreaterThan(0);
-
-    const onThisPage = await waitFor(() => {
-      const navs = screen
-        .getAllByRole('navigation', { name: 'On this page' })
-        .filter((nav) => !main.contains(nav));
-      expect(navs).toHaveLength(1);
-      return navs[0];
-    });
-    expect(
-      screen.queryByRole('navigation', { name: 'Contents' }),
-    ).not.toBeInTheDocument();
-    const links = within(onThisPage).getAllByRole('link');
-    expect(links.map((a) => a.textContent?.trim())).toEqual(expected);
-
-    const prose = main.querySelector('.prose') as HTMLElement;
-    for (const link of links) {
-      const href = link.getAttribute('href') ?? '';
-      expect(href).toMatch(/^#[^#]+$/);
-      const target = document.getElementById(decodeURIComponent(href.slice(1)));
-      expect(target, href).not.toBeNull();
-      expect(target!.tagName).toBe('H2');
-      expect(prose.contains(target)).toBe(true);
-    }
-  });
-
   it.each(['hash-map', 'two-pointers', 'binary-search'])(
     '%s shows "Before this" with exactly its prerequisites, before the body, or none when it has none',
     async (slug) => {
@@ -203,26 +176,6 @@ describe('DSA entry page (criterion 7)', () => {
       expect(
         before!.compareDocumentPosition(prose) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
-    },
-  );
-
-  // First, middle and last cover no-previous, both, and no-next.
-  const ADJACENCY_CASES = [
-    ...new Set([0, Math.floor(DSA_ENTRIES.length / 2), DSA_ENTRIES.length - 1]),
-  ].map((i) => [DSA_ENTRIES[i].slug, i] as const);
-
-  it.each(ADJACENCY_CASES)(
-    '%s links to the neighbouring entries by list order, only when they exist',
-    async (slug, index) => {
-      const { main } = await openEntry(slug);
-      const adjacent = chromeLinks(main)
-        .filter((a) => !a.closest('nav[aria-label="Before this"]'))
-        .map((a) => a.getAttribute('href'))
-        .filter((href): href is string => !!href && href.startsWith('/dsa/'));
-      const expected = [DSA_ENTRIES[index - 1], DSA_ENTRIES[index + 1]]
-        .filter((e) => e !== undefined)
-        .map((e) => `/dsa/${e.slug}`);
-      expect(adjacent).toEqual(expected);
     },
   );
 
@@ -255,65 +208,4 @@ describe('DSA entry page (criterion 7)', () => {
       ).toEqual(['Python', 'TypeScript']);
     }
   });
-
-  it('shows not-found for an unknown slug', async () => {
-    renderAt('/dsa/nope');
-    expect(
-      await screen.findByRole('heading', { name: /page not found/i }),
-    ).toBeInTheDocument();
-  });
-});
-
-describe('sidebar selection (criterion 8)', () => {
-  it.each(['/dsa', '/dsa/binary-search'])(
-    'shows the DSA nav, not Sections or Case studies, in the persistent sidebar at %s',
-    async (path) => {
-      renderAt(path);
-      const dsa = screen.getByRole('navigation', { name: 'DSA entries' });
-      expect(within(dsa).getAllByRole('link')).toHaveLength(DSA_ENTRIES.length);
-      expect(
-        screen.queryByRole('navigation', { name: 'Sections' }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByRole('navigation', { name: 'Case studies' }),
-      ).not.toBeInTheDocument();
-      await screen.findByRole('heading', { level: 1 });
-    },
-  );
-
-  it('marks the current entry in the sidebar', async () => {
-    renderAt('/dsa/binary-search');
-    const dsa = screen.getByRole('navigation', { name: 'DSA entries' });
-    const current = within(dsa)
-      .getAllByRole('link')
-      .filter((a) => a.getAttribute('aria-current') === 'page');
-    expect(current.map((a) => a.getAttribute('href'))).toEqual(['/dsa/binary-search']);
-    await screen.findByRole('heading', { level: 1 });
-  });
-
-  it.each(['/system-design', '/system-design/url-shortener'])(
-    'still shows Case studies, not the DSA nav, at %s',
-    async (path) => {
-      renderAt(path);
-      expect(
-        screen.getByRole('navigation', { name: 'Case studies' }),
-      ).toBeInTheDocument();
-      expect(
-        screen.queryByRole('navigation', { name: 'DSA entries' }),
-      ).not.toBeInTheDocument();
-      await screen.findByRole('heading', { level: 1 });
-    },
-  );
-
-  it.each(['/', '/ai-and-ml', '/ai-and-ml/prompt-engineering'])(
-    'still shows Sections, not the DSA nav, at %s',
-    async (path) => {
-      renderAt(path);
-      expect(screen.getByRole('navigation', { name: 'Sections' })).toBeInTheDocument();
-      expect(
-        screen.queryByRole('navigation', { name: 'DSA entries' }),
-      ).not.toBeInTheDocument();
-      await screen.findByRole('heading', { level: 1 });
-    },
-  );
 });

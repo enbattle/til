@@ -1,6 +1,8 @@
 import { createContext, useContext } from 'react';
 
-export type ThemePreference = 'light' | 'dark' | 'system';
+/** The theme choices, in the toggle's order; the one definition. */
+export const THEME_PREFERENCES = ['light', 'dark', 'system'] as const;
+export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 export type ResolvedTheme = 'light' | 'dark';
 
 export interface ThemeContextValue {

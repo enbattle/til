@@ -16,6 +16,8 @@ export interface Topic {
   /** Words a reader reads in the body (`proseWordCount`), counted at build
    * time; drives the "N min read" label. */
   words: number;
+  /** The topic's page route, `/<section>/<slug>`. */
+  path: string;
 }
 
 /**
@@ -39,6 +41,8 @@ export interface CaseStudy {
   /** Words a reader reads in the body (`proseWordCount`), counted at build
    * time; drives the "N min read" label. */
   words: number;
+  /** The case study's page route, `/system-design/<slug>`. */
+  path: string;
 }
 
 /** What a DSA entry teaches; it picks the entry's heading template
@@ -62,6 +66,12 @@ export interface DsaEntry {
   /** Words a reader reads in the body (`proseWordCount`), counted at build
    * time; drives the "N min read" label. */
   words: number;
+  /** The entry's page route, `/dsa/<slug>`. */
+  path: string;
+  /** The entry's running number, 1-based across the groups in `DSA_ENTRIES`
+   * order: what the landing page and the sidebar show. Set once in
+   * `src/lib/dsa.ts`. */
+  number: number;
 }
 
 /** One kind's entries, as the DSA nav and landing page group them

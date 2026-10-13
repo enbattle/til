@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -145,11 +145,6 @@ describe('TopicPage body loading (criterion 9)', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: first.text }),
     ).toBeInTheDocument();
-  });
-
-  it('redirects an unknown slug under a real section to not-found', async () => {
-    renderTopic(`/${SECTION}/no-such-topic`);
-    expect(await screen.findByText('Not found marker')).toBeInTheDocument();
   });
 
   it('redirects an unknown section to not-found', async () => {
@@ -384,6 +379,9 @@ describe('TopicPage load that rejects with a falsy value', () => {
 // docs/specs/dedupe-app-scripts-tests.md, criterion 5: the topic page is built
 // from the shared PageHeader and PrevNextNav. It renders as before, except that
 // the prev/next nav now has an accessible name, "More in <section label>".
+// Which neighbours the first, a middle and the last topic of a section link to,
+// and "unknown slug → not found", are tested for all three kinds of page in
+// App.page-kinds.test.tsx (docs/specs/ui-dedupe.md, design item 6).
 describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)', () => {
   const BACKLINKS = 'Case studies this topic is used in';
 
@@ -438,32 +436,6 @@ describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)'
       `/${SECTION}`,
     );
     expect(metaLine(topic.title)).toBe(expectedMeta(topic));
-  });
-
-  it('shows only "next" on the first topic of a section and only "prev" on the last, in title order', async () => {
-    const siblings = TOPICS.filter((t) => t.section === SECTION).sort((a, b) =>
-      a.title.localeCompare(b.title),
-    );
-    expect(siblings.length).toBeGreaterThan(2);
-    const [first, second] = siblings;
-    const [beforeLast, last] = siblings.slice(-2);
-
-    await renderLoaded(first);
-    let pager = screen.getByRole('navigation', { name: `More in ${labelOf(first)}` });
-    expect(
-      within(pager)
-        .getAllByRole('link')
-        .map((a) => [a.textContent, a.getAttribute('href')]),
-    ).toEqual([[`${second.title} →`, `/${SECTION}/${second.slug}`]]);
-    cleanup();
-
-    await renderLoaded(last);
-    pager = screen.getByRole('navigation', { name: `More in ${labelOf(last)}` });
-    expect(
-      within(pager)
-        .getAllByRole('link')
-        .map((a) => [a.textContent, a.getAttribute('href')]),
-    ).toEqual([[`← ${beforeLast.title}`, `/${SECTION}/${beforeLast.slug}`]]);
   });
 
   it('renders no prev/next nav for the only topic in its section', async () => {

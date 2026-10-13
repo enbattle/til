@@ -41,7 +41,10 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
   frontmatter at load through a `?meta` Vite query (the `markdownMeta` plugin
   in `vite.config.ts`), and each body's prose word count through a `?words`
   query (the read-time label), so `TOPICS` is metadata only and `Topic` has no
-  `body`.
+  `body`. Each loaded item carries its page route as `path` (`/<section>/<slug>`;
+  `/system-design/<slug>` for a case study, `/dsa/<slug>` for a DSA entry),
+  set by its loader: link to an item with `item.path`, never a route built by
+  hand.
   A body is fetched as its own small chunk by `loadTopicBody(section, slug)`
   (topic page) or `loadAllTopicBodies()` (full-text search, which starts
   loading when the search dialog opens). Case studies and DSA entries work the

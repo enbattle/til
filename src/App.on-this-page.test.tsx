@@ -62,6 +62,7 @@ vi.mock('@/lib/system-design', async () => {
     await vi.importActual<typeof import('@/lib/system-design')>('@/lib/system-design');
   const demo = {
     slug: 'demo',
+    path: '/system-design/demo',
     title: 'Design a Demo',
     summary: 'A demo.',
     date: '2026-09-28',
