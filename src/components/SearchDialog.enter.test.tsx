@@ -1,20 +1,12 @@
 import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { ensureFullTextSearch, searchContent, type SearchResult } from '@/lib/search';
+import { ensureFullTextSearch, searchContent } from '@/lib/search';
 import { renderDialog } from '@/test/render';
 
 // Retro: Enter in the search box opens the first result, the way a search
 // box is expected to work, instead of making the reader Tab down to it. The
 // dialog has no arrow-key highlighting, so "first" is the top of the list.
-
-function pathOf(result: SearchResult) {
-  return result.kind === 'topic'
-    ? `/${result.topic.section}/${result.topic.slug}`
-    : result.kind === 'dsa'
-      ? `/dsa/${result.entry.slug}`
-      : `/system-design/${result.caseStudy.slug}`;
-}
 
 // Load the bodies first, so the result order can't change between reading
 // the expected first result and pressing Enter.
@@ -36,7 +28,7 @@ describe('SearchDialog Enter', () => {
     await user.keyboard('{Enter}');
 
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('location-display')).toHaveTextContent(pathOf(first));
+    expect(screen.getByTestId('location-display')).toHaveTextContent(first.path);
   });
 
   it('does nothing, without throwing, when Enter is pressed with no results', async () => {
@@ -107,6 +99,6 @@ describe('SearchDialog Enter', () => {
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', keyCode: 13 });
 
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(screen.getByTestId('location-display')).toHaveTextContent(pathOf(first));
+    expect(screen.getByTestId('location-display')).toHaveTextContent(first.path);
   });
 });

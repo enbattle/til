@@ -59,9 +59,10 @@ at load time, naming the file and field, if a field is missing or empty, if
 `kind` is anything else, or if the file isn't `src/dsa/entries/<slug>.md` with
 a lowercase kebab-case slug.
 
-Those four keys are the whole frontmatter: `dsa-structure.test.ts` fails an
-entry with any other key, or without one of the four, naming the file and the
-key.
+Those four keys are the whole frontmatter: `parseDsaEntry` also throws at load
+time on any other key, naming the file and the key (`checkFields` in
+`src/lib/frontmatter.ts`, shared by all three loaders), and
+`dsa-structure.test.ts` checks the same allowlist.
 
 ## Templates
 

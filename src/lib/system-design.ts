@@ -1,5 +1,6 @@
 import type { CaseStudy, Topic } from '@/types';
 import { createCollection, getTopic } from './content';
+import { checkFields } from './frontmatter';
 import type { TopicRef } from './markdown.mjs';
 
 // Frontmatter, topic links and word counts only, eagerly: enough for the
@@ -30,10 +31,13 @@ const bodyFiles = import.meta.glob<string>('/src/system-design/case-studies/*.md
 
 const PATH_PATTERN = /^\/src\/system-design\/case-studies\/([^/]+)\.md$/;
 
+// A case study's frontmatter: every field required, no other allowed.
+const CASE_STUDY_FIELDS = ['title', 'summary', 'date', 'order'];
+
 /**
  * Turns one case-study file's path and parsed frontmatter into a `CaseStudy`,
- * less the body's `words` (the loader adds those from the `?words` view).
- * Exported so the frontmatter contract, including `order`, can be unit-tested
+ * less the body's `words` (`createCollection` adds those from the `?words`
+ * view). Throws on a missing, empty or unknown field (`checkFields`). Exported so the frontmatter contract, including `order`, can be unit-tested
  * against fixtures instead of only the real files.
  */
 export function parseCaseStudy(
@@ -49,11 +53,7 @@ export function parseCaseStudy(
   const [, slug] = match;
   const name = `system-design/case-studies/${slug}.md`;
 
-  for (const field of ['title', 'summary', 'date', 'order'] as const) {
-    if (!data[field]) {
-      throw new Error(`${name} is missing required frontmatter field "${field}"`);
-    }
-  }
+  checkFields(name, data, { required: CASE_STUDY_FIELDS, allowed: CASE_STUDY_FIELDS });
   if (!/^\d+$/.test(data.order) || Number(data.order) < 1) {
     throw new Error(
       `${name} has an invalid "order" (${JSON.stringify(data.order)}): expected a positive integer`,
@@ -76,10 +76,8 @@ function slugOf(filePath: string): string | undefined {
 const caseStudies = createCollection({
   meta: metaFiles,
   bodies: bodyFiles,
-  parse: (filePath, data): CaseStudy => ({
-    ...parseCaseStudy(filePath, data),
-    words: wordFiles[filePath],
-  }),
+  parse: parseCaseStudy,
+  words: wordFiles,
   key: slugOf,
 });
 

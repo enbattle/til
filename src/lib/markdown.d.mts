@@ -1,5 +1,5 @@
 import type { Processor } from 'unified';
-import type { Root } from 'mdast';
+import type { Nodes, Root, RootContent } from 'mdast';
 
 export interface TopicRef {
   section: string;
@@ -13,6 +13,8 @@ export function markdownParser(): Processor<
   undefined,
   undefined
 >;
+export function textOf(node: Nodes): string;
+export function sectionNodes(tree: Root, heading: string): RootContent[];
 export function isDiagramSrc(src: string | undefined): src is string;
 export function diagramName(src: string): string;
 export function diagramReferences(markdown: string): string[];

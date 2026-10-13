@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TOPICS, getTopic } from './content';
 import { RAW_CASE_STUDIES as RAW, rawCaseStudy as rawFor, without } from '@/test/content';
 import { parseFrontmatter } from './frontmatter';
-import { extractTopicRefs, proseWordCount } from './markdown.mjs';
+import { extractTopicRefs } from './markdown.mjs';
 import {
   CASE_STUDIES,
   caseStudiesForTopic,
@@ -36,6 +36,7 @@ function firstLinkedTopic(slug: string): string {
 }
 
 const VALID_PATH = '/src/system-design/case-studies/my-case.md';
+const NAME = 'system-design/case-studies/my-case.md';
 
 const VALID_FIELDS: Record<string, string> = {
   title: 'Design a Widget Service (like a widget store)',
@@ -66,20 +67,30 @@ describe('parseCaseStudy (criterion 3)', () => {
     'throws naming the file and the field when %s is missing',
     (field) => {
       expect(() => parseCaseStudy(VALID_PATH, without(VALID_FIELDS, field))).toThrow(
-        /my-case\.md/,
-      );
-      expect(() => parseCaseStudy(VALID_PATH, without(VALID_FIELDS, field))).toThrow(
-        new RegExp(field),
+        new Error(`${NAME} is missing required frontmatter field "${field}"`),
       );
     },
   );
 
   it.each(['title', 'summary', 'date', 'order'] as const)(
-    'throws naming the file and the field when %s is present but empty',
+    'throws the same message when %s is present but empty',
     (field) => {
       const data = { ...VALID_FIELDS, [field]: '' };
-      expect(() => parseCaseStudy(VALID_PATH, data)).toThrow(/my-case\.md/);
-      expect(() => parseCaseStudy(VALID_PATH, data)).toThrow(new RegExp(field));
+      expect(() => parseCaseStudy(VALID_PATH, data)).toThrow(
+        new Error(`${NAME} is missing required frontmatter field "${field}"`),
+      );
+    },
+  );
+
+  // docs/specs/content-dedupe.md, criterion 1: the allowed-key check moves from
+  // the structure test into the loader, so an unknown key, `template` included,
+  // fails at load time.
+  it.each(['template', 'tags', 'kind'])(
+    'throws naming the file and the key for an unknown frontmatter field %s',
+    (key) => {
+      expect(() => parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, [key]: '2' })).toThrow(
+        new Error(`${NAME} has an unknown frontmatter field "${key}"`),
+      );
     },
   );
 
@@ -129,22 +140,6 @@ describe('CASE_STUDIES and getCaseStudy (criteria 3 and 4)', () => {
         'words',
       ]);
     }
-  });
-
-  it('gives every case study a positive integer words: its body’s prose word count (five-minute criterion 3)', () => {
-    for (const caseStudy of CASE_STUDIES) {
-      expect(Number.isInteger(caseStudy.words), caseStudy.slug).toBe(true);
-      expect(caseStudy.words, caseStudy.slug).toBeGreaterThan(0);
-      expect(caseStudy.words, caseStudy.slug).toBe(
-        proseWordCount(parseFrontmatter(rawFor(caseStudy.slug)).content),
-      );
-    }
-  });
-
-  it('ignores a template line in the frontmatter (five-minute design: the loaders ignore it)', () => {
-    expect(parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, template: '2' })).toEqual(
-      parseCaseStudy(VALID_PATH, VALID_FIELDS),
-    );
   });
 
   it('matches each file’s frontmatter', () => {
@@ -209,16 +204,6 @@ describe('loadCaseStudyBody (criterion 5)', () => {
         parseFrontmatter(rawFor(caseStudy.slug)).content,
       );
     }
-  });
-
-  it('returns the same promise for the same case study', () => {
-    expect(loadCaseStudyBody('url-shortener')).toBe(loadCaseStudyBody('url-shortener'));
-  });
-
-  it('rejects for an unknown slug, naming it', async () => {
-    await expect(loadCaseStudyBody('no-such-case-study')).rejects.toThrow(
-      /no-such-case-study/,
-    );
   });
 });
 

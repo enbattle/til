@@ -5,7 +5,7 @@
 // markdownMeta plugin calls `resolveCodeRegions` for every import of an entry,
 // so the app and the tests only ever see resolved markdown. Build and test
 // time only: JavaScript with its types in code-regions.d.mts, like markdown.mjs.
-import { markdownParser } from './markdown.mjs';
+import { markdownParser, sectionNodes } from './markdown.mjs';
 
 // Every form VS Code folds: `#region`, `# region`, `//#region`, `// region`
 // and so on. The marker word must start the comment and end at a word
@@ -98,29 +98,19 @@ export function parseRegions(source, language) {
   return scan(source, language).regions;
 }
 
-function textOf(node) {
-  return node.value ?? (node.children ?? []).map(textOf).join('');
-}
-
 /** Every python/typescript fence in the tree, with whether it sits under a
  * `## Implementation` or `## Walkthrough` heading. */
 function codeFences(markdown) {
   const root = markdownParser().parse(markdown);
+  const chunkNodes = new Set(CHUNK_SECTIONS.flatMap((h) => sectionNodes(root, h)));
   const found = [];
-  let inChunkSection = false;
-  const collect = (node) => {
+  const collect = (node, inChunkSection) => {
     if (node.type === 'code' && (node.lang === 'python' || node.lang === 'typescript')) {
       found.push({ node, inChunkSection });
     }
-    node.children?.forEach(collect);
+    node.children?.forEach((child) => collect(child, inChunkSection));
   };
-  for (const node of root.children ?? []) {
-    if (node.type === 'heading' && node.depth <= 2) {
-      inChunkSection = node.depth === 2 && CHUNK_SECTIONS.includes(textOf(node).trim());
-    } else {
-      collect(node);
-    }
-  }
+  for (const node of root.children) collect(node, chunkNodes.has(node));
   return found;
 }
 

@@ -1,6 +1,6 @@
 import type { Topic } from '@/types';
 import { SECTIONS, type Section } from '@/content/registry';
-import { parseFrontmatter } from './frontmatter';
+import { checkFields, parseFrontmatter } from './frontmatter';
 
 // Frontmatter and word counts only, eagerly: enough for the sidebar, cards,
 // sort order, search results and the read-time label without shipping any
@@ -25,11 +25,14 @@ const bodyFiles = import.meta.glob<string>('/src/content/**/*.md', {
 
 const PATH_PATTERN = /^\/src\/content\/([^/]+)\/([^/]+)\.md$/;
 
+// A topic's frontmatter: every field required, no other allowed.
+const TOPIC_FIELDS = ['title', 'summary', 'date'];
+
 /**
  * Turns one file's path and parsed frontmatter into a `Topic`, less the body's
- * `words` (the loader adds those from the `?words` view). Exported so the
- * frontmatter contract can be unit-tested against fixtures instead of only the
- * real files.
+ * `words` (`createCollection` adds those from the `?words` view). Throws on a
+ * missing, empty or unknown field (`checkFields`). Exported so the frontmatter
+ * contract can be unit-tested against fixtures instead of only the real files.
  */
 export function parseTopicMeta(
   filePath: string,
@@ -43,13 +46,10 @@ export function parseTopicMeta(
   }
   const [, section, slug] = match;
 
-  for (const field of ['title', 'summary', 'date'] as const) {
-    if (!data[field]) {
-      throw new Error(
-        `${section}/${slug}.md is missing required frontmatter field "${field}"`,
-      );
-    }
-  }
+  checkFields(`${section}/${slug}.md`, data, {
+    required: TOPIC_FIELDS,
+    allowed: TOPIC_FIELDS,
+  });
 
   return {
     section,
@@ -104,6 +104,22 @@ export function createBodyStore(loaders: Record<string, () => Promise<string>>) 
   return { load, loadAll };
 }
 
+interface CollectionOptions<T> {
+  meta: Record<string, Record<string, string>>;
+  bodies: Record<string, () => Promise<string>>;
+  parse: (path: string, data: Record<string, string>) => T;
+  key: (path: string) => string | undefined;
+}
+
+interface Collection<T> {
+  items: T[];
+  get(itemKey: string): T | undefined;
+  /** The same promise comes back for the same key. */
+  loadBody(itemKey: string): Promise<string>;
+  /** Every body, keyed by key. Fetches all the body chunks the first time. */
+  loadAllBodies(): Promise<Map<string, string>>;
+}
+
 /**
  * One kind of content (topics, case studies, DSA entries) from its two globs:
  * `meta`, the eager `?meta` glob (path -> frontmatter), every path of which
@@ -111,22 +127,24 @@ export function createBodyStore(loaders: Record<string, () => Promise<string>>) 
  * lazy `?raw` glob. `key(path)` gives an item's key, or undefined for a path
  * that isn't one (its body is skipped). `items` is in glob order; callers sort.
  * `loadBody` strips the frontmatter and rejects a key with no item without
- * loading anything.
+ * loading anything. `words`, when given, is the eager `?words` glob (path ->
+ * the body's prose word count) and sets `words` on every item.
  */
+export function createCollection<T>(
+  options: CollectionOptions<T> & { words: Record<string, number> },
+): Collection<T & { words: number }>;
+export function createCollection<T>(options: CollectionOptions<T>): Collection<T>;
 export function createCollection<T>({
   meta,
   bodies,
   parse,
   key,
-}: {
-  meta: Record<string, Record<string, string>>;
-  bodies: Record<string, () => Promise<string>>;
-  parse: (path: string, data: Record<string, string>) => T;
-  key: (path: string) => string | undefined;
-}) {
+  words,
+}: CollectionOptions<T> & { words?: Record<string, number> }): Collection<T> {
   const byKey = new Map<string, T>();
   const items = Object.entries(meta).map(([path, data]) => {
-    const item = parse(path, data);
+    const parsed = parse(path, data);
+    const item = words ? { ...parsed, words: words[path] } : parsed;
     const itemKey = key(path);
     if (itemKey !== undefined) byKey.set(itemKey, item);
     return item;
@@ -144,15 +162,13 @@ export function createCollection<T>({
 
   return {
     items,
-    get: (itemKey: string): T | undefined => byKey.get(itemKey),
-    /** The same promise comes back for the same key. */
-    loadBody(itemKey: string): Promise<string> {
+    get: (itemKey) => byKey.get(itemKey),
+    loadBody(itemKey) {
       if (!byKey.has(itemKey)) {
         return Promise.reject(new Error(`Unknown item "${itemKey}"`));
       }
       return store.load(itemKey);
     },
-    /** Every body, keyed by key. Fetches all the body chunks the first time. */
     loadAllBodies: () => store.loadAll(),
   };
 }
@@ -160,10 +176,8 @@ export function createCollection<T>({
 const topics = createCollection({
   meta: metaFiles,
   bodies: bodyFiles,
-  parse: (filePath, data): Topic => ({
-    ...parseTopicMeta(filePath, data),
-    words: wordFiles[filePath],
-  }),
+  parse: parseTopicMeta,
+  words: wordFiles,
   key: (filePath) => {
     const match = PATH_PATTERN.exec(filePath);
     return match ? `${match[1]}/${match[2]}` : undefined;

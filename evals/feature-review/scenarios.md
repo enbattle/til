@@ -556,8 +556,9 @@ theoretical, Known limitation or Reject.
 
 ### FR-07 — triage: a theoretical finding
 
-<!-- premise: src/lib/content.ts contains "for (const field of ['title', 'summary', 'date'] as const)" -->
-<!-- premise: src/lib/system-design.ts contains "for (const field of ['title', 'summary', 'date', 'order'] as const)" -->
+<!-- premise: src/lib/content.ts contains "const TOPIC_FIELDS = ['title', 'summary', 'date']" -->
+<!-- premise: src/lib/system-design.ts contains "const CASE_STUDY_FIELDS = ['title', 'summary', 'date', 'order']" -->
+<!-- premise: src/lib/frontmatter.ts contains "is missing required frontmatter field" -->
 
 **Spec:**
 

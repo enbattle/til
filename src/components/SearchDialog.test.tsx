@@ -1,8 +1,21 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { getDsaEntry } from '@/lib/dsa';
+import { ensureFullTextSearch, searchContent } from '@/lib/search';
 import { getCaseStudy } from '@/lib/system-design';
 import { escapeRegExp, renderDialog } from '@/test/render';
+
+/** The one result button showing `summary` (a title can prefix others'). */
+async function findResult(summary: string): Promise<HTMLElement> {
+  return waitFor(() => {
+    const matching = screen
+      .getAllByRole('button')
+      .filter((b) => b.textContent?.includes(summary));
+    expect(matching).toHaveLength(1);
+    return matching[0];
+  });
+}
 
 describe('SearchDialog', () => {
   it('shows matching results as the query is typed', async () => {
@@ -32,6 +45,59 @@ describe('SearchDialog', () => {
     expect(within(result).getByText(caseStudy.title)).toBeInTheDocument();
     expect(result).toHaveTextContent('System Design');
     expect(result).toHaveTextContent(caseStudy.summary);
+  });
+
+  // docs/specs/dsa-tab.md, criterion 14 (was SearchDialog.dsa.test.tsx).
+  it('labels a DSA result "DSA", with its title and summary', async () => {
+    const user = userEvent.setup();
+    const entry = getDsaEntry('binary-search')!;
+    expect(entry).toBeDefined();
+    renderDialog();
+    await user.click(screen.getByPlaceholderText(/search topics/i));
+    await user.paste('binary search');
+    const result = await findResult(entry.summary);
+    expect(result).toHaveTextContent('DSA');
+    expect(result).toHaveTextContent(entry.summary);
+    expect(result).not.toHaveTextContent('System Design');
+  });
+
+  it('navigates to /dsa/binary-search and closes when the DSA result is chosen', async () => {
+    const user = userEvent.setup();
+    const entry = getDsaEntry('binary-search')!;
+    const onClose = renderDialog();
+    await user.click(screen.getByPlaceholderText(/search topics/i));
+    await user.paste('binary search');
+    await user.click(await findResult(entry.summary));
+    expect(onClose).toHaveBeenCalled();
+    expect(screen.getByTestId('location-display')).toHaveTextContent(
+      '/dsa/binary-search',
+    );
+  });
+
+  // docs/specs/content-dedupe.md, criterion 6: the dialog renders the index's
+  // items as they are, with no per-kind switch: one row per result, in order,
+  // showing its title and "label · summary".
+  it('renders exactly searchContent’s results, in order, as title and label · summary', async () => {
+    const user = userEvent.setup();
+    const query = 'queue';
+    // Bodies first, so the results can't change while the dialog renders.
+    await ensureFullTextSearch();
+    const expected = searchContent(query);
+    expect(expected.length).toBeGreaterThan(2);
+    renderDialog();
+    await user.click(screen.getByPlaceholderText(/search topics/i));
+    await user.paste(query);
+    const list = await waitFor(() => {
+      const items = screen.getAllByRole('listitem');
+      expect(items).toHaveLength(expected.length);
+      return items;
+    });
+    list.forEach((li, i) => {
+      const button = within(li).getByRole('button');
+      expect(button.textContent).toBe(
+        `${expected[i].title}${expected[i].label} · ${expected[i].summary}`,
+      );
+    });
   });
 
   it('shows a no-results message for a query that matches nothing', async () => {

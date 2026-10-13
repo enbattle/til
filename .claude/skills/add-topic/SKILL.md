@@ -69,7 +69,7 @@ docs/writing-standard.md exactly:
 - **If the section is `systems-and-infrastructure`, end the topic with a
   `## Where you'll meet this` section**, after the rule-of-thumb paragraph.
   docs/content.md has the convention, the reference systems and the rules;
-  `src/content/where-youll-meet-this.test.ts` fails without it. General claims
+  `src/content/topic-structure.test.ts` fails without it. General claims
   only (the Writing Standard's "Named companies" rule).
 
 If anything about scope or angle is genuinely ambiguous (which section it
