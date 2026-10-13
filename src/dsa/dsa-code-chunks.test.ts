@@ -228,25 +228,18 @@ describe('DSA code files (criterion 12)', () => {
 const PENDING_PLAIN = new Set([
   'backtracking',
   'binary-search',
-  'bit-manipulation',
   'breadth-first-search',
   'depth-first-search',
   'dynamic-programming',
   'dynamic-programming-shapes',
-  'graph',
   'greedy',
   'heap-patterns',
   'intervals',
   'monotonic-stack',
-  'prefix-sums',
   'prim-kruskal',
   'shortest-paths',
-  'sliding-window',
   'sorting',
   'topological-sort',
-  'trie',
-  'two-pointers',
-  'union-find',
 ]);
 
 // The constructs docs/dsa.md's plain-code rule names, as they're spelled in

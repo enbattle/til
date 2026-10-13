@@ -5,7 +5,8 @@ def build_prefix(nums: list[int]) -> list[int]:
     # without it a range from 0 needs prefix[-1], which reads the last total.
     prefix = [0]
     for value in nums:
-        prefix.append(prefix[-1] + value)
+        last_total = prefix[len(prefix) - 1]
+        prefix.append(last_total + value)
     return prefix
 # endregion
 
@@ -15,7 +16,7 @@ def range_sum(prefix: list[int], left: int, right: int) -> int:
     """Sum of nums[left..right], both ends included."""
     # Check first: a bad index would return a wrong number, not fail
     # (Python reads a negative index from the end).
-    if not 0 <= left <= right < len(prefix) - 1:
+    if left < 0 or left > right or right >= len(prefix) - 1:
         raise IndexError("need 0 <= left <= right < len(nums)")
     # right + 1: prefix[right] stops one element short of nums[right].
     return prefix[right + 1] - prefix[left]
@@ -31,7 +32,7 @@ def count_subarrays_with_sum(nums: list[int], k: int) -> int:
     total = 0
     count = 0
 # endregion
-    # region part-4
+    # region count-loop
     for value in nums:
         total += value
         # Look up before inserting: with k == 0 the lookup would find the

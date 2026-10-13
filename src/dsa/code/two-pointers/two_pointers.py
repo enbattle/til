@@ -8,7 +8,7 @@ def pair_with_sum(nums: list[int], target: int) -> tuple[int, int] | None:
         if total == target:
             return left, right
 # endregion
-        # region part-2
+        # region move-pointers
         # Too small: nums[left] is too small even beside the largest value still
         # in play, so no pair uses it. Too big: nums[right] fails the same way
         # beside the smallest. Either move rules one element out for good.
@@ -31,12 +31,13 @@ class ListNode:
 
 def has_cycle(head: ListNode | None) -> bool:
     """True when following next from head never reaches the end."""
-    slow = fast = head
+    slow = head
+    fast = head
     # Test fast and fast.next: fast.next.next reads the next of nothing when
     # an odd-length list leaves fast on its last node.
     while fast is not None and fast.next is not None:
 # endregion
-        # region part-4
+        # region advance-and-compare
         slow = slow.next
         fast = fast.next.next
         # After moving, not before: both start at head, so before always matches.

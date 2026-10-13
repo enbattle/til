@@ -98,11 +98,11 @@ The function returns indices, not values, because a caller with the indices can
 always read the values. An empty array starts `right` at -1, so the loop never
 runs and the answer is "no pair", which is correct.
 
-```python region=part-2
+```python region=move-pointers
 
 ```
 
-```typescript region=part-2
+```typescript region=move-pointers
 
 ```
 
@@ -122,11 +122,11 @@ node type to walk.
 An empty list and a single node never enter the loop, so both return `False`.
 Inside it, `fast` takes its two hops and `slow` its one.
 
-```python region=part-4
+```python region=advance-and-compare
 
 ```
 
-```typescript region=part-4
+```typescript region=advance-and-compare
 
 ```
 

@@ -13,7 +13,7 @@ import {
 // The graph entry's TypeScript code. API: `buildList(n, edges, directed = false)`
 // and `buildMatrix(...)` (both throw a RangeError for a vertex outside 0..n-1),
 // `hasEdgeList`, `hasEdgeMatrix`, `neighborsMatrix` and the `edgesOfList` /
-// `edgesOfMatrix` generators, which yield each stored [u, v] pair.
+// `edgesOfMatrix`, which return each stored [u, v] pair in an array.
 
 /** A small seeded generator (mulberry32), so a failing case can be replayed. */
 function rng(seed: number): () => number {
@@ -50,8 +50,7 @@ function counted(rows: number[][]): { rows: number[][]; reads: () => number } {
   return { rows: wrapped, reads: () => reads };
 }
 
-const pairs = (it: Iterable<Edge>) =>
-  [...new Set([...it].map(([u, v]) => `${u},${v}`))].sort();
+const pairs = (list: Edge[]) => [...new Set(list.map(([u, v]) => `${u},${v}`))].sort();
 
 describe('the running example', () => {
   it('builds the list', () => {
@@ -76,8 +75,8 @@ describe('edge cases', () => {
     expect(buildMatrix(0, [])).toEqual([]);
     expect(buildList(1, [])).toEqual([[]]);
     expect(buildMatrix(1, [])).toEqual([[0]]);
-    expect([...edgesOfList([])]).toEqual([]);
-    expect([...edgesOfMatrix([])]).toEqual([]);
+    expect(edgesOfList([])).toEqual([]);
+    expect(edgesOfMatrix([])).toEqual([]);
   });
 
   it('gives every vertex its own row', () => {
@@ -95,7 +94,7 @@ describe('edge cases', () => {
       [0, 0],
       [0, 1],
     ]);
-    expect([...edgesOfList(buildList(2, [[1, 1]]))]).toEqual([[1, 1]]);
+    expect(edgesOfList(buildList(2, [[1, 1]]))).toEqual([[1, 1]]);
   });
 
   it('keeps a duplicate edge in the list but not in the matrix', () => {
@@ -167,10 +166,10 @@ describe('the costs the entry claims', () => {
   it('visits every matrix cell but only the list entries', () => {
     const edges: Edge[] = Array.from({ length: 39 }, (_, i) => [i, i + 1]);
     const matrix = counted(buildMatrix(40, edges));
-    expect([...edgesOfMatrix(matrix.rows)].length).toBe(78);
+    expect(edgesOfMatrix(matrix.rows).length).toBe(78);
     expect(matrix.reads()).toBe(40 * 40);
     const list = counted(buildList(40, edges));
-    expect([...edgesOfList(list.rows)].length).toBe(78);
+    expect(edgesOfList(list.rows).length).toBe(78);
     expect(list.reads()).toBe(78);
   });
 

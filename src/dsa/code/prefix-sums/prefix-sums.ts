@@ -5,7 +5,8 @@ export function buildPrefix(nums: number[]): number[] {
   // without it a range from 0 needs prefix[-1], which reads undefined.
   const prefix = [0];
   for (const value of nums) {
-    prefix.push(prefix[prefix.length - 1] + value);
+    const lastTotal = prefix[prefix.length - 1];
+    prefix.push(lastTotal + value);
   }
   return prefix;
 }
@@ -15,8 +16,8 @@ export function buildPrefix(nums: number[]): number[] {
 /** Sum of nums[left..right], both ends included. */
 export function rangeSum(prefix: number[], left: number, right: number): number {
   // Check first: a bad index would return a wrong number, not fail
-  // (JavaScript reads a missing entry as undefined, so the sum is NaN).
-  if (!(left >= 0 && left <= right && right < prefix.length - 1)) {
+  // (a missing entry reads as undefined, so the sum would be NaN).
+  if (left < 0 || left > right || right >= prefix.length - 1) {
     throw new RangeError('need 0 <= left <= right < nums.length');
   }
   // right + 1: prefix[right] stops one element short of nums[right].
@@ -33,7 +34,7 @@ export function countSubarraysWithSum(nums: number[], k: number): number {
   let total = 0;
   let count = 0;
   // #endregion
-  // #region part-4
+  // #region count-loop
   for (const value of nums) {
     total += value;
     // Look up before inserting: with k === 0 the lookup would find the

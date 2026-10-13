@@ -5,7 +5,9 @@ def max_window_sum(nums: list[int], k: int) -> int | None:
         raise ValueError("k must be at least 1")
     if k > len(nums):
         return None
-    window = sum(nums[:k])
+    window = 0
+    for i in range(k):
+        window += nums[i]
     # Start from the first window, not 0: all-negative input has a negative best.
     best = window
     for right in range(k, len(nums)):
@@ -25,7 +27,8 @@ def shortest_run_at_least(nums: list[int], target: int) -> int:
     if target < 1:
         raise ValueError("target must be at least 1")
     shortest = len(nums) + 1  # longer than any run; 0 here would win every min
-    total = left = 0
+    total = 0
+    left = 0
     for right in range(len(nums)):
         total += nums[right]
         # while, not if: after one drop the run may still reach the target,
@@ -34,7 +37,9 @@ def shortest_run_at_least(nums: list[int], target: int) -> int:
             shortest = min(shortest, right - left + 1)
             total -= nums[left]
             left += 1
-    return shortest if shortest <= len(nums) else 0
+    if shortest > len(nums):
+        return 0
+    return shortest
 # endregion
 
 
@@ -44,7 +49,8 @@ def longest_with_k_distinct(nums: list[int], k: int) -> int:
     if k < 1:
         raise ValueError("k must be at least 1")
     counts: dict[int, int] = {}
-    left = best = 0
+    left = 0
+    best = 0
     for right in range(len(nums)):
         value = nums[right]
         counts[value] = counts.get(value, 0) + 1

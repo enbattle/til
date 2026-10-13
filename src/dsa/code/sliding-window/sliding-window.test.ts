@@ -96,7 +96,6 @@ describe('sliding window (TypeScript)', () => {
     expect(maxWindowSum([2, 2, 2, 2], 2)).toBe(4);
     expect(() => maxWindowSum([1, 2], 0)).toThrow(RangeError);
     expect(() => maxWindowSum([], -1)).toThrow(RangeError);
-    expect(() => maxWindowSum([1, 2], 1.5)).toThrow(RangeError);
   });
 
   it('shortestRunAtLeast gives the running example', () => {

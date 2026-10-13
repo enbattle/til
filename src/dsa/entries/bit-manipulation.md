@@ -66,8 +66,8 @@ negative one behaves as if it had infinitely many 1s on the left (two's
 complement): `-1 >> 100` is still -1, and `~5` is -6. JavaScript, and so
 TypeScript, converts the operands of its bitwise operators to **32-bit
 signed integers**, keeping the low 32 bits, where bit 31 is the sign. So
-`1 << 31` is -2147483648 and `(2 ** 32 + 1) | 0` is 1. Only `>>>` reads its
-result as unsigned, which is why `countSetBits` can test its range with it.
+`1 << 31` is -2147483648, and the TypeScript code is written for values up to
+2^31 - 1.
 
 ## When to use it
 
@@ -89,7 +89,7 @@ result as unsigned, which is why `countSetBits` can test its range with it.
 
 ```
 
-```typescript region=part-1
+```typescript region=count-set-bits
 
 ```
 
@@ -105,8 +105,8 @@ function does.
 
 ```
 
-Python needs no range guard because its integers never overflow; TypeScript
-needs one because of the 32-bit limit. XOR is the second tool.
+The test is one line: a power of two has a single set bit, so clearing it
+leaves 0. XOR is the second tool.
 
 ```python region=single-number
 
@@ -116,8 +116,8 @@ needs one because of the 32-bit limit. XOR is the second tool.
 
 ```
 
-XOR on infinite two's complement still cancels equal values, so Python needs no
-extra check for negatives. If two values lack a partner, the result is the XOR
+XOR cancels equal values whatever their sign, so negatives need no special
+case. If two values lack a partner, the result is the XOR
 of what's there: no error and no meaning. The last tool uses bits as a set.
 
 ```python region=subsets
@@ -128,10 +128,11 @@ of what's there: no error and no meaning. The last tool uses bits as a set.
 
 ```
 
-Mask 6 is 110: its lowest set bit is 2 (bit 1, so `b`), and clearing it
-leaves 100 (bit 2, so `c`), giving `[b, c]`. The inner loop runs once per item
-that's in; TypeScript steps with Trick 1, Python XORs the isolated bit away.
-The empty list gives `[[]]`, one subset.
+Mask 6 is 110. `1 << i` is a number with only bit i set (1, 10, 100), so
+`6 & (1 << 0)` is 0 and item `a` is out, while `6 & (1 << 1)` is 2 and
+`6 & (1 << 2)` is 4, which are nonzero and put `b` and `c` in, giving
+`[b, c]`. The inner loop checks every position of every mask. The empty list
+gives `[[]]`, one subset.
 
 ## Complexity
 
@@ -140,10 +141,9 @@ has 3, in 6 bit positions) and `is_power_of_two` is O(1). Python's integers
 grow, so each step also touches every digit of `n`: O(k log n) and O(log n).
 Both use O(1) space. `single_number` reads n values once: O(n) time and O(1)
 space, against O(n) space for counting in a [hash map](/dsa/hash-map) and
-O(n log n) time for sorting first. `subsets` makes 2^n masks, and across them
-each of the n items is in half, so n * 2^(n - 1) steps: O(n * 2^n) time, and
-the same for the output. For n = 20 that's over a million subsets. Neither version caps the item count:
-memory runs out at about 25 items, long before the 32-bit limit matters.
+O(n log n) time for sorting first. `subsets` makes 2^n masks and checks n positions in each: O(n * 2^n)
+time, and the same for the output. For n = 20 that's over a million subsets.
+Memory runs out at about 25 items, before TypeScript's 32-bit limit matters.
 
 ## Pitfalls
 
@@ -153,10 +153,10 @@ memory runs out at about 25 items, long before the 32-bit limit matters.
   compile it. Python's `&` binds tighter than `==`, so the bare line works
   there, which makes the bug easy to bring over when you port the code.
 - **Dropping `n > 0`.** `0 & -1` is 0, so zero is reported as a power of two.
-- **Running `n &= n - 1` on a negative Python integer.** `-5` becomes -6, -8,
+- **Running `n = n & (n - 1)` on a negative Python integer.** `-5` becomes -6, -8,
   -16 and never reaches 0, so the `n < 0` check is what stops a hang. Mask
   first (`n & 0xFFFFFFFF` gives the 32-bit pattern) to count a negative's bits.
-- **Treating JavaScript numbers as unbounded.** `1 << n` goes negative at 31,
-  so `subsets` uses `2 ** n`, and the guards (`n >>> 0 !== n`, `num | 0`) exist
-  because a value past 32 bits is truncated without an error. Use `BigInt` for
-  wider values.
+- **Treating JavaScript numbers as unbounded.** `1 << 31` is negative and a
+  value past 32 bits is truncated without an error. The TypeScript code
+  doesn't check, so callers must keep values within 2^31 - 1. Use `BigInt`
+  for wider values.

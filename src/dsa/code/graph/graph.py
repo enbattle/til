@@ -1,6 +1,4 @@
-# region part-1
-from collections.abc import Iterator
-
+# region build-list
 Edge = tuple[int, int]
 
 def check(n: int, edges: list[Edge]) -> None:
@@ -38,7 +36,7 @@ def build_matrix(n: int, edges: list[Edge], directed: bool = False) -> list[list
 # endregion
 
 
-# region has-edge-list
+# region queries
 def has_edge_list(adj: list[list[int]], u: int, v: int) -> bool:
     return v in adj[u]  # a scan of u's list, so O(deg(u))
 
@@ -47,19 +45,27 @@ def has_edge_matrix(m: list[list[int]], u: int, v: int) -> bool:
 
 def neighbors_matrix(m: list[list[int]], u: int) -> list[int]:
     # No list to return: the whole row must be read to find the 1s.
-    return [v for v, cell in enumerate(m[u]) if cell]
+    out: list[int] = []
+    for v in range(len(m)):
+        if m[u][v] == 1:
+            out.append(v)
+    return out
 # endregion
 
 
-# region edges-of-list
-def edges_of_list(adj: list[list[int]]) -> Iterator[Edge]:
-    for u, row in enumerate(adj):
-        for v in row:
-            yield u, v
+# region all-edges
+def edges_of_list(adj: list[list[int]]) -> list[Edge]:
+    edges: list[Edge] = []
+    for u in range(len(adj)):
+        for v in adj[u]:
+            edges.append((u, v))
+    return edges
 
-def edges_of_matrix(m: list[list[int]]) -> Iterator[Edge]:
-    for u, row in enumerate(m):
-        for v, cell in enumerate(row):
-            if cell:  # every cell is read, including the zeros
-                yield u, v
+def edges_of_matrix(m: list[list[int]]) -> list[Edge]:
+    edges: list[Edge] = []
+    for u in range(len(m)):
+        for v in range(len(m)):
+            if m[u][v] == 1:  # every cell is read, including the zeros
+                edges.append((u, v))
+    return edges
 # endregion

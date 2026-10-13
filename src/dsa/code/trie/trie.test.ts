@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Trie } from './trie';
 
 // The trie entry's TypeScript code. API: `new Trie()` with `insert(word)`,
-// `has(word)`, `startsWith(prefix)`, `wordsWithPrefix(prefix)` (every stored
+// `contains(word)`, `startsWith(prefix)`, `wordsWithPrefix(prefix)` (every stored
 // word, in no fixed order) and `delete(word)` (true when the word was stored).
 
 /** A small seeded generator (mulberry32), so a failing case can be replayed. */
@@ -73,8 +73,8 @@ function randomWords(r: () => number): string[] {
 describe('Trie (TypeScript)', () => {
   it('handles an empty trie', () => {
     const t = new Trie();
-    expect(t.has('')).toBe(false);
-    expect(t.has('a')).toBe(false);
+    expect(t.contains('')).toBe(false);
+    expect(t.contains('a')).toBe(false);
     expect(t.startsWith('')).toBe(false);
     expect(t.startsWith('a')).toBe(false);
     expect(t.wordsWithPrefix('')).toEqual([]);
@@ -83,16 +83,16 @@ describe('Trie (TypeScript)', () => {
 
   it('handles a single word', () => {
     const t = build(['a']);
-    expect(t.has('a')).toBe(true);
-    expect(t.has('b')).toBe(false);
+    expect(t.contains('a')).toBe(true);
+    expect(t.contains('b')).toBe(false);
     expect(t.startsWith('')).toBe(true);
     expect(t.wordsWithPrefix('a')).toEqual(['a']);
   });
 
   it('answers the running example', () => {
     const t = build(WORDS);
-    for (const w of WORDS) expect(t.has(w)).toBe(true);
-    for (const w of ['ap', 'appl', 'apples']) expect(t.has(w)).toBe(false);
+    for (const w of WORDS) expect(t.contains(w)).toBe(true);
+    for (const w of ['ap', 'appl', 'apples']) expect(t.contains(w)).toBe(false);
     expect(t.startsWith('ap')).toBe(true);
     expect(t.startsWith('apple')).toBe(true);
     expect(t.startsWith('apples')).toBe(false);
@@ -105,7 +105,7 @@ describe('Trie (TypeScript)', () => {
 
   it('does not store a word that is only a prefix', () => {
     const t = build(['apple']);
-    expect(t.has('app')).toBe(false);
+    expect(t.contains('app')).toBe(false);
     expect(t.startsWith('app')).toBe(true);
   });
 
@@ -114,7 +114,7 @@ describe('Trie (TypeScript)', () => {
     const before = countNodes(t);
     t.insert('app');
     expect(countNodes(t)).toBe(before);
-    expect(t.has('app')).toBe(true);
+    expect(t.contains('app')).toBe(true);
   });
 
   it('ignores a duplicate insert', () => {
@@ -126,15 +126,15 @@ describe('Trie (TypeScript)', () => {
 
   it('stores the empty string as a word', () => {
     const t = build(['']);
-    expect(t.has('')).toBe(true);
+    expect(t.contains('')).toBe(true);
     expect(t.wordsWithPrefix('')).toEqual(['']);
     expect(t.delete('')).toBe(true);
-    expect(t.has('')).toBe(false);
+    expect(t.contains('')).toBe(false);
   });
 
   it('steps by code point', () => {
     const t = build(['hé', '\u{1f600}x', '\u{1f600}y']);
-    expect(t.has('hé')).toBe(true);
+    expect(t.contains('hé')).toBe(true);
     expect(t.startsWith('\u{1f600}')).toBe(true);
     expect(t.startsWith('\ud83d')).toBe(false);
     expect(sorted(t.wordsWithPrefix('\u{1f600}'))).toEqual(['\u{1f600}x', '\u{1f600}y']);
@@ -144,7 +144,7 @@ describe('Trie (TypeScript)', () => {
   it('handles a very long word without recursion', () => {
     const word = 'a'.repeat(50000);
     const t = build([word]);
-    expect(t.has(word)).toBe(true);
+    expect(t.contains(word)).toBe(true);
     expect(t.wordsWithPrefix('')).toEqual([word]);
     expect(t.delete(word)).toBe(true);
     expect(countNodes(t)).toBe(0);
@@ -153,8 +153,8 @@ describe('Trie (TypeScript)', () => {
   it('deleting the longer word keeps the shorter one', () => {
     const t = build(WORDS);
     expect(t.delete('apple')).toBe(true);
-    expect(t.has('apple')).toBe(false);
-    expect(t.has('app')).toBe(true);
+    expect(t.contains('apple')).toBe(false);
+    expect(t.contains('app')).toBe(true);
     expect(t.startsWith('appl')).toBe(false);
     expect(countNodes(t)).toBe(7);
   });
@@ -162,8 +162,8 @@ describe('Trie (TypeScript)', () => {
   it('deleting the shorter word keeps the longer one', () => {
     const t = build(WORDS);
     expect(t.delete('app')).toBe(true);
-    expect(t.has('app')).toBe(false);
-    expect(t.has('apple')).toBe(true);
+    expect(t.contains('app')).toBe(false);
+    expect(t.contains('apple')).toBe(true);
     expect(countNodes(t)).toBe(9);
   });
 
@@ -199,7 +199,7 @@ describe('Trie (TypeScript)', () => {
     for (const words of [['apple'], [...big, 'apple']]) {
       const t = build(words);
       const counter = instrument(t);
-      expect(t.has('apple'), `${words.length} words`).toBe(true);
+      expect(t.contains('apple'), `${words.length} words`).toBe(true);
       expect(counter.gets, `${words.length} words`).toBe(5);
       counter.gets = 0;
       expect(t.startsWith('app'), `${words.length} words`).toBe(true);
@@ -215,7 +215,7 @@ describe('Trie (TypeScript)', () => {
       expect(countNodes(t), `seed ${seed}`).toBe(prefixes(words).size);
       for (const probe of [...prefixes(words), '', 'abcab', 'ccccc']) {
         const want = sorted([...stored].filter((w) => w.startsWith(probe)));
-        expect(t.has(probe), `seed ${seed} ${probe}`).toBe(stored.has(probe));
+        expect(t.contains(probe), `seed ${seed} ${probe}`).toBe(stored.has(probe));
         expect(sorted(t.wordsWithPrefix(probe)), `seed ${seed} prefix ${probe}`).toEqual(
           want,
         );
@@ -235,7 +235,7 @@ describe('Trie (TypeScript)', () => {
         const word = pool[Math.floor(r() * pool.length)];
         expect(t.delete(word), `seed ${seed} step ${step}`).toBe(stored.has(word));
         stored.delete(word);
-        expect(t.has(word), `seed ${seed} step ${step}`).toBe(false);
+        expect(t.contains(word), `seed ${seed} step ${step}`).toBe(false);
         expect(countNodes(t), `seed ${seed} step ${step}`).toBe(
           prefixes([...stored]).size,
         );

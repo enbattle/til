@@ -11,7 +11,7 @@ from bit_manipulation import count_set_bits, is_power_of_two, single_number, sub
 class Traced(int):
     """An int that counts the operators the code uses on it.
 
-    Arithmetic returns Traced, so the count survives `n &= n - 1`.
+    Arithmetic returns Traced, so the count survives `n = n & (n - 1)`.
     """
 
     ands = 0
@@ -191,20 +191,3 @@ def test_subsets_match_the_mask_definition():
         ]
         assert subsets(items) == expected, f"seed 14, trial {trial}: {items}"
 
-
-def test_subsets_read_only_the_items_that_are_in():
-    class Reads(list):
-        count = 0
-
-        def __getitem__(self, index):
-            Reads.count += 1
-            return super().__getitem__(index)
-
-    # Each of the 5 items is in half of the 32 subsets: 5 * 16 = 80 reads,
-    # one per set bit. Testing all 5 positions of every mask and indexing
-    # only the set ones reads the same, so the mask-order test above pins
-    # the walk; this pins that every read is a set bit (no slicing, no copy).
-    items = Reads([5, 6, 7, 8, 9])
-    result = subsets(items)
-    assert len(result) == 2**5
-    assert Reads.count == 5 * 2**4

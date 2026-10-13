@@ -78,11 +78,11 @@ A matrix also has a fixed V: a new vertex means a new row and a new cell in ever
 
 Both languages store vertices as numbers 0 to n - 1, and both layouts are built from the same edge list.
 
-```python region=part-1
+```python region=build-list
 
 ```
 
-```typescript region=part-1
+```typescript region=build-list
 
 ```
 
@@ -98,21 +98,21 @@ On the running example this returns the lists above, and with `directed` set `[[
 
 Writing a cell twice is harmless, so the matrix needs no `u != v` guard. The queries show the cost difference directly, and a list needs no `neighbors` function because `adj[v]` is already the answer.
 
-```python region=has-edge-list
+```python region=queries
 
 ```
 
-```typescript region=has-edge-list
+```typescript region=queries
 
 ```
 
-On the example, `has_edge_list(adj, 2, 3)` scans the three entries of `[0, 1, 3]`, and `neighbors_matrix(m, 2)` reads all four cells of row 2 to return `[0, 1, 3]`. Last, visiting every edge, which is what a traversal does. Each undirected edge is yielded once from each end.
+On the example, `has_edge_list(adj, 2, 3)` scans the three entries of `[0, 1, 3]`, and `neighbors_matrix(m, 2)` reads all four cells of row 2 to return `[0, 1, 3]`. Last, visiting every edge, which is what a traversal does. Each undirected edge is listed once from each end.
 
-```python region=edges-of-list
+```python region=all-edges
 
 ```
 
-```typescript region=edges-of-list
+```typescript region=all-edges
 
 ```
 
@@ -121,6 +121,6 @@ The list version does 8 steps on the example, one per entry. The matrix version 
 ## Pitfalls
 
 - **Storing an undirected edge once.** Without `adj[v].append(u)`, the edge is visible from u and invisible from v, so a search that starts at v never finds u. Also keep the `u != v` guard: without it a self-loop lands in its own list twice, and the list and the matrix disagree about the graph.
-- **Sharing one row.** `[[]] * n` in Python and `new Array(n).fill([])` in TypeScript make n references to one array, so adding 0 to 1 appears to add it to every vertex. The comprehension and `Array.from` in `build_list` make a fresh list per vertex; `build_matrix` needs the same care.
+- **Sharing one row.** `[[]] * n` in Python and `new Array(n).fill([])` in TypeScript make n references to one array, so adding 0 to 1 appears to add it to every vertex. Both builders make a fresh list per vertex, `build_matrix` included.
 - **Skipping `check`.** Python reads `adj[-1]` as the last vertex, so a bad id quietly edits the wrong one. In TypeScript, `m[u][v] = 1` with `v` past the end grows the row instead of failing.
 - **Asking the list "is there an edge?" in a loop.** `v in adj[u]` costs O(deg(u)) per call; asked for every pair, a hub vertex with 100,000 neighbors dominates the run. If edge checks are frequent, keep a set per vertex instead of a list, or use the matrix when V is small.

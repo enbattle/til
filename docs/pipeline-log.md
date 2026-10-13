@@ -92,7 +92,7 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
 | 2026-10-01 | add-dsa-entry src/dsa/entries/binary-search-tree.md | 0 | 0/1/0 | 1 | 2 | n/a |  |
 | 2026-10-01 | add-dsa-entry src/dsa/entries/trie.md | 0 | 0/2/0 | 1 | 2 | n/a |  |
 | 2026-10-01 | add-dsa-entry src/dsa/entries/graph.md | 0 | 0/1/0 | 1 | 2 | n/a |  |
-| 2026-10-01 | add-dsa-entry src/dsa/entries/union-find.md | 0 | 0/1/0 | 1 | 2 | n/a |  |
+| 2026-10-01 | add-dsa-entry src/dsa/entries/union-find.md | 0 | 0/1/0 | 2 | 2 | n/a |  |
 | 2026-10-01 | add-dsa-entry src/dsa/entries/sliding-window.md | 0 | 0/2/0 | 1 | 2 | n/a |  |
 | 2026-10-01 | add-dsa-entry src/dsa/entries/prefix-sums.md | 0 | 0/0/1 | 1 | 2 | n/a |  |
 | 2026-10-01 | add-dsa-entry src/dsa/entries/fast-slow-pointers.md | 1 (typecheck failed in CI) | 0/1/0 | 1 | 2 | n/a |  |
@@ -273,3 +273,10 @@ Columns (`npm run check:pipeline-log`, part of `verify`, checks the format):
 | 2026-10-13 | add-dsa-entry src/dsa/entries/heap.md | 0 | 1/1/0, pre:1 | 1 | 2 | kinds: wrong-claim, code-bug |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/binary-tree.md | 0 | 1/2/0 | 2 | 2 | kinds: code-bug, inconsistency |  |
 | 2026-10-13 | add-dsa-entry src/dsa/entries/binary-search-tree.md | 0 | 1/3/2 | 2 | 2 | kinds: code-bug, test-gap, inconsistency |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/trie.md | 0 | 0/0/1 | 1 | 2 | kinds: structure |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/graph.md | 0 | 0/0/0 | 0 | 2 | n/a |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/union-find.md | 0 | 0/1/0 | 2 | 2 | kinds: code-bug |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/bit-manipulation.md | 0 | 0/3/0 | 1 | 2 | kinds: inconsistency, wrong-claim |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/two-pointers.md | 0 | 0/0/2 | 0 | 2 | kinds: wrong-claim |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/sliding-window.md | 0 | 0/0/0 | 0 | 2 | n/a |  |
+| 2026-10-13 | add-dsa-entry src/dsa/entries/prefix-sums.md | 0 | 0/0/2 | 0 | 2 | kinds: test-gap, narration |  |

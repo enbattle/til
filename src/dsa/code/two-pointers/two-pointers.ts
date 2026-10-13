@@ -8,12 +8,15 @@ export function pairWithSum(nums: number[], target: number): [number, number] | 
     const total = nums[left] + nums[right];
     if (total === target) return [left, right];
     // #endregion
-    // #region part-2
+    // #region move-pointers
     // Too small: nums[left] is too small even beside the largest value still
     // in play, so no pair uses it. Too big: nums[right] fails the same way
     // beside the smallest. Either move rules one element out for good.
-    if (total < target) left++;
-    else right--;
+    if (total < target) {
+      left += 1;
+    } else {
+      right -= 1;
+    }
   }
   return null;
 }
@@ -38,7 +41,7 @@ export function hasCycle(head: ListNode | null): boolean {
   // an odd-length list leaves fast on its last node.
   while (fast !== null && fast.next !== null) {
     // #endregion
-    // #region part-4
+    // #region advance-and-compare
     slow = slow!.next;
     fast = fast.next.next;
     // After moving, not before: both start at head, so before always matches.
