@@ -1,308 +1,103 @@
 #!/usr/bin/env node
 // Guardrail for docs/NON_NEGOTIABLES.md #6: markdown never renders raw HTML,
 // and `dangerouslySetInnerHTML` only takes output from an escaping source.
-// Fails if a dependency that turns on raw HTML in markdown is installed, if
-// app code outside the one component allowed to use it (CodeBlock.tsx, which
-// passes it Shiki's escaped output) references the name
-// `dangerouslySetInnerHTML` at all (a JSX attribute, an object key, a member
-// property, static or computed, or a string or static template literal;
-// comments don't count), or if app code references another DOM sink
-// (innerHTML and friends, insertAdjacentHTML, document.write).
+// Fails if package.json depends on a package that renders raw HTML from
+// markdown or an HTML string (RAW_HTML_PACKAGES), or if a non-test
+// .js/.jsx/.mjs/.cjs/.ts/.tsx/.mts/.cts file under src/ (except src/dsa/code/
+// and src/test/, never shipped to the browser) names an HTML sink: any of
+// SINKS as a case-insensitive substring, or the whole word `write`/`writeln`
+// (case-sensitive), which `document.write` can't be called without, however
+// the document is reached. `dangerouslySetInnerHTML` is allowed only in
+// src/components/CodeBlock.tsx, which passes it Shiki's escaped output.
 //
-// Each app file is parsed with oxc-parser and the sink check walks the syntax
-// tree (docs/specs/raw-html-ast.md), so comments, strings, spacing, `?.`, `!`,
-// casts and parentheses don't change what matches. A file that doesn't parse
-// is itself a violation: the check can't vouch for code it can't read. The
-// walk still can't follow values, so by design it does not catch
-// (docs/specs/raw-html-ast.md, "Unchanged"):
-//   - a sink reached through a value (`pick(document, 'write')(s)`);
-//   - names built by string concatenation (`'dangerously' + 'SetInnerHTML'`);
-//   - `Object.assign(el, { innerHTML: s })` and
-//     `Reflect.set(el, 'innerHTML', s)`;
-//   - computed keys from variables (`el[key] = s`);
-//   - call-return receivers (`getDocument().write(s)`,
-//     `document.open().write(s)`);
-//   - `Object.defineProperty(el, 'innerHTML', …)`;
-//   - prop spreads of variables (`<iframe {...props} />`) and conditional
-//     spreads (`<iframe {...(c ? { srcDoc: s } : {})} />`);
-//   - casts to a type other than a plain reference (`x as Document | null`,
-//     `x as Readonly<Document>`) on a `.write` receiver;
-//   - array and `for…of` sources of a destructured `write`
-//     (`const [{ write }] = [document]`,
-//     `for (const { write } of [document])`);
-//   - destructured function and `catch` parameters with no default
-//     (`({ insertAdjacentHTML }: HTMLElement) => …`, `catch ({ document: { write } })`).
-// A type-only mention of `dangerouslySetInnerHTML` (`type P = {
-// dangerouslySetInnerHTML?: X }`) is flagged too: a false positive that fails
-// closed.
-// JSX in a .js or .mjs file is a parse error, so such a file fails as
-// unparseable rather than being checked.
+// It matches names, not syntax (docs/specs/in-process-checks.md), so a name
+// in a comment or a string counts too, and the check fails closed rather
+// than parsing code. It decodes the escape sequences \uXXXX, \u{...} and \xXX
+// first, since `\u0069nnerHTML` is `innerHTML` to the engine. What gets
+// past it is a name built at run time
+// ('inner' + 'HTML', document['wr' + 'ite']) or spelled with another escape
+// (an identity escape such as 'inner\HTML', or a backslash line continuation
+// inside a string); review covers those. oxlint's
+// `react/no-danger` rule (.oxlintrc.json) also errors on the JSX prop.
 // `eval` and `new Function` are script sinks, not HTML ones, and are out of
 // scope here.
 import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { parseSync } from 'oxc-parser';
-import { listFiles, ROOT as REPO_ROOT } from './lib.mjs';
+import { isMain, listFiles, ROOT } from './lib.mjs';
 
-const ROOT = process.env.CHECK_RAW_HTML_ROOT ?? REPO_ROOT;
-const RAW_HTML_PACKAGES = ['rehype-raw', 'rehype-dom-raw'];
-const ALLOWED = new Set(['src/components/CodeBlock.tsx']);
-
-// DOM APIs that parse a string as HTML; none is needed anywhere in this app.
-// Properties whose assignment parses HTML (rows A1, A2).
-const HTML_PROPS = new Set(['innerHTML', 'outerHTML', 'srcdoc']);
-// Methods that parse their string argument as HTML (row C1).
-const HTML_METHODS = new Set([
+const RAW_HTML_PACKAGES = [
+  'rehype-raw',
+  'rehype-dom-raw',
+  'hast-util-raw',
+  'markdown-to-jsx',
+  'html-react-parser',
+];
+// DOM APIs that parse a string as HTML; none is needed in this app outside
+// CodeBlock.tsx's one `dangerouslySetInnerHTML`.
+const SINKS = [
+  'dangerouslySetInnerHTML',
+  'innerHTML',
+  'outerHTML',
+  'srcdoc',
   'insertAdjacentHTML',
   'setHTMLUnsafe',
   'parseHTMLUnsafe',
   'createContextualFragment',
-]);
-// Wrappers that don't change which object or property an expression names.
-const WRAPPERS = new Set([
-  'ParenthesizedExpression',
-  'TSNonNullExpression',
-  'TSAsExpression',
-  'TSSatisfiesExpression',
-  'TSTypeAssertion',
-  'ChainExpression',
-]);
-const CASTS = new Set(['TSAsExpression', 'TSSatisfiesExpression', 'TSTypeAssertion']);
-const DOCUMENT_NAME = /[dD]ocument$/;
+  'parseFromString',
+  'document.write',
+];
+const WRITE_WORD = /\bwrite(?:ln)?\b/;
+const ALLOWED = { 'src/components/CodeBlock.tsx': ['dangerouslySetInnerHTML'] };
+const EXTENSIONS = ['.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.mts', '.cts'];
+const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
+const NOT_SHIPPED = /^src\/(?:dsa\/code|test)\//;
+const ESCAPE = /\\u\{([0-9a-f]+)\}|\\u([0-9a-f]{4})|\\x([0-9a-f]{2})/gi;
 
-/** `node` with parens, `!`, casts, `?.` and leading comma operands peeled off. */
-function unwrap(node) {
-  for (;;) {
-    if (node && WRAPPERS.has(node.type)) node = node.expression;
-    else if (node?.type === 'SequenceExpression') node = node.expressions.at(-1);
-    else return node;
-  }
-}
-
-/** A string literal's or expression-free template literal's value, else null. */
-function staticString(node) {
-  node = unwrap(node);
-  if (node?.type === 'Literal' && typeof node.value === 'string') return node.value;
-  if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) {
-    return node.quasis[0].value.cooked;
-  }
-  return null;
-}
-
-/** The name of a member's property or an object property's key, else null. */
-function keyName(key, computed) {
-  if (!computed && key.type === 'Identifier') return key.name;
-  return staticString(key);
-}
-function memberName(node) {
-  node = unwrap(node);
-  return node?.type === 'MemberExpression' ? keyName(node.property, node.computed) : null;
-}
-
-/** True for a type reference named `Document` or ending in `Document`. */
-function isDocumentType(type) {
-  if (type?.type !== 'TSTypeReference') return false;
-  const name = type.typeName;
-  const text = name.type === 'TSQualifiedName' ? name.right.name : name.name;
-  return DOCUMENT_NAME.test(text ?? '');
-}
-
-/** A `document`-like receiver for `.write`/`.writeln` (row C2). */
-function isDocumentLike(node) {
-  for (;;) {
-    if (node && WRAPPERS.has(node.type)) {
-      if (CASTS.has(node.type) && isDocumentType(node.typeAnnotation)) return true;
-      node = node.expression;
-    } else if (node?.type === 'SequenceExpression') {
-      node = node.expressions.at(-1);
-    } else break;
-  }
-  if (node?.type === 'Identifier') return DOCUMENT_NAME.test(node.name);
-  return DOCUMENT_NAME.test(memberName(node) ?? '');
-}
-
-/** Every member expression an assignment target writes to, through patterns. */
-function* assignedMembers(target) {
-  target = unwrap(target);
-  if (!target) return;
-  switch (target.type) {
-    case 'MemberExpression':
-      yield target;
-      break;
-    case 'ArrayPattern':
-      for (const element of target.elements) yield* assignedMembers(element);
-      break;
-    case 'ObjectPattern':
-      for (const property of target.properties) {
-        yield* assignedMembers(
-          property.type === 'RestElement' ? property : property.value,
-        );
-      }
-      break;
-    case 'RestElement':
-      yield* assignedMembers(target.argument);
-      break;
-    case 'AssignmentPattern':
-      yield* assignedMembers(target.left);
-      break;
-  }
-}
-
-/** The sink methods an object pattern takes out of `source` by key, not by
- * local alias, at any nesting depth: any HTML_METHODS key, or `write`/`writeln`
- * from a `document`-like source (`const { write } = document`). In a nested
- * pattern the source is the parent property, so it's `document`-like when that
- * key is (`const { contentDocument: { write } } = iframe`). */
-function* destructuredSinks(pattern, source, documentLike = isDocumentLike(source)) {
-  pattern = unwrap(pattern);
-  if (pattern?.type !== 'ObjectPattern') return;
-  for (const property of pattern.properties) {
-    if (property.type === 'RestElement') continue;
-    const key = keyName(property.key, property.computed);
-    if (HTML_METHODS.has(key)) yield `.${key}`;
-    if ((key === 'write' || key === 'writeln') && documentLike) {
-      yield `document.${key}`;
-    }
-    let value = unwrap(property.value);
-    if (value?.type === 'AssignmentPattern') value = unwrap(value.left);
-    if (value?.type === 'ObjectPattern') {
-      yield* destructuredSinks(value, null, DOCUMENT_NAME.test(key ?? ''));
-    }
-  }
-}
-
-/** The sink names one node writes raw HTML through (rows A1–J2). */
-function* sinksAt(node) {
-  switch (node.type) {
-    case 'VariableDeclarator':
-      yield* destructuredSinks(node.id, node.init);
-      break;
-    case 'AssignmentPattern':
-      yield* destructuredSinks(node.left, node.right);
-      break;
-    case 'AssignmentExpression':
-      yield* destructuredSinks(node.left, node.right);
-    // falls through
-    case 'ForOfStatement':
-    case 'ForInStatement':
-      for (const member of assignedMembers(node.left)) {
-        const name = memberName(member);
-        if (HTML_PROPS.has(name)) yield `.${name}`;
-      }
-      break;
-    // Any reference to a sink method, not only a direct call's callee: tagged
-    // templates, `.call`/`.apply`/`.bind` and method references (rows C1, C2).
-    case 'MemberExpression': {
-      const name = memberName(node);
-      if (HTML_METHODS.has(name)) yield `.${name}`;
-      if ((name === 'write' || name === 'writeln') && isDocumentLike(node.object)) {
-        yield `document.${name}`;
-      }
-      break;
-    }
-    case 'CallExpression': {
-      const name = memberName(node.callee);
-      const attribute =
-        name === 'setAttribute'
-          ? node.arguments[0]
-          : name === 'setAttributeNS'
-            ? node.arguments[1]
-            : undefined;
-      if (attribute && staticString(attribute)?.toLowerCase() === 'srcdoc') {
-        yield `${name}('srcdoc')`;
-      }
-      break;
-    }
-    case 'JSXAttribute':
-      if (
-        node.name.type === 'JSXIdentifier' &&
-        node.name.name.toLowerCase() === 'srcdoc'
-      ) {
-        yield `JSX ${node.name.name}`;
-      }
-      break;
-    case 'JSXSpreadAttribute': {
-      const spread = unwrap(node.argument);
-      if (spread?.type !== 'ObjectExpression') break;
-      for (const property of spread.properties) {
-        if (property.type !== 'Property') continue;
-        const key = keyName(property.key, property.computed);
-        if (key?.toLowerCase() === 'srcdoc' || key === 'dangerouslySetInnerHTML') {
-          yield `JSX spread ${key}`;
-        }
-      }
-      break;
-    }
-  }
-}
-
-/** True for any reference to the name `dangerouslySetInnerHTML` (row D1): an
- * identifier (a member property, object key or binding), a JSX attribute, or
- * a string or static template literal. Comments aren't nodes, so they pass. */
-function isDangerousKey(node) {
-  if (node.type === 'Identifier' || node.type === 'JSXIdentifier') {
-    return node.name === 'dangerouslySetInnerHTML';
-  }
-  if (node.type === 'Literal' || node.type === 'TemplateLiteral') {
-    return staticString(node) === 'dangerouslySetInnerHTML';
-  }
-  return false;
-}
-
-/** Visits every node in the tree, through every object and array child. */
-function walk(node, visit) {
-  visit(node);
-  for (const value of Object.values(node)) {
-    if (Array.isArray(value)) {
-      for (const child of value) {
-        if (child && typeof child.type === 'string') walk(child, visit);
-      }
-    } else if (value && typeof value.type === 'string') {
-      walk(value, visit);
-    }
-  }
-}
-
-const violations = [];
-
-const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-for (const field of ['dependencies', 'devDependencies']) {
-  for (const name of RAW_HTML_PACKAGES) {
-    if (pkg[field]?.[name])
-      violations.push(`package.json ${field}: ${name} renders raw HTML`);
-  }
-}
-
-const appFiles = listFiles({
-  root: ROOT,
-  under: 'src',
-  // `.mjs` too: src/lib/markdown.mjs ships to the browser.
-  ext: ['.js', '.jsx', '.mjs', '.ts', '.tsx'],
-}).filter((path) => !/\.(test|spec)\.[cm]?[jt]sx?$/.test(path));
-for (const path of appFiles) {
-  const rel = relative(ROOT, path).split('\\').join('/');
-  const { program, errors } = parseSync(path, readFileSync(path, 'utf8'));
-  if (errors.length > 0) {
-    violations.push(
-      `${rel}: could not be parsed (${errors[0].message}) — check:raw-html can't vouch for it`,
-    );
-    continue;
-  }
-  const found = new Set();
-  let dangerous = false;
-  walk(program, (node) => {
-    for (const sink of sinksAt(node)) found.add(sink);
-    if (isDangerousKey(node)) dangerous = true;
+/** `source` with its JavaScript escape sequences decoded (a code point out
+ * of range is left as written). */
+function decodeEscapes(source) {
+  return source.replace(ESCAPE, (match, braced, four, two) => {
+    const code = parseInt(braced ?? four ?? two, 16);
+    return code <= 0x10ffff ? String.fromCodePoint(code) : match;
   });
-  if (dangerous && !ALLOWED.has(rel)) {
-    violations.push(`${rel}: dangerouslySetInnerHTML outside ${[...ALLOWED].join(', ')}`);
-  }
-  for (const sink of found) violations.push(`${rel}: ${sink} writes raw HTML`);
 }
 
-if (violations.length > 0) {
-  console.error('Raw HTML rendering found (docs/NON_NEGOTIABLES.md #6):\n');
-  for (const violation of violations) console.error(`  ${violation}`);
-  process.exit(1);
+/** The raw-HTML problems in `root` (default: the repository), each naming
+ * the package or file at fault; `[]` when there are none. */
+export function rawHtmlProblems(root = ROOT) {
+  const problems = [];
+  const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  for (const field of ['dependencies', 'devDependencies']) {
+    for (const name of RAW_HTML_PACKAGES) {
+      if (pkg[field]?.[name]) {
+        problems.push(`package.json: ${name} in ${field} renders raw HTML`);
+      }
+    }
+  }
+  for (const file of listFiles({ root, under: 'src', ext: EXTENSIONS })) {
+    const rel = relative(root, file).split('\\').join('/');
+    if (TEST_FILE.test(rel) || NOT_SHIPPED.test(rel)) continue;
+    const source = decodeEscapes(readFileSync(file, 'utf8'));
+    if (WRITE_WORD.test(source)) problems.push(`${rel}: names write/writeln`);
+    // An allowed name is cut out first, so the sink names inside it
+    // (`innerHTML` in `dangerouslySetInnerHTML`) don't count either.
+    let text = source.toLowerCase();
+    for (const allowed of ALLOWED[rel] ?? []) {
+      text = text.replaceAll(allowed.toLowerCase(), '');
+    }
+    for (const sink of SINKS) {
+      if (text.includes(sink.toLowerCase())) problems.push(`${rel}: names ${sink}`);
+    }
+  }
+  return problems;
 }
-console.log('No raw HTML rendering outside CodeBlock.tsx.');
+
+if (isMain(import.meta.url)) {
+  const problems = rawHtmlProblems();
+  if (problems.length > 0) {
+    console.error('Raw HTML rendering found (docs/NON_NEGOTIABLES.md #6):\n');
+    for (const problem of problems) console.error(`  ${problem}`);
+    process.exit(1);
+  }
+  console.log('No raw HTML rendering outside CodeBlock.tsx.');
+}

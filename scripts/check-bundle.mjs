@@ -19,10 +19,9 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parseFrontmatter } from '../src/lib/frontmatter.ts';
-import { escapeRegExp, listFiles, ROOT } from './lib.mjs';
+import { escapeRegExp, isMain, listFiles, ROOT } from './lib.mjs';
 
 const BODY_DIRS = ['src/content', 'src/system-design/case-studies', 'src/dsa/entries'];
-const ASSETS = join(ROOT, 'dist', 'assets');
 const MIN_LINE = 40;
 const MIN_FRAGMENT = 30;
 // Markdown reaches the bundle as a JS string, so quotes, backslashes, backticks,
@@ -54,93 +53,115 @@ function fragmentFor(raw) {
   return null;
 }
 
-if (!existsSync(ASSETS)) {
-  console.error('dist/assets does not exist: run `npm run build` first.');
-  process.exit(1);
-}
+/**
+ * Checks `root`'s markdown bodies against its dist/assets build output:
+ * the problems, each naming the file at fault, and how many bodies were
+ * checked.
+ */
+function checkBundle(root) {
+  const assets = join(root, 'dist', 'assets');
+  if (!existsSync(assets)) {
+    return {
+      problems: ['dist/assets does not exist: run `npm run build` first.'],
+      checked: 0,
+    };
+  }
 
-const chunks = readdirSync(ASSETS)
-  .filter((name) => name.endsWith('.js'))
-  .map((name) => ({ name, text: readFileSync(join(ASSETS, name), 'utf8') }));
-const mainChunks = chunks.filter((chunk) => /^index-.*\.js$/.test(chunk.name));
-const otherChunks = chunks.filter((chunk) => !mainChunks.includes(chunk));
+  const chunks = readdirSync(assets)
+    .filter((name) => name.endsWith('.js'))
+    .map((name) => ({ name, text: readFileSync(join(assets, name), 'utf8') }));
+  const mainChunks = chunks.filter((chunk) => /^index-.*\.js$/.test(chunk.name));
+  const otherChunks = chunks.filter((chunk) => !mainChunks.includes(chunk));
 
-if (mainChunks.length === 0) {
-  console.error(
-    'No dist/assets/index-*.js main chunk found: has the build layout changed?',
+  if (mainChunks.length === 0) {
+    return {
+      problems: [
+        'No dist/assets/index-*.js main chunk found: has the build layout changed?',
+      ],
+      checked: 0,
+    };
+  }
+
+  const violations = [];
+  const checks = [];
+  const chunkTopics = new Map();
+  const bodyFiles = BODY_DIRS.filter((under) => existsSync(join(root, under))).flatMap(
+    (under) => listFiles({ root, under, ext: '.md' }),
   );
-  process.exit(1);
-}
-
-const violations = [];
-const checks = [];
-const chunkTopics = new Map();
-const bodyFiles = BODY_DIRS.flatMap((under) => listFiles({ under, ext: '.md' }));
-for (const file of bodyFiles) {
-  const name = relative(ROOT, file);
-  const fragment = fragmentFor(readFileSync(file, 'utf8'));
-  if (!fragment) {
-    violations.push(
-      `${name}: no line qualified for the check (needs a prose line of ${MIN_LINE}+ characters with a ${MIN_FRAGMENT}+ character run of plain text); this does not mean the body is missing, but this file is not being verified`,
-    );
-    continue;
-  }
-  checks.push({ name, fragment });
-}
-
-for (const { name, fragment } of checks) {
-  if (mainChunks.some((chunk) => chunk.text.includes(fragment))) {
-    violations.push(`${name}: body text is inlined in the main chunk ("${fragment}")`);
-    continue;
-  }
-  const holders = otherChunks.filter((chunk) => chunk.text.includes(fragment));
-  if (holders.length === 0) {
-    violations.push(
-      `${name}: body text is in no chunk under dist/assets ("${fragment}")`,
-    );
-    continue;
-  }
-  for (const chunk of holders) {
-    chunkTopics.set(chunk.name, [...(chunkTopics.get(chunk.name) ?? []), name]);
-  }
-}
-// One chunk per file: a chunk that holds one body must hold no other's.
-for (const [chunkName, names] of chunkTopics) {
-  if (names.length > 1) {
-    violations.push(
-      `${chunkName}: holds the bodies of ${names.length} files (${names.slice(0, 3).join(', ')}${names.length > 3 ? ', ...' : ''}); each body must be its own chunk`,
-    );
-  }
-}
-// Only a dynamic `import()` may reach a body chunk. A static `import ... from
-// "./x.js"` or side-effect `import "./x.js"` would load it together with the
-// importing chunk, so a chunk loaded on every topic view (the markdown
-// renderer) or the main chunk could drag bodies in without inlining them.
-// `import("./x.js")` has a parenthesis before the quote, so it doesn't match.
-for (const [bodyChunk, names] of chunkTopics) {
-  const staticImport = new RegExp(
-    `(?:from|import)\\s*["'\`]\\./${escapeRegExp(bodyChunk)}["'\`]`,
-  );
-  for (const chunk of chunks) {
-    if (chunk.name === bodyChunk) continue;
-    if (staticImport.test(chunk.text)) {
+  for (const file of bodyFiles) {
+    const name = relative(root, file);
+    const fragment = fragmentFor(readFileSync(file, 'utf8'));
+    if (!fragment) {
       violations.push(
-        `${chunk.name}: statically imports the body chunk ${bodyChunk} (${names[0]}); a body must only be reachable through a dynamic import()`,
+        `${name}: no line qualified for the check (needs a prose line of ${MIN_LINE}+ characters with a ${MIN_FRAGMENT}+ character run of plain text); this does not mean the body is missing, but this file is not being verified`,
+      );
+      continue;
+    }
+    checks.push({ name, fragment });
+  }
+
+  for (const { name, fragment } of checks) {
+    if (mainChunks.some((chunk) => chunk.text.includes(fragment))) {
+      violations.push(`${name}: body text is inlined in the main chunk ("${fragment}")`);
+      continue;
+    }
+    const holders = otherChunks.filter((chunk) => chunk.text.includes(fragment));
+    if (holders.length === 0) {
+      violations.push(
+        `${name}: body text is in no chunk under dist/assets ("${fragment}")`,
+      );
+      continue;
+    }
+    for (const chunk of holders) {
+      chunkTopics.set(chunk.name, [...(chunkTopics.get(chunk.name) ?? []), name]);
+    }
+  }
+  // One chunk per file: a chunk that holds one body must hold no other's.
+  for (const [chunkName, names] of chunkTopics) {
+    if (names.length > 1) {
+      violations.push(
+        `${chunkName}: holds the bodies of ${names.length} files (${names.slice(0, 3).join(', ')}${names.length > 3 ? ', ...' : ''}); each body must be its own chunk`,
       );
     }
   }
+  // Only a dynamic `import()` may reach a body chunk. A static `import ... from
+  // "./x.js"` or side-effect `import "./x.js"` would load it together with the
+  // importing chunk, so a chunk loaded on every topic view (the markdown
+  // renderer) or the main chunk could drag bodies in without inlining them.
+  // `import("./x.js")` has a parenthesis before the quote, so it doesn't match.
+  for (const [bodyChunk, names] of chunkTopics) {
+    const staticImport = new RegExp(
+      `(?:from|import)\\s*["'\`]\\./${escapeRegExp(bodyChunk)}["'\`]`,
+    );
+    for (const chunk of chunks) {
+      if (chunk.name === bodyChunk) continue;
+      if (staticImport.test(chunk.text)) {
+        violations.push(
+          `${chunk.name}: statically imports the body chunk ${bodyChunk} (${names[0]}); a body must only be reachable through a dynamic import()`,
+        );
+      }
+    }
+  }
+  return { problems: violations, checked: checks.length };
 }
-const checked = checks.length;
 
-if (violations.length > 0) {
-  console.error('Markdown bodies are not split out of the main chunk as expected:\n');
-  for (const violation of violations) console.error(`  ${violation}`);
-  console.error(
-    '\nTopic and case-study bodies must be loaded through a lazy import.meta.glob with one chunk per file (see src/lib/content.ts and src/lib/system-design.ts), not eagerly, grouped, or imported statically.',
+/** The problems with `root`'s build output (default: the repository), each
+ * naming the file at fault; `[]` when every body is in its own lazy chunk. */
+export function bundleProblems(root = ROOT) {
+  return checkBundle(root).problems;
+}
+
+if (isMain(import.meta.url)) {
+  const { problems, checked } = checkBundle(ROOT);
+  if (problems.length > 0) {
+    console.error('Markdown bodies are not split out of the main chunk as expected:\n');
+    for (const problem of problems) console.error(`  ${problem}`);
+    console.error(
+      '\nTopic and case-study bodies must be loaded through a lazy import.meta.glob with one chunk per file (see src/lib/content.ts and src/lib/system-design.ts), not eagerly, grouped, or imported statically.',
+    );
+    process.exit(1);
+  }
+  console.log(
+    `All ${checked} topic, case-study and DSA entry bodies are outside the main chunk, each in its own lazy chunk, reached only by dynamic import.`,
   );
-  process.exit(1);
 }
-
-console.log(
-  `All ${checked} topic, case-study and DSA entry bodies are outside the main chunk, each in its own lazy chunk, reached only by dynamic import.`,
-);

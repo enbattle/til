@@ -1,5 +1,5 @@
 /**
- * One topic write-up: a single markdown file under `src/content/<section>/`.
+ * One topic entry: a single markdown file under `src/content/<section>/`.
  * This is the metadata only; the markdown body is loaded on demand
  * (`loadTopicBody` in `src/lib/content.ts`) so it isn't in the main bundle.
  */

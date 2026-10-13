@@ -3,15 +3,20 @@
 // only ever passed hasn't been tested (feature/SKILL.md, Stage 3), so each case
 // plants the violation the script exists to catch and asserts it fails, plus a
 // clean case that must pass.
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { cleanTemps, run, SCRIPTS, tempDir } from '../src/test/guard-helpers.mjs';
-
-afterEach(cleanTemps);
+//
+// Interface assumed (docs/specs/in-process-checks.md): the script exports a
+// pure `pipelineLogProblems(text)`, which checks the text of a pipeline log
+// and returns its problems as strings, each naming the row at fault; `[]`
+// when every row is well-formed. Importing it runs nothing. Run as a script,
+// it checks docs/pipeline-log.md.
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { pipelineLogProblems } from './check-pipeline-log.mjs';
 
 describe('check-pipeline-log', () => {
-  const header = readFileSync(join(SCRIPTS, '../docs/pipeline-log.md'), 'utf8');
+  const header = readFileSync(resolve('docs/pipeline-log.md'), 'utf8');
   const row = (
     retro,
     {
@@ -24,14 +29,14 @@ describe('check-pipeline-log', () => {
     } = {},
   ) =>
     `|  ${date}  | ${run} | ${gates} | ${findings} | ${rounds} | ${agents} |  ${retro}  |  |`;
-  function check(...rows) {
-    const file = join(tempDir(), 'log.md');
-    writeFileSync(file, `${header.trimEnd()}\n${rows.join('\n')}\n`);
-    return run('check-pipeline-log.mjs', [file]).status;
-  }
+  /** The problems in the real log with `rows` appended. */
+  const problemsWith = (...rows) =>
+    pipelineLogProblems(`${header.trimEnd()}\n${rows.join('\n')}\n`);
+  /** 0 when the rows pass, 1 when they have a problem. */
+  const check = (...rows) => (problemsWith(...rows).length === 0 ? 0 : 1);
 
   it('passes the real log and well-formed (padded) rows', () => {
-    expect(run('check-pipeline-log.mjs').status).toBe(0);
+    expect(pipelineLogProblems(header)).toEqual([]);
     expect(check(row('nothing to change'))).toBe(0);
     expect(
       check(
@@ -78,10 +83,8 @@ describe('check-pipeline-log', () => {
   // docs/specs/harness-follow-ups.md, criteria 2 and 3: both rules apply only
   // to rows dated after 2026-10-06, since rows are never rewritten.
   function result(...rows) {
-    const file = join(tempDir(), 'log.md');
-    writeFileSync(file, `${header.trimEnd()}\n${rows.join('\n')}\n`);
-    const { status, stdout, stderr } = run('check-pipeline-log.mjs', [file]);
-    return { status, output: `${stdout}${stderr}` };
+    const problems = problemsWith(...rows);
+    return { status: problems.length === 0 ? 0 : 1, output: problems.join('\n') };
   }
   const content = (retro, options = {}) =>
     row(retro, {
@@ -212,8 +215,14 @@ describe('check-pipeline-log', () => {
     });
   });
 
-  it('passes the real log under the new rules (criterion 4)', () => {
-    const { status, stderr } = run('check-pipeline-log.mjs');
-    expect(status, stderr).toBe(0);
+  // docs/specs/in-process-checks.md, criterion 2: the one run as a script.
+  it('exits 0 with its success message on the real log, run as a script', () => {
+    const result = spawnSync(
+      process.execPath,
+      [resolve('scripts/check-pipeline-log.mjs')],
+      { encoding: 'utf8' },
+    );
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toMatch(/rows are well-formed/);
   });
 });

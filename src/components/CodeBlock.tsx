@@ -56,6 +56,9 @@ export function CodeBlock({ code, language, className = 'my-5' }: CodeBlockProps
       {html ? (
         <div
           className="overflow-x-auto text-sm [&>pre]:p-4 [&_pre]:!bg-transparent"
+          // Shiki escapes the code it highlights, so this is escaped output
+          // (docs/NON_NEGOTIABLES.md #6); check:raw-html allows it only here.
+          // oxlint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: html }}
         />
       ) : (

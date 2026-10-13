@@ -13,7 +13,7 @@ import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { diagramTokens, svgProblems } from './diagram-manifest.mjs';
-import { cleanTemps, copyScripts, tempDir } from '../src/test/guard-helpers.mjs';
+import { cleanTemps, tempDir } from '../src/test/guard-helpers.mjs';
 
 afterEach(cleanTemps);
 
@@ -210,7 +210,10 @@ describe('the token consumers read the real src/index.css', () => {
   function copyRun(script, css) {
     const root = tempDir();
     for (const dir of ['src', 'docs']) mkdirSync(join(root, dir));
-    copyScripts(root, 'css-tokens.mjs', script);
+    mkdirSync(join(root, 'scripts'));
+    for (const name of [script, 'css-tokens.mjs', 'lib.mjs']) {
+      copyFileSync(resolve('scripts', name), join(root, 'scripts', name));
+    }
     writeFileSync(join(root, 'src/index.css'), css);
     copyFileSync(resolve('docs/DESIGN.md'), join(root, 'docs/DESIGN.md'));
     return spawnSync(process.execPath, [join(root, 'scripts', script)], {

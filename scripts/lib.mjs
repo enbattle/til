@@ -1,11 +1,29 @@
 // Helpers shared by the check and build scripts.
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** The repository root. */
 export const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+/**
+ * Whether the module whose `import.meta.url` is passed is the script Node was
+ * started with (`node scripts/x.mjs`), rather than one imported by another
+ * module or a test. A script runs its command-line part only then:
+ * `if (isMain(import.meta.url)) { ... }`. Node gives `import.meta.url` the
+ * entry's real path, so `process.argv[1]` is resolved the same way (the JS
+ * realpathSync, as Node uses; `.native` differs in drive-letter case and 8.3
+ * names) and a script started through a junction or symlink still counts. No
+ * script, or one that doesn't exist (`node -e`), is false.
+ */
+export function isMain(importMetaUrl) {
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(importMetaUrl);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * The files under `root/under` (default: all of `root`) whose names end with

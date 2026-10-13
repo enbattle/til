@@ -1,9 +1,18 @@
 // @vitest-environment node
 // Planted-violation tests for scripts/check-claude-md.mjs.
+// Out of scope for docs/specs/in-process-checks.md, so it still runs as a
+// script, pointed at a planted root through CHECK_CLAUDE_MD_ROOT.
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanTemps, run, tempDir } from '../src/test/guard-helpers.mjs';
+import { cleanTemps, tempDir } from '../src/test/guard-helpers.mjs';
+
+const run = (env = {}) =>
+  spawnSync(process.execPath, [resolve('scripts/check-claude-md.mjs')], {
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+  });
 
 afterEach(cleanTemps);
 
@@ -17,10 +26,10 @@ describe('check-claude-md', () => {
     }
     return dir;
   }
-  const check = (dir) => run('check-claude-md.mjs', [], { CHECK_CLAUDE_MD_ROOT: dir });
+  const check = (dir) => run({ CHECK_CLAUDE_MD_ROOT: dir });
 
   it('passes on the repository itself', () => {
-    expect(run('check-claude-md.mjs').status).toBe(0);
+    expect(run().status).toBe(0);
   });
 
   it('passes a short file whose links resolve', () => {

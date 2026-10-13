@@ -8,11 +8,9 @@
 // nothing to fix. Rows are parsed by cell, so a padded row reads the same as
 // an unpadded one (.prettierignore leaves the log unpadded, to keep it small).
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { isMain, ROOT } from './lib.mjs';
 
-// An optional path argument lets the tests point it at a fixture.
-const LOG =
-  process.argv[2] ?? fileURLToPath(new URL('../docs/pipeline-log.md', import.meta.url));
 const HEADER =
   'Date|Run|Gate failures|Findings (H/M/L, pre)|Fix rounds|Agents|Retro|Escaped defect';
 // Each column's format, by position; the last (Escaped defect) is free text.
@@ -60,81 +58,90 @@ const cells = (line) =>
     .slice(1, -1)
     .split(/(?<!\\)\|/)
     .map((cell) => cell.trim());
-const rows = readFileSync(LOG, 'utf8')
-  .split(/\r?\n/)
-  .filter((line) => line.trim().startsWith('|'));
-const violations = [];
-if (rows.length < 2 || cells(rows[0]).join('|') !== HEADER) {
-  violations.push(
-    `table header not found; expected the columns: ${HEADER.replaceAll('|', ' | ')}`,
-  );
-}
-for (const line of rows.slice(2)) {
-  const row = cells(line);
-  const at = `row "${row.slice(0, 2).join(' | ')}"`;
-  if (row.length !== 8) {
-    violations.push(`${at}: expected 8 cells, found ${row.length}`);
-    continue;
+/** The problems in the text of a pipeline log, each naming the row at fault;
+ * `[]` when every row is well-formed. */
+export function pipelineLogProblems(text) {
+  const rows = text.split(/\r?\n/).filter((line) => line.trim().startsWith('|'));
+  const violations = [];
+  if (rows.length < 2 || cells(rows[0]).join('|') !== HEADER) {
+    violations.push(
+      `table header not found; expected the columns: ${HEADER.replaceAll('|', ' | ')}`,
+    );
   }
-  FORMATS.forEach(
-    ([message, format], i) => format.test(row[i]) || violations.push(`${at}: ${message}`),
-  );
-  const [date, run, gates, findings, rounds, , retro] = row;
-  if (date > KINDS_AND_ROUNDS_ALLOWED_UNTIL) {
-    const found = /[1-9]/.test(findings.split(',')[0]);
-    // A content row's Retro names the kinds its review found, so an audit can
-    // see which recur; a /feature row's Retro is the retro, so it's exempt.
-    if (found && !run.startsWith('/feature')) {
-      // Every clause, each running to ";", "|", a sentence-ending period or the
-      // cell end, and every comma-separated token in it, not just the leading
-      // run of names: "tone and vibes" is one unknown token.
-      const clauses = [...retro.matchAll(/\bkinds:((?:[^;|.]|\.(?=\S))*)/g)];
-      if (clauses.length === 0) {
-        violations.push(
-          `${at}: the review had findings, so the Retro must name their kinds as "kinds: a, b" from: ${KINDS.join(', ')}`,
-        );
-      } else {
-        for (const kind of clauses.flatMap((clause) =>
-          clause[1].split(',').map((token) => token.trim()),
-        )) {
-          if (!KINDS.includes(kind)) {
-            violations.push(
-              `${at}: unknown kind "${kind}"; the kinds are: ${KINDS.join(', ')}`,
-            );
+  for (const line of rows.slice(2)) {
+    const row = cells(line);
+    const at = `row "${row.slice(0, 2).join(' | ')}"`;
+    if (row.length !== 8) {
+      violations.push(`${at}: expected 8 cells, found ${row.length}`);
+      continue;
+    }
+    FORMATS.forEach(
+      ([message, format], i) =>
+        format.test(row[i]) || violations.push(`${at}: ${message}`),
+    );
+    const [date, run, gates, findings, rounds, , retro] = row;
+    if (date > KINDS_AND_ROUNDS_ALLOWED_UNTIL) {
+      const found = /[1-9]/.test(findings.split(',')[0]);
+      // A content row's Retro names the kinds its review found, so an audit can
+      // see which recur; a /feature row's Retro is the retro, so it's exempt.
+      if (found && !run.startsWith('/feature')) {
+        // Every clause, each running to ";", "|", a sentence-ending period or the
+        // cell end, and every comma-separated token in it, not just the leading
+        // run of names: "tone and vibes" is one unknown token.
+        const clauses = [...retro.matchAll(/\bkinds:((?:[^;|.]|\.(?=\S))*)/g)];
+        if (clauses.length === 0) {
+          violations.push(
+            `${at}: the review had findings, so the Retro must name their kinds as "kinds: a, b" from: ${KINDS.join(', ')}`,
+          );
+        } else {
+          for (const kind of clauses.flatMap((clause) =>
+            clause[1].split(',').map((token) => token.trim()),
+          )) {
+            if (!KINDS.includes(kind)) {
+              violations.push(
+                `${at}: unknown kind "${kind}"; the kinds are: ${KINDS.join(', ')}`,
+              );
+            }
           }
         }
       }
+      if (
+        parseInt(rounds, 10) > 0 &&
+        parseInt(gates, 10) === 0 &&
+        !found &&
+        !/\bpre:\d*[1-9]/.test(findings)
+      ) {
+        violations.push(
+          `${at}: a fix round needs a cause: a gate failure, a finding or a pre:N`,
+        );
+      }
     }
-    if (
-      parseInt(rounds, 10) > 0 &&
-      parseInt(gates, 10) === 0 &&
-      !found &&
-      !/\bpre:\d*[1-9]/.test(findings)
-    ) {
+    // The Retro cell records the user's decision (feature/SKILL.md Stage 6).
+    // Rows before the rule keep their wording, since rows are never rewritten.
+    if (date > PENDING_ALLOWED_UNTIL && /\bpending\b/i.test(retro)) {
       violations.push(
-        `${at}: a fix round needs a cause: a gate failure, a finding or a pre:N`,
+        `${at}: the Retro records what the user decided (applied, or declined and why), not a pending proposal`,
+      );
+    }
+    const bare = retro.toLowerCase().replace(/[\s.,;:!—–-]+/g, ' ');
+    const friction = parseInt(gates, 10) > 0 || /[1-9]/.test(findings.split(',')[0]);
+    if (friction && bare.trim() === 'nothing to change') {
+      violations.push(
+        `${at}: the run had gate failures or findings, so the Retro must say why none called for a change`,
       );
     }
   }
-  // The Retro cell records the user's decision (feature/SKILL.md Stage 6).
-  // Rows before the rule keep their wording, since rows are never rewritten.
-  if (date > PENDING_ALLOWED_UNTIL && /\bpending\b/i.test(retro)) {
-    violations.push(
-      `${at}: the Retro records what the user decided (applied, or declined and why), not a pending proposal`,
-    );
-  }
-  const bare = retro.toLowerCase().replace(/[\s.,;:!—–-]+/g, ' ');
-  const friction = parseInt(gates, 10) > 0 || /[1-9]/.test(findings.split(',')[0]);
-  if (friction && bare.trim() === 'nothing to change') {
-    violations.push(
-      `${at}: the run had gate failures or findings, so the Retro must say why none called for a change`,
-    );
-  }
+  return violations;
 }
 
-if (violations.length > 0) {
-  console.error('docs/pipeline-log.md has problems:\n');
-  for (const violation of violations) console.error(`  ${violation}`);
-  process.exit(1);
+if (isMain(import.meta.url)) {
+  const problems = pipelineLogProblems(
+    readFileSync(join(ROOT, 'docs/pipeline-log.md'), 'utf8'),
+  );
+  if (problems.length > 0) {
+    console.error('docs/pipeline-log.md has problems:\n');
+    for (const problem of problems) console.error(`  ${problem}`);
+    process.exit(1);
+  }
+  console.log('docs/pipeline-log.md rows are well-formed.');
 }
-console.log('docs/pipeline-log.md rows are well-formed.');

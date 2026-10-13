@@ -64,14 +64,23 @@ Use `EnterPlanMode`, explore the relevant code yourself, and use
   of them (an allowlist), not a list of known-bad names, which is only as
   complete as the cases someone thought of. Where they can't (HTML sinks), the
   spec says so and lists the vectors the guard must reject. A guard over source
-  code matches parsed syntax (an AST), not a regex, as content checks use
-  `markdownParser()`. Its vectors cover each route code can take to the sink,
-  not only spellings (`scripts/check-raw-html.mjs`'s header lists the routes
-  found so far). List the ones known at the start; the spec needn't foresee
-  all of them, since Stage 4 tries every way past the guard.
+  code matches parsed syntax, or a plain name the sink can't be reached
+  without short of building the name at run time (as `check:raw-html` does,
+  `\u` and `\x` escapes decoded, leaving `'inner' + 'HTML'` to review), never a regex over how the code is
+  spelled. Its vectors cover each route code can take to the sink, not only
+  spellings. List the ones known at the start. A change that replaces a guard,
+  or deletes or edits its reject cases, accounts for each removed case (from
+  the base's test files) and for each class the old guard rejected by
+  construction (a parser sees through escapes and comments; a top-level
+  script always runs): each is kept as an acceptance criterion or dropped in
+  the plan the user approves, recorded under `## Review decisions` as
+  "Dropped at spec" so Stage 4 doesn't re-raise it. A vector a
+  NON_NEGOTIABLES line names is never dropped this way. Stage 4 tries every
+  other way past the guard.
 - A change to a script that is already locked (`docs/verification.md` lists
-  them, e.g. `scripts/lib.mjs`) is assigned to the Stage 2 test-writer, which
-  writes its planted cases first. A change that widens the lock shows its new
+  them, e.g. `scripts/lib.mjs`) or a new `verify` step (the whole string is
+  locked) is assigned to the Stage 2 test-writer, which writes its planted
+  cases first. A change that widens the lock shows its new
   parts as `added` at Stage 3's gate; the spec can pre-approve exactly those,
   and the orchestrator then confirms with the previous script that nothing
   already locked changed, and re-takes the snapshot.
@@ -108,7 +117,8 @@ this instruction, close to verbatim:
 > split further if large; allowlist vector tables stay in
 > `scripts/checks.test.mjs`, NON_NEGOTIABLES #6), a
 > new `test*` script in `package.json` and its `npm run` step in `verify` if
-> the tests need one, any locked script the spec assigns to you, and test fixture
+> the tests need one, any `verify` step the spec assigns, any locked script the
+> spec assigns to you, and test fixture
 > content under `src/content/`, `src/system-design/` or `src/dsa/` only if the spec
 > requires new seed content to test against. Do not write or modify
 > any implementation file. Run the suite yourself when done and confirm the

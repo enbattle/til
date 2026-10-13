@@ -16,12 +16,12 @@
 // Prints "no inbound links" when there are none. Exits 2 with a usage message
 // when the argument is missing or names no topic (matched with exact case).
 // A tool, not a verify step.
-// The root is the repository, or INBOUND_LINKS_ROOT.
+// It reads the repository.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { markdownParser } from '../src/lib/markdown.mjs';
-import { listFiles, ROOT as REPO_ROOT } from './lib.mjs';
+import { isMain, listFiles, ROOT } from './lib.mjs';
 
 // A site-relative link to one topic: /<section>/<slug>, then ?query, #anchor.
 const TOPIC_LINK = /^\/([^/?#]+)\/([^/?#]+)(?:\?[^#]*)?(#.*)?$/;
@@ -138,7 +138,7 @@ function topicExists(root, topic) {
 }
 
 async function main() {
-  const root = process.env.INBOUND_LINKS_ROOT ?? REPO_ROOT;
+  const root = ROOT;
   const topic = process.argv[2];
   if (
     !topic ||
@@ -175,6 +175,6 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMain(import.meta.url)) {
   await main();
 }
