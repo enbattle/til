@@ -352,12 +352,19 @@ Up to **2 rounds**, each in this order:
    delete or add any locked file (the same list as Stage 3's instruction)."
    Stage 3's gate.
 3. Re-run the review and finding triage on a fresh `npm run review:diff`.
+   If every change this round is prose in `src/content/**/*.md`,
+   `src/system-design/case-studies/*.md` or a doc that isn't a `SKILL.md`,
+   and no fixture or locked file changed, save `npm run review:diff` before
+   the fixer runs; the fresh reviewer then gets Stage 4's brief with the
+   fixed findings and each changed paragraph, before and after, in place of
+   the full diff, confirms each fix holds or names what it broke, and raises
+   nothing new.
 
 Only fix outcomes the diff introduced count as remaining findings. After
 round 2, open Mediums and non-cosmetic Lows default to Known limitation; if any finding
 remains, **stop** and report to the user rather than running a third round.
 Rounds past the cap are for High findings only, one per explicit go-ahead:
-the same three steps, then stop and report again (NON_NEGOTIABLES #12). "Keep
+then stop and report again (NON_NEGOTIABLES #12). "Keep
 going until it's clean" authorizes one round; say so.
 
 ## Stage 5 — Final gate and handoff

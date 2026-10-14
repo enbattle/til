@@ -107,7 +107,7 @@ function checkBundle(root) {
     const holders = otherChunks.filter((chunk) => chunk.text.includes(fragment));
     if (holders.length === 0) {
       violations.push(
-        `${name}: body text is in no chunk under dist/assets ("${fragment}")`,
+        `${name}: body text is in no chunk under dist/assets ("${fragment}"); if you edited it since the last build, run \`npm run build\` first`,
       );
       continue;
     }

@@ -63,6 +63,8 @@ describe('check-bundle covers case-study bodies (criterion 5)', () => {
       'topic-1.js': `export default ${JSON.stringify(TOPIC_LINE)};`,
     });
     expect(found.join('\n')).toMatch(/demo\.md/);
+    // A body edited after the last local build is the usual cause.
+    expect(found.join('\n')).toMatch(/npm run build/);
   });
 });
 

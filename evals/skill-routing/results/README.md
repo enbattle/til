@@ -59,16 +59,17 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-13 | Cleanup after the DSA removal: /feature Stages 1-2 guard and mutation rules, content-audit asides                                                            | 5    | 0    | 0         | Scoped run.                                                  |
 | 2026-10-13 | Dedupes and docs audit after #132-#134 (CLAUDE.md sentence, add-case-study checklist, docs-audit Stage 1)                                                    | 4    | 0    | 0         | Scoped run.                                                  |
 | 2026-10-14 | Case-study template 3: add-case-study description and rewrite mode, content-audit description; SR-22 added                                                   | 4    | 0    | 0         | SR-15, 16, 17, 22.                                           |
+| 2026-10-14 | case-study-template-3 retro: /feature Stage 4a narrow re-review after a prose-only round                                                                     | 4    | 0    | 0         | SR-01, 05, 07, 17.                                           |
 
-## Latest run: 2026-10-14, case-study template 3
+## Latest run: 2026-10-14, case-study-template-3 retro
 
 - **Run by:** Claude (the orchestrating session), with 4 fresh `general-purpose` agents.
-- **Trigger:** docs/specs/case-study-template-3.md: add-case-study's description now covers rewriting a case study to the current template (rewrite mode), content-audit's description was adjusted to match, and SR-22 was added for the rewrite route.
-- **Scope:** the scenarios whose expected or wrong answer names `add-case-study`: SR-15, SR-16, SR-17, SR-22.
+- **Trigger:** the case-study-template-3 retro edited `.claude/skills/feature/SKILL.md` Stage 4a step 3 (a narrow re-review after a prose-only fix round) and trimmed one phrase after the cap rule. The skill's description is unchanged.
+- **Scope:** the scenarios whose expected answer is `/feature`: SR-01, SR-05, SR-07, SR-17. (SR-15, 16 and 22 ran earlier the same day for the template-3 change.)
 
-| ID    | Routing decision                | Reasoning (one line)                                                     | Grade |
-| ----- | ------------------------------- | ------------------------------------------------------------------------ | ----- |
-| SR-15 | `add-case-study`                | New case study with its diagram; the description names the example.      | PASS  |
-| SR-16 | `content-audit` (one file)      | Prose and claims of a published case study, no template change.          | PASS  |
-| SR-17 | `/feature`                      | Case-study page UI and diagram tooling are app code.                     | PASS  |
-| SR-22 | `add-case-study` (rewrite mode) | Moving an existing case study to the new template is in its description. | PASS  |
+| ID    | Routing decision           | Reasoning (one line)                                            | Grade |
+| ----- | -------------------------- | --------------------------------------------------------------- | ----- |
+| SR-01 | `/feature`                 | New UI behaviour in the search dialog with open design choices. | PASS  |
+| SR-05 | `/feature`, Stage 0 triage | A bug of unknown size is reproduced and its cause found first.  | PASS  |
+| SR-07 | `/feature`                 | App code across loaders, cards and UI.                          | PASS  |
+| SR-17 | `/feature`                 | Case-study page UI and diagram tooling are app code.            | PASS  |
