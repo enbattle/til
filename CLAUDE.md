@@ -75,8 +75,8 @@ pushing and opening the pull request wait for the user's go-ahead.
 
 ## Verifying a change
 
-`npm run verify` is exactly what CI and the deploy workflow run, and the gate
-`/feature`, `add-topic` and `add-case-study` finish on. What each check
+`npm run verify` is exactly what CI and the deploy workflow run, and the final
+gate of every skill that changes content or code. What each check
 proves, the commands that aren't in `verify`, and the size budgets are in
 [docs/verification.md](docs/verification.md).
 

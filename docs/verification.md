@@ -23,11 +23,12 @@ links; raise the limit only deliberately, like a size budget.
 Every script that walks the tree, except `check:test-lock` (which runs its own
 `git ls-files` to see ignored files too), lists files with `listFiles` in `scripts/lib.mjs` (`git ls-files -co
 --exclude-standard`), so an ignored file is never listed and there's no
-per-script skip list; `ROOT` and `escapeRegExp` live there too. Two of them
+per-script skip list; `ROOT` and `escapeRegExp` live there too. Three of them
 also read paths they're given rather than listed: `check:eval-premises` reads
 each premise's target and runs `git apply --check` against the working tree,
-and `links:inbound` checks its topic argument against the working tree, so
-those reads don't go through the ignore rules.
+`links:inbound` checks its topic argument against the working tree, and
+`check:bundle` reads the git-ignored `dist/assets` build output, so those
+reads don't go through the ignore rules.
 `check:colors` scans `.ts`, `.tsx`, `.mjs` and `.css`; `.mjs` counts because
 `src/lib/markdown.mjs` ships to the browser.
 `check:raw-html` proves no shipped source file under `src/` names an HTML sink

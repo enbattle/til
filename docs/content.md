@@ -98,9 +98,11 @@ instead of adding a second. Other sections' topics don't need it.
 ## The catalog standard
 
 Every topic is held to the Writing Standard's
-["Catalog topics"](writing-standard.md#catalog-topics) section, which
-`src/content/topic-structure.test.ts` checks on every topic, with no
-exceptions.
+["Catalog topics"](writing-standard.md#catalog-topics) section.
+`src/content/topic-structure.test.ts` enforces its mechanical parts on every
+topic, with no exceptions: the word budget, the title pattern, the closing
+rule-of-thumb paragraph, and a `systems-and-infrastructure` topic's closing
+section. The running example and the lecturer voice are checked in review.
 
 ## Moving, merging or renaming a topic
 

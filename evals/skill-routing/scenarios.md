@@ -208,8 +208,9 @@ and unverified-technical-claim criteria. It's a full-corpus sweep of
 published content, which is a different axis from its neighbors:
 `docs-audit` covers meta-documentation (`CLAUDE.md`, `docs/`, `evals/`,
 `SKILL.md` files) staleness against current repo state, not the prose
-quality of published content; `add-topic` and `add-case-study` each review
-the items they are writing or rewriting, not the entire existing corpus.
+quality of published content; `add-topic` reviews the items it writes or
+rewrites and `add-case-study` the case studies it writes, not the entire
+existing corpus.
 **Fails if:** routed to `docs-audit` (wrong scope — meta-docs staleness,
 not topic-content quality), routed to `add-topic` (that skill's review
 pass covers a single new topic it's writing, not a sweep of everything

@@ -38,7 +38,7 @@ and `npm run verify` can exceed the hooks' 10-second timeout, so the hook
 would silently stop blocking the first time a check ran slow. A version gating
 only the fast checks is trivially bypassed and duplicates the skills' own
 final gate. The server-side layers already cover it and don't fail open:
-branch protection with every change landing through a pull request
+the `main` ruleset, with every change landing through a pull request
 (CLAUDE.md, "How changes land"), and the deploy workflow running
 `npm run verify` before publishing.
 **Revisit when:** The server-side layers prove insufficient in practice: a

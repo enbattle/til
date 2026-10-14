@@ -80,9 +80,8 @@ pages, but not unlimited room: a reader should finish it in one sitting.
   all-caps acronym gloss in parentheses ("Cross-Site Scripting (XSS)"), which
   is allowed and isn't a subtitle.
 
-`topic-structure.test.ts` checks the budget, the title and the rule-of-thumb
-paragraph on every topic, and the `## Where you'll meet this` section on every
-`systems-and-infrastructure` topic.
+[docs/content.md](content.md) says which of these rules
+`topic-structure.test.ts` enforces.
 
 ## Case studies
 
@@ -96,7 +95,7 @@ teach more depth, and they are where these pages send a reader for more.
   230 words a minute. Tables count; code blocks, diagrams and frontmatter
   don't. This is the canonical home for both numbers; in code,
   `src/lib/reading-time.ts` owns them as `WORDS_PER_MINUTE` and `WORD_BUDGET`
-  (five minutes' worth); both structure tests import `WORD_BUDGET`.
+  (five minutes' worth); `case-study-structure.test.ts` imports `WORD_BUDGET`.
 - **Enough to reason, not everything.** An interview never covers every
   scenario, and a reader will be asked things no page mentions. Teach the few
   decisions that shape the answer and the reasoning behind each, well enough
