@@ -75,8 +75,13 @@ System Design case studies and their diagrams in
 
 These live in GitHub, not in the code, so they are listed here:
 
-- **Branch protection on `main`** requiring the CI `verify` check to pass.
-  Dependabot auto-merge (`.github/workflows/dependabot-automerge.yml`), which
+- **A ruleset on `main`** (Settings → Rules, not classic branch protection):
+  changes land through a pull request; the CI `verify` check must pass on a
+  branch that is up to date with `main`; CodeQL code scanning must report no
+  high-severity alert; force-pushes and deletion are blocked. When another
+  pull request merges first, update the branch (`gh pr update-branch`) and
+  wait for CI again rather than bypassing the rule. Dependabot auto-merge
+  (`.github/workflows/dependabot-automerge.yml`), which
   merges patch and minor updates on their own once CI passes and leaves major
   ones for a person, depends on it: with no required check, GitHub merges an
   auto-merge pull request immediately, untested.

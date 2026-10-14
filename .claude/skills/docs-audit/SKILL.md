@@ -29,10 +29,11 @@ of staleness this skill exists to catch:
 
 - `CLAUDE.md`, `README.md` (its intro line needs no check against
   `package.json`'s description: `scripts/site-description.test.mjs` checks it)
-- everything under `docs/` except `docs/specs/` and `docs/pipeline-log.md`.
-  Both are records of past decisions and runs, thousands of lines that would
-  dominate the read, and a record isn't stale for describing the past.
-  Stage 2b reads the log, as a set, when it is due.
+- everything under `docs/` except `docs/pipeline-log.md` and the spec files
+  in `docs/specs/`. Both are records of past decisions and runs, thousands of
+  lines that would dominate the read, and a record isn't stale for describing
+  the past. Stage 2b reads the log, as a set, when it is due.
+  `docs/specs/README.md` is not a record and is audited.
 - everything under `evals/` (`README.md`, every scenario file, and the
   `results/` logs)
 - every file under `.claude/skills/` (each `SKILL.md` and any file beside

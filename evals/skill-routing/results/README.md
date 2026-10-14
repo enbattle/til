@@ -57,17 +57,17 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-13 | add-dsa-entry: rewrite mode in description and Stage 0, plain-code checklist item; SR-21 added                                                               | 5    | 0    | 0         | SR-11, 16, 18, 20, 21.                                       |
 | 2026-10-13 | DSA tab removed (docs/specs/remove-dsa-tab.md), all scenarios                                                                                                | 17   | 0    | 0         | Full run; SR-18/20/21 retired.                               |
 | 2026-10-13 | Cleanup after the DSA removal: /feature Stages 1-2 guard and mutation rules, content-audit asides                                                            | 5    | 0    | 0         | Scoped run.                                                  |
+| 2026-10-13 | Dedupes and docs audit after #132-#134 (CLAUDE.md sentence, add-case-study checklist, docs-audit Stage 1)                                                    | 4    | 0    | 0         | Scoped run.                                                  |
 
-## Latest run: 2026-10-13, cleanup after the DSA removal
+## Latest run: 2026-10-13, dedupes and docs audit after #132-#134
 
-- **Run by:** Claude (the orchestrating session), with 5 fresh `general-purpose` agents.
-- **Trigger:** branch chore/cleanup-after-dsa edited `/feature`'s Stage 1 guard clause and Stage 2 test-writer instruction, and deleted two history asides from content-audit. Neither skill's description changed.
-- **Scope:** the scenarios whose expected or wrong answer names `/feature` or `content-audit`: SR-01, SR-05, SR-11, SR-16, SR-17.
+- **Run by:** Claude (the orchestrating session), with 4 fresh `general-purpose` agents.
+- **Trigger:** branch chore/dedupes-and-docs-audit edited CLAUDE.md's "Verifying a change" sentence, add-case-study's Stage 3 checklist (item (5) removed), docs-audit's Stage 1 file list and docs/SDLC.md. No skill description changed.
+- **Scope:** the scenarios whose expected or wrong answer names `docs-audit` or `add-case-study`: SR-09, SR-15, SR-16, SR-17.
 
-| ID    | Routing decision                  | Reasoning (one line)                                      | Grade |
-| ----- | --------------------------------- | --------------------------------------------------------- | ----- |
-| SR-01 | `/feature`                        | Paging the search dialog is new UI behaviour.             | PASS  |
-| SR-05 | Triage first (`/feature` Stage 0) | Reproduce and find the cause, then route by what's found. | PASS  |
-| SR-11 | `content-audit`                   | Corpus-wide sweep of published prose.                     | PASS  |
-| SR-16 | `content-audit` (one file)        | Quality check of one published case study.                | PASS  |
-| SR-17 | `/feature`                        | Case-study page UI and diagram tooling are app code.      | PASS  |
+| ID    | Routing decision           | Reasoning (one line)                                 | Grade |
+| ----- | -------------------------- | ---------------------------------------------------- | ----- |
+| SR-09 | `docs-audit`               | Staleness of meta-docs after a batch of changes.     | PASS  |
+| SR-15 | `add-case-study`           | New case study with its diagram.                     | PASS  |
+| SR-16 | `content-audit` (one file) | Quality check of one published case study.           | PASS  |
+| SR-17 | `/feature`                 | Case-study page UI and diagram tooling are app code. | PASS  |

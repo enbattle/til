@@ -15,40 +15,28 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-06 | After PRs #67 to #82 (five-minute migration)   | Text fixes applied; full log in git history.                    |
 | 2026-10-07 | After PRs #83 to #97 (catalog rewrite)         | Text fixes applied; full log in git history.                    |
 | 2026-10-07 | After PRs #99 to #107 (Computing Fundamentals) | Text fixes applied; full log in git history.                    |
-| 2026-10-13 | After PRs #108 to #130 (cleanup, DSA rewrite)  | Latest run, below.                                              |
+| 2026-10-13 | After PRs #108 to #130 (cleanup, DSA rewrite)  | Text fixes applied; full log in git history.                    |
+| 2026-10-13 | After PRs #132 to #134 (DSA removal, cleanup)  | Latest run, below.                                              |
 
-Last friction aggregation (docs-audit Stage 2b): 2026-10-13, 236 data rows; proposals 1 to 5 in Latest run. Proposal 1 applied in chore/cleanup-after-dsa: /feature Stage 2's mutation proof now covers removed, merged or narrowed tests and narrowed guards; Stage 1's guard clause was shortened, not deleted, because it holds the user-approved "Dropped at spec" record (used by docs/specs/remove-dsa-tab.md) and the NON_NEGOTIABLES-vector rule. Declined: 2 to 5 (moot: DSA removed, docs/specs/remove-dsa-tab.md). Before that 2026-10-07, 203 data rows; the user approved proposals 1 to 4 (see Latest run), applied in chore/friction-fixes-203 after a process-edit read narrowed them. Declined: 5 (drop the timing assertion), since #106's looser bound already stopped the flake and the test still catches a runaway parse. Before that 2026-10-07, 183 rows, all five approved and applied (#99, and as new guards in #100). Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
+Last friction aggregation (docs-audit Stage 2b): 2026-10-13, 236 data rows; proposals 1 to 5 in the #108-#130 run's log (git history). Proposal 1 applied in #134: /feature Stage 2's mutation proof now covers removed, merged or narrowed tests and narrowed guards; Stage 1's guard clause was shortened, not deleted, because it holds the user-approved "Dropped at spec" record (used by docs/specs/remove-dsa-tab.md) and the NON_NEGOTIABLES-vector rule. Declined: 2 to 5 (moot: DSA removed, docs/specs/remove-dsa-tab.md). Before that 2026-10-07, 203 data rows; the user approved proposals 1 to 4 (see Latest run), applied in chore/friction-fixes-203 after a process-edit read narrowed them. Declined: 5 (drop the timing assertion), since #106's looser bound already stopped the flake and the test still catches a runaway parse. Before that 2026-10-07, 183 rows, all five approved and applied (#99, and as new guards in #100). Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
 
-## Latest run: 2026-10-13, after PRs #108 to #130
+## Latest run: 2026-10-13, after PRs #132 to #134
 
-**Trigger:** 16 PRs since the last audit: the cleanup (#117 to #125: in-process checks and slimmer guards, DSA code regions, content, UI and docs dedupes), the DSA plain-code rule (#126) and its four rewrite batches (#127 to #130), which ended by deleting `PENDING_PLAIN`.
+**Trigger:** the DSA tab was removed (#132), Dependabot bumped Prettier (#133), and a cleanup (#134) changed /feature's guard and mutation-proof rules, deduped docs and cleared knip. Run on branch chore/dedupes-and-docs-audit, alongside three held-back dedupes (add-case-study checklist item (5), the Writing Standard's structural-test sentence, SDLC.md's "Verifying the process itself").
 
-**Files audited:** the 37 files of Stage 1 (CLAUDE.md, README.md, `docs/` minus specs and the log, `evals/`, every file under `.claude/skills/`, the hook reminders, the workflow and Dependabot comments).
+**Files audited:** 36: Stage 1's list, plus `docs/specs/README.md`, which `check:npm-refs` already treats as live; Stage 1 now names it. Stage 2b not due (237 data rows, 236 at the last aggregation).
 
 **Fixed (stale facts):**
 
-- SR-21's prompt asserted the linked-list entry still used `Symbol.iterator`, false after the rewrite; reworded as a rule-driven request and re-run once (routed to add-dsa-entry, PASS).
-- SR-18's Why said the DSA review checks "idiomatic" code; now "plain, tutorial-style".
-- docs-audit Stage 4's "the latter two" pointed at the wrong commands after the block grew; it now names them.
-- docs/dsa.md's "Not used" list lacked `functools.cache`/`lru_cache` and `__next__`, which the test bans; added. Also fixed: both workflows pin Python 3.12, the tree comment for `dsa-code-chunks.test.ts`, and the DP shapes entry's real title.
-- add-dsa-entry and content-audit gave a reviewer only the entry's own code folder; entries that import `MinHeap` now also hand over `heap.ts`. add-dsa-entry's "reference entry" is plural, and its oxlint command uses `npx`.
-- FR-06's hardcoded "Twelve" titles (13 now) is dated instead.
-- writing-standard.md said both structure tests import `WORDS_PER_MINUTE`; they import only `WORD_BUDGET`.
-- knip flagged `src/lib/code-regions.d.mts` (used by tsc, like `markdown.d.mts`); added to `knip.json`'s ignore and to verification.md.
+- writing-standard.md said both structure tests import `WORD_BUDGET`; only `case-study-structure.test.ts` does (the second was DSA's).
+- content.md said `topic-structure.test.ts` checks the whole "Catalog topics" section; it now names the four rules the test enforces and that review checks the rest.
+- CLAUDE.md hand-listed the skills that finish on `verify` (missing content-audit); now "every skill that changes content or code".
+- verification.md said two scripts read paths outside `listFiles`; `check:bundle` (git-ignored `dist/assets`) is a third.
+- SR-11's Why said add-case-study rewrites; it lost rewrite mode earlier.
+- README described classic branch protection; `main` has a ruleset (pull request, `verify` on an up-to-date branch, CodeQL, no force-push or deletion), and it now says to update a behind branch rather than bypass the rule. DEFERRED_PRACTICES says "ruleset" to match. This session hit the up-to-date rule when #133 merged before #134.
 
 **Left open for the user:**
 
-- Duplication: the "comments give the why" rule and its example in dsa.md, the Writing Standard and add-dsa-entry; the list of content-review skills in six places; "four code files" in six places; pipeline-log row rules restated in content-review.md; and the three carried over from the last audit.
-- Code-owned lists in verification.md (each check's exported function, the `listFiles` users).
-- Deletion nominees: content-audit's historical asides (again), and the Writing Standard's code-comments bullet (merge into a pointer to dsa.md).
-- The tests' "reference entries" (hash-map, two-pointers, binary-search) differ from dsa.md's (heap, dynamic-programming).
-- knip's three unused exports: `REDIRECTS` (src/content/redirects.ts), `REPO` and `gitInit` (src/test/guard-helpers.mjs).
-- Stage 2b's five friction proposals, below.
-
-**Stage 2b (236 data rows, 33 new):**
-
-1. Removing or merging a test drops coverage, found a round at a time (in-process-checks, content-dedupe, ui-dedupe; 35 agents, 6 rounds). Keep one rule: widen /feature Stage 2's removed-test mutation clause to removed or narrowed checks, and delete Stage 1's guard-inventory clause.
-2. DSA rewrites dropped behaviour old tests or guards protected (9 rows, 4 of the 5 Highs). In rewrite mode, run the pre-rewrite tests unchanged against the new code, and list each deleted test with the bug it guarded.
-3. Prose and pitfalls contradicted rewritten code (11 of 28 rows). A `check:dsa-quotes` that flags an inline code span with a call, assignment or index found in none of the entry's code files; fallback, a rewrite-mode step that searches the entry for removed lines.
-4. Code rules a linter could enforce (dropped Python hints, TS `shift()` queues, impossible guards): lint rules scoped to `src/dsa/code`.
-5. A fix round changed one of two readers of a format (drift-and-rewrite-guards, dsa-code-regions): a parity test over both region readers.
+- Code-owned facts in docs: docs-audit's "10 pull requests" (owned by `AUDIT_DUE_AFTER` in nudge-precommit.js); verification.md's test-lock coverage list (the script header has it) and its in-process versus spawned split; content.md and case-studies.md frontmatter keys (`TOPIC_FIELDS`, `CASE_STUDY_FIELDS`).
+- Hand-copied facts: the extra-agent list in SDLC.md and feature/SKILL.md (NON_NEGOTIABLES #8 repeats the core three); who runs `verify` (CLAUDE.md, verification.md, ci.yml); 230 words a minute in both Writing Standard budget bullets.
+- Deletion nominees: collapse the six retired scenario stubs (SR-13, SR-18 to SR-21, DS-*) to one "Retired IDs" line per file; verification.md's orphaned sentence that check-pipeline-log's test reads the log header.

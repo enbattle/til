@@ -168,10 +168,8 @@ were weighed to get there).
 
 ## Verifying the process itself
 
-None of the above checks that sessions keep following it: a session can
-build something well with the wrong process, and that drift stays invisible
-until checked. The scenario evals in `evals/` check it; `evals/README.md`
-says what each one checks and which change calls for which.
+The scenario evals check that sessions keep following this process; see
+[evals/README.md](../evals/README.md).
 
 ## Completeness audit, after a large effort
 

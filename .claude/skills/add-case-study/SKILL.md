@@ -104,11 +104,10 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   just announces a choice; (3) check that every diagram matches the prose (same
   components, same connections, same names) and flag any disagreement; (4)
   check that every catalog link sits where the concept is actually used, and
-  that the case study doesn't re-teach a linked topic's mechanism; (5) flag
-  any claim about how a specific named company builds its system; (6) flag a
+  that the case study doesn't re-teach a linked topic's mechanism; (5) flag a
   claim that compression made false (an absolute "never", "always" or
   "exactly" the design doesn't deliver) and a follow-up answer the page
-  doesn't support; (7) say whether a reader who finished it could defend the
+  doesn't support; (6) say whether a reader who finished it could defend the
   three decisions and guess at a question it never asked, and name what's
   missing if not; flag an edge case or exception that spends words without
   changing a decision.
