@@ -32,7 +32,7 @@ replace a checklist item that doesn't apply to this draft with "none"):
 > checklist below; assume nothing about it is fine until you've checked it
 > yourself. Read docs/NON_NEGOTIABLES.md first; a violation of any line there
 > is always a real finding. Writing Standard: hold it to every bullet of
-> docs/writing-standard.md, including its "Catalog topics" and "Case studies"
+> docs/writing-standard.md, including its "Teaching progression", "Catalog topics" and "Case studies"
 > sections. Checklist: <checklist> Also check it isn't a
 > near-duplicate of an existing <kind> (listed below). For each finding, quote
 > the text or code, or name a realistic input that breaks it; label anything
@@ -93,7 +93,8 @@ integration step of its own.
    the drafter stops and reports it rather than running checks without it,
    since `npx` would then fetch a different version of the tool.
 2. Each item gets one fresh Stage 3 reviewer, whose instruction adds: "Report
-   only High and Medium correctness findings." Its existing items include the
+   only High and Medium correctness findings; a Teaching progression
+   violation is Medium." Its existing items include the
    batch-mates' titles and slugs, and it also gets the drafts of any
    batch-mate the item links to.
 3. Its findings go through Stage 3's triage. You apply the fixes once, with no
