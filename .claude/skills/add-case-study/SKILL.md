@@ -1,6 +1,6 @@
 ---
 name: add-case-study
-description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a collaborative editor case study", "add the next case study") — not for a catalog topic under src/content/ (that's add-topic), not for checking an existing case study's prose quality (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
+description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, or rewrite an existing one to the current case-study template, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a collaborative editor case study", "add the next case study") or to move an existing case study to the new template ("rewrite the chat case study to the new template") — not for a catalog topic under src/content/ (that's add-topic), not for checking or revising an existing case study's prose quality without changing its template (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
 ---
 
 # Add a case study
@@ -10,8 +10,8 @@ A case study is content, like a topic, so it gets the same treatment as
 pin down), but an independent review before it's done. It gets its own skill
 because it has more ways to be wrong than a topic does: worked estimates whose
 arithmetic has to hold, decisions that have to say why the obvious alternative
-loses rather than announce a choice, a five-minute budget that compression can
-make overclaim, and diagrams that have to agree with the prose. The review below
+loses rather than announce a choice, a word budget that compression can make
+overclaim, and diagrams that have to agree with the prose. The review below
 checks each of those explicitly. See [docs/case-studies.md](../../../docs/case-studies.md) for the file
 layout and rules, and
 [docs/content-review.md](../../../docs/content-review.md) for the review
@@ -19,7 +19,8 @@ stages every content skill shares and why content gets this lighter process.
 
 ## Stage 0 — Scope check
 
-This skill adds one case study file plus its diagrams. If the request also
+This skill adds one case study file plus its diagrams, or rewrites one to the
+current template (rewrite mode, below). If the request also
 needs a change to the case-study page, the loader, the render or check
 scripts, or anything else under `src/` outside
 `src/system-design/case-studies/` and `src/system-design/diagrams/`, stop:
@@ -37,8 +38,9 @@ installed, say so and give the install command docs/verification.md lists; don't
 Write it yourself, directly, as `add-topic` does. Read
 [checklist.md](checklist.md) before drafting and check the draft against it
 before Stage 2: it lists the problems reviews most often find. Read
-`src/system-design/case-studies/url-shortener.md` first: it is the reference
-example for length, voice and how key numbers are laid out. Read the Writing
+`src/system-design/case-studies/social-feed.md` first: it is template 3's
+reference example for length, voice, the "Start simple" arithmetic and how
+key numbers are laid out. Read the Writing
 Standard's "Case studies" section too: it sets the budget and
 the voice.
 
@@ -46,12 +48,13 @@ the voice.
   Frontmatter: `title` ("Design a <Thing> (like <familiar product>)"),
   a one-sentence `summary`, `date` (today), `order` (the next free
   positive integer; `ls src/system-design/case-studies/` and read the
-  existing orders), and no other key.
-- **Template**: use the `##` heading template, with what each section holds,
+  existing orders), `template: 3`, and no other key.
+- **Template**: use template 3's `##` headings, with what each section holds,
   in [docs/case-studies.md](../../../docs/case-studies.md) ("The template is
-  enforced"); `url-shortener.md` shows it. Recompute every key-numbers line
+  enforced, per page"); `social-feed.md` shows it. Recompute every key-numbers line
   before moving on.
-- **Budget**: draft the decisions first, then fit the rest around them. Run
+- **Budget**: draft the decisions first (about 150–300 words each), then fit
+  the rest around them. Run
   `npx vitest run src/system-design/case-study-structure.test.ts` rather than
   estimating: it fails, naming the count, when the prose is over the word
   budget (docs/writing-standard.md).
@@ -74,6 +77,12 @@ the voice.
   the alt text says what the diagram shows, since a screen-reader user gets
   only that. Reference-style images work too: the structure test and
   `check:diagrams` both resolve them.
+
+**Rewrite mode** (moving an existing case study to the current template):
+follow docs/case-studies.md's "Migrating (2026-10)" note. Keep the file, its
+slug, its `order` and all its content; restructure and rewrite the prose
+rather than cut it, and adjust its diagrams only where the new structure
+needs it. Stages 2–4 run as for a new page, with review item 8.
 
 If scope or angle is genuinely ambiguous (which product to model, what scale
 to assume, which three decisions matter most), ask the user rather than guess.
@@ -99,18 +108,28 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
 - **`<checklist>`**: (1) recompute every estimate yourself, line by line,
   and flag any arithmetic error or any figure that doesn't follow from the
   stated requirements or a stated assumption; (2) check that each decision
-  names the alternative a reader would suggest and why it loses in this
-  design's numbers, and that its rule of thumb follows from it; flag one that
-  just announces a choice; (3) check that every diagram matches the prose (same
-  components, same connections, same names) and flag any disagreement; (4)
-  check that every catalog link sits where the concept is actually used, and
-  that the case study doesn't re-teach a linked topic's mechanism; (5) flag a
-  claim that compression made false (an absolute "never", "always" or
-  "exactly" the design doesn't deliver) and a follow-up answer the page
-  doesn't support; (6) say whether a reader who finished it could defend the
-  three decisions and guess at a question it never asked, and name what's
-  missing if not; flag an edge case or exception that spends words without
-  changing a decision.
+  runs simpler option → where it breaks in this design's numbers → the choice
+  → its cost → rule of thumb, in about 150–300 words, and that the rule
+  follows from it; flag one that leads with its choice or just announces it
+  (a page still on the old template is checked against its old shape until
+  it's rewritten); (3) on a `template: 3` page, check the rules no test
+  enforces: the intro states the question, a one-sentence overview and the
+  route; "Start simple" shows the simple design working, then breaking on the
+  page's numbers; the architecture is the diagram plus two or three short
+  paragraphs with at most two new terms each; Key numbers size only parts the
+  reader has met, each derivation written out; follow-ups introduce no new
+  concept without a gloss and a catalog link; (4) check that every diagram
+  matches the prose (same components, same connections, same names) and flag
+  any disagreement; (5) check that every catalog link sits where the concept
+  is actually used, and that the case study doesn't re-teach a linked topic's
+  mechanism; (6) flag a claim that compression made false (an absolute
+  "never", "always" or "exactly" the design doesn't deliver) and a follow-up
+  answer the page doesn't support; (7) say whether a reader who finished it
+  could defend the three decisions and guess at a question it never asked,
+  and name what's missing if not; flag an edge case or exception that spends
+  words without changing a decision; (8) in rewrite mode, compare with the old version
+  (`git show HEAD:<path>`) and flag any requirement, number, decision,
+  rejected alternative or follow-up it dropped.
 - **Fix step**: re-render with `npm run diagrams` if a diagram changed.
 - **Scope check**: `git status --porcelain -- src/content` prints nothing (a
   case study never edits or adds a catalog topic).

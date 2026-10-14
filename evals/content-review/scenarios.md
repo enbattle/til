@@ -762,10 +762,10 @@ parenthetical definitions, or names it only as cosmetic or Low.
 ## Case-study scenarios (`add-case-study`)
 
 These test `add-case-study`'s Stage 3 review instead of `add-topic`'s. They
-share one fabricated base draft, a Pastebin case study written to the
-five-minute case-study template (docs/case-studies.md, "The template is
-enforced"), so that each scenario differs from the clean control by exactly
-the planted problem. Its `order` is 99, above every real case study's, so a
+share one fabricated base draft, a Pastebin case study written to template 3
+(`template: 3`; docs/case-studies.md) and the Writing Standard's "Teaching
+progression" rules, so that each scenario differs from the clean control by
+exactly the planted problem. Its `order` is 99, above every real case study's, so a
 reviewer's uniqueness check stays quiet (it once shared 17 with a real one).
 Build a scenario's draft by taking the base draft below
 and applying that scenario's replacement verbatim; give the reviewer the
@@ -773,13 +773,13 @@ result, plus the base diagram source, exactly as `add-case-study` Stage 3
 would give a real draft and its `.d2` files. These are fixtures for this eval
 only: never write them into `src/system-design/`.
 
-The base is a full-length case study for the template: about 1,130 words of
-prose, just under the word budget (`WORD_BUDGET` in `src/lib/reading-time.ts`;
-words outside code blocks and image alt text, frontmatter excluded), with three decisions of about 135–145 words each.
-Each replacement changes one decision or one bullet, so every scenario stays
-inside the budget. A reviewer's true observations about what a five-minute
-page leaves out on purpose (a sequence diagram, database failover detail) go
-in the run's notes and aren't graded.
+The base is a full case study for the template: about 1,560 words of prose,
+well inside the word budget (`WORD_BUDGET` in `src/lib/reading-time.ts`; words
+outside code blocks and image alt text, frontmatter excluded), with three
+decisions of about 160–190 words each. Each replacement changes one decision or
+one bullet, so every scenario stays inside the budget. A reviewer's true
+observations about what a ten-minute page leaves out on purpose (a sequence
+diagram, database failover detail) go in the run's notes and aren't graded.
 
 There's no **Section** here: give the reviewer the titles and slugs of the
 real case studies in `src/system-design/case-studies/` for its
@@ -799,14 +799,19 @@ title: Design a Pastebin (like Pastebin.com)
 summary: A year of text snippets behind links too long to guess in practice, with the text in an object store and expiry checked on every read.
 date: 2026-09-28
 order: 99
+template: 3
 ---
 
 You paste a log excerpt and get back a link like `https://paste.example/aZ3kQ9xT2m`.
-It looks like a URL shortener with bigger values, and the interest is in what
-bigger values cost: terabytes of text the database never queries, an expiry
-that has to actually delete things, and a link that is the paste's only lock.
-This is one plausible design for a service like Pastebin.com, not a description
-of how any company built theirs.
+How would you design that service? It looks like a URL shortener with bigger
+values, and the interest is in what bigger values cost: terabytes of text the
+database never queries, an expiry that has to actually delete things, and a link
+that is the paste's only lock. This is one plausible design for a service like
+Pastebin.com, not a description of how any company built theirs.
+
+This page starts with numbered links and shows why they fail, follows a paste
+through the design that replaces them and sizes its parts, then makes three
+decisions: where the text lives, how pastes expire, and how long an ID must be.
 
 ## Requirements
 
@@ -821,41 +826,80 @@ of how any company built theirs.
 
 Out of scope: accounts, editing and search.
 
-## Key numbers
+## Start simple: numbered links
 
-These size the app servers, the object store, the database and the cache. A
-day has 86,400 seconds; peaks are ten times the average; 1 KB = 1,000 bytes.
+The simplest pastebin is one **app server**, the program that answers requests,
+in front of one database. Each paste is a row holding its text and its
+**metadata**, the facts about it, such as when it was created and when it
+expires.
 
-- **Writes:** 1,000,000 ÷ 86,400 ≈ 12 per second on average, about 120 at
-  peak.
-- **Reads:** 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
-  peak.
-- **Object store:** assume an average paste of 10 KB. That's 1,000,000 × 10 KB
-  = 10 GB a day, and since nothing outlives 365 days, 10 GB × 365 ≈ 3.65 TB in
-  all.
-- **Database:** about 200 bytes of metadata a paste × 365 million live pastes
-  ≈ 73 GB.
-- **Cache:** assume a day's 10 million reads land on 2 million pastes, and the
-  most-read 20% draw 80% of reads. Keeping those 0.2 × 2,000,000 = 400,000 in
-  memory ([caching](/systems-and-infrastructure/caching)) takes 400,000 ×
-  10 KB = 4 GB.
+Its ID comes from a counter: the first paste is 1, the next 2, written in
+**base62** (digits and both cases of letters) to keep links short. It's hard to
+get wrong. Every ID is unique without a check, a create is one insert, and a
+year of pastes fits in five characters:
 
-Traffic is small; the 3.65 TB of text is what shapes the design.
+```text
+pastes a year     = 1,000,000 a day × 365 days = 365,000,000
+five characters   = 62⁵ = 916,132,832 IDs, more than 365,000,000
+```
+
+But the link is the paste's only lock, and counted IDs sit next to each other.
+Anyone holding one link can try the numbers below it. No paste lives longer
+than 365 days, so every live paste has an ID among the last 365 million issued.
+Give that job to a **botnet**, many hijacked machines guessing together:
+
+```text
+IDs to try            = the last 365,000,000 issued
+guesses an hour       = 1,000,000
+time to try them all  = 365,000,000 ÷ 1,000,000 = 365 hours
+                      = 365 ÷ 24 ≈ 15 days
+```
+
+In about 15 days, one botnet reads every live paste. So the ID has to be
+random, drawn from a space so large that the live pastes fill a tiny share of
+it. How large is the third decision; first, the rest of the design.
 
 ## High-level architecture
 
 ![A client calls a load balancer, which forwards to app servers. To read a paste, the app servers check a cache first; on a miss they read the metadata database and the object store and fill the cache. To create one, they store its contents in the object store and its metadata in the metadata database. A daily cleanup job deletes expired pastes' contents from the object store and their rows from the metadata database.](/diagrams/pastebin/architecture.svg)
 
-Follow a reader opening `aZ3kQ9xT2m`. The **load balancer** spreads requests
-across interchangeable **app servers**, and one asks the **cache**: 4 GB of
-memory that evicts the least recently used entry (LRU) when full. A hit answers in a
-few milliseconds, after checking `expires_at`. On a miss, the app server reads
-the row from the **metadata database**, fetches the text from the **object
-store** (a service that stores blobs of bytes by key), and fills the cache with
-a TTL (time to live) of a day, cut short at `expires_at`. That costs tens of
-milliseconds, occasionally a couple of hundred, still inside 500 ms. A create
-writes the text to the object store first, then the row, so a live row never
-points at missing text.
+Follow a create. A **load balancer** spreads requests across interchangeable
+app servers and hands this one to any of them. The app server draws a random ID
+and writes the text to the **object store**, a service that keeps blobs of bytes
+by key, with the ID as the key. Only then does it insert the row, now just the
+metadata, into the metadata database, so a live row never points at missing
+text.
+
+Now follow a reader opening `aZ3kQ9xT2m`. The app server asks the **cache**
+first ([caching](/systems-and-infrastructure/caching)): 4 GB of memory that,
+when full, evicts the least recently used entry, a policy called **LRU**. A hit
+answers in a few milliseconds, after checking `expires_at`.
+
+On a miss, the app server reads the row from the metadata database, fetches the
+text from the object store, and fills the cache with a **TTL** (time to live)
+of a day, cut short at `expires_at`. That costs tens of milliseconds,
+occasionally a couple of hundred, still inside 500 ms. The last box, the daily
+cleanup job, is the second decision. First, how big does each part get?
+
+## Key numbers
+
+These size the app servers, the object store, the database and the cache. A
+day has 86,400 seconds; peaks are ten times the average; 1 KB = 1,000 bytes.
+
+- **Writes:** 1,000,000 ÷ 86,400 ≈ 12 per second on average, and 12 × 10 = 120
+  at peak.
+- **Reads:** 1,000,000 × 10 = 10,000,000 a day. 10,000,000 ÷ 86,400 ≈ 116 per
+  second on average, and 116 × 10 = 1,160 at peak.
+- **Object store:** assume an average paste of 10 KB. That's 1,000,000 × 10 KB
+  = 10 GB a day, and since nothing outlives 365 days, 10 GB × 365 = 3,650 GB, or
+  3.65 TB, in all.
+- **Database:** at most 1,000,000 a day × 365 days = 365 million live pastes,
+  and at about 200 bytes of metadata each, 365,000,000 × 200 bytes = 73 GB.
+- **Cache:** assume a day's 10 million reads land on 2 million pastes, and the
+  most-read 20% draw 80% of reads. Keeping those 0.2 × 2,000,000 = 400,000 in
+  memory takes 400,000 × 10 KB = 4 GB.
+
+Traffic is small; the 3.65 TB of text is what shapes the design.
 
 ## API and data model
 
@@ -879,15 +923,23 @@ What matters is what the row leaves out: the text. The paste ID is the
 **primary key**, the column the database keeps unique and
 [indexed](/systems-and-infrastructure/database-indexing), and the object's key
 too. The index on `expires_at` lets the cleanup job find expired rows without a
-scan. So why not keep the text in the row?
+scan. The simple design kept the text in the row, so why move it?
 
 ## Decision: where paste contents live
 
-The text goes in the object store. The row is the obvious alternative, and
-simpler: one write, one read, one system to back up. Here it loses on size. The
-database would carry 3.65 TB of text it never queries beside 73 GB of
-metadata, so every backup, copy and restore moves about fifty times the data,
-on pricier storage.
+Keeping the text in the row is simpler: one write, one read, one system to back
+up. It holds up until you add up the bytes. The database would carry 3.65 TB of
+text it never queries beside 73 GB of metadata:
+
+```text
+text and metadata  = 3,650 GB + 73 GB = 3,723 GB
+metadata alone     = 73 GB
+ratio              = 3,723 ÷ 73 ≈ 51
+```
+
+Every backup, copy and restore would move about fifty times the data it needs
+to, on pricier storage. So the text goes in the object store, under the paste's
+ID, and the database keeps only the metadata.
 
 The price is a second write on every create, and two writes can half-succeed:
 the text lands, the row insert fails, and no row points at the object. A
@@ -899,15 +951,19 @@ object store; the database keeps the small rows you query.
 
 ## Decision: expiring pastes
 
-Expiry has two jobs: stop serving a paste on time, and delete it. The app
-server does the first, comparing `expires_at` with the clock on every read,
-hit or miss. The **daily cleanup job** does the second: it walks the
-`expires_at` index, about a million rows a day, deleting each object, then its
-row.
+Expiry has two jobs: stop serving a paste on time, and delete it. The simplest
+plan gives both to one daily sweep. But a sweep that runs once a day can find a
+paste up to 24 hours after it expired, and serves it until then. For a paste
+set to last 1 day, that's up to twice the life its author chose.
 
-Why not let the sweep do both? It runs daily, so an expired paste could be
-served for up to a day longer; the read check closes that gap for one
-comparison. And deleting the object first means a crash in between leaves an
+So split the jobs. The app server stops serving: it compares `expires_at` with
+the clock on every read, hit or miss, closing the gap at the cost of one comparison.
+The **daily cleanup job** deletes: it walks the `expires_at` index, about a
+million rows a day (one day's creates, expiring in turn), deleting each object,
+then its row.
+
+The price is a second place that knows about expiry, and a crash between the
+two deletes. Deleting the object first makes that crash harmless: it leaves an
 expired row, which reads answer `410` from and the next run finds again.
 
 **Rule of thumb.** When serving must stop on time but deletion can lag, enforce
@@ -915,18 +971,30 @@ the deadline on read and reclaim storage in the background.
 
 ## Decision: paste IDs
 
-An ID is ten random base62 characters (digits and both cases of letters):
-62¹⁰ ≈ 840 quadrillion. The app server draws one and writes the text only if
-that key is absent from the store (a conditional put), then inserts the row.
-With 365 million live pastes, a clash comes about once in 2.3 billion creates
-and just means drawing again.
+How long should a random ID be? The obvious answer is the
+[URL shortener](/system-design/url-shortener)'s seven characters. There, short
+codes are the point. Here the link is the only lock, so count what a guesser
+finds:
 
-Why not reuse the [URL shortener](/system-design/url-shortener)'s seven
-characters? There, short codes are the point. Here the link is the only lock,
-and at seven characters 365 million live pastes fill about one ID in 9,600: a
-botnet making a million guesses an hour would find about a hundred private
-pastes an hour. Nobody types a paste link, so three more characters cost
-nothing and push a guess to about one in 2.3 billion.
+```text
+seven characters  = 62⁷ = 3,521,614,606,208 IDs
+live share        = 3,521,614,606,208 ÷ 365,000,000 ≈ 9,648, so 1 ID in 9,600 is live
+botnet            = 1,000,000 guesses an hour ÷ 9,648 ≈ 104 pastes an hour
+```
+
+A botnet making a million guesses an hour would find about a hundred private
+pastes an hour, about 2,500 a day. Nobody types a paste link, so add three characters:
+
+```text
+ten characters    = 62¹⁰ = 839,299,365,868,340,224 ≈ 840 quadrillion IDs
+odds of a guess   = 839,299,365,868,340,224 ÷ 365,000,000 ≈ 1 in 2.3 billion
+```
+
+So an ID is ten random base62 characters. The app server draws one and writes
+the text only if that key is absent from the store (a conditional put), then
+inserts the row. Without that check, a clash would overwrite someone else's
+paste; with it, a clash comes about once in 2.3 billion creates and just means
+drawing again. The only cost is a link three characters longer.
 
 **Rule of thumb.** When a link is the only lock, size the ID space so guessing
 is hopeless; length is cheaper than adding accounts.
@@ -934,9 +1002,9 @@ is hopeless; length is cheaper than adding accounts.
 ## Likely follow-ups
 
 - **How do you stop someone guessing links?** An address with 100 `404`s in
-  an hour is blocked for the rest of it, so a botnet of 10,000 machines gets a
-  million guesses an hour. At one in 2.3 billion, that finds a paste about
-  once every three months.
+  an hour is blocked for the rest of it, so a botnet of 10,000 machines gets
+  10,000 × 100 = a million guesses an hour. At one in 2.3 billion, that finds a
+  paste every 2,300 hours, about once every three months.
 - **What stops one sender filling the store?** A cap on bytes: 50 MB of new
   text per address a day is 0.5% of the 10 GB.
 - **What if the cache node is lost?** Every read takes the miss path until the
@@ -977,21 +1045,21 @@ cleanup -> db: "then delete expired rows"
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
 **Planted violation (the only one):** the average read rate is off by ten:
 10,000,000 ÷ 86,400 is about 116, not 1,160, and the peak derived from it is
-ten times too high as well. The base draft states the read rate only in this
-bullet, so the wrong figures appear nowhere else and nothing else on the page
+ten times too high as well. The base draft states the read rate per second
+only in this bullet, so the wrong figures appear nowhere else and nothing else on the page
 changes.
 **Replacement in the base draft:** in `## Key numbers`, replace the bullet
 
 ```markdown
-- **Reads:** 10,000,000 ÷ 86,400 ≈ 116 per second on average, about 1,160 at
-  peak.
+- **Reads:** 1,000,000 × 10 = 10,000,000 a day. 10,000,000 ÷ 86,400 ≈ 116 per
+  second on average, and 116 × 10 = 1,160 at peak.
 ```
 
 with:
 
 ```markdown
-- **Reads:** 10,000,000 ÷ 86,400 ≈ 1,160 per second on average, about 11,600
-  at peak.
+- **Reads:** 1,000,000 × 10 = 10,000,000 a day. 10,000,000 ÷ 86,400 ≈ 1,160 per
+  second on average, and 1,160 × 10 = 11,600 at peak.
 ```
 
 **Expected finding:** recomputes the read estimate and flags that
@@ -1008,10 +1076,14 @@ while accepting the numbers.
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
 **Planted violation (the only one):** `## Decision: where paste contents live`
 keeps the choice (the object store), how it's used (text first, then the row;
-the lifecycle rule for orphans) and its rule of thumb, but never names the
-alternative a reader would suggest (keeping the text in the database row) or
-says why it loses here (3.65 TB the database never queries, in every backup,
-copy and restore, on pricier storage). The other two decisions are unchanged.
+the lifecycle rule for orphans) and its rule of thumb, but never says, within
+the decision, why the obvious alternative loses in this design's numbers: it
+doesn't start from keeping the text in the database row, and gives no reason
+the row loses (3.65 TB the database never queries, so every backup, copy and
+restore moves about fifty times the data, on pricier storage). "Start simple"
+and the API and data model section, both unchanged, still mention the
+text-in-the-row design, but neither argues against it. The other two
+decisions are unchanged.
 **Replacement in the base draft:** replace everything between
 `## Decision: where paste contents live` and `## Decision: expiring pastes`
 (keeping both headings) with:
@@ -1031,65 +1103,87 @@ paste reaches.
 object store; the database keeps the small rows you query.
 ```
 
-**Expected finding:** flags that this decision just announces its choice: it
-names no alternative (keeping the text in the row is the obvious one) and
-gives no reason in this design's numbers why that alternative would lose,
-contrary to the checklist's "each one names the choice, why in this design's
-numbers, the one alternative a reader would suggest and why it loses here." A
-reviewer may also note that the API and data model section ends by asking
-"So why not keep the text in the row?" and the decision never answers it, or
-that the rule of thumb no longer follows from an argument on the page; both
+**Expected finding:** flags that this decision just announces its choice:
+within the decision it never says why keeping the text in the row loses in
+this design's numbers (it states the 3.65 TB of text and the 73 GB of
+metadata but never argues from them: no "fifty times the data", no cost to
+every backup, copy and restore),
+and it doesn't start from that alternative, contrary to template 3's order
+(the simpler option, where it breaks in this design's numbers, the choice,
+its cost). Mentions of the row elsewhere on the page don't count: the
+decision has to make the case. Naming either the missing reason or the
+missing alternative-within-the-decision is the finding. A reviewer may also
+note that the API and data model section ends by asking "The simple design
+kept the text in the row, so why move it?" and the decision never answers it,
+or that the rule of thumb no longer follows from an argument on the page; all
 are the same planted gap.
-**Fails if:** the review doesn't flag the missing alternative in this
-decision, or flags only one of the other two decisions.
+**Fails if:** the review flags neither the missing reason nor the missing
+alternative within this decision (for example, it accepts the row's mentions
+in "Start simple" or the API section as enough), or flags only one of the
+other two decisions.
 
 ---
 
 ### CS-03 — clean case study (false-positive control)
 
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
-**Planted violation:** none. The base draft, verbatim. Its figures are
-correct and each follows from a stated requirement or assumption
-(1,000,000 ÷ 86,400 ≈ 11.6, about 12, and × 10 ≈ 116, "about 120" at peak;
-10,000,000 ÷ 86,400 ≈ 115.7, about 116, and × 10 ≈ 1,157, "about 1,160";
-1,000,000 × 10 KB = 10 GB a day; 10 GB × 365 = 3,650 GB; 365 million live
-pastes = 1,000,000 a day × 365 days, and 200 B × 365,000,000 = 73 GB;
-10,000,000 reads ÷ 2,000,000 pastes = 5 reads a paste; 0.2 × 2,000,000 =
-400,000 pastes, × 10 KB = 4 GB; (3,650 GB + 73 GB) ÷ 73 GB ≈ 51, "about fifty
-times the data"; the sweep's million rows a day matches the create rate; a
-366-day lifecycle rule against a 365-day maximum never reaches a live paste;
-62¹⁰ = 839,299,365,868,340,224 ≈ 840
-quadrillion; 62¹⁰ ÷ 365,000,000 ≈ 2.3 billion, so a random ID clashes "about
-once in 2.3 billion creates" and a guess finds a paste one time in about 2.3
-billion; at seven characters, 62⁷ = 3,521,614,606,208 and 62⁷ ÷ 365,000,000 ≈
-9,648, "about one ID in 9,600", and a million guesses an hour ÷ 9,648 ≈ 104,
-"about a hundred an hour"; 10,000 machines × 100 guesses = a million an hour,
-and 2.3 billion ÷ 1,000,000 ≈ 2,300 hours ≈ 96 days, "about once every three
-months"; 50 MB ÷ 10 GB = 0.5%, "0.5% of the 10 GB"; a miss at tens of milliseconds,
-occasionally a couple of hundred, is inside the 500 ms p99 target). IDs are
-ten random characters whose text is written with a conditional put that
-refuses an existing key, before the row, so a clash can't overwrite a live
-paste and no two pastes share an ID; the follow-ups say the per-address limit
-caps a 10,000-machine botnet at a million guesses an hour (10,000 × 100), and
-length makes those find a paste about once every three months. Each of the three
-decisions names its choice, the alternative a reader would suggest (the text
-in the row; the sweep alone; the URL shortener's seven characters) and why it loses in this
-design's numbers, and ends with a `**Rule of thumb.**` paragraph that follows
-from it. Expiry is checked on cache hits as well as misses; the sweep deletes
-the object before the row, so a crash leaves an expired row the next run
-finds again; the API says when `410` gives way to `404`; the cache is capped
-at 4 GB with LRU eviction and a TTL cut short at `expires_at`. Every term is
-defined at first use (p99, LRU, TTL, object store, primary key, lifecycle
-rule, base62); every catalog link (`caching`, `rate-limiting`,
-`database-indexing`, and the `url-shortener` case study) points to a page
-that exists and sits where its concept is used; the absolute claims hold ("no
-two pastes share an ID" follows from the conditional put, "never points at missing text" from writing the object before the row,
-"an age no live paste reaches" from the 365-day maximum); and the diagram
-shows exactly the components the prose names (the lifecycle rule is a setting
-of the object store, not a component), with the cleanup job's two deletes in
-the order the expiry decision gives.
+**Planted violation:** none. The base draft, verbatim, with `template: 3` in
+its frontmatter. Its figures are correct and each follows from a stated
+requirement or assumption, with its steps written out ("Start simple":
+1,000,000 a day × 365 days = 365,000,000; 62⁵ = 916,132,832, more than
+365,000,000, so a year of counted IDs fits in five characters; every live paste
+is at most 365 days old, so its ID is among the last 365,000,000 issued, and
+365,000,000 ÷ 1,000,000 guesses an hour = 365 hours, 365 ÷ 24 ≈ 15.2, "about
+15 days". Key numbers: 1,000,000 ÷ 86,400 ≈ 11.6, about 12, and 12 × 10 = 120
+at peak; 1,000,000 × 10 = 10,000,000 reads a day, 10,000,000 ÷ 86,400 ≈ 115.7,
+about 116, and 116 × 10 = 1,160 at peak; 1,000,000 × 10 KB = 10 GB a day, and
+10 GB × 365 = 3,650 GB = 3.65 TB; 365 million live pastes at most, and
+365,000,000 × 200 B = 73 GB; 10,000,000 reads ÷ 2,000,000 pastes = 5 reads a
+paste; 0.2 × 2,000,000 = 400,000 pastes, × 10 KB = 4 GB. Decisions: 3,650 GB +
+73 GB = 3,723 GB, and 3,723 ÷ 73 = 51, "about fifty times the data"; a 366-day
+lifecycle rule against a 365-day maximum never reaches a live paste; a daily
+sweep can find a paste up to 24 hours after it expired, so a 1-day paste can be
+served for up to 2 days, "up to twice the life its author chose"; the sweep's
+million rows a day matches the create rate; 62⁷ = 3,521,614,606,208 and
+3,521,614,606,208 ÷ 365,000,000 ≈ 9,648, "1 ID in 9,600 is live"; 1,000,000 ÷
+9,648 ≈ 104, "about a hundred private pastes an hour", and 104 × 24 ≈ 2,500 a
+day; 62¹⁰ = 839,299,365,868,340,224 ≈ 840 quadrillion, and 62¹⁰ ÷ 365,000,000
+≈ 2,299,450,317, about 2.3 billion, so a random ID clashes "about once in 2.3
+billion creates" and a guess finds a paste one time in about 2.3 billion.
+Follow-ups: 10,000 × 100 = a million guesses an hour, and 2.3 billion ÷
+1,000,000 = 2,300 hours ≈ 96 days, "about once every three months"; 50 MB ÷
+10 GB = 0.5%; a miss at tens of milliseconds, occasionally a couple of hundred,
+is inside the 500 ms p99 target). It follows the Teaching progression rules:
+the intro states the question and a route sentence; "Start simple" shows
+counted IDs working (unique without a check, one insert, five characters) and
+then failing on the design's numbers; the architecture is the diagram and three
+short paragraphs (a create, a cache hit, a miss) with at most two new terms
+each; "Start simple", the architecture and the API and data model section
+each end on the question the next part answers. Each of the three decisions runs
+from the option a reader would suggest (the text in the row; one daily sweep
+doing both jobs; the URL shortener's seven characters) to where it breaks, in
+this design's numbers, then the choice, its cost, and a `**Rule of thumb.**`
+paragraph that follows from it. IDs are ten random characters whose text is
+written with a conditional put that refuses an existing key, before the row, so
+a clash can't overwrite a live paste; the follow-ups say the per-address limit
+caps a 10,000-machine botnet at a million guesses an hour, and length makes
+those find a paste about once every three months. Expiry is checked on cache
+hits as well as misses; the sweep deletes the object before the row, so a crash
+leaves an expired row the next run finds again; the API says when `410` gives
+way to `404`; the cache is capped at 4 GB with LRU eviction and a TTL cut short
+at `expires_at`. Every term is defined at first use (p99, app server, metadata,
+base62, botnet, load balancer, object store, cache, LRU, TTL, primary key,
+lifecycle rule, conditional put); every catalog link (`caching`,
+`rate-limiting`, `database-indexing`, and the `url-shortener` case study)
+points to a page that exists and sits where its concept is used; the absolute
+claims hold ("every ID is unique without a check" follows from a counter,
+"never points at missing text" from writing the object before the row, "an age
+no live paste reaches" from the 365-day maximum); and the diagram shows exactly
+the components the prose names (the lifecycle rule is a setting of the object
+store, not a component), with the cleanup job's two deletes in the order the
+expiry decision gives.
 **Expected finding:** no finding that is false of the draft. Real gaps that
-a five-minute page leaves out on purpose, such as a sequence diagram or
+a ten-minute page leaves out on purpose, such as a sequence diagram or
 database failover detail, are acceptable and go in the run's notes.
 **Fails if:** the review reports a defect that isn't true of the draft: an
 arithmetic "error" in a correct line, a decision called one-sided when it

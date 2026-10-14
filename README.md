@@ -18,7 +18,7 @@ site.
   and collapse independently as you move between them (see
   [docs/DESIGN.md](docs/DESIGN.md)).
 - **System Design** — a second tab of worked design case studies ("design a
-  URL shortener"), each a five-minute read following one template
+  URL shortener"), each at most a ten-minute read following an enforced template
   ([docs/case-studies.md](docs/case-studies.md)). Each links into the catalog
   topics it uses, and each of those topics links back. Diagrams are written in
   [D2](https://d2lang.com) and rendered at build time to static SVGs in the

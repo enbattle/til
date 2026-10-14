@@ -93,14 +93,16 @@ ones that don't yet.
   struggled has the gist before going on ("So the ring keeps moves small, and
   virtual nodes keep shares even.").
 
-In a case study, the template ([docs/case-studies.md](case-studies.md)) fixes
-the section order. Its intro holds stages 1 and 2. Key numbers come before the
-architecture, so they may name a part with a short gloss before the diagram
-shows it, and each figure's one-line derivation writes out its steps
-(`40 million ÷ 86,400 seconds ≈ 460 a second`). Each decision is a stage-3
-build: the alternative a reader would suggest, shown failing in this design's
-numbers, is what earns the choice, and its rule of thumb is the one-line
-restatement.
+In a case study, template 3 ([docs/case-studies.md](case-studies.md)) fixes
+the section order. Its intro holds stages 1 and 2. `Start simple` is stage
+3's simple version: the design a reader would suggest first, shown breaking on
+this design's numbers. The architecture comes before Key numbers, so each
+figure sizes a part the reader has already met, and its derivation writes out
+its steps (`40 million ÷ 86,400 seconds ≈ 460 a second`). Each decision is a
+stage-3 build too: the simpler option, where it breaks in this design's
+numbers, then the choice and its cost, with the rule of thumb as the one-line
+restatement. A page still on the old template follows the old order (Key
+numbers first, no `Start simple`) until it is rewritten.
 
 ## Catalog topics
 
@@ -139,19 +141,22 @@ page someone finishes and remembers. Where a rule above
 pulls the other way, this section decides for these pages; catalog topics
 teach more depth, and they are where these pages send a reader for more.
 
-- **About five minutes.** At most 1,150 words of prose, about five minutes at
-  230 words a minute. Tables count; code blocks, diagrams and frontmatter
-  don't. This is the canonical home for both numbers; in code,
-  `src/lib/reading-time.ts` owns them as `WORDS_PER_MINUTE` and `WORD_BUDGET`
-  (five minutes' worth); `case-study-structure.test.ts` imports `WORD_BUDGET`.
+- **About ten minutes.** At most 2,300 words of prose, about ten minutes at
+  230 words a minute; aim for roughly 1,700–2,000, not the cap. Tables count;
+  code blocks, diagrams and frontmatter don't. This is the canonical home for
+  these numbers; in code, `src/lib/reading-time.ts` owns them as
+  `WORDS_PER_MINUTE` and `WORD_BUDGET` (ten minutes' worth);
+  `case-study-structure.test.ts` imports `WORD_BUDGET`.
 - **Enough to reason, not everything.** An interview never covers every
   scenario, and a reader will be asked things no page mentions. Teach the few
   decisions that shape the answer and the reasoning behind each, well enough
   that the reader can make an educated guess at a question the page never
   asked. Leave out an exception or edge case that doesn't change a decision.
 - **Why not the obvious alternative?** Interviewers push on this, so every
-  decision names the alternative a reader would suggest and why it loses here,
-  in a sentence or two. One alternative, not a survey of all of them.
+  decision starts from the alternative a reader would suggest and shows where
+  it breaks in this design's numbers before making its choice. One
+  alternative, not a survey of all of them. (A page still on the old template
+  names it after the choice, in a sentence or two, until it is rewritten.)
 - **The rule behind it.** A decision ends with the general rule it
   illustrates ("read-heavy and fine with slightly stale data: cache in
   front"), since the rule is what transfers to the next question.

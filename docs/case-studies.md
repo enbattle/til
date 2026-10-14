@@ -7,7 +7,7 @@ checked. Read this before adding or changing a case study or its diagrams;
 The header has two tabs: **Catalog** (the topics in [content.md](content.md))
 and **System Design**, a numbered list of worked design case studies ("Design a
 URL Shortener (like TinyURL)"). Each case study takes a product through the standard
-interview approach in about five minutes of reading and links into the catalog
+interview approach in about ten minutes of reading and links into the catalog
 wherever it uses a topic; it never holds a copy of a topic.
 
 ```
@@ -32,14 +32,15 @@ is eager too (the build-time `?words` view, `proseWordCount` in
 [Writing Standard](writing-standard.md#case-studies)) shows
 before the body loads, on every case study.
 Frontmatter is the usual flat `key: value`, with one more required field,
-`order`:
+`order`, and the optional template switch, `template`:
 
 ```md
 ---
-title: Design a URL Shortener (like TinyURL)
+title: Design a Social Media Feed (like Instagram)
 summary: One plain-text sentence — the hook shown on the landing page and in search.
 date: YYYY-MM-DD
-order: 1
+order: 4
+template: 3
 ---
 ```
 
@@ -48,11 +49,15 @@ order: 1
   throws at load time, naming the file and field, if any of the four fields is
   missing or `order` isn't a positive integer, and `src/lib/system-design.test.ts`
   fails a duplicate `order`.
-- **These four keys and no others.** `parseCaseStudy` also throws at load
-  time on any other key, naming the file and the key (`checkFields` in
-  `src/lib/frontmatter.ts`, shared by both loaders), and
-  `case-study-structure.test.ts` checks the same allowlist.
-- **A case study is a five-minute read.** The whole page is the summary a
+- **These four keys, `template`, and no others.** `parseCaseStudy` also
+  throws at load time on any other key, naming the file and the key
+  (`checkFields` in `src/lib/frontmatter.ts`, shared by both loaders), and
+  `case-study-structure.test.ts` checks the same allowlist. `template` is
+  optional and its only valid value is `3` (the switch below); any other
+  value, an empty one included, throws naming the file and `template`. It
+  picks the template the structure test checks and is not part of the
+  returned metadata.
+- **A case study is a ten-minute read.** The whole page is the summary a
   reader takes into an interview, with enough reasoning under each decision to
   defend it and to guess well at a question it never asked. It meets the
   Writing Standard's "Case studies" section: within the
@@ -60,36 +65,71 @@ order: 1
   code don't count), one rejected alternative per
   decision, and the voice of a good lecturer. Depth beyond that lives in the
   catalog topics it links.
-- **The template is enforced.** An intro of two to four sentences (the
-  interview question and what makes it interesting) comes before the first
-  heading. The body's `##` headings are then exactly, in order:
+- **The template is enforced, per page.** A page whose frontmatter has
+  `template: 3` follows template 3; a page without the key follows the old
+  template, which every page is being moved off ("Migrating (2026-10)" below).
+  When the last page is rewritten, a cleanup change removes the switch and
+  the old template, as `docs/specs/retire-template-switch.md` did for the
+  previous one. Both share the word budget and everything after the
+  headings' order below.
+
+  **Template 3** follows the Writing Standard's
+  [Teaching progression](writing-standard.md#teaching-progression). Before
+  the first heading, an intro states the interview question, a one-sentence
+  overview of the design and the route through the page. The body's `##`
+  headings are then exactly, in order:
   - `Requirements`: one list of 4–6 bullets, saying what it does (optional
     features marked), with the non-functional targets as numbers (scale, a
     latency percentile, availability), and one sentence on what's out of
     scope (a sentence, not a second list).
+  - `Start simple` or `Start simple: <topic>`: the design a reader would
+    suggest first, shown working, then breaking on this design's numbers. At
+    least one paragraph, and the worked arithmetic in a code block, one
+    step per line. It ends on the problem the architecture solves.
+  - `High-level architecture`: at least one diagram with alt text, such as
+    `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page, so
+    the reference style counts too), then two or three short paragraphs (for
+    example the write path, then the read path), each with at most two new
+    terms.
   - `Key numbers`: opens with a sentence saying what the numbers size (the
     requests the servers answer, the data the database holds, the memory a
     cache needs), so a reader knows where each one lands. Then 4–5 figures,
-    each with a bold lead naming the part it sizes, the colon inside the bold
-    (`**Reads:**`, not `**Reads**:`), and its one-line derivation from a requirement or a
-    stated assumption. Round sensibly and say so.
-  - `High-level architecture`: at least one diagram with alt text, such as
-    `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page, so
-    the reference style counts too), then one paragraph that follows a request
-    through it.
+    each with a bold lead naming a part the reader has now met, the colon
+    inside the bold (`**Reads:**`, not `**Reads**:`), and its derivation from
+    a requirement or a stated assumption, written out step by step. Round
+    sensibly and say so.
   - `API and data model`: the two or three endpoints and the main table or
     record, with a sentence on the choice in them that matters (the key, the
     index).
-  - Exactly three `Decision: <topic>` headings, each about 100–150 words:
-    the choice, why in this design's numbers, the alternative a reader would
-    suggest and why it loses here, and a last paragraph opening with
-    `**Rule of thumb.**` that states the general rule.
+  - Exactly three `Decision: <topic>` headings, each about 150–300 words, in
+    this order: the simpler option a reader would suggest, where it breaks in
+    this design's numbers, the choice, its cost, and a last paragraph opening
+    with `**Rule of thumb.**` that states the general rule.
   - `Likely follow-ups`: a list of 4–6 interviewer questions, each in bold,
-    with a one- or two-sentence answer.
+    with a one- or two-sentence answer. A follow-up introduces no new concept
+    without a gloss and a catalog link.
 
-  `src/system-design/case-study-structure.test.ts` enforces the template's
-  mechanical parts, not its sentence or word counts per section: a paragraph
-  before the first `##`; the headings; `Requirements` as one list of 4–6
+  The social feed (`social-feed.md`) is template 3's reference example to
+  copy.
+
+  **The old template** (pages without `template`, being migrated; don't start
+  a new page on it): an intro of two to four sentences (the interview
+  question and what makes it interesting), then `Requirements`,
+  `Key numbers`, `High-level architecture`, `API and data model`, three
+  `Decision: <topic>` and `Likely follow-ups`. Its sections hold what
+  template 3's do, except: there's no `Start simple`; Key numbers come before
+  the architecture, so a figure may name a part with a short gloss and gives
+  a one-line derivation; the architecture is one paragraph that follows a
+  request through the diagram; and each decision is about 100–150 words: the
+  choice, why in this design's numbers, the alternative and why it loses, then
+  the rule of thumb. `url-shortener.md` shows it.
+
+  `src/system-design/case-study-structure.test.ts` enforces the templates'
+  mechanical parts, not their sentence or word counts per section, or the
+  order of ideas within a section (the reviewer checks those): a paragraph
+  before the first `##`; the headings of the page's template, in order; on
+  template 3, `Start simple` holding at least one paragraph and at least one
+  code block; `Requirements` as one list of 4–6
   top-level items; `Key numbers` as a paragraph, then one list of 4–5
   top-level items each opening with a bold `Label:`; each decision ending with
   a `**Rule of thumb.**` paragraph with text after the label; `Likely
@@ -103,9 +143,16 @@ follow-ups` as one list of 4–6 items each opening with bold; the diagram;
   `##` heading (a `###` heading has no id). The renderer keeps a `#…` link in
   the same tab. The page builds its "On this page" list from these headings,
   parsed with the renderer's own markdown stack and heading-id pass
-  (`h2Headings` in `src/lib/headings.ts`), so keep them plain text. The URL
-  shortener (`url-shortener.md`) is the reference
-  example to copy.
+  (`h2Headings` in `src/lib/headings.ts`), so keep them plain text.
+
+- **Migrating (2026-10).** Pages move to template 3 one at a time, each in
+  `add-case-study`'s rewrite mode. To move one: add `template: 3` to its
+  frontmatter; restructure it to template 3's headings; rewrite its prose to
+  the Teaching progression rules (the route sentence, `Start simple` with its
+  arithmetic, the architecture in short paragraphs, every derivation shown,
+  each decision from the simpler option to the rule); and keep all its
+  content, its slug and its `order`: every requirement, number, decision,
+  rejected alternative and follow-up stays. The social feed was the first.
 
 - **Links are the data.** A case study's catalog links are extracted at build
   time (the `?links` query, running `extractTopicRefs` from
