@@ -46,9 +46,12 @@ cut an exception or a second alternative before cutting a decision's reason.
    - A presigned PUT signs an exact size.
    - Cold storage tiers may bill a minimum object size.
    - Archive tiers differ by provider.
-6. **Terms.** Define every term in a short phrase at first use (load
-   balancer, replica, shard, partition, primary, TTL, lease, idempotency
-   key…), and put the catalog link at that first use.
+6. **Terms.** As the Writing Standard's "Teaching progression" says: a term
+   the page only uses (load balancer, replica, shard, TTL, lease, idempotency
+   key…) gets a short gloss and the catalog link at first use; a term it
+   teaches (fan-out in the social feed) gets a sentence of its own and an
+   example. At most two new terms per paragraph, the architecture paragraph
+   included.
 7. **Compression overclaims.** Short prose tends to drop the qualifier that
    made a claim true ("never loses a message" for "doesn't lose an
    acknowledged message"). Check every absolute word: never, always, exactly,

@@ -8,10 +8,8 @@ Every topic is written so a reader with **zero prior background** on the
 subject can walk away with real understanding — possibly needing a second
 pass on denser subjects, not assumed on the first read. Concretely:
 
-- Define terms before using them; don't assume the reader already has the
-  vocabulary.
-- Build up from first principles rather than starting from an assumed
-  mental model.
+- Build up from first principles, at a beginner's pace;
+  [Teaching progression](#teaching-progression) below says how.
 - Prefer concrete examples (code, a worked scenario) over abstract
   description.
 - The `summary` frontmatter field is a one-sentence scannable hook — it's
@@ -53,6 +51,56 @@ pass on denser subjects, not assumed on the first read. Concretely:
   Connect), or as an example of a category of tool. Never describe how a
   specific company builds its systems or runs its teams internally: that can't
   be verified from outside, and it goes stale without anyone noticing.
+
+## Teaching progression
+
+Pace, not length, loses a beginner: a page that moves faster than its reader
+loses them however long it is. These rules set the pace for every topic and
+case study. Breaking one is a real finding (Medium), not polish. Published
+pages meet them when they are next rewritten, and `content-audit` reports the
+ones that don't yet.
+
+- **Four stages, in order.** (1) The reader's situation: a concrete scenario,
+  with a number where the subject has one, and the question the page answers
+  in one plain sentence. (2) The route: before the first `##` heading, one
+  sentence naming what the page covers, in order ("the obvious formula, why it
+  breaks when you add a server, and the ring that fixes it"). Naming the
+  content this way isn't the meta-commentary banned above, which is talk about
+  what is interesting or important. (3) The core idea, built one step at a
+  time. Where a reader would first suggest something simpler, start there and
+  show it fail on the running example. (4) Only then the complications,
+  costs, variations and product specifics.
+- **Describe, then name.** A new term is any word a zero-background reader
+  couldn't define. A term the page teaches is shown before it is named ("bend
+  the range into a circle… give this ring 100 positions"), and gets a plain
+  sentence of its own plus an example. A term the page only uses gets a short
+  gloss where it first appears, as in "entropy (randomness)", at most one gloss
+  per sentence, and a link to the page that teaches it. At most two new terms
+  per paragraph, and none before its definition or gloss.
+- **One job per paragraph**: set up a problem, explain one step, or work one
+  example. A paragraph over five sentences is almost always doing two.
+- **End each stage on the next problem**, so the reader knows why the next
+  section exists ("It works, until the number of servers changes."; "That
+  gets codes minted. Serving them fast is the harder part."). Vary the
+  wording: these are examples, not a formula. A new heading alone is not a
+  transition.
+- **Show the arithmetic.** Every derived figure shows its steps from the
+  running example's numbers, one operation at a time (a code block is fine),
+  ending in the result the prose uses. Never a bare result the reader can't
+  check, such as "true for 1 hash value in 5". A chosen input ("give the ring
+  100 positions") needs no working.
+- **Restate the model after the hardest step**, in one line, so a reader who
+  struggled has the gist before going on ("So the ring keeps moves small, and
+  virtual nodes keep shares even.").
+
+In a case study, the template ([docs/case-studies.md](case-studies.md)) fixes
+the section order. Its intro holds stages 1 and 2. Key numbers come before the
+architecture, so they may name a part with a short gloss before the diagram
+shows it, and each figure's one-line derivation writes out its steps
+(`40 million ÷ 86,400 seconds ≈ 460 a second`). Each decision is a stage-3
+build: the alternative a reader would suggest, shown failing in this design's
+numbers, is what earns the choice, and its rule of thumb is the one-line
+restatement.
 
 ## Catalog topics
 
@@ -111,8 +159,7 @@ teach more depth, and they are where these pages send a reader for more.
   who loves the subject thinks out loud in front of a class. Ask the question
   the reader is about to ask, then answer it. Carry one running example
   through the page instead of starting a new one per section, and let each
-  section hand off to the next ("That gets codes minted. Serving them fast is
-  the harder part."). Keep paragraphs to a few sentences. The energy comes
+  section hand off to the next, as "Teaching progression" says. The energy comes
   from pace and concrete examples, never from exclamation marks, hype words or
   the stock phrases banned above.
 - **Zero background, briefly.** Define a term in a short phrase at first use

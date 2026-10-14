@@ -663,6 +663,102 @@ following the lockfile, or a bug fix shipping as a patch, an error).
 
 ---
 
+### CR-06 — a paragraph that names four terms at once (trap for "Teaching progression")
+
+<!-- premise: src/content/computing-fundamentals/regular-expressions.md missing -->
+<!-- premise: src/content/engineering-practices/regular-expressions.md missing -->
+
+**Section:** `computing-fundamentals`.
+**Planted violation (the only one; the draft otherwise follows every
+Teaching progression rule: a route sentence, describe-then-name, worked
+arithmetic, stage transitions and a one-line restatement):** the paragraph
+opening "A regex is built from a few kinds of piece" introduces four terms the
+page teaches (character class, quantifier, anchor, group) at once, each
+defined in a parenthesis inside one long sentence. The audit of 2026-10-14
+found this the most common reason a beginner gets lost.
+
+````markdown
+---
+title: Regular Expressions
+summary: A regular expression is a short pattern that checks text, and the same tool that validates a ZIP code instantly can, written carelessly, take seconds.
+date: 2026-10-14
+---
+
+Say your sign-up form asks for a US ZIP code. Valid input is five digits, like `90210`, or five digits, a dash and four more, like `90210-1234`. How do you check that in one line instead of twenty lines of character-by-character code?
+
+A **regular expression**, or regex, is the usual answer: a short pattern that describes what valid text looks like, which a library checks for you. This page builds the ZIP pattern piece by piece, shows how a careless version of it can freeze a server, and shows how to write one that can't.
+
+## Matching one character at a time
+
+The simplest regex is plain text. The pattern `90210` matches the characters `9`, `0`, `2`, `1`, `0`, in that order.
+
+That works for one ZIP code. There are tens of thousands of them, so you need a way to say "any digit" instead of one particular digit.
+
+## The ZIP code pattern
+
+A regex is built from a few kinds of piece: a **character class** (a set of characters in square brackets, any one of which matches, like `[0-9]`), a **quantifier** (a count written after a piece, like `{5}` for exactly five), an **anchor** (`^` for the start of the text, `$` for the end) and a **group** (parentheses that treat several pieces as one unit, which a `?` after it makes optional), and together they give `^[0-9]{5}(-[0-9]{4})?$`.
+
+Read it left to right against `90210-1234`. The `^` pins the match to the start. `[0-9]{5}` takes `90210`. The group takes `-1234`, and `$` confirms nothing is left over. Against `90210`, the group finds no dash, and the `?` lets it match nothing instead.
+
+Why the anchors? Without them, the library looks for the pattern anywhere inside the text. `[0-9]{5}` alone would accept `abc90210xyz`, because five digits appear somewhere inside it.
+
+So the full pattern says: start, five digits, optionally a dash and four digits, end.
+
+That handles every valid ZIP code. The trouble starts when a pattern gives the library more than one way to match the same text.
+
+## When a pattern has choices
+
+Most regex libraries match by trying one way and, when it fails, going back to try the next. Going back like this is called **backtracking**. The ZIP pattern has at most two ways to try, with the dash part or without it, so a check finishes almost at once.
+
+Now suppose someone loosens the field so users can type a dash anywhere. A `+` after a piece means "one or more of it", so they write `^([0-9]+-?)+$`: one or more groups, each made of digits and an optional dash. It accepts every valid ZIP code, plus looser input like `90-210`, but it hides a choice. Feed it 26 digits followed by a `!`. The `!` makes every attempt fail, but the library can't know that until it has tried every way of splitting the digits into groups, and each extra digit doubles the number of ways. Between 26 digits there are 25 gaps, and each gap either splits two groups or doesn't, so there are 2 × 2 × … 25 times over:
+
+```
+11 digits: 2^10 ≈ 1,000 ways
+21 digits: 2^20 ≈ 1,000,000 ways
+26 digits: 2^25 ≈ 33,500,000 ways
+```
+
+Each way costs at least one step. At 100 million steps a second:
+
+```
+33,500,000 ÷ 100,000,000 ≈ 0.34 seconds
+```
+
+That is a third of a second for one check of one short string. Five more digits double it five more times:
+
+```
+2^30 ÷ 2^25 = 32
+0.34 seconds × 32 ≈ 11 seconds
+```
+
+This blow-up is called **catastrophic backtracking**. When the input comes from users, one crafted string can tie up a server for seconds.
+
+An attack built on it is called ReDoS, regular-expression denial of service: making a service too busy to answer anyone else.
+
+So a pattern turns slow when the same text can be split many ways: the work can grow explosively, here doubling with every character. How do you keep that choice out?
+
+## Avoiding it
+
+The fix is to make sure any text can be matched only one way. The strict ZIP pattern already does. If you want looser input, write `^[0-9]+(-[0-9]+)*$`: every group after the first must start with a dash, so a run of digits can't be split two ways. (It also rejects a trailing dash, which is no loss.) Now the `!` is rejected after about one try per digit. In general, look for a repetition whose pieces could match the same text more than one way, and make each piece start with something only it can match.
+
+Two other defenses help. Cap the input's length before matching: a ZIP field never needs more than 10 characters. And some regex libraries, such as Go's standard one and Google's RE2, never backtrack, so their time grows in step with the input's length instead of doubling with each character. They give up a few rarely needed features to get there.
+
+One catch with anchors. In Python, Java and PHP, `$` also matches just before a final newline, so `90210` followed by a newline passes, and in Ruby `^` and `$` match at every line break. To validate a whole input, use the whole-string match your language offers, such as Python's `re.fullmatch` or Ruby's `\A` and `\z`.
+
+**Rule of thumb.** Match the whole input, cap its length, and never let a repeated piece match the same text in more than one way.
+````
+
+**Expected finding:** flags the "A regex is built from a few kinds of piece"
+paragraph: four new terms in one sentence, each defined in a parenthesis
+rather than shown and then named one at a time, against the Writing
+Standard's "Teaching progression" (two new terms per paragraph at most; a
+term the page teaches gets a sentence of its own and an example), at Medium
+or higher.
+**Fails if:** the review doesn't name that paragraph's term density or
+parenthetical definitions, or names it only as cosmetic or Low.
+
+---
+
 ## Case-study scenarios (`add-case-study`)
 
 These test `add-case-study`'s Stage 3 review instead of `add-topic`'s. They

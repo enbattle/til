@@ -30,18 +30,28 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-13 | add-dsa-entry checklist item (2): plain tutorial-style code; DS base moved from Counter to dict                                                      | 3    | 0    | 0         | DS-01, DS-02, DS-03; the new item flagged the base's Counter, now fixed.   |
 | 2026-10-13 | DSA tab removed (docs/specs/remove-dsa-tab.md): Writing Standard section renamed, code bullet cut; DS-* retired                                      | 9    | 0    | 0         | All live scenarios.                                                        |
 | 2026-10-13 | add-case-study checklist item (5), named-company restatement, removed                                                                                | 4    | 0    | 0         | CS-* only.                                                                 |
+| 2026-10-14 | Writing Standard: Teaching progression section; CR-06 added                                                                                          | 10   | 0    | 0         | All scenarios; CR-01 plant ranked sixth behind true pacing findings.       |
 
-## Latest run: 2026-10-13, add-case-study checklist item (5) removed
+## Latest run: 2026-10-14, Writing Standard gains "Teaching progression"
 
-- **Run by:** Claude (the orchestrating session), with 4 fresh `general-purpose` reviewers.
-- **Trigger:** add-case-study's Stage 3 checklist lost item (5), the named-company restatement (the Writing Standard's "Named companies" bullet is the home, and the reviewer holds every bullet); items renumbered. The Writing Standard edits on the same branch change pointers, not rules.
-- **Scope:** CS-* only (one skill's checklist).
+- **Run by:** Claude (the orchestrating session), with 13 fresh `general-purpose` reviewers (one per scenario, plus three CR-06 re-runs).
+- **Trigger:** the Writing Standard gained a "Teaching progression" section (four stages, describe-then-name with at most two new terms a paragraph, one job a paragraph, stage hand-offs, worked arithmetic, a one-line restatement), rated Medium; `docs/content-review.md`'s Stage 3 instruction now names it and batch reviewers keep it; add-case-study checklist item 6 points to it. CR-06 added for it.
+- **Scope:** all scenarios.
 
-| ID    | Planted violation                      | Caught?                                                         | Grade |
-| ----- | -------------------------------------- | --------------------------------------------------------------- | ----- |
-| CS-01 | Read rate off by ten                   | Yes, top finding (High), recomputed                             | PASS  |
-| CS-02 | Contents decision names no alternative | Yes, top finding (High)                                         | PASS  |
-| CS-03 | None (control)                         | All figures confirmed; findings true (IPv6 rate limits, ranges) | PASS  |
-| CS-04 | "Nobody can ever guess a valid link"   | Yes, top finding (High), from the page's own odds               | PASS  |
+| ID    | Planted violation                                      | Caught?                                                                       | Grade |
+| ----- | ------------------------------------------------------ | ----------------------------------------------------------------------------- | ----- |
+| CR-01 | "hash function" never defined                          | Yes, but sixth of eight, rated Low–Medium, below five pacing findings         | PASS  |
+| CR-02 | AI-patterned tone                                      | Yes, top finding (High)                                                       | PASS  |
+| CR-03 | Over-explained figurative language                     | Yes, top finding (High)                                                       | PASS  |
+| CR-04 | "Temperature 0 is fully deterministic"                 | Yes, top finding (High)                                                       | PASS  |
+| CR-05 | None (control)                                         | Nine findings, all true (no route sentence, no hand-offs, unused "pinning")   | PASS  |
+| CR-06 | Four new terms in one sentence, defined in parentheses | Yes in all four runs (Medium); top finding once the fixture's own faults went | PASS  |
+| CS-01 | Read rate off by ten                                   | Yes, top finding (High), recomputed                                           | PASS  |
+| CS-02 | Contents decision names no alternative                 | Yes, top finding (High)                                                       | PASS  |
+| CS-03 | None (control)                                         | Findings true (pacing gaps; S3 latency plausibly understated)                 | PASS  |
+| CS-04 | "Nobody can ever guess a valid link"                   | Yes, top finding (High), from the page's own odds                             | PASS  |
 
-Notes: all four reviewers again raised the base draft's true gaps (365 million is a ceiling, 200 bytes is unexplained, the ID decision doesn't answer the URL shortener's ranges rule). A named-company claim is not planted in any scenario, so this run shows the checklist edit didn't weaken the four planted catches, not that a named-company claim is still caught.
+Notes:
+
+- Every reviewer applied the new section, and its findings were true of the text. The fixtures predate it, so each now draws several Medium pacing findings (no route sentence, no hand-offs, bare figures, the case-study base's eight-term architecture paragraph). That is the cost to watch: on CR-01 they pushed the planted undefined term to sixth and rated it below Medium, though an undefined term is itself a Teaching progression break. If the fixtures are brought to the new section, re-check CR-01's rank.
+- CR-06's first three reviews found faults in the new fixture itself (the running example dropped, a rule of thumb its own patterns broke, `$` before a final newline, a loosened pattern described wrongly); each was fixed and re-run. The fourth review ranked the plant first and found one more Medium (the 2^10 not derived) and Lows, fixed after it without a fifth run, since they don't touch the planted paragraph.
