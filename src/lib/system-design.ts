@@ -31,13 +31,18 @@ const bodyFiles = import.meta.glob<string>('/src/system-design/case-studies/*.md
 
 const PATH_PATTERN = /^\/src\/system-design\/case-studies\/([^/]+)\.md$/;
 
-// A case study's frontmatter: every field required, no other allowed.
+// A case study's frontmatter: these fields required, plus the optional
+// `template` switch (docs/case-studies.md), whose only valid value is 3.
 const CASE_STUDY_FIELDS = ['title', 'summary', 'date', 'order'];
+const CASE_STUDY_ALLOWED = [...CASE_STUDY_FIELDS, 'template'];
+const TEMPLATE_3 = '3';
 
 /**
  * Turns one case-study file's path and parsed frontmatter into a `CaseStudy`,
  * less the body's `words` (`createCollection` adds those from the `?words`
- * view). Throws on a missing, empty or unknown field (`checkFields`). Exported so the frontmatter contract, including `order`, can be unit-tested
+ * view). Throws on a missing, empty or unknown field (`checkFields`), and on a
+ * `template` other than 3. The switch only picks the structure test's
+ * template, so it stays out of the returned metadata. Exported so the frontmatter contract, including `order`, can be unit-tested
  * against fixtures instead of only the real files.
  */
 export function parseCaseStudy(
@@ -53,7 +58,12 @@ export function parseCaseStudy(
   const [, slug] = match;
   const name = `system-design/case-studies/${slug}.md`;
 
-  checkFields(name, data, { required: CASE_STUDY_FIELDS, allowed: CASE_STUDY_FIELDS });
+  checkFields(name, data, { required: CASE_STUDY_FIELDS, allowed: CASE_STUDY_ALLOWED });
+  if ('template' in data && data.template !== TEMPLATE_3) {
+    throw new Error(
+      `${name} has an invalid "template" (${JSON.stringify(data.template)}): expected ${TEMPLATE_3}`,
+    );
+  }
   if (!/^\d+$/.test(data.order) || Number(data.order) < 1) {
     throw new Error(
       `${name} has an invalid "order" (${JSON.stringify(data.order)}): expected a positive integer`,

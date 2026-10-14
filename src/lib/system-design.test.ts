@@ -82,14 +82,39 @@ describe('parseCaseStudy (criterion 3)', () => {
   );
 
   // docs/specs/content-dedupe.md, criterion 1: the allowed-key check moves from
-  // the structure test into the loader, so an unknown key, `template` included,
-  // fails at load time.
-  it.each(['template', 'tags', 'kind'])(
+  // the structure test into the loader, so an unknown key fails at load time.
+  it.each(['tags', 'kind'])(
     'throws naming the file and the key for an unknown frontmatter field %s',
     (key) => {
       expect(() => parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, [key]: '2' })).toThrow(
         new Error(`${NAME} has an unknown frontmatter field "${key}"`),
       );
+    },
+  );
+
+  // docs/specs/case-study-template-3.md, criterion 3: `template: 3` is the
+  // per-page switch to template 3; no other value is allowed, and the switch
+  // stays out of the returned metadata.
+  it('accepts template: 3, returning the same metadata as without it', () => {
+    const withSwitch = parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, template: '3' });
+    expect(withSwitch).toEqual(parseCaseStudy(VALID_PATH, VALID_FIELDS));
+    expect(Object.keys(withSwitch).sort()).toEqual([
+      'date',
+      'order',
+      'path',
+      'slug',
+      'summary',
+      'title',
+    ]);
+    expect(withSwitch).not.toHaveProperty('template');
+  });
+
+  it.each(['2', 'three', '', '03', ' 3'])(
+    'throws naming the file and "template" when template is %j',
+    (template) => {
+      const data = { ...VALID_FIELDS, template };
+      expect(() => parseCaseStudy(VALID_PATH, data)).toThrow(/my-case\.md/);
+      expect(() => parseCaseStudy(VALID_PATH, data)).toThrow(/template/);
     },
   );
 

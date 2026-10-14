@@ -2,9 +2,11 @@
  * This file owns the three numbers the Writing Standard quotes. */
 export const WORDS_PER_MINUTE = 230;
 
-/** The Writing Standard's word budget: five minutes' worth of reading, 1,150
- * words. Both structure tests import it rather than defining their own. */
-export const WORD_BUDGET = 5 * WORDS_PER_MINUTE;
+/** The case studies' word budget (the Writing Standard's "Case studies"
+ * section): ten minutes' worth of reading, 2,300 words, on either template
+ * (docs/specs/case-study-template-3.md). The case-study structure test imports
+ * it rather than defining its own. */
+export const WORD_BUDGET = 10 * WORDS_PER_MINUTE;
 
 /** The catalog topics' word budget (the Writing Standard's "Catalog topics"
  * section): five minutes at most, aiming for 600–900 words. The

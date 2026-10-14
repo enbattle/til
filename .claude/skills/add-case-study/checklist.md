@@ -7,7 +7,8 @@ missed.
 
 **Length.** Within the word budget (docs/writing-standard.md), not counting
 diagrams or code (docs/case-studies.md has the template; `case-study-structure.test.ts` counts
-them). Most of the budget goes to the three decisions. When a draft runs long,
+them). Most of the budget goes to the three decisions, about 150–300 words
+each. When a draft runs long,
 cut an exception or a second alternative before cutting a decision's reason.
 
 1. **Durability and duplicates, named, not exhaustively traced.** Where a
@@ -27,7 +28,9 @@ cut an exception or a second alternative before cutting a decision's reason.
    peaks, and requests separate from distinct items. Say what each figure
    sizes (the servers, the database, the cache): a bare "40,000 a second"
    leaves a reader asking 40,000 of what, hitting which part.
-3. **Decisions.** Each follows the decision template in docs/case-studies.md.
+3. **Decisions.** Each follows template 3's decision order in
+   docs/case-studies.md: the simpler option, where it breaks in this design's
+   numbers, the choice, its cost, the rule of thumb.
    Pick the three decisions that most shape the design; a fourth goes in
    follow-ups or is cut. Don't re-teach a linked topic.
 4. **Diagrams fit the page.** Every rendered SVG stays within the width
@@ -50,7 +53,7 @@ cut an exception or a second alternative before cutting a decision's reason.
    the page only uses (load balancer, replica, shard, TTL, lease, idempotency
    key…) gets a short gloss and the catalog link at first use; a term it
    teaches (fan-out in the social feed) gets a sentence of its own and an
-   example. At most two new terms per paragraph, the architecture paragraph
+   example. At most two new terms per paragraph, the architecture paragraphs
    included.
 7. **Compression overclaims.** Short prose tends to drop the qualifier that
    made a claim true ("never loses a message" for "doesn't lose an

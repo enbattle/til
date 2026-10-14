@@ -314,7 +314,7 @@ Writing Standard, including whether its claims hold, is `content-audit`'s
 single-file scope. The prompt names no specific fix and asks for claims to be
 checked, so the direct-edit carve-out does not apply.
 **Fails if:** rewritten directly in the same session (as SR-11), routed through `add-case-study` (that skill drafts a new file
-and its diagrams; it has no path for
+and its diagrams, or moves a page to the current template; it has no path for
 polishing a published one in place) or `/feature`
 (no app behavior involved).
 
@@ -356,6 +356,7 @@ five-minute format" to `add-case-study`. Every case study was rewritten to that
 format, and `docs/specs/retire-template-switch.md` dropped template rewrites
 from the skills' descriptions, so the scenario no longer has a right answer.
 The ID is kept so past results under `results/` still line up; don't reuse it.
+SR-22 covers the same routing for template 3.
 
 ---
 
@@ -376,3 +377,24 @@ follow it" to `add-dsa-entry`. The DSA tab, that skill and its entries were
 removed by `docs/specs/remove-dsa-tab.md`, so the scenario no longer has a
 right answer. The ID is kept so past results under `results/` still line up;
 don't reuse it.
+
+---
+
+### SR-22 — rewriting a case study to the new template
+
+<!-- premise: src/system-design/case-studies/ride-sharing.md exists -->
+<!-- premise: src/system-design/case-studies/ride-sharing.md lacks "template: 3" -->
+
+> Rewrite the ride-sharing case study to the new template.
+
+**Expected:** `add-case-study`, in its rewrite mode
+**Why:** Moving an existing case study to the current template (template 3,
+docs/case-studies.md's "Migrating (2026-10)") is in that skill's description:
+add `template: 3`, restructure to its headings, rewrite to the Teaching
+progression rules and keep every requirement, number, decision and
+follow-up, then the same independent review a new case study gets, plus a
+check that nothing was dropped. The page may also need its diagrams adjusted.
+**Fails if:** routed to `content-audit` (it revises prose in place and has
+no template-migration steps), routed to `/feature` (no app code changes), or
+rewritten directly with no independent review (a whole-page restructure is
+not a small, unambiguous edit).

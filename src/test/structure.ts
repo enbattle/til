@@ -54,21 +54,22 @@ export function wordBudgetProblems(body: string, budget: number, name = ''): str
     : [`${words} words, over the ${budget}-word ${name ? `${name} ` : ''}budget`];
 }
 
-/** Problems with `file`'s frontmatter keys against `allowed`: each key not in
- * it, and each allowed key that's missing, naming the file and the key. The
- * loaders reject the same files at load time (`checkFields`); this keeps the
- * structure tests' own check independent of them. */
+/** Problems with `file`'s frontmatter keys: each key in neither `required`
+ * nor `optional`, and each `required` key that's missing, naming the file and
+ * the key. The loaders reject the same files at load time (`checkFields`);
+ * this keeps the structure tests' own check independent of them. */
 export function frontmatterProblems(
   file: string,
   data: Record<string, string>,
-  allowed: readonly string[],
+  required: readonly string[],
+  optional: readonly string[] = [],
 ): string[] {
   const keys = Object.keys(data);
   return [
     ...keys
-      .filter((key) => !allowed.includes(key))
+      .filter((key) => !required.includes(key) && !optional.includes(key))
       .map((key) => `${file}: unexpected frontmatter key "${key}"`),
-    ...allowed
+    ...required
       .filter((key) => !keys.includes(key))
       .map((key) => `${file}: missing frontmatter key "${key}"`),
   ];

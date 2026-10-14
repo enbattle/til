@@ -70,7 +70,7 @@ don't ship it.
 
 ## Batch mode
 
-`add-topic` and `add-case-study` can add (or, for `add-topic`, rewrite)
+`add-topic` and `add-case-study` can add or rewrite
 several items at once; the skill adds any ordering or
 integration step of its own.
 

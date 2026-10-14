@@ -131,7 +131,7 @@ function inlineText(node) {
  * or indented), image alt text, raw HTML and reference definitions don't
  * count. A word is a whitespace-separated token with a letter or digit in it.
  * Drives the read-time label (the build-time `?words` view) and the structure
- * tests' five-minute budget (docs/specs/five-minute-templates.md).
+ * tests' word budgets (`src/lib/reading-time.ts`).
  */
 export function proseWordCount(markdown) {
   let words = 0;
