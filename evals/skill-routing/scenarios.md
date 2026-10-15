@@ -380,21 +380,10 @@ don't reuse it.
 
 ---
 
-### SR-22 — rewriting a case study to the new template
+### SR-22 — retired
 
-<!-- premise: src/system-design/case-studies/url-shortener.md exists -->
-<!-- premise: src/system-design/case-studies/url-shortener.md lacks "template: 3" -->
-
-> Rewrite the URL shortener case study to the new template.
-
-**Expected:** `add-case-study`, in its rewrite mode
-**Why:** Moving an existing case study to the current template (template 3,
-docs/case-studies.md's "Migrating (2026-10)") is in that skill's description:
-add `template: 3`, restructure to its headings, rewrite to the Teaching
-progression rules and keep every requirement, number, decision and
-follow-up, then the same independent review a new case study gets, plus a
-check that nothing was dropped. The page may also need its diagrams adjusted.
-**Fails if:** routed to `content-audit` (it revises prose in place and has
-no template-migration steps), routed to `/feature` (no app code changes), or
-rewritten directly with no independent review (a whole-page restructure is
-not a small, unambiguous edit).
+This scenario routed "rewrite the URL shortener case study to the new template"
+to `add-case-study`'s rewrite mode. Every case study is now on template 3
+(batches #142–#145), so no page is left to rewrite and the scenario has no
+right answer. Retiring the `template: 3` switch revisits that rewrite mode.
+The ID is kept so past results under `results/` still line up; don't reuse it.
