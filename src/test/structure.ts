@@ -45,7 +45,7 @@ export function section(page: HTMLElement, heading: string): Element[] | null {
 }
 
 /** [] when `body` has at most `budget` prose words (`proseWordCount`), else
- * one problem naming the count: "1151 words, over the 1150-word budget", or
+ * one problem naming the count: "2301 words, over the 2300-word budget", or
  * with `name` "…the 1000-word catalog budget". */
 export function wordBudgetProblems(body: string, budget: number, name = ''): string[] {
   const words = proseWordCount(body);

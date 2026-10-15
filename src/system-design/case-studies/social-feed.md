@@ -6,7 +6,7 @@ order: 4
 template: 3
 ---
 
-You're asked to design the home screen of a photo-sharing app, like Instagram's. It's the **feed**, a scrolling list of recent posts from the accounts you follow, your **followees**; the people who follow you are your followers. "Posts by anyone I follow, newest first" sounds like one query, but at this scale it's the most expensive thing the system does.
+You're asked to design the home screen of a photo-sharing app, like Instagram's. It's the **feed**, a scrolling list of recent posts from the accounts you follow, your **followees**. "Posts by anyone I follow, newest first" sounds like one query, but at this scale it's the most expensive thing the system does.
 
 So the question is when to do that work: once per post, when it's written, or once per view, when it's read. The answer here is both, depending on who posted. This page starts with the obvious design and shows where it breaks, then follows a post through the design that replaces it, sizes its parts, and makes three decisions: who gets pushed, where feeds are stored, and how likes are counted.
 
@@ -22,7 +22,7 @@ Out of scope: video, comments, search and ads.
 
 ## Start simple
 
-The obvious design builds your feed when you open it, called **pulling** the feed at read time. The machine answering your request is an **app server**, one of many identical servers that handle the app's API calls.
+The obvious design builds your feed when you open it, called **pulling** the feed at read time. The machine answering your request is an **app server**, one of many identical servers that handle the app's requests.
 
 A database holds every post, the **post store**, and a table of who follows whom, the **follow graph**. The app server looks up the newest posts of each of your 200 followees, merges the 200 lists by time and returns the top 20.
 
@@ -69,19 +69,19 @@ That's 116 million lookups a second, about 2,300 servers just to gather posts, a
 
 So move the work to the moment a post is written. Each user gets a **timeline**, a list of the post IDs that belong in their feed, newest first, all held in memory in the **timeline cache**.
 
-When @maya, who has 400 followers, posts, her post's ID is copied into 400 timelines. Delivering a post to every follower like this is called **fan-out**, or pushing. Gathering a feed is then one timeline lookup: 580,000 a second instead of 116 million, 200 times fewer.
+When @maya, who has 400 followers, posts, a **worker**, a background process, copies her post's ID into 400 timelines. Delivering a post to every follower like this is called **fan-out**, or pushing. Gathering a feed is then one timeline lookup: 580,000 a second instead of 116 million, 200 times fewer.
 
 The work hasn't vanished, though. It has moved to the writes.
 
 ## High-level architecture
 
-![Architecture of the social feed. A mobile or web client sends API calls to the app servers, and uploads and loads images through object storage and its CDN, drawn as one node. The app servers read timelines from the timeline cache and write the author's own new post into it, write and read posts and likes in the post store and the post cache in front of it, drawn as one node, and read and write follows in the follow graph. Each write goes into its store together with an event, and a relay publishes the stored events from both the post store and the follow graph to an event queue. Workers consume the queue: they write resized images to object storage, mark posts live, write counts and author_posts in the post store, page through followers in the follow graph, push and remove post IDs in the timeline cache, and publish each celebrity post back to the queue, from which the app servers receive it.](/diagrams/social-feed/architecture.svg)
+![Architecture of the social feed. A mobile or web client sends requests to the app servers, and uploads and loads images through object storage and its CDN, drawn as one node. The app servers read timelines from the timeline cache and write the author's own new post into it, write and read posts and likes in the post store and the post cache in front of it, drawn as one node, and read and write follows in the follow graph. Each write to the post store or the follow graph goes in together with an event, and a relay publishes the stored events from both the post store and the follow graph to an event queue. Workers consume the queue: they write resized images to object storage, mark posts live, write counts and author_posts in the post store, page through followers and write reverse follow rows in the follow graph, push and remove post IDs in the timeline cache, and publish each post by an account with over 100,000 followers back to the queue, from which the app servers receive it.](/diagrams/social-feed/architecture.svg)
 
-Follow @maya's post. The app server that receives it writes the post and a "post created" event to the post store in a single write, so both land or neither does, and puts the post at the top of @maya's own timeline. This is the [outbox pattern](/systems-and-infrastructure/outbox-pattern): the event waits in its store until a **relay**, a small process that forwards stored events, publishes it, so a crash can't strand a post. Likes are written the same way, and a follow lands in the follow graph with its own event.
+Follow @maya's post. The app server that receives it writes the post to the post store together with an **event**, a short record that the post was created, in a single write, so both land or neither does. It also puts the post at the top of @maya's own timeline so she sees it at once. Keeping the event beside the data like this is the [outbox pattern](/systems-and-infrastructure/outbox-pattern): the event waits in its store until it's published, so a crash can't strand a post. Likes are written the same way, and a follow lands in the follow graph with its own event.
 
-The relay publishes it to the **event queue**, a [message queue](/systems-and-infrastructure/message-queues) that holds events until something takes them. A **worker**, one of a [pool of processes](/systems-and-infrastructure/worker-pools) that take events off the queue, picks it up, resizes the photo and marks the post live. Then it pages through @maya's 400 followers in the follow graph and inserts the post's ID into each one's timeline in the timeline cache. An unfollow runs the same way, removing IDs.
+A **relay**, a small process that forwards stored events, publishes @maya's event to the **event queue**. That's a [message queue](/systems-and-infrastructure/message-queues), which holds events until something takes them. A worker from a [pool](/systems-and-infrastructure/worker-pools) picks it up, resizes the photo and marks the post live. Then it pages through @maya's 400 followers in the follow graph and inserts the post's ID into her timeline and each follower's in the timeline cache. An unfollow runs the same way, removing IDs.
 
-To read, an app server takes the viewer's timeline from the timeline cache. The cache is split into [shards](/systems-and-infrastructure/partitioning-vs-sharding), slices of the users each held by one machine, and keeps a second copy of each shard on another machine. The app server then fetches what the 20 posts need from the **post cache**, popular posts kept in memory in front of the post store ([caching](/systems-and-infrastructure/caching)): the posts, their authors, their like counts and whether the viewer liked each. Photos take their own path, covered with the API. The diagram's last path, celebrity posts flowing back through the queue to the app servers, is the first decision, once the parts are sized.
+To read, an app server takes the viewer's timeline from the timeline cache. The cache is split into [shards](/systems-and-infrastructure/partitioning-vs-sharding), slices of the users each held by one machine, and keeps a second copy of each shard on another machine. The app server then fetches what the 20 posts need from the **post cache**, popular posts kept in memory in front of the post store ([caching](/systems-and-infrastructure/caching)): the posts, their authors, their like counts and whether the viewer liked each. Photos take their own path, covered with the data model. Posts by accounts with over 100,000 followers take the diagram's last path, back through the queue to the app servers; that's the first decision.
 
 ## Key numbers
 
@@ -109,7 +109,8 @@ PUT /posts/{post_id}/like       (repeating it changes nothing)
 
 ```text
 posts      post_id (time-ordered, 64-bit), author_id, caption, media_key, created_at
-follows    (followee_id, follower_id) and (follower_id, followee_id), both stored
+follows    (followee_id, follower_id), plus the reverse pair,
+           written by a worker from the follow's event
 likes      primary key (user_id, post_id)
 timeline   per user: up to 500 (post_id, author_id) pairs, newest first
 ```
@@ -124,7 +125,7 @@ That's the shape. Now for the 50-million-follower account.
 
 ## Decision: push for ordinary accounts, pull for celebrities
 
-The simpler design pushes every post, one path for everyone. It works for most apps. Here, a post from the 50-million-follower account is 50 million inserts. Even a fleet sized to push everything at peak, 4.5 million inserts a second, needs 50,000,000 ÷ 4,500,000 ≈ 11 seconds for that one post, and ordinary posts queued behind it miss their 5-second target.
+The simpler design pushes every post, one path for everyone. Here, a post from the 50-million-follower account is 50 million inserts. Even a fleet sized to push everything at peak, 4.5 million inserts a second, needs 50,000,000 ÷ 4,500,000 ≈ 11 seconds for that one post, and ordinary posts queued behind it miss their 5-second target.
 
 So split the accounts. One with over 100,000 followers is a **celebrity**, and its posts aren't pushed. A celebrity post is only appended to `author_posts`, the author's own list in the post store, as every post is, and published back to the queue for every app server. Each app server keeps the newest 100 IDs of all 10,000 celebrities in memory: 10,000 × 100 IDs × 8 bytes = 8 MB. A read merges the viewer's timeline with the lists of the roughly 10 celebrities they follow.
 
@@ -167,7 +168,7 @@ operations each, two copies:
   ≈ 62,000 a second
 ```
 
-The margin is thin, 80 machines against 100, and a memory machine costs more, so fewer machines needn't mean less money. Headroom decides it: the disk servers run at their limit, so more writes mean more servers; memory machines run well under theirs, and capped timelines gain no bytes. So the timelines live in memory, each one a Redis sorted set (members kept in order) of up to 500 entries at about 16 bytes each. Users map to shards by [consistent hashing](/systems-and-infrastructure/consistent-hashing), which moves few users when a machine joins or leaves.
+The margin is thin, 80 machines against 100, and memory machines cost more. Headroom decides it: disk servers run at their limit, so more writes mean more servers, while memory machines run well under theirs and capped timelines gain no bytes. So the timelines live in memory, each one a Redis sorted set (members kept in order) of up to 500 entries at about 16 bytes each. Users map to shards by [consistent hashing](/systems-and-infrastructure/consistent-hashing), which moves few users when a machine joins or leaves.
 
 Memory still costs far more per byte, and a shard loses its timelines if both of its copies fail. But a timeline is derived data: if one is lost, a pull from the user's 200 followees rebuilds it, so it needs no backup.
 
