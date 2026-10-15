@@ -32,7 +32,7 @@ media: "Object storage\n+ CDN" {
   shape: cylinder
 }
 
-client -> app: "API calls"
+client -> app: "requests"
 client -> media: "upload,\nimages"
 app -> timelines: "read,\nown post"
 app -> posts: "writes,\nreads, likes"
@@ -41,9 +41,9 @@ posts -> relay: "stored\nevents"
 graph -> relay: "stored\nevents"
 relay -> queue: "posts, likes,\nfollows"
 queue -> workers
-workers -> queue: "celebrity\nposts"
-queue -> app: "celebrity\nposts"
+workers -> queue: "100k+ follower\nposts"
+queue -> app: "100k+ follower\nposts"
 workers -> media: "resize"
 workers -> posts: "live, counts,\nauthor_posts"
-workers -> graph: "followers"
+workers -> graph: "followers,\nreverse rows"
 workers -> timelines: "push,\nremove IDs"

@@ -803,13 +803,14 @@ template: 3
 ---
 
 You paste a log excerpt and get back a link like `https://paste.example/aZ3kQ9xT2m`.
-How would you design that service? It looks like a URL shortener with bigger
-values, and the interest is in what bigger values cost: terabytes of text the
-database never queries, an expiry that has to actually delete things, and a link
-that is the paste's only lock. This is one plausible design for a service like
-Pastebin.com, not a description of how any company built theirs.
+How would you design that service? It looks like a URL shortener that stores
+whole texts instead of URLs. The design here keeps each paste's text apart from
+the few facts about it, checks expiry on every read and deletes expired pastes
+daily, and makes each link ten random characters, since the link is the
+paste's only lock.
 
-This page starts with numbered links and shows why they fail, follows a paste
+This is one plausible design for a service like Pastebin.com, not a
+description of how any company built theirs. It starts with numbered links and shows why they fail, follows a paste
 through the design that replaces them and sizes its parts, then makes three
 decisions: where the text lives, how pastes expire, and how long an ID must be.
 
@@ -819,10 +820,12 @@ decisions: where the text lives, how pastes expire, and how long an ID must be.
 - **Read** a paste by opening its link. There are no accounts, so the link must
   be hard to guess.
 - **Expiry** of 1 to 365 days (default 365). After that the paste can't be
-  read, and its text is deleted by the next daily cleanup.
+  read, and its text is deleted within a day.
 - **Scale:** 1 million new pastes a day, and 10 reads for each one.
 - **Latency:** reads under 500 ms at p99 (the time 99% of reads beat), measured
   at our servers. A person opens it by hand, so half a second is fine.
+- **Availability:** reads succeed 99.9% of the time; a create may fail
+  briefly and be retried.
 
 Out of scope: accounts, editing and search.
 
@@ -846,58 +849,75 @@ five characters   = 62⁵ = 916,132,832 IDs, more than 365,000,000
 But the link is the paste's only lock, and counted IDs sit next to each other.
 Anyone holding one link can try the numbers below it. No paste lives longer
 than 365 days, so every live paste has an ID among the last 365 million issued.
-Give that job to a **botnet**, many hijacked machines guessing together:
+Give that job to a **botnet**, many hijacked machines guessing together; say
+10,000 machines at a modest 100 guesses an hour each:
 
 ```text
 IDs to try            = the last 365,000,000 issued
-guesses an hour       = 1,000,000
+guesses an hour       = 10,000 × 100 = 1,000,000
 time to try them all  = 365,000,000 ÷ 1,000,000 = 365 hours
                       = 365 ÷ 24 ≈ 15 days
 ```
 
-In about 15 days, one botnet reads every live paste. So the ID has to be
-random, drawn from a space so large that the live pastes fill a tiny share of
-it. How large is the third decision; first, the rest of the design.
+In about 15 days, one botnet reads every live paste. So the ID has to be unpredictable, from a space so large that the live pastes fill a tiny share of it.
+
+The one database also holds a year of text it never searches, beside the few
+facts it does. At an average of 10 KB a paste:
+
+```text
+text a year  = 365,000,000 pastes × 10 KB = 3,650 GB = 3.65 TB
+```
+
+That much fits on one database's disks, but it makes the database slow to
+restore, as the first decision works out. So the design needs IDs nobody can
+predict and a separate home for the text. The architecture gives the text its
+home; how long an ID must be is the third decision.
 
 ## High-level architecture
 
-![A client calls a load balancer, which forwards to app servers. To read a paste, the app servers check a cache first; on a miss they read the metadata database and the object store and fill the cache. To create one, they store its contents in the object store and its metadata in the metadata database. A daily cleanup job deletes expired pastes' contents from the object store and their rows from the metadata database.](/diagrams/pastebin/architecture.svg)
+![A client calls a load balancer, which forwards to app servers. To read a paste, the app servers check a cache first; on a miss they read the metadata database and the object store and fill the cache. To create one, they store its text in the object store and its metadata in the metadata database. A daily cleanup job deletes expired pastes' text from the object store and their rows from the metadata database.](/diagrams/pastebin/architecture.svg)
 
-Follow a create. A **load balancer** spreads requests across interchangeable
-app servers and hands this one to any of them. The app server draws a random ID
-and writes the text to the **object store**, a service that keeps blobs of bytes
-by key, with the ID as the key. Only then does it insert the row, now just the
-metadata, into the metadata database, so a live row never points at missing
-text.
+Follow a create. A
+[**load balancer**](/computing-fundamentals/load-balancers-and-cdns) spreads
+requests across interchangeable app servers and hands this one to any of them.
+The app server draws a random ID and writes the text to the **object store**, a
+service that keeps blobs of bytes by key, with the ID as the key. Only then
+does it insert the row, now just the metadata, into the metadata database, so a
+live row never points at missing text.
 
 Now follow a reader opening `aZ3kQ9xT2m`. The app server asks the **cache**
-first ([caching](/systems-and-infrastructure/caching)): 4 GB of memory that,
-when full, evicts the least recently used entry, a policy called **LRU**. A hit
-answers in a few milliseconds, after checking `expires_at`.
+first ([caching](/systems-and-infrastructure/caching)), memory holding
+recently read pastes. Most reads go to a few popular pastes, so serving those
+from memory spares the database and the object store most of the work. If the
+paste is there and hasn't expired, it answers in a few milliseconds.
 
-On a miss, the app server reads the row from the metadata database, fetches the
-text from the object store, and fills the cache with a **TTL** (time to live)
-of a day, cut short at `expires_at`. That costs tens of milliseconds,
-occasionally a couple of hundred, still inside 500 ms. The last box, the daily
-cleanup job, is the second decision. First, how big does each part get?
+If it isn't there, the app server reads the row from the metadata database,
+fetches the text from the object store, and fills the cache with a **TTL**
+(time to live) of a day, cut short at the paste's expiry. That costs tens of
+milliseconds, occasionally a couple of hundred, still inside 500 ms. The last
+box, the daily cleanup job, is the second decision. First, how big does each
+part get?
 
 ## Key numbers
 
-These size the app servers, the object store, the database and the cache. A
-day has 86,400 seconds; peaks are ten times the average; 1 KB = 1,000 bytes.
+These size the traffic the app servers handle, the object store, the database
+and the cache. A day has 86,400 seconds; peaks are ten times the average;
+1 KB = 1,000 bytes; figures are rounded.
 
 - **Writes:** 1,000,000 ÷ 86,400 ≈ 12 per second on average, and 12 × 10 = 120
   at peak.
 - **Reads:** 1,000,000 × 10 = 10,000,000 a day. 10,000,000 ÷ 86,400 ≈ 116 per
   second on average, and 116 × 10 = 1,160 at peak.
-- **Object store:** assume an average paste of 10 KB. That's 1,000,000 × 10 KB
-  = 10 GB a day, and since nothing outlives 365 days, 10 GB × 365 = 3,650 GB, or
-  3.65 TB, in all.
+- **Object store:** at the average paste of 10 KB, 1,000,000 × 10 KB = 10 GB a
+  day, and since nothing outlives 365 days, 10 GB × 365 = 3,650 GB, or 3.65 TB,
+  at most.
 - **Database:** at most 1,000,000 a day × 365 days = 365 million live pastes,
-  and at about 200 bytes of metadata each, 365,000,000 × 200 bytes = 73 GB.
+  and at about 200 bytes each, counting index and row overhead,
+  365,000,000 × 200 bytes = 73 GB.
 - **Cache:** assume a day's 10 million reads land on 2 million pastes, and the
   most-read 20% draw 80% of reads. Keeping those 0.2 × 2,000,000 = 400,000 in
-  memory takes 400,000 × 10 KB = 4 GB.
+  memory takes 400,000 × 10 KB = 4 GB, and spares the database and the object
+  store about 80% of reads.
 
 Traffic is small; the 3.65 TB of text is what shapes the design.
 
@@ -908,7 +928,8 @@ Traffic is small; the 3.65 TB of text is what shapes the design.
   for an expiry outside 1 to 365, `413` over 512 KB, `429` over the per-address
   [rate limit](/systems-and-infrastructure/rate-limiting).
 - `GET /aZ3kQ9xT2m` returns `200` with the text, `410 Gone` once it has expired,
-  and `404` for an unknown ID, including one already swept.
+  `404` for an unknown ID, including one already swept, and `429` to an address
+  blocked for guessing.
 
 ```sql
 CREATE TABLE pastes (
@@ -928,8 +949,7 @@ scan. The simple design kept the text in the row, so why move it?
 ## Decision: where paste contents live
 
 Keeping the text in the row is simpler: one write, one read, one system to back
-up. It holds up until you add up the bytes. The database would carry 3.65 TB of
-text it never queries beside 73 GB of metadata:
+up. It holds up until you add up the bytes. The database would carry 3.65 TB of text it never searches beside 73 GB of metadata:
 
 ```text
 text and metadata  = 3,650 GB + 73 GB = 3,723 GB
@@ -938,16 +958,27 @@ ratio              = 3,723 ÷ 73 ≈ 51
 ```
 
 Every backup, copy and restore would move about fifty times the data it needs
-to, on pricier storage. So the text goes in the object store, under the paste's
-ID, and the database keeps only the metadata.
+to. Say the one database is lost and restored from a backup at 200 MB a
+second:
 
-The price is a second write on every create, and two writes can half-succeed:
-the text lands, the row insert fails, and no row points at the object. A
-**lifecycle rule**, a store setting that deletes objects past an age, removes
-anything older than 366 days, an age no live paste reaches.
+```text
+with the text     = 3,723 GB ÷ 0.2 GB a second ≈ 18,600 s ≈ 5 hours
+metadata only     = 73 GB ÷ 0.2 GB a second = 365 s ≈ 6 minutes
+downtime allowed  = 0.1% × 8,760 hours a year ≈ 8.8 hours
+```
 
-**Rule of thumb.** Large blobs that are only ever read whole belong in an
-object store; the database keeps the small rows you query.
+One restore with the text would spend most of a year's downtime, and a [replica](/systems-and-infrastructure/read-replicas), a second copy kept in step to switch to, would store the 3.65 TB twice. So the text
+goes in the object store, under the paste's ID, and the database keeps only the
+metadata.
+
+The price is a second write on every create and a second read on every cache
+miss, and two writes can half-succeed: the text lands, the row insert fails,
+and no row points at the object. A **lifecycle rule**, a store setting that
+deletes objects past an age, removes anything older than 366 days, an age no
+live paste reaches.
+
+**Rule of thumb.** Bytes you never search don't belong beside the rows you do:
+put them in an object store and keep the database small.
 
 ## Decision: expiring pastes
 
@@ -978,41 +1009,52 @@ finds:
 
 ```text
 seven characters  = 62⁷ = 3,521,614,606,208 IDs
-live share        = 3,521,614,606,208 ÷ 365,000,000 ≈ 9,648, so 1 ID in 9,600 is live
+live share        = 3,521,614,606,208 ÷ 365,000,000 ≈ 9,648, so 1 ID in 9,648 is live
 botnet            = 1,000,000 guesses an hour ÷ 9,648 ≈ 104 pastes an hour
 ```
 
-A botnet making a million guesses an hour would find about a hundred private
-pastes an hour, about 2,500 a day. Nobody types a paste link, so add three characters:
+Why would the botnet stay at a million an hour? Once IDs are random, nearly
+every guess is a `404`, and an address (an IPv4 address, or an IPv6 /64 block, since one machine can hold a whole block) with 100 `404`s in an hour is blocked for the rest of it ([rate limiting](/systems-and-infrastructure/rate-limiting)),
+so 10,000 machines get 10,000 × 100 guesses. At seven characters they would
+still find about a hundred live pastes an hour. Set a target instead: fewer
+than one find a month. Nobody types a paste link, so length is nearly free:
 
 ```text
+nine characters   = 62⁹ = 13,537,086,546,263,552 IDs
+odds of a guess   = 13,537,086,546,263,552 ÷ 365,000,000 ≈ 1 in 37 million
+botnet            = 37,000,000 ÷ 1,000,000 = 1 find every 37 hours
 ten characters    = 62¹⁰ = 839,299,365,868,340,224 ≈ 840 quadrillion IDs
 odds of a guess   = 839,299,365,868,340,224 ÷ 365,000,000 ≈ 1 in 2.3 billion
+botnet            = 2,300,000,000 ÷ 1,000,000 = 1 find every 2,300 hours ≈ 96 days
 ```
 
-So an ID is ten random base62 characters. The app server draws one and writes
-the text only if that key is absent from the store (a conditional put), then
-inserts the row. Without that check, a clash would overwrite someone else's
-paste; with it, a clash comes about once in 2.3 billion creates and just means
-drawing again. The only cost is a link three characters longer.
+So an ID is ten characters, the first length that meets the target, drawn from
+a secure random generator, one built so its output can't be predicted. An encrypted counter, like the URL shortener's, would also be unpredictable, but it needs a secret key shared by every app server; a random draw needs nothing shared.
 
-**Rule of thumb.** When a link is the only lock, size the ID space so guessing
-is hopeless; length is cheaper than adding accounts.
+Random IDs can clash, so the app server writes the text only if that key is
+absent from the store (a conditional put), then inserts the row. A clash comes
+about once in 2.3 billion creates and just means drawing again. The cost is a
+longer link and that one conditional write.
+
+**Rule of thumb.** When a link is the only lock, set how rarely a guesser may
+win and grow the ID until it holds; length costs almost nothing.
 
 ## Likely follow-ups
 
-- **How do you stop someone guessing links?** An address with 100 `404`s in
-  an hour is blocked for the rest of it, so a botnet of 10,000 machines gets
-  10,000 × 100 = a million guesses an hour. At one in 2.3 billion, that finds a
-  paste every 2,300 hours, about once every three months.
+- **How do you stop someone guessing links?** Two layers: IDs long enough
+  that a guess almost never wins, and the per-address block on `404`s that
+  holds a 10,000-machine botnet to about one find every three months. A larger
+  botnet gets proportionally more, so alert on the total rate of `404`s too.
 - **What stops one sender filling the store?** A cap on bytes: 50 MB of new
-  text per address a day is 0.5% of the 10 GB.
+  text per address a day is 0.5% of the 10 GB. It doesn't stop a botnet,
+  so alert when a day's new text runs well past 10 GB.
 - **What if the cache node is lost?** Every read takes the miss path until the
   cache refills: slower, but inside 500 ms.
 - **What if the metadata database goes down?** Creates and misses fail; cached
   pastes keep loading, since an entry holds `expires_at` with the text.
-- **What if the cleanup job stops?** Reads still answer `410`, but text piles
-  up, and the lifecycle rule still removes it at 366 days.
+- **What if the cleanup job stops?** Reads still answer `410`. Text piles up
+  until the lifecycle rule removes it at 366 days, and rows pile up in the
+  database until the job runs again.
 ````
 
 Base diagram source (`src/system-design/diagrams/pastebin/architecture.d2`,
@@ -1033,8 +1075,8 @@ client -> lb
 lb -> app
 app -> cache: "check first, fill on miss"
 app -> db: "metadata"
-app -> objects: "contents"
-cleanup -> objects: "delete expired contents"
+app -> objects: "text"
+cleanup -> objects: "delete expired text"
 cleanup -> db: "then delete expired rows"
 ```
 
@@ -1099,8 +1141,8 @@ points at the object. A **lifecycle rule**, a store setting that deletes
 objects past an age, removes anything older than 366 days, an age no live
 paste reaches.
 
-**Rule of thumb.** Large blobs that are only ever read whole belong in an
-object store; the database keeps the small rows you query.
+**Rule of thumb.** Bytes you never search don't belong beside the rows you do:
+put them in an object store and keep the database small.
 ```
 
 **Expected finding:** flags that this decision just announces its choice:
@@ -1132,56 +1174,48 @@ its frontmatter. Its figures are correct and each follows from a stated
 requirement or assumption, with its steps written out ("Start simple":
 1,000,000 a day × 365 days = 365,000,000; 62⁵ = 916,132,832, more than
 365,000,000, so a year of counted IDs fits in five characters; every live paste
-is at most 365 days old, so its ID is among the last 365,000,000 issued, and
-365,000,000 ÷ 1,000,000 guesses an hour = 365 hours, 365 ÷ 24 ≈ 15.2, "about
-15 days". Key numbers: 1,000,000 ÷ 86,400 ≈ 11.6, about 12, and 12 × 10 = 120
-at peak; 1,000,000 × 10 = 10,000,000 reads a day, 10,000,000 ÷ 86,400 ≈ 115.7,
-about 116, and 116 × 10 = 1,160 at peak; 1,000,000 × 10 KB = 10 GB a day, and
-10 GB × 365 = 3,650 GB = 3.65 TB; 365 million live pastes at most, and
-365,000,000 × 200 B = 73 GB; 10,000,000 reads ÷ 2,000,000 pastes = 5 reads a
-paste; 0.2 × 2,000,000 = 400,000 pastes, × 10 KB = 4 GB. Decisions: 3,650 GB +
-73 GB = 3,723 GB, and 3,723 ÷ 73 = 51, "about fifty times the data"; a 366-day
+is at most 365 days old, so its ID is among the last 365,000,000 issued; a
+botnet of 10,000 machines at 100 guesses an hour is 1,000,000 an hour, and
+365,000,000 ÷ 1,000,000 = 365 hours, 365 ÷ 24 ≈ 15.2, "about 15 days";
+365,000,000 × 10 KB = 3,650 GB = 3.65 TB of text a year, which fits but is slow to restore. Key numbers, rounded
+as the opener says: 1,000,000 ÷ 86,400 ≈ 11.6, about 12, and 12 × 10 = 120 at
+peak; 10,000,000 reads a day ÷ 86,400 ≈ 115.7, about 116, and 116 × 10 = 1,160
+at peak; 1,000,000 × 10 KB = 10 GB a day, × 365 = 3.65 TB; 365,000,000 × 200 B
+(row and index overhead included) = 73 GB; 0.2 × 2,000,000 = 400,000 pastes,
+× 10 KB = 4 GB, serving the 80% of reads they draw; the object store holds 3.65 TB "at most". Decisions: 3,650 GB + 73 GB
+= 3,723 GB, and 3,723 ÷ 73 ≈ 51; restoring the one database from a backup at 200 MB a second, 3,723 GB takes about 18,600 s ≈ 5 hours and 73 GB takes 365 s ≈ 6 minutes, against a 99.9% availability budget of 0.1% × 8,760 hours ≈ 8.8 hours a year, and a replica would double the 3.65 TB at database prices; a 366-day
 lifecycle rule against a 365-day maximum never reaches a live paste; a daily
-sweep can find a paste up to 24 hours after it expired, so a 1-day paste can be
-served for up to 2 days, "up to twice the life its author chose"; the sweep's
-million rows a day matches the create rate; 62⁷ = 3,521,614,606,208 and
-3,521,614,606,208 ÷ 365,000,000 ≈ 9,648, "1 ID in 9,600 is live"; 1,000,000 ÷
-9,648 ≈ 104, "about a hundred private pastes an hour", and 104 × 24 ≈ 2,500 a
-day; 62¹⁰ = 839,299,365,868,340,224 ≈ 840 quadrillion, and 62¹⁰ ÷ 365,000,000
-≈ 2,299,450,317, about 2.3 billion, so a random ID clashes "about once in 2.3
-billion creates" and a guess finds a paste one time in about 2.3 billion.
-Follow-ups: 10,000 × 100 = a million guesses an hour, and 2.3 billion ÷
-1,000,000 = 2,300 hours ≈ 96 days, "about once every three months"; 50 MB ÷
-10 GB = 0.5%; a miss at tens of milliseconds, occasionally a couple of hundred,
-is inside the 500 ms p99 target). It follows the Teaching progression rules:
-the intro states the question and a route sentence; "Start simple" shows
-counted IDs working (unique without a check, one insert, five characters) and
-then failing on the design's numbers; the architecture is the diagram and three
-short paragraphs (a create, a cache hit, a miss) with at most two new terms
-each; "Start simple", the architecture and the API and data model section
-each end on the question the next part answers. Each of the three decisions runs
-from the option a reader would suggest (the text in the row; one daily sweep
-doing both jobs; the URL shortener's seven characters) to where it breaks, in
-this design's numbers, then the choice, its cost, and a `**Rule of thumb.**`
-paragraph that follows from it. IDs are ten random characters whose text is
-written with a conditional put that refuses an existing key, before the row, so
-a clash can't overwrite a live paste; the follow-ups say the per-address limit
-caps a 10,000-machine botnet at a million guesses an hour, and length makes
-those find a paste about once every three months. Expiry is checked on cache
-hits as well as misses; the sweep deletes the object before the row, so a crash
-leaves an expired row the next run finds again; the API says when `410` gives
-way to `404`; the cache is capped at 4 GB with LRU eviction and a TTL cut short
-at `expires_at`. Every term is defined at first use (p99, app server, metadata,
-base62, botnet, load balancer, object store, cache, LRU, TTL, primary key,
-lifecycle rule, conditional put); every catalog link (`caching`,
-`rate-limiting`, `database-indexing`, and the `url-shortener` case study)
-points to a page that exists and sits where its concept is used; the absolute
-claims hold ("every ID is unique without a check" follows from a counter,
-"never points at missing text" from writing the object before the row, "an age
-no live paste reaches" from the 365-day maximum); and the diagram shows exactly
-the components the prose names (the lifecycle rule is a setting of the object
-store, not a component), with the cleanup job's two deletes in the order the
-expiry decision gives.
+sweep can find a paste up to 24 hours after it expired, so a 1-day paste can
+be served for up to 2 days; the sweep's million rows a day matches the create
+rate; 62⁷ = 3,521,614,606,208 and ÷ 365,000,000 ≈ 9,648; 1,000,000 ÷ 9,648 ≈ 104 an hour; the botnet stays at a million an hour because random guesses are nearly all `404`s and an address is blocked after 100 of them in an hour; 62⁹ = 13,537,086,546,263,552, ÷ 365,000,000 ≈ 37 million, and 37,000,000 ÷ 1,000,000 = one find every 37 hours, which misses the "fewer than one find a month" target;
+62¹⁰ = 839,299,365,868,340,224 ≈ 840 quadrillion, ÷ 365,000,000 ≈ 2.3 billion,
+so a guess wins about one time in 2.3 billion and the botnet finds a paste
+every 2,300 hours ≈ 96 days, inside the target. Follow-ups: 10,000 × 100 = a
+million guesses an hour; 50 MB ÷ 10 GB = 0.5%; a miss at tens of milliseconds,
+occasionally a couple of hundred, is inside the 500 ms p99 target). It follows
+the Teaching progression rules: the intro states the question, a one-sentence
+overview of the design and a route sentence; "Start simple" shows counted IDs
+in one database working, then failing on the design's numbers (guessable IDs; 3.65 TB of text that makes the database slow to restore) and ends on the problem the architecture
+solves (where the text goes) and the one decision 3 solves (ID length); the
+architecture is the diagram and three short paragraphs (a create, a cache hit,
+a miss) with at most two new terms each, the cache justified by where reads go and its size left to Key numbers;
+each decision runs from the option a reader would suggest (the text in the
+row; one daily sweep doing both jobs; the URL shortener's seven characters) to
+where it breaks, in this design's numbers, then the choice, its cost, and a
+`**Rule of thumb.**` paragraph that follows from it. IDs are ten characters from a secure random generator (glossed; an encrypted counter is named after the choice, losing for its shared key), written with a conditional put that
+refuses an existing key, before the row, so a clash can't overwrite a live
+paste;
+Expiry is checked on cache hits as well as misses; the sweep deletes the object
+before the row; the API says when `410` gives way to `404` and that a blocked
+address gets `429`. Every term is defined at first use (p99, app server,
+metadata, base62, botnet, load balancer, object store, cache, TTL, primary key, replica, lifecycle rule, conditional put; the per-address block keys on an IPv4 address or an IPv6 /64); every catalog link (`load-balancers-and-cdns`, `read-replicas`, `caching`, `rate-limiting`, `database-indexing`,
+and the `url-shortener` case study) points to a page that exists and sits
+where its concept is used; the absolute claims hold ("every ID is unique
+without a check" follows from a counter, "never points at missing text" from
+writing the object before the row, "an age no live paste reaches" from the
+365-day maximum); and the diagram shows exactly the components the prose names
+(the lifecycle rule is a setting of the object store, not a component), with
+the cleanup job's two deletes in the order the expiry decision gives.
 **Expected finding:** no finding that is false of the draft. Real gaps that
 a ten-minute page leaves out on purpose, such as a sequence diagram or
 database failover detail, are acceptable and go in the run's notes.

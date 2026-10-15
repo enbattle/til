@@ -150,12 +150,12 @@
     }
   },
   "social-feed/architecture.d2": {
-    "sha256": "40c1461cb3e559ae32912dda750842b0c533f81dd065b5ae64c053aedf59f233",
-    "width": 820,
+    "sha256": "037e84b98a6996358c2f927f70ce896652f0194ea7dc921104d45efc3a6361a4",
+    "width": 825,
     "height": 1454,
     "svgs": {
-      "light": "fbfef5fd07d638d42595e7e97c3954d306c4d7022ded55451465ea5823903d52",
-      "dark": "31c0025b3c73aaa85f982c2fd88daebe4a9377b2cbc56af62ef9d49854de1fa6"
+      "light": "310fb514cdb346a23d68f47fe0c545558bf0aa1a7b70a3c0337cb4e026bca8dd",
+      "dark": "f2b26012d37acb4f3962f1806794d5c47034f8b010f25ff449d3a48d03beda20"
     }
   },
   "social-feed/fan-out.d2": {
