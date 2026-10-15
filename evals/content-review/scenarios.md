@@ -18,6 +18,10 @@ near-duplicate check the same way a real `add-topic` review would.
 `CR-*` scenarios test `add-topic`'s review. The `CS-*` scenarios after them
 test `add-case-study`'s review the same way, with a case-study draft instead.
 
+`npm run verify` structure-checks every `CR-*` draft and the `CS-*` base draft
+against the published pages' structure tests (`topic-structure.test.ts`,
+`case-study-structure.test.ts`), so an edit to a fixture must keep them passing.
+
 ---
 
 ### CR-01 — undefined jargon (trap for "define terms before using them")
@@ -236,7 +240,6 @@ if (flags.isOn('new-checkout', user)) {
   renderOldCheckout(cart);
 }
 ```
-````
 
 Your team merges new-checkout work into the trunk every day, and it's deployed
 every day, but `new-checkout` is off, so customers keep seeing the old page.
@@ -292,8 +295,7 @@ of feature flags.
 
 **Rule of thumb.** Put a change behind a flag when you want to be able to
 turn it off without a deploy, and remove a release flag once it's fully rolled out.
-
-`````
+````
 
 **Expected finding:** flags the "not just X — it's Y" closer, the
 stacked filler intensifiers ("genuinely, actually," "real, actually
@@ -411,7 +413,7 @@ the fact you were missing.
 
 **Rule of thumb.** When you're stuck, explain the code aloud, line by line,
 before asking anyone for help.
-`````
+````
 
 **Expected finding:** flags the paragraph that opens "To be clear, the duck
 itself has no debugging ability" as over-explaining a

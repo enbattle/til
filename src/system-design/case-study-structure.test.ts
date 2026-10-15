@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { parseFrontmatter } from '@/lib/frontmatter';
 import { isDiagramSrc, proseWordCount } from '@/lib/markdown.mjs';
 import { WORD_BUDGET } from '@/lib/reading-time';
+import { parseCaseStudy } from '@/lib/system-design';
 import { RAW_CASE_STUDIES } from '@/test/content';
+import contentReviewFixtures, {
+  BASE_HEADING,
+  SCENARIOS_PATH,
+  extractEvalFixtures,
+  scenariosText,
+} from '@/test/eval-fixtures';
 import {
   blocksAfter,
   frontmatterProblems,
@@ -646,5 +653,136 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
     const problems = structureProblems(withWords(2301));
     expect(problems).toHaveLength(1);
     expect(problems[0]).toContain('2301');
+  });
+});
+
+// The content-review eval's case-study base draft
+// (docs/specs/eval-fixture-structure-check.md, criteria 1, 2 and 4): it
+// passes the same rules, frontmatter included, as a published case study.
+describe('the content-review case-study base draft (eval-fixture-structure-check criteria 1, 2 and 4)', () => {
+  const FIXTURE = `${SCENARIOS_PATH} (${BASE_HEADING})`;
+  const BASE_PATH = '/src/system-design/case-studies/content-review-base.md';
+  const DRAFT =
+    '---\ntitle: Design a Demo\norder: 99\n---\n\nA demo.\n\n```text\n1 + 1 = 2\n```';
+  const CR = [
+    '### CR-01 — a planted problem',
+    '**Section:** `security`',
+    '```markdown\n---\ntitle: Caching\n---\n\nA cache.\n```',
+  ].join('\n\n');
+
+  /** The base's frontmatter checked by `parseCaseStudy`, the contract every
+   * published case study meets (no empty field, `order` a positive integer),
+   * as if the base were a published file; [] when it passes, else its error. */
+  function baseMetaProblems(raw: string): string[] {
+    try {
+      parseCaseStudy(BASE_PATH, parseFrontmatter(raw).data);
+      return [];
+    } catch (error) {
+      return [(error as Error).message];
+    }
+  }
+
+  /** Every problem with the base draft: the loader's contract and the
+   * published case studies' rules, frontmatter included. */
+  function baseProblems(raw: string): string[] {
+    return [...baseMetaProblems(raw), ...fileProblems(FIXTURE, raw)];
+  }
+
+  /** A scenarios file with one CR scenario, then `tail`. */
+  function scenariosFile(...tail: string[]): string {
+    return ['# Content-review scenarios', CR, '## Case-study scenarios', ...tail].join(
+      '\n\n',
+    );
+  }
+
+  it('extracts the base draft whole, frontmatter and inner code blocks included', () => {
+    const text = scenariosFile(
+      `### ${BASE_HEADING}`,
+      `\`\`\`\`markdown\n${DRAFT}\n\`\`\`\``,
+    );
+    expect(extractEvalFixtures(text).caseStudyBase).toEqual({ raw: DRAFT });
+  });
+
+  it('takes the base from under its own heading, not a later scenario', () => {
+    const text = scenariosFile(
+      `### ${BASE_HEADING}`,
+      `\`\`\`\`markdown\n${DRAFT}\n\`\`\`\``,
+      '### CS-01 — a replacement',
+      '```markdown\n- **Reads:** more.\n```',
+    );
+    expect(extractEvalFixtures(text).caseStudyBase.raw).toBe(DRAFT);
+  });
+
+  // Criterion 2: the helper fails loudly.
+  it('throws, naming the heading, when there is no base-draft heading', () => {
+    expect(() => extractEvalFixtures(scenariosFile('### CS-01 — no base'))).toThrow(
+      /no .*Base draft.*heading/,
+    );
+  });
+
+  it('throws when the base-draft heading has no `markdown` block', () => {
+    expect(() =>
+      extractEvalFixtures(
+        scenariosFile(`### ${BASE_HEADING}`, 'The draft went missing.'),
+      ),
+    ).toThrow(/Base draft.*has no `markdown` draft/);
+  });
+
+  it("throws when the base draft's only `markdown` block is under the next heading", () => {
+    const text = scenariosFile(
+      `### ${BASE_HEADING}`,
+      'The draft went missing.',
+      '### CS-01 — a replacement',
+      '```markdown\n- **Reads:** more.\n```',
+    );
+    expect(() => extractEvalFixtures(text)).toThrow(
+      /Base draft.*has no `markdown` draft/,
+    );
+  });
+
+  // Criterion 1: the real base, with its frontmatter.
+  it('extracts the real base draft with its frontmatter', () => {
+    const { raw } = contentReviewFixtures().caseStudyBase;
+    const { data, content } = parseFrontmatter(raw);
+    expect(raw.startsWith('---\n')).toBe(true);
+    expect(Object.keys(data).sort()).toEqual([...REQUIRED_KEYS].sort());
+    expect(content).toContain('## Likely follow-ups');
+  });
+
+  // Criterion 4.
+  it('passes every rule, frontmatter included, on the real base draft', () => {
+    expect(baseProblems(contentReviewFixtures().caseStudyBase.raw)).toEqual([]);
+  });
+
+  // Review decisions, round 2: the base also goes through `parseCaseStudy`,
+  // as a published case study does, so a non-positive-integer `order` or an
+  // empty field is reported; the key allowlist alone passed each of these.
+  it.each([
+    ['an order of 0', 'order: 99\n', 'order: 0\n', /invalid "order"/],
+    ['a fractional order', 'order: 99\n', 'order: 99.5\n', /invalid "order"/],
+    ['an empty summary', /^summary: .*\n/m, 'summary:\n', /missing .*"summary"/],
+  ] as const)('reports the real base with %s', (_name, from, to, problem) => {
+    const text = scenariosText();
+    const { raw } = contentReviewFixtures().caseStudyBase;
+    const match = typeof from === 'string' ? from : from.exec(raw)![0];
+    expect(raw.split(match)).toHaveLength(2);
+    const broken = raw.replace(match, to);
+    expect(text.split(raw)).toHaveLength(2);
+    const base = extractEvalFixtures(text.replace(raw, broken)).caseStudyBase;
+    expect(base.raw).toBe(broken);
+    expect(baseProblems(base.raw)).toContainEqual(expect.stringMatching(problem));
+  });
+
+  it('reports the real base with "## Start simple" deleted', () => {
+    const text = scenariosText();
+    const { raw } = contentReviewFixtures().caseStudyBase;
+    const lines = raw.split('\n');
+    const heading = lines.findIndex((line) => line.startsWith('## Start simple'));
+    expect(heading).toBeGreaterThan(-1);
+    const broken = [...lines.slice(0, heading), ...lines.slice(heading + 1)].join('\n');
+    expect(text.split(raw)).toHaveLength(2);
+    const base = extractEvalFixtures(text.replace(raw, broken)).caseStudyBase;
+    expect(base.raw).toBe(broken);
+    expect(baseProblems(base.raw)).toContainEqual(expect.stringContaining(NEED));
   });
 });

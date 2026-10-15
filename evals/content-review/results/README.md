@@ -35,30 +35,27 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-14 | CS base brought to template 3 (overview, Start simple ending, two-term paragraphs, decision breaks, guessing target)                                       | 5    | 0    | 0         | CS-01..04 plus a CS-03 re-run; plants all first; control draws fewer, smaller true findings.         |
 | 2026-10-15 | Retire the case-study `template` switch (Writing Standard, add-case-study checklist, CS base frontmatter); CR-01 recheck; CR-01 and CS base fixtures fixed | 5    | 0    | 0         | CS-01..04 plants first, control clean; CR-01 plant first after its fixture met Teaching progression. |
 | 2026-10-15 | Docs-audit follow-ups: architecture "two to five paragraphs" in the add-case-study checklist, Batch mode checks, CS base description                       | 1    | 0    | 0         | CS-03 control only; clean.                                                                           |
+| 2026-10-15 | eval-fixture-structure-check: CR-02 and CR-03 fixture fences repaired (truncated since #149)                                                               | 2    | 0    | 0         | Both plants first; both drafts predate Teaching progression.                                         |
 
-## Latest run: 2026-10-15, docs-audit follow-ups
+## Latest run: 2026-10-15, eval-fixture structure check
 
-**Trigger.** This was a set of follow-up fixes from a docs audit:
+**Trigger.** docs/specs/eval-fixture-structure-check.md's new check found that CR-02's fixture was truncated. A stray four-backtick line closed the draft after its code sample, so the planted closer and the rule of thumb fell outside it. A five-backtick fence also swallowed CR-03, so any parse dropped it.
 
-- The architecture rule changed in add-case-study's Stage 3 review item (3) and in docs/case-studies.md. It went from "two or three short paragraphs" to "two to five": 10 of the 17 published case studies have 4–5, and reviewers had accepted 4 as a deviation.
-- docs/content-review.md's Batch mode gained a pre-review worktree check and the Fix-rounds count.
-- The Writing Standard's budget bullet now says the numbers live in code.
-- The CS base description got new word counts.
+The break came from dc98236 (#149). No eval had run on the broken file. The fence lines were restored, with no prose change, so both scenarios were re-run.
 
-No reviewer-facing rule tightened. Run with the new checklist text, the control checks the loosened rule raises no false positive.
+**Scope.** CR-02 and CR-03.
 
-**Scope.** CS-03 only.
+| ID    | Planted violation                                    | Caught?                                      | Grade |
+| ----- | ---------------------------------------------------- | -------------------------------------------- | ----- |
+| CR-02 | "Not just X — it's Y" closer and filler intensifiers | Yes, High, first                             | PASS  |
+| CR-03 | Over-explained "rubber duck" figure                  | Yes, High, first, with the false claim in it | PASS  |
 
-| ID    | Planted violation | Caught?                         | Grade |
-| ----- | ----------------- | ------------------------------- | ----- |
-| CS-03 | None (control)    | Only findings true of the draft | PASS  |
+**Notes.** Both drafts predate the Teaching progression rules, as CR-01's did. Each drew true Medium pacing findings, ranked below the plant:
 
-**Notes:**
+- no route sentence;
+- an unworked figure;
+- missing hand-offs.
 
-- The architecture's three paragraphs passed the new rule.
-- The true findings carried over from the previous run's notes, each now worded the other way:
-  - the replica dismissed without a number;
-  - the per-address block versus IPv6 prefixes, now "block by prefix";
-  - why random over the URL shortener's counter.
-- New this run: the 4 GB cache assumes a size cap the page never states.
-- Left for the next fixture pass.
+CR-02 also drew a vague question and a rule of thumb that misses its intro's case.
+
+These gaps don't outrank the plants yet. Bring the drafts to Teaching progression the next time either scenario runs, as CR-01 was.

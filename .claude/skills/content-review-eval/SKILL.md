@@ -66,4 +66,8 @@ violation, whether the review caught it, and grade.
 
 Triggered by a real content review missing something, or by a new
 content-reviewing skill. Format: **Section** or base, **Planted violation**,
-the fabricated draft, **Expected finding**, **Fails if**.
+the fabricated draft, **Expected finding**, **Fails if**. A new `CR-*` goes
+after the last `CR-*` and before `## Case-study scenarios`. Its draft, like the
+CS base, must pass the published pages' structure tests, which `npm run verify`
+runs over every `CR-*` draft and the CS base; a scenario whose planted
+violation is structural needs a spec change adding an explicit opt-out first.

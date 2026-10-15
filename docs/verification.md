@@ -73,7 +73,13 @@ holds its vectors).
 `npm run check:eval-premises` proves the eval scenarios still rest on true
 facts: every premise comment holds and every feature-review `diff` still
 applies ([evals/README.md](../evals/README.md#running-any-eval); details in
-`scripts/check-eval-premises.mjs`'s header).
+`scripts/check-eval-premises.mjs`'s header). The structure tests
+(`src/content/topic-structure.test.ts`,
+`src/system-design/case-study-structure.test.ts`, both in `test:run`) also run
+their rules on every `CR-*` draft and the `CS-*` base draft in
+`evals/content-review/scenarios.md` (extracted by `src/test/eval-fixtures.ts`),
+so a template or rule change that a fixture no longer meets fails here rather
+than in a later eval run.
 
 `npm run links:inbound -- <section>/<slug>` is a tool, not a check: it lists
 every link to a topic from topics and case studies (old paths in

@@ -63,24 +63,12 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-15 | SR-22 premise repointed from ride-sharing (now on template 3) to url-shortener                                                                               | 1    | 0    | 0         | SR-22 only; still routes to `add-case-study` rewrite mode.   |
 | 2026-10-15 | Retire the case-study `template` switch: add-case-study description, Stage 1 and rewrite mode; content-audit description; SR-16 wording; SR-23 added         | 4    | 0    | 0         | SR-15, 16, 17, 23.                                           |
 | 2026-10-15 | Docs-audit follow-ups: add-case-study, docs-audit and content-audit SKILLs, /feature Stage 3 pointer, SDLC.md, content-review.md Batch mode                  | 5    | 0    | 0         | SR-01, 09, 11, 15, 23.                                       |
+| 2026-10-15 | eval-fixture-structure-check: content-review-eval Stage 3 (new-scenario placement and the must-pass rule)                                                    | 1    | 0    | 0         | SR-12.                                                       |
 
-## Latest run: 2026-10-15, docs-audit follow-ups
+## Latest run: 2026-10-15, eval-fixture structure check
 
-**Trigger.** These docs-audit fixes edited process files:
+**Trigger:** `docs/specs/eval-fixture-structure-check.md` edited content-review-eval's SKILL.md (Stage 3, "New scenarios": placement, the must-pass rule, the structural-plant opt-out). Scope: the scenario naming content-review-eval.
 
-- the add-case-study SKILL (Stage 0's d2 line, Stage 1's budget pointer, review item 3);
-- the docs-audit SKILL (`AUDIT_DUE_AFTER`);
-- the content-audit SKILL (Teaching progression);
-- /feature's Stage 3 implementer instruction (the lock-list pointer);
-- docs/SDLC.md (the extra-agent pointer);
-- docs/content-review.md (Batch mode checks).
-
-**Scope.** The scenarios naming those skills.
-
-| ID    | Routing decision | One-line reasoning                                                                 | Grade |
-| ----- | ---------------- | ---------------------------------------------------------------------------------- | ----- |
-| SR-01 | /feature         | Search pagination is an app UI and behavior change with design choices to settle.  | PASS  |
-| SR-09 | docs-audit       | Checking whether docs went stale after recent changes is the skill's own trigger.  | PASS  |
-| SR-11 | content-audit    | A corpus-wide sweep for AI-sounding prose, over-explained analogies, wrong claims. | PASS  |
-| SR-15 | add-case-study   | A new collaborative-editor case study with its diagram; none exists yet.           | PASS  |
-| SR-23 | add-case-study   | Rewriting an existing case study from scratch is the description's own example.    | PASS  |
+| ID    | Routing decision    | One-line reasoning                                                                              | Grade |
+| ----- | ------------------- | ----------------------------------------------------------------------------------------------- | ----- |
+| SR-12 | content-review-eval | Whether add-topic's review still catches a planted violation is that eval's job, not routing's. | PASS  |
