@@ -43,9 +43,11 @@ Keep the set small, too. Every tool's description takes space in the [context wi
 
 `lookup_order` only reads, so a wrong call costs little. `refund_order` moves money, and the model might call it for the wrong order, or because text in the conversation told it to (see [prompt injection](/ai-and-ml/prompt-injection)). So the check can't live in the model's judgment alone; it has to live in your code, where the model can't talk its way past it.
 
-Three habits cover most of the risk:
+Five habits cover most of the risk. The first three are about least privilege: giving the model's requests as little power as possible.
 
-- **Least privilege.** Offer only the tools this task needs, and scope each to its caller. A refund tool for a customer-facing assistant should be able to refund that customer's orders, taken from the logged-in session rather than from an argument the model fills in, up to a set amount, not any order.
+- **Offer only the tools the task needs.** A model that can only look up orders can't refund one, however it is tricked. If this conversation is only about order status, leave `refund_order` out of the list.
+- **Take the customer from the session, not from an argument.** If `refund_order` had a `customer_id` parameter, the model could fill in someone else's. Give it only `order_id`, and have your code read the customer from the logged-in session, then refuse any order that customer doesn't own.
+- **Cap the amount.** Even for the right customer and order, have the code refuse a refund above the order total, or above a limit you set, such as $100, whatever the model asks for.
 - **Confirmation for hard-to-undo actions.** Have the tool return "refund of $59.00 pending, confirm to proceed" and only act once the customer approves it through your app, for example a button the model can't press, with the summary built by your code from the real arguments. A confirmation the model can give itself stops mistakes, not [prompt injection](/ai-and-ml/prompt-injection).
 - **Safe repeats.** The model may call a tool twice, for instance after a timeout. Make `refund_order` [idempotent](/systems-and-infrastructure/idempotency), so a repeated call for the same order doesn't pay out twice.
 

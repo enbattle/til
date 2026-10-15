@@ -4,21 +4,52 @@ summary: LoRA fine-tunes a model by freezing its weights and training two small 
 date: 2026-09-15
 ---
 
-Say you have a 7-billion-parameter language model and you want it to answer support tickets in your company's voice. You have one GPU. **Fine-tuning** means continuing to train a finished model on your own examples so it changes its behavior. Done the standard way, **full fine-tuning**, it updates every parameter. Can your GPU do that? Let's count.
+Say you have a 7-billion-parameter language model and you want it to answer support tickets in your company's voice. You have one GPU. **Fine-tuning** means continuing to train a finished model on your own examples so it changes its behavior. The standard way, **full fine-tuning**, updates every parameter. Can your GPU do that? Let's count.
+
+This page counts the memory full fine-tuning needs, builds LoRA's small update from a toy grid up to a real matrix, then shrinks the frozen model with QLoRA and ends on what you keep afterward.
 
 ## Why updating every weight is expensive
 
 Each parameter is a number, and at 16-bit precision (a common choice) each takes 2 bytes. So the weights alone are 7 billion × 2 bytes = 14 GB.
 
-Training needs more than the weights. For each parameter it also keeps a **gradient** (the direction to nudge that weight, 2 bytes) and **optimizer state**. The common Adam optimizer keeps two running statistics per weight to pick step sizes, 4 bytes each, and mixed-precision training, which computes in 16-bit but updates a 32-bit master copy of the weights, adds 4 more: 12 bytes. That is 2 + 2 + 12 = 16 bytes per parameter, or about 112 GB for the 7-billion-parameter model, before counting the memory for activations. Your one GPU does not hold that. The exact figure varies with the setup, but the multiple of the weights is large in any common one.
+Training needs more than the weights. Count the bytes kept for each parameter, one item at a time:
 
-The bill is almost entirely gradients and optimizer state. If most weights never needed either, the cost would collapse. That is LoRA's idea.
+```text
+weight (16-bit)                            2 bytes
+gradient, the nudge direction (16-bit)     2 bytes
+Adam's two step-size averages (4 each)     8 bytes
+32-bit master copy, the precise weight     4 bytes
+                                         --------
+                                         16 bytes per parameter
+
+7 billion × 16 bytes = 112 billion bytes = 112 GB
+```
+
+Adam is the common optimizer, the rule that picks step sizes. Adam's averages plus the master copy are the **optimizer state**.
+
+The total is 112 GB before counting memory for activations, the intermediate results of each pass. Your one GPU does not hold that.
+
+The bill is almost entirely gradients and optimizer state: 14 of the 16 bytes. If most weights never needed either, the cost would collapse. That is LoRA's idea.
 
 ## LoRA: train a small update, leave the weights alone
 
-**LoRA (Low-Rank Adaptation)** freezes every original weight, so none of them gets a gradient or optimizer state. Next to each frozen weight matrix `W` it adds a small trainable update, and only that update is trained.
+**LoRA (Low-Rank Adaptation)** freezes every original weight, so none of them gets a gradient or optimizer state. Next to each frozen weight matrix `W` it adds a small trainable update.
 
-Take one matrix in your model, `W`, of size 4096 × 4096. Full fine-tuning would train all 4096 × 4096 = 16,777,216 numbers of it. LoRA instead trains two thin matrices:
+Before scaling up, try a toy case. Say the update to one weight matrix were a 4 × 4 grid, 16 numbers. Instead of choosing all 16, build it from two thin strips. `B` is a 4 × 2 strip (two columns), and `A` is a 2 × 4 strip (two rows). Each row of the grid is a blend of `A`'s two rows, using the amounts in that row of `B`:
+
+```text
+A row 1 = [1 1 0 0]      A row 2 = [0 0 1 1]
+
+B row    blend                    grid row
+(1, 1)   1×row1 + 1×row2    ->    [1 1 1 1]
+(2, 0)   2×row1 + 0×row2    ->    [2 2 0 0]
+(3, 1)   3×row1 + 1×row2    ->    [3 3 1 1]
+(4, 0)   4×row1 + 0×row2    ->    [4 4 0 0]
+```
+
+You stored 8 numbers (4 × 2 in `B`, 2 × 4 in `A`) and got a full 4 × 4 grid. But not any grid: every row is a blend of the same two strips. That limit is the **rank**, here 2. Rank is the number of strips; a grid of 16 free choices would need rank 4.
+
+Now scale up to one matrix in your model, `W`, of size 4096 × 4096. Full fine-tuning would train all 4096 × 4096 = 16,777,216 numbers of it. LoRA trains two thin matrices of rank `r`, which you choose:
 
 ```
 A is r × 4096     B is 4096 × r     ΔW = B × A   (4096 × 4096)
@@ -31,25 +62,25 @@ With r = 8:
   16,777,216 / 65,536 = 256, so 256 times fewer
 ```
 
-The number `r` is the **rank**, which you choose. Multiplying a 4096 × 8 matrix by an 8 × 4096 matrix gives a full-size 4096 × 4096 result, but one built from only 8 independent directions. Why would that be enough? LoRA bets that the change a model needs to pick up a narrow task such as your support-ticket tone is simple compared with everything the model already knows. The bet usually pays off when the task is narrow, and it gets weaker as the task drifts further from what the base model already does. A higher `r` buys more capacity for a bigger change and costs proportionally more parameters.
+The update `ΔW` is a full-size grid whose 4096 rows are all blends of the same 8 strips. Why would that be enough? LoRA bets that the change a model needs to pick up a narrow task such as your support-ticket tone is simple compared with everything the model already knows, simple enough to be built from a few repeating patterns. The bet weakens as the task drifts from what the base model already does; a higher `r` buys capacity for a bigger change at proportionally more parameters.
 
-`B` starts at all zeros, so before any training `B × A` is zero and the model behaves exactly like the original. Training then moves only `A` and `B`. (The 256× figure counts one matrix. In practice you attach adapters to a chosen set of matrices, sometimes only a few and increasingly every large one. Matrices without an adapter train nothing, so across the whole model the trained share is smaller still, well under 1% of the 7 billion. Choosing which matrices get one is a setting you tune.)
+`B` starts at all zeros, so before any training `B × A` is zero and the model behaves exactly like the original. Training then moves only `A` and `B`. (The 256× figure counts one matrix. You attach adapters to a chosen set of matrices, and the rest train nothing, so across the whole model the trained share is well under 1% of the 7 billion.) But the frozen 14 GB base still has to fit.
 
 ## QLoRA: also shrink the frozen part
 
-With LoRA, the 7-billion-parameter base still sits in memory at 14 GB, and your GPU may be small enough that even that hurts. **Quantization** stores each number with fewer bits, trading some precision for space. At 4 bits, a weight takes half a byte, so 7 billion weights take about 3.5 GB, plus a little extra for the scaling values quantization needs.
+Your GPU can't hold 14 GB alongside training. **Quantization** stores each number with fewer bits, trading some precision for space. At 4 bits, a weight takes half a byte, so 7 billion weights take about 3.5 GB, plus a little extra for the scaling values quantization needs.
 
-**QLoRA** loads the frozen base model in 4-bit form and trains LoRA matrices on top of it, kept at higher precision. During the forward and backward pass, each 4-bit block of weights is converted back to 16-bit on the fly, used, and discarded. The 4-bit copy is never trained, so its rounding error isn't corrected by updates, but the adapter learns to work with the model as it exists after rounding.
+**QLoRA** loads the frozen base model in 4-bit form and trains LoRA matrices on top of it, kept at higher precision. During the forward and backward pass, each 4-bit block of weights is converted back to 16-bit on the fly, used, and discarded. The 4-bit copy is never trained, but the adapter learns to work with the model as it exists after rounding.
 
-QLoRA also used a 4-bit format built around the shape of trained weights. They cluster in a bell curve, with most values near zero. A format that spends more of its 16 possible values near zero loses less than one that spaces them evenly. For your 7B model, the frozen base drops from 14 GB to about 4 GB, so the job fits on a much smaller GPU, at the cost of slower steps from all that converting. Some quality loss from quantizing is possible, so check it on your own task.
+QLoRA's 4-bit format spends more of its 16 possible values near zero, where trained weights cluster, so it loses less than evenly spaced values. For your 7B model, the frozen base drops from 14 GB to about 4 GB, so the job fits on a much smaller GPU, at the cost of slower steps from all that converting and possibly some quality, so check it on your own task.
 
 ## What you end up with
 
-After training you have not a new 7-billion-parameter model but the adapter, which is `A` and `B` for each chosen matrix. At r = 8 over every 4096 × 4096 matrix it touches, an adapter is about 1/256 the size of those matrices. You have two choices:
+After training you have not a new 7-billion-parameter model but the adapter, which is `A` and `B` for each chosen matrix. At r = 8, an adapter is about 1/256 of every 4096 × 4096 matrix it touches. You have two choices:
 
-- **Merge it.** Compute `W + B × A` once and store the sum. You get an ordinary model with no extra cost when you run it. After QLoRA, you merge into a 16-bit copy of the base, since squeezing the sum back into 4 bits loses precision.
+- **Merge it.** Compute `W + B × A` once and store the sum. You get an ordinary model with no extra running cost. After QLoRA, merge into a 16-bit copy of the base, since re-squeezing the sum into 4 bits loses precision.
 - **Keep it separate.** Load the shared base once and swap adapters per request. If you need one voice for support tickets, another for legal summaries and a third for code review, that is three small files, not three 14 GB copies.
 
-Whether fine-tuning is the right tool in the first place, versus giving the model your documents at question time with [retrieval-augmented generation](/ai-and-ml/what-is-rag), is a separate question covered in [when to fine-tune](/ai-and-ml/when-to-finetune).
+Whether fine-tuning beats giving the model your documents at question time with [retrieval-augmented generation](/ai-and-ml/what-is-rag) is covered in [when to fine-tune](/ai-and-ml/when-to-finetune).
 
 **Rule of thumb.** Reach for LoRA when you want a model to change its style or behavior on a narrow task and full fine-tuning would not fit your hardware, add QLoRA when even the frozen base is too big to hold, and keep the adapter separate if one base has to serve several variants.

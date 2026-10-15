@@ -19,7 +19,8 @@ question -> retrieved chunks -> model's answer
 
 and either can fail. So you measure each half on its own, with the same kind
 of fixed test set any [eval](/ai-and-ml/what-are-evals) uses: real questions,
-scored the same way before and after every change.
+scored the same way before and after every change. This page scores the search,
+then the answer, then reads the two together to decide what to fix.
 
 ## Scoring the search
 
@@ -29,9 +30,12 @@ export permission denied" and "Resolving permission problems when downloading
 a report". These labels are the slow part, and the part everything else rests
 on.
 
-Now run the search. Say it returns its best 50 candidates and you pass the top
-5 to the model, so k is 5. The error-code chunk comes back third, and the
-permissions article doesn't make the top 5.
+Now run the search. It ranks the chunks in the help docs and returns its best
+50 candidates, but the model's prompt only has room for a few, so you pass it
+the top 5. That cutoff is called **k**, and here k is 5. The error-code chunk
+comes back third, and the permissions article doesn't make the top 5.
+
+Two scores say how well the top k did:
 
 - **Recall@k** is the share of the relevant chunks that made it into the top
   k: one of two, so 0.5. Half the information the answer needs never reached
@@ -46,14 +50,15 @@ can distract it.
 Neither number cares about order: a relevant chunk at rank 1 and at rank 5
 count the same. But order decides which 5 of the 50 survive the cut, and it's
 what a **reranker**, a slower model that re-sorts the candidates, exists to
-improve. A simple order-aware score is the **reciprocal rank**: 1 divided by
-the position of the first relevant chunk, here 1/3. Averaged over all
-questions it's the **mean reciprocal rank (MRR)**. A finer one, **normalized
-discounted cumulative gain (nDCG)**, gives credit for every relevant chunk and
-less for each lower position.
+improve.
+
+To score order, look at the position of the first relevant chunk. The
+**reciprocal rank** is 1 divided by that position: the error-code chunk is
+third, so 1/3. Averaged over all questions, it's the **mean reciprocal rank
+(MRR)**.
 
 You average every score over the whole test set, since one question tells you
-little.
+little. That covers the search. The answer is scored separately.
 
 ## Scoring the answer
 
@@ -76,7 +81,7 @@ checks apply to every reply:
 
 Code can check some of this, such as whether every cited chunk was actually
 retrieved. The rest is usually graded by a second model given a rubric, which
-must be checked against a batch of human grades before you trust it.
+must be checked against a batch of human grades before you trust it. But a wrong reply often fails more than one check, so which fix comes first?
 
 ## Reading the two halves together
 
@@ -90,12 +95,14 @@ of each. The missing fix needs better retrieval, since no prompt can make the
 model state a fix it was never shown. The invented trial claim needs a
 stricter prompt or model.
 
-Record each question's response time and cost beside its quality, and watch
-the slowest few percent of response times, not just the average. If the
-permissions article was 12th of the 50 candidates, a reranker that moves it
-into the top 5 raises recall@5 from 0.5 to 1.0, and might add a tenth of a
-second. Whether that's worth it is a decision you can only make with both
-numbers.
+Record each question's response time and cost beside its quality, and watch the slowest few percent of response times, not just the average.
+
+If the permissions article was 12th of the 50 candidates, a reranker might move it
+and the error-code chunk to positions 2 and 1. Two of two relevant chunks now
+make the top 5, so recall@5 is 1.0, up from 0.5. The first relevant chunk is at
+position 1, so the reciprocal rank is 1/1 = 1, up from 1/3. The reranker might
+add a tenth of a second. Whether that's worth it is a decision you can only
+make with both numbers.
 
 ## Keeping the test set honest
 
