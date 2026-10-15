@@ -188,9 +188,9 @@ Spawn another **fresh** `general-purpose` agent with the spec and the failing
 test files' paths and content (ground truth). Instruction, close to verbatim:
 
 > Implement the spec above so the failing tests listed pass. Do not edit,
-> delete or add any file `npm run check:test-lock` locks (docs/verification.md
-> lists them: every test file, the test runners' and the lock's own scripts
-> and config, every ignore rule) or these fixture files: <the fixture paths
+> delete or add any file `npm run check:test-lock` locks (its header in
+> `scripts/check-test-lock.mjs` lists them: every test file and vitest snapshot,
+> the test runners' and the lock's own scripts and config, every ignore rule) or these fixture files: <the fixture paths
 > locked in Stage 2, or "none">. A check will fail if any of them changes. If
 > a test looks wrong or is too slow to run, or the spec is ambiguous in a way
 > that blocks you, stop and report it instead of changing the test or adding

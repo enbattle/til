@@ -55,7 +55,7 @@ npm run preview          # Preview the production build locally
 npm run test              # Vitest, watch mode
 npm run test:run          # Vitest, run once
 npm run format            # Prettier write
-npm run diagrams          # Render the .d2 sources to SVGs (needs d2 v0.9.x)
+npm run diagrams          # Render the .d2 sources to SVGs (needs d2; it prints install steps)
 npm run verify            # Everything CI runs: types, lint, format, every check, tests, build, sizes
 ```
 

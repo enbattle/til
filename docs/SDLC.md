@@ -60,12 +60,7 @@ Applying that test to each step:
   works. Docs aren't a correctness check, so independence has nothing to
   protect.
 
-That leaves three worker agents with real, distinct jobs — a
-test-writer, an implementer, and an adversarial reviewer — plus the
-orchestrating session handling spec and coordination throughout. Three
-single-purpose agents join only when a stage calls for one: a finding triager and a
-fixer when review finds something, and a reader of process edits at the
-retrospective.
+That leaves three worker agents with real, distinct jobs — a test-writer, an implementer, and an adversarial reviewer — plus the orchestrating session handling spec and coordination throughout. The few single-purpose agents a stage may add (a finding triager, a fixer and a process-edit reader) are listed in [`/feature`](../.claude/skills/feature/SKILL.md), just after its numbered rules.
 
 ## Why a fresh agent, never a fork
 

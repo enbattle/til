@@ -62,21 +62,25 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-14 | case-study-template-3 retro: /feature Stage 4a narrow re-review after a prose-only round                                                                     | 4    | 0    | 0         | SR-01, 05, 07, 17.                                           |
 | 2026-10-15 | SR-22 premise repointed from ride-sharing (now on template 3) to url-shortener                                                                               | 1    | 0    | 0         | SR-22 only; still routes to `add-case-study` rewrite mode.   |
 | 2026-10-15 | Retire the case-study `template` switch: add-case-study description, Stage 1 and rewrite mode; content-audit description; SR-16 wording; SR-23 added         | 4    | 0    | 0         | SR-15, 16, 17, 23.                                           |
+| 2026-10-15 | Docs-audit follow-ups: add-case-study, docs-audit and content-audit SKILLs, /feature Stage 3 pointer, SDLC.md, content-review.md Batch mode                  | 5    | 0    | 0         | SR-01, 09, 11, 15, 23.                                       |
 
-## Latest run: 2026-10-15, retire the case-study template switch
+## Latest run: 2026-10-15, docs-audit follow-ups
 
-**Trigger.** `docs/specs/retire-case-study-template-switch.md` changed two skills:
+**Trigger.** These docs-audit fixes edited process files:
 
-- **add-case-study's SKILL.md:** the description, the Stage 1 frontmatter, rewrite mode and the review items.
-- **content-audit's description.**
+- the add-case-study SKILL (Stage 0's d2 line, Stage 1's budget pointer, review item 3);
+- the docs-audit SKILL (`AUDIT_DUE_AFTER`);
+- the content-audit SKILL (Teaching progression);
+- /feature's Stage 3 implementer instruction (the lock-list pointer);
+- docs/SDLC.md (the extra-agent pointer);
+- docs/content-review.md (Batch mode checks).
 
-SR-23 was added, because no live scenario routed a case-study rewrite.
+**Scope.** The scenarios naming those skills.
 
-**Scope.** The scenarios naming add-case-study.
-
-| ID    | Routing decision        | One-line reasoning                                                                                 | Grade |
-| ----- | ----------------------- | -------------------------------------------------------------------------------------------------- | ----- |
-| SR-15 | add-case-study          | A new case study with its D2 diagram; the description names a collaborative-editor case study.     | PASS  |
-| SR-16 | content-audit, one file | Check and tighten an existing case study's prose and claims; not a rewrite from scratch.           | PASS  |
-| SR-17 | /feature                | A page UI change plus a diagram-check rule: app code and tooling, which add-case-study sends away. | PASS  |
-| SR-23 | add-case-study          | Rewriting an existing case study from scratch is the description's own example.                    | PASS  |
+| ID    | Routing decision | One-line reasoning                                                                 | Grade |
+| ----- | ---------------- | ---------------------------------------------------------------------------------- | ----- |
+| SR-01 | /feature         | Search pagination is an app UI and behavior change with design choices to settle.  | PASS  |
+| SR-09 | docs-audit       | Checking whether docs went stale after recent changes is the skill's own trigger.  | PASS  |
+| SR-11 | content-audit    | A corpus-wide sweep for AI-sounding prose, over-explained analogies, wrong claims. | PASS  |
+| SR-15 | add-case-study   | A new collaborative-editor case study with its diagram; none exists yet.           | PASS  |
+| SR-23 | add-case-study   | Rewriting an existing case study from scratch is the description's own example.    | PASS  |

@@ -240,16 +240,6 @@ premise every other eval in this repo is built on.
 
 ---
 
-### SR-13 — retired
-
-This scenario routed "check that a reader still finds the right System Design
-question" to `system-design-navigation-eval`. The question pages, that eval
-and its skill were removed by `docs/specs/system-design-case-studies.md`, so
-the scenario no longer has a right answer. The ID is kept so past results
-under `results/` still line up; don't reuse it.
-
----
-
 ### SR-14 — feature-review-eval routing
 
 > I tightened the reviewer instructions in the /feature pipeline. Can you
@@ -340,54 +330,19 @@ direct edit (a layout change plus a new guard is not a one-line fix).
 
 ---
 
-### SR-18 — retired
+### Retired IDs
 
-This scenario routed "add an LRU cache entry to DSA" to `add-dsa-entry`. The
-DSA tab, that skill and its entries were removed by
-`docs/specs/remove-dsa-tab.md`, so the scenario no longer has a right answer.
-The ID is kept so past results under `results/` still line up; don't reuse it.
+These IDs are kept so past results under `results/` still line up; don't reuse
+them. Each routed a request whose right answer no longer exists:
 
----
-
-### SR-19 — retired
-
-This scenario routed "rewrite the ride-sharing case study so it fits the new
-five-minute format" to `add-case-study`. Every case study was rewritten to that
-format, and `docs/specs/retire-template-switch.md` dropped template rewrites
-from the skills' descriptions, so the scenario no longer has a right answer.
-The ID is kept so past results under `results/` still line up; don't reuse it.
-SR-23 covers routing a case-study rewrite now.
-
----
-
-### SR-20 — retired
-
-This scenario routed "merge the binary tree and binary search tree entries in
-DSA" to `add-dsa-entry`. The DSA tab, that skill and its entries were removed
-by `docs/specs/remove-dsa-tab.md`, so the scenario no longer has a right
-answer. The ID is kept so past results under `results/` still line up; don't
-reuse it.
-
----
-
-### SR-21 — retired
-
-This scenario routed "rewrite the linked list entry's code so a beginner can
-follow it" to `add-dsa-entry`. The DSA tab, that skill and its entries were
-removed by `docs/specs/remove-dsa-tab.md`, so the scenario no longer has a
-right answer. The ID is kept so past results under `results/` still line up;
-don't reuse it.
-
----
-
-### SR-22 — retired
-
-This scenario routed "rewrite the URL shortener case study to the new template"
-to `add-case-study`'s rewrite mode. Every case study is now on the case-study template
-(batches #142–#145), so no page is left to rewrite and the scenario has no
-right answer. `docs/specs/retire-case-study-template-switch.md` retired the
-switch; rewrite mode stays, for rewriting a case study in general.
-The ID is kept so past results under `results/` still line up; don't reuse it.
+- **SR-13:** a System Design question check to `system-design-navigation-eval`,
+  removed by `docs/specs/system-design-case-studies.md`.
+- **SR-18, SR-20, SR-21:** DSA requests to `add-dsa-entry`, removed with the
+  DSA tab by `docs/specs/remove-dsa-tab.md`.
+- **SR-19, SR-22:** rewriting a case study to a new template; each migration
+  finished (`docs/specs/retire-template-switch.md`,
+  `docs/specs/retire-case-study-template-switch.md`). SR-23 covers routing a
+  case-study rewrite now.
 
 ---
 

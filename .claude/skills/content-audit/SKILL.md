@@ -85,8 +85,8 @@ and this instruction, close to verbatim, with each owning skill's Stage 3
 > **4. The checklist for the file's kind.** Apply the Stage 3 checklist
 > below from the skill that owns the file's kind: `add-topic` for a catalog
 > topic and `add-case-study` for a case study, and hold the file to every
-> bullet of docs/writing-standard.md, including its "Catalog topics" and
-> "Case studies" sections.
+> bullet of docs/writing-standard.md, including its "Teaching progression",
+> "Catalog topics" and "Case studies" sections.
 > Skip an item that only fits a new draft (a link-only diff, rewrite mode);
 > add-topic's "Where you'll meet this" item applies only to
 > `systems-and-infrastructure` topics, whose closing section names kinds of
