@@ -19,7 +19,7 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-13 | After PRs #132 to #134 (DSA removal, cleanup)               | Latest run, below.                                                                              |
 | 2026-10-15 | After PRs #135 to #148, with the template-switch retirement | 10 inaccurate claims (6 fixed), 5 code-owned and 6 hand-copied facts; Stage 2b ran on 288 rows. |
 
-Last friction aggregation (docs-audit Stage 2b): 2026-10-15, 288 data rows; proposals 1 to 5 in the 2026-10-15 run's log, awaiting the user's decision. Before that 2026-10-13, 236 data rows; proposals 1 to 5 in the #108-#130 run's log (git history). Proposal 1 applied in #134: /feature Stage 2's mutation proof now covers removed, merged or narrowed tests and narrowed guards; Stage 1's guard clause was shortened, not deleted, because it holds the user-approved "Dropped at spec" record (used by docs/specs/remove-dsa-tab.md) and the NON_NEGOTIABLES-vector rule. Declined: 2 to 5 (moot: DSA removed, docs/specs/remove-dsa-tab.md). Before that 2026-10-07, 203 data rows; the user approved proposals 1 to 4 (see Latest run), applied in chore/friction-fixes-203 after a process-edit read narrowed them. Declined: 5 (drop the timing assertion), since #106's looser bound already stopped the flake and the test still catches a runaway parse. Before that 2026-10-07, 183 rows, all five approved and applied (#99, and as new guards in #100). Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
+Last friction aggregation (docs-audit Stage 2b): 2026-10-15, 288 data rows; proposals 1 to 5 in the 2026-10-15 run's log. Applied on the user's go-ahead: 1(a) Fix rounds `2` for a second fix, 2 as a doc change (two to five architecture paragraphs, matching the pages), 3 the pre-review worktree and structure-test check, 4 the Escaped defect cells. Declined: 1(b), gating drafts on the 600–900 aim, since that is an aim and published pages run to 999 under the cap. Deferred: 5, structure checks on the eval fixtures in `verify`, a new check that needs its own `/feature`. Before that 2026-10-13, 236 data rows; proposals 1 to 5 in the #108-#130 run's log (git history). Proposal 1 applied in #134: /feature Stage 2's mutation proof now covers removed, merged or narrowed tests and narrowed guards; Stage 1's guard clause was shortened, not deleted, because it holds the user-approved "Dropped at spec" record (used by docs/specs/remove-dsa-tab.md) and the NON_NEGOTIABLES-vector rule. Declined: 2 to 5 (moot: DSA removed, docs/specs/remove-dsa-tab.md). Before that 2026-10-07, 203 data rows; the user approved proposals 1 to 4 (see Latest run), applied in chore/friction-fixes-203 after a process-edit read narrowed them. Declined: 5 (drop the timing assertion), since #106's looser bound already stopped the flake and the test still catches a runaway parse. Before that 2026-10-07, 183 rows, all five approved and applied (#99, and as new guards in #100). Before that 2026-10-06, 119 rows, whose four proposals were applied in #86. Earlier: 2026-10-04, 73 rows, all applied. Declined: none.
 
 ## Latest run: 2026-10-15, after PRs #135 to #148
 
@@ -75,3 +75,28 @@ Last friction aggregation (docs-audit Stage 2b): 2026-10-15, 288 data rows; prop
 3. **Drafter hand-offs fail.** Before a reviewer starts, check `git status --porcelain` and run the structure test in the worktree.
 4. **Defects found during rewrites were never recorded.** None became Escaped defect cells for the runs that published them. That covers rows 252, 260 and 263, and possibly 274.
 5. **Eval fixtures lag behind standard changes.** Run the structure checks on the CS and CR fixtures in `verify`.
+
+**Follow-up, the same day (the user's go-ahead).** Most of "Left open" was applied:
+
+- **The CS base description:** the counts now match.
+- **content-audit's brief:** it now names Teaching progression.
+- **Code-owned facts:** each doc now names its constant or points to it:
+  - the frontmatter key lists name `TOPIC_FIELDS` and `CASE_STUDY_FIELDS`;
+  - the 960 px figure is now `MAX_WIDTH`;
+  - "10 pull requests" is now `AUDIT_DUE_AFTER`;
+  - the d2 version is now `render-diagrams.mjs`'s `D2_VERSION` and its install output;
+  - the test-lock list is now the script header (with the pointer in `/feature` Stage 3 fixed, and snapshots added).
+  - The Writing Standard now quotes the budget numbers instead of claiming them.
+- **Hand-copied facts:** "150–300 words per decision" now lives only in case-studies.md and the reviewer's checklist. The second statement of the section counts was removed. SDLC.md points to `/feature` for the extra agents.
+- **Deletions:** the retired SR stubs became one "Retired IDs" block. The dated history paragraph and the orphan verification.md sentence were deleted.
+- **Stage 2b:** see the friction line above.
+
+A process-edit reader caught two errors in these fixes, both corrected:
+
+- two Escaped defect cells had been attributed to the 2026-09-29 runs instead of the 2026-10-05 migrations;
+- `/feature`'s pointer still said verification.md lists the locked files.
+
+**Still open:**
+
+- `/feature` Stage 4 names only the Writing Standard's "Case studies" section. "Every bullet" already covers the rest, and the edit would trigger feature-review-eval.
+- Who runs `verify` is stated in four places. Each copy has a different reader, so a pointer would cost more than it saves.

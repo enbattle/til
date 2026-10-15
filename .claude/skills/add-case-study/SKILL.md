@@ -29,8 +29,8 @@ study would link to, write that first with `add-topic` (a case study links to
 topics; it doesn't substitute for one). Never edit files under `src/content/`
 from this skill.
 
-`npm run diagrams` needs d2 v0.9.x on PATH (`d2 --version`). If it isn't
-installed, say so and give the install command docs/verification.md lists; don't commit a
+`npm run diagrams` needs d2 on PATH and prints install commands if it's
+missing or the wrong version. If it isn't installed, say so and pass those on; don't commit a
 `.d2` source without its rendered SVGs, since `check:diagrams` would fail.
 
 ## Stage 1 — Draft the case study and its diagrams
@@ -53,7 +53,7 @@ the voice.
   in [docs/case-studies.md](../../../docs/case-studies.md) ("The template is
   enforced"); `social-feed.md` shows it. Recompute every key-numbers line
   before moving on.
-- **Budget**: draft the decisions first (about 150–300 words each), then fit
+- **Budget**: draft the decisions first (their length is in docs/case-studies.md), then fit
   the rest around them. Run
   `npx vitest run src/system-design/case-study-structure.test.ts` rather than
   estimating: it fails, naming the count, when the prose is over the word
@@ -113,8 +113,7 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   follows from it; flag one that leads with its choice or just announces it;
   (3) check the rules no test enforces: the intro states the question, a one-sentence overview and the
   route; "Start simple" shows the simple design working, then breaking on the
-  page's numbers; the architecture is the diagram plus two or three short
-  paragraphs with at most two new terms each; Key numbers size only parts the
+  page's numbers; the architecture is the diagram plus two to five short paragraphs with at most two new terms each; Key numbers size only parts the
   reader has met, each derivation written out; follow-ups introduce no new
   concept without a gloss and a catalog link; (4) check that every diagram
   matches the prose (same components, same connections, same names) and flag

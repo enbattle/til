@@ -32,7 +32,7 @@ Body markdown. Fenced ```lang code blocks are syntax-highlighted.
 - **Section** is the file's immediate parent folder — not repeated in
   frontmatter.
 - **Slug** is the filename without `.md` (kebab-case).
-- **`title`, `summary`, and `date` are required, and are the only keys** —
+- **`title`, `summary`, and `date` are required, and are the only keys** (`TOPIC_FIELDS` in `src/lib/content.ts`) —
   `src/lib/content.ts` throws at load time, naming the file and the field, if
   any is missing or empty or if there's any other key (`checkFields` in
   `src/lib/frontmatter.ts`, shared with case studies), so

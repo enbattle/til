@@ -37,7 +37,6 @@ raw-HTML markdown package is a dependency. It matches names, comments and
 strings included, so reword a comment that names one; what it scans, the sink
 list and what gets past it are in `scripts/check-raw-html.mjs`'s header.
 It decodes escapes first, so `\u0069nnerHTML` fails too.
-`scripts/check-pipeline-log.test.mjs` reads `docs/pipeline-log.md`'s header.
 
 Each check script named here exports its logic as a function that takes the root it
 checks (default: the repository, `ROOT`) and returns its problems as strings
@@ -85,23 +84,12 @@ every link to a topic from topics and case studies (old paths in
 or CI: `/feature` uses them inside a run (`-- --snapshot`, then
 `-- --verify`, then `-- --clear`). `review:diff` prints the reviewer's diff,
 including new untracked files. `check:test-lock` proves none of these changed
-after Stage 2 (a config part the snapshot lacks counts as `added`):
-
-- every test file, everything under `src/test/` (the shared setup, render and guard-test helpers) and every vitest snapshot
-  (`__snapshots__/*.snap`);
-- the test runners' config: any `vitest.config.*` or `vitest.workspace.*`
-  file, the `test` block of `vite.config.ts`, the `test*` scripts, the
-  `pre`/`post` scripts npm runs around them and around `verify` (`pretest:run`,
-  `preverify`);
-- the gate itself: the `check:test-lock` script string, the whole `verify`
-  script string (one hash, so any edit to it, including a new check step,
-  trips the lock; a new `verify` step belongs to the Stage 2 test-writer), and
-  `scripts/check-test-lock.mjs` with the `scripts/lib.mjs` it imports;
-- every ignore rule in the repository, because the lock lists files through
-  git and a path added to one would otherwise drop out unseen: every
-  `.gitignore` at any depth (including one that ignores itself) and
-  `.git/info/exclude`;
-- the fixture paths given to `--snapshot`.
+after Stage 2 (a config part the snapshot lacks counts as `added`): every
+test file, vitest snapshot and everything under `src/test/`, the test runners' config and
+scripts, the gate itself (including the whole `verify` script string, so a new
+`verify` step belongs to the Stage 2 test-writer), every ignore rule, and the
+fixture paths given to `--snapshot`. The exact list, and why each is there, is
+the header of `scripts/check-test-lock.mjs`.
 
 The lock guards against a stage's slip, not a deliberate evasion: it doesn't
 read global ignore files or `core.excludesFile`, and it doesn't look inside
@@ -134,9 +122,9 @@ header; the allowlist (`svgProblems`) and the manifest format are in
 share, with the shapes it rejects, is `readThemeTokens` in
 `scripts/css-tokens.mjs`. References are found with the site's own markdown
 stack (`diagramReferences` in `src/lib/markdown.mjs`), so an example inside
-code doesn't count. `npm run diagrams` is the one command that needs d2 (v0.9.x on PATH:
-`scoop install d2`, `brew install d2`, or the install script at d2lang.com);
-run it after adding or editing a `.d2` file and commit what it writes. It is
+code doesn't count. `npm run diagrams` is the one command that needs d2 on PATH; it checks the
+version (`D2_VERSION` in `scripts/render-diagrams.mjs`) and prints install
+commands when d2 is missing or the wrong version. Run it after adding or editing a `.d2` file and commit what it writes. It is
 not part of `verify`, and CI never runs it.
 
 `npm run dev` for manual checking: click through the home page, a section,

@@ -92,16 +92,15 @@ integration step of its own.
    pulled `main`. If `npm ci` fails,
    the drafter stops and reports it rather than running checks without it,
    since `npx` would then fetch a different version of the tool.
-2. Each item gets one fresh Stage 3 reviewer, whose instruction adds: "Report
+2. Before a reviewer starts, check the draft yourself, since a drafter's report is not that check. Drafters don't commit, so `git -C <worktree> status --porcelain` must list the item's page (and, for a case study, its `.d2` and rendered files). Then run the kind's structure test from the worktree (`npx vitest run src/content/topic-structure.test.ts` or `src/system-design/case-study-structure.test.ts`), and run it again after step 3's fixes. Each item then gets one fresh Stage 3 reviewer, whose instruction adds: "Report
    only High and Medium correctness findings; a Teaching progression
    violation is Medium." Its existing items include the
    batch-mates' titles and slugs, and it also gets the drafts of any
    batch-mate the item links to.
-3. Its findings go through Stage 3's triage. You apply the fixes once, with no
-   full re-review (Fix rounds `1`), then send them back to the same reviewer
+3. Its findings go through Stage 3's triage. You apply the fixes once, with no full re-review (Fix rounds `1`), then send them back to the same reviewer
    by `SendMessage`: each changed paragraph, before and after. It confirms
    each fix holds or names what the fix broke, raising nothing new, and needs
-   no new agent. A broken fix gets one more fix and confirmation; one still
+   no new agent. A broken fix gets one more fix and confirmation (Fix rounds `2`); one still
    broken, or a High from the review, goes to the user.
 4. Integrate: copy each item's files from its worktree and run the skill's
    integration step, then run Stage 4 once for the batch (pre-gate steps,

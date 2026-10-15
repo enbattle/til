@@ -142,9 +142,7 @@ teach more depth, and they are where these pages send a reader for more.
 
 - **About ten minutes.** At most 2,300 words of prose, about ten minutes at
   230 words a minute; aim for roughly 1,700–2,000, not the cap. Tables count;
-  code blocks, diagrams and frontmatter don't. This is the canonical home for
-  these numbers; in code, `src/lib/reading-time.ts` owns them as
-  `WORDS_PER_MINUTE` and `WORD_BUDGET` (ten minutes' worth);
+  code blocks, diagrams and frontmatter don't. The cap and the reading speed live in `src/lib/reading-time.ts` as `WORD_BUDGET` (ten minutes' worth) and `WORDS_PER_MINUTE`, and this section quotes them;
   `case-study-structure.test.ts` imports `WORD_BUDGET`.
 - **Enough to reason, not everything.** An interview never covers every
   scenario, and a reader will be asked things no page mentions. Teach the few

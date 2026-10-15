@@ -7,8 +7,7 @@ missed.
 
 **Length.** Within the word budget (docs/writing-standard.md), not counting
 diagrams or code (docs/case-studies.md has the template; `case-study-structure.test.ts` counts
-them). Most of the budget goes to the three decisions, about 150–300 words
-each. When a draft runs long,
+them). The three decisions take the largest share of the budget (docs/case-studies.md gives their length). When a draft runs long,
 cut an exception or a second alternative before cutting a decision's reason.
 
 1. **Durability and duplicates, named, not exhaustively traced.** Where a

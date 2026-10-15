@@ -48,7 +48,7 @@ order: 4
   throws at load time, naming the file and field, if any of the four fields is
   missing or `order` isn't a positive integer, and `src/lib/system-design.test.ts`
   fails a duplicate `order`.
-- **These four keys and no others.** `parseCaseStudy` also
+- **These four keys and no others** (`CASE_STUDY_FIELDS` in `src/lib/system-design.ts`). `parseCaseStudy` also
   throws at load time on any other key, naming the file and the key
   (`checkFields` in `src/lib/frontmatter.ts`, shared by both loaders), and
   `case-study-structure.test.ts` checks the same allowlist.
@@ -76,9 +76,7 @@ order: 4
     step per line. It ends on the problem the architecture solves.
   - `High-level architecture`: at least one diagram with alt text, such as
     `![alt](/diagrams/<slug>/<name>.svg)` (the test reads the rendered page, so
-    the reference style counts too), then two or three short paragraphs (for
-    example the write path, then the read path), each with at most two new
-    terms.
+    the reference style counts too), then two to five short paragraphs (for example the write path, then the read path), each with at most two new terms.
   - `Key numbers`: opens with a sentence saying what the numbers size (the
     requests the servers answer, the data the database holds, the memory a
     cache needs), so a reader knows where each one lands. Then 4–5 figures,
@@ -105,11 +103,7 @@ order: 4
   order of ideas within a section (the reviewer checks those): a paragraph
   before the first `##`; the template's headings, in order; `Start simple`
   holding at least one paragraph and at least one code block;
-  `Requirements` as one list of 4–6
-  top-level items; `Key numbers` as a paragraph, then one list of 4–5
-  top-level items each opening with a bold `Label:`; each decision ending with
-  a `**Rule of thumb.**` paragraph with text after the label; `Likely
-follow-ups` as one list of 4–6 items each opening with bold; the diagram;
+  `Requirements`, `Key numbers` and `Likely follow-ups` in the list shapes and counts above; each decision ending with a `**Rule of thumb.**` paragraph with text after the label; the diagram;
   and the word budget, counted by `proseWordCount` in
   `src/lib/markdown.mjs`: the body's prose, outside code blocks, image alt
   text, raw HTML and reference definitions. An in-page link,
@@ -137,7 +131,7 @@ follow-ups` as one list of 4–6 items each opening with bold; the diagram;
 - **Diagrams are D2, rendered at build time.** Write one diagram per file at
   `src/system-design/diagrams/<slug>/<name>.d2` (lowercase kebab-case, one
   folder deep; both diagram scripts reject anything else), run `npm run diagrams`
-  (it needs d2 v0.9.x; install commands in [verification.md](verification.md)), and
+  (it needs d2, and tells you which version and how to install it if it's missing), and
   reference it in markdown as
   `![Alt text describing what the diagram shows](/diagrams/<slug>/<name>.svg)`.
   The renderer picks the `.light` or `.dark` file for the current theme, sizes
@@ -152,9 +146,7 @@ follow-ups` as one list of 4–6 items each opening with bold; the diagram;
   guard, so both `check:diagrams` and `npm run diagrams` reject it. Changing a `--color-*` token the
   diagrams use means re-running `npm run diagrams` too. Size a diagram by the add-case-study checklist (item 4: nodes and participants). The
   content column is about 720 px and a diagram is never scaled below 0.75, so
-  every rendered SVG stays at or below 960 px wide, target ~950
-  (`check:diagrams` fails a wider width in `manifest.json`; the limit is
-  `MAX_WIDTH` in `scripts/check-diagrams.mjs`). Lay it out to fit the column
+  every rendered SVG must fit within `MAX_WIDTH` in `scripts/check-diagrams.mjs` (`check:diagrams` fails a wider width in `manifest.json`); aim just under it. Lay it out to fit the column
   (`direction: down` usually fits better than `right`), use
   `shape: sequence_diagram` for a request flow, and look at the rendered SVG
   in both themes before committing. Commit the source, both SVGs and

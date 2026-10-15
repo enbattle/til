@@ -34,50 +34,31 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-14 | Case-study template 3 and ten-minute budget; CS base rewritten to template 3                                                                               | 4    | 0    | 0         | CS-* only; every plant ranked first; the base draws true template-3 findings.                        |
 | 2026-10-14 | CS base brought to template 3 (overview, Start simple ending, two-term paragraphs, decision breaks, guessing target)                                       | 5    | 0    | 0         | CS-01..04 plus a CS-03 re-run; plants all first; control draws fewer, smaller true findings.         |
 | 2026-10-15 | Retire the case-study `template` switch (Writing Standard, add-case-study checklist, CS base frontmatter); CR-01 recheck; CR-01 and CS base fixtures fixed | 5    | 0    | 0         | CS-01..04 plants first, control clean; CR-01 plant first after its fixture met Teaching progression. |
+| 2026-10-15 | Docs-audit follow-ups: architecture "two to five paragraphs" in the add-case-study checklist, Batch mode checks, CS base description                       | 1    | 0    | 0         | CS-03 control only; clean.                                                                           |
 
-## Latest run: 2026-10-15, retire the case-study template switch, and the CR-01 recheck
+## Latest run: 2026-10-15, docs-audit follow-ups
 
-**Trigger.** `docs/specs/retire-case-study-template-switch.md` changed several files:
+**Trigger.** This was a set of follow-up fixes from a docs audit:
 
-- the Writing Standard (it drops the two "old template" sentences);
-- the add-case-study checklist and review item;
-- the CS base (it drops its `template: 3` frontmatter line).
+- The architecture rule changed in add-case-study's Stage 3 review item (3) and in docs/case-studies.md. It went from "two or three short paragraphs" to "two to five": 10 of the 17 published case studies have 4–5, and reviewers had accepted 4 as a deviation.
+- docs/content-review.md's Batch mode gained a pre-review worktree check and the Fix-rounds count.
+- The Writing Standard's budget bullet now says the numbers live in code.
+- The CS base description got new word counts.
 
-The CR-01 recheck, which the teaching-progression plan scheduled for after the batch rewrites, rode along.
+No reviewer-facing rule tightened. Run with the new checklist text, the control checks the loosened rule raises no false positive.
 
-**Scope.** CS-01..04 and CR-01. Each scenario ran once. Fixture fixes followed by re-runs as noted.
+**Scope.** CS-03 only.
 
-| ID    | Planted violation                        | Caught?                                                   | Grade |
-| ----- | ---------------------------------------- | --------------------------------------------------------- | ----- |
-| CS-01 | Read rate off by ten (1,160/s for 116/s) | Yes, High, first                                          | PASS  |
-| CS-02 | Decision 1 announces its choice          | Yes, Medium, first                                        | PASS  |
-| CS-03 | None (control)                           | Only findings true of the draft, both runs                | PASS  |
-| CS-04 | "Nobody can ever guess a valid link"     | Yes, High, first                                          | PASS  |
-| CR-01 | "Hash function" never defined            | Yes, Medium. Ranked 4th, then 1st, 2nd and 1st over fixes | PASS  |
+| ID    | Planted violation | Caught?                         | Grade |
+| ----- | ----------------- | ------------------------------- | ----- |
+| CS-03 | None (control)    | Only findings true of the draft | PASS  |
 
-**Fixture changes:**
+**Notes:**
 
-- **CR-01's draft.** The 2026-10-14 run ranked its plant sixth, behind true pacing findings: the fixture predated the Teaching progression rules. Re-checking an unchanged fixture would rank it low again, so the draft was brought to those rules. The planted undefined "hash function" stays the only intended gap. The rewrite added:
-  - a route sentence;
-  - the exact in-memory set shown failing first (500 MB to 1 GB against 12.5 MB);
-  - every false-positive figure worked in a code block;
-  - hand-offs;
-  - a restatement.
-
-  The draft then went through three re-runs:
-  - The first ranked the plant first, but found two figures unworked. Those were worked.
-  - The second ranked it second, behind a real gap the fix itself introduced: per-server filters could miss a name. The multi-server wording was removed and the 5-bit example moved after "Why seven".
-  - The last ranked it first.
-
-  The last run's second finding is still a "definitely not" caveat: a restarted or second server misses adds. That is true of any single in-memory filter. Left for the next fixture pass. The fix is one sentence saying the database's uniqueness check still runs at insert.
-
-- **The CS base.** All four first-round reviewers flagged the same true gaps. Three were fixed:
-  - an unglossed IPv6 /64 parenthetical, which was cut;
-  - a second alternative, the encrypted counter, which was cut;
-  - "a few popular pastes", now "a small share".
-
-  The object-store gloss now says it copies across machines. CS-03 was re-run on the fixed base and passed. With the encrypted-counter sentence gone, that run asked "why random, not the URL shortener's counter?", the opposite of the earlier "a second alternative" finding. Left as is: either version draws one true Medium.
-
-**Left open:**
-
-- The CS base description ("about 1,560 words … 160–190 words each") is stale, since the base is now about 1,850 words. Recorded in the docs-audit log.
+- The architecture's three paragraphs passed the new rule.
+- The true findings carried over from the previous run's notes, each now worded the other way:
+  - the replica dismissed without a number;
+  - the per-address block versus IPv6 prefixes, now "block by prefix";
+  - why random over the URL shortener's counter.
+- New this run: the 4 GB cache assumes a size cap the page never states.
+- Left for the next fixture pass.

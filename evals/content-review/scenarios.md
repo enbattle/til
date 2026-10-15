@@ -18,14 +18,6 @@ near-duplicate check the same way a real `add-topic` review would.
 `CR-*` scenarios test `add-topic`'s review. The `CS-*` scenarios after them
 test `add-case-study`'s review the same way, with a case-study draft instead.
 
-On 2026-10-07 the five `CR-*` drafts were brought to the catalog standard
-(docs/writing-standard.md, "Catalog topics"): 600–900 words of prose, one
-running example carried through, the lecturer voice, every term defined, and
-a closing rule of thumb, so that each planted violation is again the draft's
-only real problem and CR-05 is again clean. Their planted violations kept
-their original wording; CR-02 and CR-03 now fence the draft with four
-backticks because the draft holds a code block.
-
 ---
 
 ### CR-01 — undefined jargon (trap for "define terms before using them")
@@ -821,10 +813,10 @@ result, plus the base diagram source, exactly as `add-case-study` Stage 3
 would give a real draft and its `.d2` files. These are fixtures for this eval
 only: never write them into `src/system-design/`.
 
-The base is a full case study for the template: about 1,560 words of prose,
+The base is a full case study for the template: about 1,900 words of prose,
 well inside the word budget (`WORD_BUDGET` in `src/lib/reading-time.ts`; words
 outside code blocks and image alt text, frontmatter excluded), with three
-decisions of about 160–190 words each. Each replacement changes one decision or
+decisions of about 185–225 words each. Each replacement changes one decision or
 one bullet, so every scenario stays inside the budget. A reviewer's true
 observations about what a ten-minute page leaves out on purpose (a sequence
 diagram, database failover detail) go in the run's notes and aren't graded.

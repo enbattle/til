@@ -9,8 +9,8 @@ Manual/periodic, same cadence philosophy as the `evals/` suite — not run
 on every commit, since a full-repo audit is too slow and too much to review
 for that. `.claude/hooks/nudge-precommit.js` only reminds a session to
 _consider_ it before a commit or push that changes anything besides published
-content, adding that an audit is due once 10 pull requests (not Dependabot's,
-nor the last audit's own) have merged since the last commit to this skill's
+content, adding that an audit is due once `AUDIT_DUE_AFTER` (in the hook) pull
+requests, not counting Dependabot's or the last audit's own, have merged since the last commit to this skill's
 results log. Drift across changes is what only a full audit sees, and it grows
 with merges.
 
