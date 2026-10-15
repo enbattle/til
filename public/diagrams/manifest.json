@@ -51,12 +51,12 @@
     }
   },
   "file-storage/architecture.d2": {
-    "sha256": "21f6e73be0a5b1275e82f991de02f6bc34a6074c2af80845fea5d583f7e828dc",
+    "sha256": "d56adbbb133c15e8ef05e0c28f3a2c69a350ee6ad9983bcb1f87fc47db633e67",
     "width": 664,
-    "height": 1272,
+    "height": 1288,
     "svgs": {
-      "light": "cb6b71291e9cdf251c97d48c3ca6e9e61b64adff9da9c3b8977b1f059d06c7b2",
-      "dark": "adcb6ea8335cb658c995f2e4a02a44181d56854074de664e5a9440399b9ba63b"
+      "light": "0e38af5aa3b337d9171d685e73326fdbc1c5fc536d66571920b339329a173010",
+      "dark": "bc9bc69b49b8e9abde1caf35bf374abf9d2d8f5c514a7882f174b6833b4aa256"
     }
   },
   "llm-chat-serving/architecture.d2": {
@@ -78,21 +78,21 @@
     }
   },
   "messaging/architecture.d2": {
-    "sha256": "8db7f441dc4ff3bad83fc5610fccd91b223fb5198543e5de1da0976b8595cfbf",
-    "width": 810,
-    "height": 1301,
+    "sha256": "f2f402baf9d19a5a03c0d552c0a5eaa7f84e4d1d3c2b133e9a7df9673491e89d",
+    "width": 817,
+    "height": 1114,
     "svgs": {
-      "light": "f167f64520bb4b63b0f7ff7fecdc49726d6a8c635e71d0bbf941abe817246248",
-      "dark": "0c4623effcc31b31af6f9a402bf12cc7178fa8a5c8264d29a095ff3fc1fc48c5"
+      "light": "6dc277b871c65b3fa29ab5db9084ba85e7d3aa532f55df7d2bdfcd7d606a1555",
+      "dark": "b614eeee21587d8e391d5d48fe6776440b06e08f67c429d0eec1edf9e9c201e8"
     }
   },
   "notification-system/architecture.d2": {
-    "sha256": "3885e02e025f3b6f2eaedce03cb6b3363d35e1b94799567d32882cc8893b4fde",
-    "width": 640,
-    "height": 1566,
+    "sha256": "e897f9dae8d4e181f47ce88bba0bd196c6860f6c193214866685f71d18ba1a7e",
+    "width": 784,
+    "height": 1582,
     "svgs": {
-      "light": "2a8f2ea401aa80b50e1c35c8c69f9bf59c56a741711742bd9739057513ae82ca",
-      "dark": "c76c79e313b8a6c34e1e6630f1d3495788c598a6562fb35e348d84992c3ac758"
+      "light": "bc66e4f8415b4efaf306b663f88b87680d127f3f8c4900fd8c812af389736e34",
+      "dark": "0f3154b63691e592277d956477d5a70c444568a459f841b3a9bbd242c0953b96"
     }
   },
   "payment-system/architecture.d2": {
@@ -114,12 +114,12 @@
     }
   },
   "rate-limiter/architecture.d2": {
-    "sha256": "6d6038ca4f49eea73b0e5382834c543d85aad5bd30a8e2fa1895e670a3d16ff5",
-    "width": 668,
+    "sha256": "7e386e48fda657965466f120ba9662993d86f8bb31beea61b84308dc0c45537a",
+    "width": 671,
     "height": 761,
     "svgs": {
-      "light": "5e5a6615b748a951cab5bbe1a9994b51cce1322d495008d055111e0f1b751796",
-      "dark": "810d624eef9437785260e0536ff90430140a8974e506a329ccf6a04fdebd4943"
+      "light": "3c72a85ceb2d0b69a4e67e9d884bec4369ddf9c6832fa73b081685ee9f293600",
+      "dark": "3b9eeeca8b5a538624f8e5e0f9fa42cc356ff465727a95f56f9dcb7e30a57d0f"
     }
   },
   "recommendation-system/architecture.d2": {

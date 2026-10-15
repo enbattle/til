@@ -1,12 +1,11 @@
 # High-level architecture of the chat app: clients hold one WebSocket each to a
-# gateway; the message service orders and stores each message; fan-out workers
-# deliver it to the gateways holding the recipients, or hand off to push.
+# gateway; the message service orders and stores each message; workers deliver
+# it to the gateways holding the recipients, or hand off to push.
 direction: down
 
 clients: Phones and desktops {
   style.multiple: true
 }
-lb: Load balancer
 gw: Connection gateways {
   style.multiple: true
 }
@@ -17,21 +16,20 @@ msg: Message service
 store: Message store {
   shape: cylinder
 }
-queue: Fan-out queue {
+queue: Queue {
   shape: queue
 }
-fanout: Fan-out workers
+workers: Workers
 push: Push service
 
-clients -> lb: "WebSocket, HTTPS"
-lb -> gw: "WebSocket"
-lb -> msg: "HTTPS: history, groups, resync"
+clients -> gw: "WebSocket"
+clients -> msg: "HTTPS: history, groups"
 gw -> registry: "user is here"
-gw -> msg: "send, sync, receipts"
-msg -> store: "append, read by cursor"
-msg -> queue: "messages, receipts"
-queue -> fanout
-fanout -> registry: "where is each member?"
-fanout -> store: "inbox entries"
-fanout -> gw: "deliver"
-fanout -> push: "offline members"
+gw -> msg: "sends, catch-up requests, ticks"
+msg -> store: "save, read"
+msg -> queue: "new messages, ticks"
+queue -> workers
+workers -> registry: "where is each member?"
+workers -> store: "an entry per member"
+workers -> gw: "deliver"
+workers -> push: "offline members"
