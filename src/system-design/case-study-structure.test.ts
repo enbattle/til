@@ -17,16 +17,17 @@ import {
  * `MarkdownRenderer` produces, so a heading, link, list item or id counts
  * exactly when the reader's page has it. The shared plumbing is in
  * src/test/structure.ts.
+ *
+ * There is one template (docs/specs/retire-case-study-template-switch.md):
+ * an intro, Requirements, Start simple, the architecture, Key numbers, the
+ * API and data model, three decisions and the likely follow-ups. The
+ * frontmatter is exactly title, summary, date and order, with no optional
+ * keys.
  */
 
 const FILES = Object.entries(RAW_CASE_STUDIES);
 
 const REQUIRED_KEYS = ['title', 'summary', 'date', 'order'];
-// docs/specs/case-study-template-3.md: `template: 3` switches a page to
-// template 3; no other value is allowed, and a page without it keeps the old
-// template until the switch is retired.
-const OPTIONAL_KEYS = ['template'];
-const TEMPLATE_3 = '3';
 const IN_PAGE = 'a[href^="#"]';
 
 function brokenInPageLinks(page: HTMLElement): string[] {
@@ -60,16 +61,6 @@ function diagramProblems(page: HTMLElement): string[] {
 }
 
 const DECISION = /^Decision: \S.*$/;
-const TEMPLATE: (string | RegExp)[] = [
-  'Requirements',
-  'Key numbers',
-  'High-level architecture',
-  'API and data model',
-  DECISION,
-  DECISION,
-  DECISION,
-  'Likely follow-ups',
-];
 
 /** The text of the bold that `block` (a list item or paragraph) opens with,
  * looking through a loose item's paragraph; `undefined` when it doesn't open
@@ -94,7 +85,7 @@ function introProblems(page: HTMLElement): string[] {
 }
 
 const START_SIMPLE = /^Start simple(: \S.*)?$/;
-const TEMPLATE_3_HEADINGS: (string | RegExp)[] = [
+const TEMPLATE: (string | RegExp)[] = [
   'Requirements',
   START_SIMPLE,
   'High-level architecture',
@@ -106,27 +97,21 @@ const TEMPLATE_3_HEADINGS: (string | RegExp)[] = [
   'Likely follow-ups',
 ];
 
-const OLD_NEED =
-  'need Requirements, Key numbers, High-level architecture, API and data model, three "Decision: <topic>", Likely follow-ups';
-const TEMPLATE_3_NEED =
+const NEED =
   'need Requirements, Start simple, High-level architecture, Key numbers, API and data model, three "Decision: <topic>", Likely follow-ups';
 
-/** The heading rule: the page's h2s are exactly `template`, in order. */
-function headingProblems(
-  page: HTMLElement,
-  template: (string | RegExp)[] = TEMPLATE,
-  need = OLD_NEED,
-): string[] {
+/** The heading rule: the page's h2s are exactly TEMPLATE, in order. */
+function headingProblems(page: HTMLElement): string[] {
   const headings = [...page.querySelectorAll('h2')].map((h) => h.textContent?.trim());
   const matches =
-    headings.length === template.length &&
-    template.every((want, i) =>
+    headings.length === TEMPLATE.length &&
+    TEMPLATE.every((want, i) =>
       typeof want === 'string' ? headings[i] === want : want.test(headings[i] ?? ''),
     );
-  return matches ? [] : [`headings are ${JSON.stringify(headings)}, ${need}`];
+  return matches ? [] : [`headings are ${JSON.stringify(headings)}, ${NEED}`];
 }
 
-/** Template 3's "Start simple" section holds at least one paragraph and at
+/** The "Start simple" section holds at least one paragraph and at
  * least one code block, fenced or indented (the worked arithmetic). */
 function startSimpleProblems(page: HTMLElement): string[] {
   const h2 = [...page.querySelectorAll('h2')].find((h) =>
@@ -206,19 +191,13 @@ function decisionProblems(page: HTMLElement): string[] {
     });
 }
 
-/** Every structure rule's problems for `body`, on the old template or (with
- * `template` "3") template 3; [] when it's right. */
-function structureProblems(body: string, template?: string): string[] {
+/** Every structure rule's problems for `body`; [] when it's right. */
+function structureProblems(body: string): string[] {
   const page = renderBody(body);
-  const isTemplate3 = template === TEMPLATE_3;
   return [
     ...introProblems(page),
-    ...(isTemplate3
-      ? [
-          ...headingProblems(page, TEMPLATE_3_HEADINGS, TEMPLATE_3_NEED),
-          ...startSimpleProblems(page),
-        ]
-      : headingProblems(page)),
+    ...headingProblems(page),
+    ...startSimpleProblems(page),
     ...listProblems(page, 'Requirements', 4, 6),
     ...keyNumbersProblems(page),
     ...decisionProblems(page),
@@ -235,23 +214,15 @@ function structureProblems(body: string, template?: string): string[] {
 /** The problems with one case-study file, frontmatter included. */
 function fileProblems(file: string, raw: string): string[] {
   const { data, content } = parseFrontmatter(raw);
-  const badTemplate =
-    'template' in data && data.template !== TEMPLATE_3
-      ? [
-          `${file}: frontmatter key "template" must be ${TEMPLATE_3}, got ${JSON.stringify(data.template)}`,
-        ]
-      : [];
   return [
-    ...frontmatterProblems(file, data, REQUIRED_KEYS, OPTIONAL_KEYS),
-    ...badTemplate,
-    ...structureProblems(content, data.template),
+    ...frontmatterProblems(file, data, REQUIRED_KEYS),
+    ...structureProblems(content),
   ];
 }
 
-// Each file is checked on the template its frontmatter names: `template: 3`
-// on template 3, no `template` on the old one (case-study-template-3
-// criterion 8).
-describe('case-study structure (retire-template-switch criteria 1, 4 and 7; case-study-template-3 criterion 8)', () => {
+// Every file is checked on the one template, its frontmatter on the exact
+// allowlist (retire-case-study-template-switch criterion 7).
+describe('case-study structure (retire-template-switch criteria 1, 4 and 7; retire-case-study-template-switch criterion 7)', () => {
   it('has at least one case study to check', () => {
     expect(FILES.length).toBeGreaterThan(0);
   });
@@ -261,7 +232,7 @@ describe('case-study structure (retire-template-switch criteria 1, 4 and 7; case
   });
 });
 
-describe('the structure check itself (five-minute criteria 8 and 10; retire-template-switch criteria 1, 3, 4 and 6; case-study-template-3 criteria 2, 4 and 5)', () => {
+describe('the structure check itself (five-minute criteria 8 and 10; retire-template-switch criteria 3 and 6; case-study-template-3 criteria 2, 4 and 6; retire-case-study-template-switch criteria 1-6)', () => {
   const INTRO = 'A URL shortener turns a long link into a short one.';
   const REQUIREMENTS = [
     '- Shorten a URL to a seven-character code.',
@@ -282,20 +253,33 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
     '- **Expiry?** A TTL column.',
   ].join('\n');
   const RULE_1 = '**Rule of thumb.** Prefer codes that need no coordination.';
-  // Each section on its own, so GOOD (the old template) and GOOD_3 (template
-  // 3) share every section's text and the same planted case fits both.
+  // Each section on its own, so a test can drop, swap or reorder whole
+  // sections.
   const S_REQUIREMENTS = ['## Requirements', 'What it must do:', REQUIREMENTS].join(
     '\n\n',
   );
-  const S_KEY_NUMBERS = [
-    '## Key numbers',
-    'The estimates that size it:',
-    KEY_NUMBERS,
-  ].join('\n\n');
+  // "Start simple" second, with a paragraph and the worked arithmetic as a
+  // code block.
+  const START_PARAGRAPH = 'One database and no cache: every redirect reads it.';
+  const START_CODE = [
+    '```text',
+    'peak reads   = 116,000 a second',
+    'one database = 10,000 reads a second',
+    'databases    = 116,000 / 10,000 = 12',
+    '```',
+  ].join('\n');
+  const S_START = ['## Start simple', START_PARAGRAPH, START_CODE].join('\n\n');
+  // The architecture (diagram plus a short paragraph) before Key numbers.
   const ARCHITECTURE_PARAGRAPH = 'Writes go to the store; reads go through a cache.';
   const S_ARCHITECTURE = [
     '## High-level architecture',
     '![The architecture](/diagrams/demo/architecture.svg)',
+    ARCHITECTURE_PARAGRAPH,
+  ].join('\n\n');
+  const S_KEY_NUMBERS = [
+    '## Key numbers',
+    'The estimates that size it:',
+    KEY_NUMBERS,
   ].join('\n\n');
   const S_API = ['## API and data model', 'One table, keyed by code.'].join('\n\n');
   const S_DECISIONS = [
@@ -310,64 +294,39 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
     '**Rule of thumb.** Use the simplest store that holds the data.',
   ].join('\n\n');
   const S_FOLLOW_UPS = ['## Likely follow-ups', FOLLOW_UPS].join('\n\n');
-  const GOOD = [
-    INTRO,
-    S_REQUIREMENTS,
-    S_KEY_NUMBERS,
-    S_ARCHITECTURE,
-    S_API,
-    S_DECISIONS,
-    S_FOLLOW_UPS,
-  ].join('\n\n');
-
-  // Template 3 (docs/specs/case-study-template-3.md): "Start simple" second,
-  // with a paragraph and the worked arithmetic as a code block, then
-  // the architecture (diagram plus short paragraphs) before Key numbers.
-  const START_PARAGRAPH = 'One database and no cache: every redirect reads it.';
-  const START_CODE = [
-    '```text',
-    'peak reads   = 116,000 a second',
-    'one database = 10,000 reads a second',
-    'databases    = 116,000 / 10,000 = 12',
-    '```',
-  ].join('\n');
-  const S_START = ['## Start simple', START_PARAGRAPH, START_CODE].join('\n\n');
-  const S_ARCHITECTURE_3 = `${S_ARCHITECTURE}\n\n${ARCHITECTURE_PARAGRAPH}`;
-  const SECTIONS_3 = [
+  const SECTIONS = [
     INTRO,
     S_REQUIREMENTS,
     S_START,
-    S_ARCHITECTURE_3,
+    S_ARCHITECTURE,
     S_KEY_NUMBERS,
     S_API,
     S_DECISIONS,
     S_FOLLOW_UPS,
   ];
-  const GOOD_3 = SECTIONS_3.join('\n\n');
-
-  /** `base` with `from` (which must occur in it exactly once) replaced by `to`. */
-  function plantedIn(base: string, from: string, to: string): string {
-    expect(base.split(from)).toHaveLength(2);
-    return base.replace(from, to);
-  }
+  const GOOD = SECTIONS.join('\n\n');
 
   /** GOOD with `from` (which must occur in it exactly once) replaced by `to`. */
   function planted(from: string, to: string): string {
-    return plantedIn(GOOD, from, to);
+    expect(GOOD.split(from)).toHaveLength(2);
+    return GOOD.replace(from, to);
   }
 
-  /** GOOD_3 with `from` (which must occur in it exactly once) replaced by `to`. */
-  function planted3(from: string, to: string): string {
-    return plantedIn(GOOD_3, from, to);
+  /** SECTIONS with the sections at `from` and `to` swapped, joined. */
+  function swapped(from: string, to: string): string {
+    const sections = [...SECTIONS];
+    const [i, j] = [sections.indexOf(from), sections.indexOf(to)];
+    expect(i).toBeGreaterThan(-1);
+    expect(j).toBeGreaterThan(-1);
+    [sections[i], sections[j]] = [sections[j], sections[i]];
+    return sections.join('\n\n');
   }
 
-  /** `base` (GOOD by default) with filler words added to its intro until it
-   * has `words`. */
-  function withWords(words: number, base = GOOD): string {
-    const missing = words - proseWordCount(base);
+  /** GOOD with filler words added to its intro until it has `words`. */
+  function withWords(words: number): string {
+    const missing = words - proseWordCount(GOOD);
     expect(missing).toBeGreaterThan(0);
-    const body = plantedIn(
-      base,
+    const body = planted(
       INTRO,
       `${INTRO} ${Array.from({ length: missing }, () => 'word').join(' ')}`,
     );
@@ -389,18 +348,27 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
     return `---\n${lines.join('\n')}\n---\n\n${body}`;
   }
 
+  // retire-case-study-template-switch criterion 1: the body that passed with
+  // `template: 3` passes on the one template, with no switch.
   it('passes the GOOD fixture on every rule', () => {
     expect(structureProblems(GOOD)).toEqual([]);
   });
 
-  // Criterion 1: a body that passed with `template: 2` passes without it.
+  // Criterion 3: the frontmatter is exactly title, summary, date and order.
   it('passes GOOD through a file with exactly title, summary, date and order', () => {
     expect(fileProblems(FILE, withFrontmatter(GOOD))).toEqual([]);
   });
 
-  // Criterion 4 (and template-3 criterion 4): the frontmatter keys are an
-  // allowlist; `template` is allowed only with the value 3.
+  it('accepts "Start simple: the naive feed" as the heading', () => {
+    expect(
+      structureProblems(planted('## Start simple', '## Start simple: the naive feed')),
+    ).toEqual([]);
+  });
+
+  // Criterion 3: the keys are an exact allowlist with no optional keys, so
+  // `template` is unknown whatever its value.
   it.each([
+    ['template', '3'],
     ['template', '2'],
     ['template', 'three'],
     ['template', ''],
@@ -423,8 +391,9 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
     expect(problems[0]).toContain('"order"');
   });
 
-  // Criterion 3: the old shape (`At a glance` first, `Deep dive:` sections)
-  // is no longer a template; it fails the heading rule.
+  // retire-template-switch criterion 3: the oldest shape (`At a glance`
+  // first, `Deep dive:` sections) is not a template; it fails the heading
+  // rule.
   it('fails a body in the old shape on the heading rule', () => {
     const old = [
       'Intro paragraph.',
@@ -444,8 +413,83 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
       '## Trade-offs',
     ].join('\n\n');
     expect(fileProblems(FILE, withFrontmatter(old))).toContainEqual(
-      expect.stringContaining('headings are'),
+      expect.stringContaining(NEED),
     );
+  });
+
+  // Criterion 2: there is no old-template path. A body in the old order
+  // (Key numbers before the architecture, no "Start simple") fails the
+  // heading rule, with or without frontmatter, as does each planted heading
+  // case.
+  const OLD_ORDER = [
+    INTRO,
+    S_REQUIREMENTS,
+    S_KEY_NUMBERS,
+    S_ARCHITECTURE,
+    S_API,
+    S_DECISIONS,
+    S_FOLLOW_UPS,
+  ].join('\n\n');
+
+  it('fails a file in the old order on the heading rule', () => {
+    expect(fileProblems(FILE, withFrontmatter(OLD_ORDER))).toContainEqual(
+      expect.stringContaining(NEED),
+    );
+  });
+
+  it.each([
+    ['the old order', OLD_ORDER],
+    ['no "Start simple"', SECTIONS.filter((s) => s !== S_START).join('\n\n')],
+    [
+      '"Key numbers" before "High-level architecture"',
+      swapped(S_ARCHITECTURE, S_KEY_NUMBERS),
+    ],
+    ['"Start simple" after the architecture', swapped(S_START, S_ARCHITECTURE)],
+    ['"Key numbers" before "Requirements"', swapped(S_REQUIREMENTS, S_KEY_NUMBERS)],
+    ['a missing heading', GOOD.replace(`${S_API}\n\n`, '')],
+    [
+      'an old-template heading',
+      GOOD.replace('## Key numbers', '## Back-of-the-envelope estimates'),
+    ],
+    ['two decisions', GOOD.replace('## Decision: storage', 'Storage, too:')],
+    [
+      'four decisions',
+      GOOD.replace(
+        '## Likely follow-ups',
+        '## Decision: ids\n\nIds.\n\n**Rule of thumb.** Short.\n\n## Likely follow-ups',
+      ),
+    ],
+    [
+      'a decision heading with no topic',
+      GOOD.replace('## Decision: storage', '## Decision:'),
+    ],
+    [
+      '"Start simple:" with no topic',
+      GOOD.replace('## Start simple', '## Start simple:'),
+    ],
+  ])('fails %s on the heading rule', (_, body) => {
+    expect(body).not.toBe(GOOD);
+    expect(structureProblems(body)).toContainEqual(expect.stringContaining(NEED));
+  });
+
+  it.each([
+    ['with no code block', `\n\n${START_CODE}`, '', '"Start simple" has no code block'],
+    [
+      'with no paragraph',
+      `${START_PARAGRAPH}\n\n`,
+      '',
+      '"Start simple" has no paragraph',
+    ],
+  ])('fails a "Start simple" section %s', (_, from, to, problem) => {
+    expect(structureProblems(planted(from, to))).toContainEqual(problem);
+  });
+
+  it('does not count a code block outside "Start simple"', () => {
+    const body = planted(`\n\n${START_CODE}`, '').replace(
+      ARCHITECTURE_PARAGRAPH,
+      `${ARCHITECTURE_PARAGRAPH}\n\n${START_CODE}`,
+    );
+    expect(structureProblems(body)).toContainEqual('"Start simple" has no code block');
   });
 
   /** [name, from, to, problem]: GOOD with `from` planted as `to` fails with a
@@ -456,37 +500,6 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
       `${INTRO}\n\n`,
       '',
       'no paragraph before the first h2',
-    ],
-    [
-      'a missing heading',
-      '## API and data model\n\nOne table, keyed by code.\n\n',
-      '',
-      'headings are',
-    ],
-    [
-      'an old-template heading',
-      '## Key numbers',
-      '## Back-of-the-envelope estimates',
-      'headings are',
-    ],
-    [
-      'headings out of order',
-      '## Requirements\n\nWhat it must do:\n\n' + REQUIREMENTS + '\n\n## Key numbers',
-      '## Key numbers\n\nWhat it must do:\n\n' + REQUIREMENTS + '\n\n## Requirements',
-      'headings are',
-    ],
-    ['two decisions', '## Decision: storage', 'Storage, too:', 'headings are'],
-    [
-      'four decisions',
-      '## Likely follow-ups',
-      '## Decision: ids\n\nIds.\n\n**Rule of thumb.** Short.\n\n## Likely follow-ups',
-      'headings are',
-    ],
-    [
-      'a decision heading with no topic',
-      '## Decision: storage',
-      '## Decision:',
-      'headings are',
     ],
     [
       'three requirements',
@@ -616,137 +629,22 @@ describe('the structure check itself (five-minute criteria 8 and 10; retire-temp
     ],
   ];
 
-  // template-3 criterion 5: on a page without `template`, every old-template
-  // planted case still fails exactly as before.
+  // Criterion 6: every other rule still fails as before, on the one
+  // template.
   it.each(CASES)('fails %s', (_, from, to, problem) => {
     expect(structureProblems(planted(from, to))).toContainEqual(
       expect.stringContaining(problem),
     );
   });
 
-  // template-3 criterion 6, last bullet: every rule but the heading rule
-  // fails a template-3 page as it does an old-template one. The heading cases
-  // are template 3's own, below.
-  it.each(CASES.filter(([, , , problem]) => problem !== 'headings are'))(
-    'fails %s on a template-3 page',
-    (_, from, to, problem) => {
-      expect(structureProblems(planted3(from, to), '3')).toContainEqual(
-        expect.stringContaining(problem),
-      );
-    },
-  );
-
-  // template-3 criterion 2: the ten-minute budget, 2,300 words, on both
-  // templates.
-  it.each([
-    ['the old template', GOOD, undefined],
-    ['template 3', GOOD_3, '3'],
-  ] as const)('passes a body of exactly 2,300 words on %s', (_, base, template) => {
-    expect(structureProblems(withWords(2300, base), template)).toEqual([]);
+  // Criterion 5: the ten-minute budget, 2,300 words.
+  it('passes a body of exactly 2,300 words', () => {
+    expect(structureProblems(withWords(2300))).toEqual([]);
   });
 
-  it.each([
-    ['the old template', GOOD, undefined],
-    ['template 3', GOOD_3, '3'],
-  ] as const)(
-    'fails a body of 2,301 words on %s, naming the count',
-    (_, base, template) => {
-      const problems = structureProblems(withWords(2301, base), template);
-      expect(problems).toHaveLength(1);
-      expect(problems[0]).toContain('2301');
-    },
-  );
-
-  describe('template 3 (case-study-template-3 criteria 4, 6 and 7)', () => {
-    it('passes the GOOD_3 fixture on every rule', () => {
-      expect(structureProblems(GOOD_3, '3')).toEqual([]);
-    });
-
-    it('passes GOOD_3 through a file with title, summary, date, order and template: 3', () => {
-      expect(
-        fileProblems(FILE, withFrontmatter(GOOD_3, { ...FRONTMATTER, template: '3' })),
-      ).toEqual([]);
-    });
-
-    it('accepts "Start simple: the naive feed" as the heading', () => {
-      expect(
-        structureProblems(
-          planted3('## Start simple', '## Start simple: the naive feed'),
-          '3',
-        ),
-      ).toEqual([]);
-    });
-
-    /** SECTIONS_3 with the sections at `from` and `to` swapped, joined. */
-    function swapped(from: string, to: string): string {
-      const sections = [...SECTIONS_3];
-      const [i, j] = [sections.indexOf(from), sections.indexOf(to)];
-      expect(i).toBeGreaterThan(-1);
-      expect(j).toBeGreaterThan(-1);
-      [sections[i], sections[j]] = [sections[j], sections[i]];
-      return sections.join('\n\n');
-    }
-
-    it.each([
-      ['the old order', GOOD],
-      ['no "Start simple"', SECTIONS_3.filter((s) => s !== S_START).join('\n\n')],
-      [
-        '"Key numbers" before "High-level architecture"',
-        swapped(S_ARCHITECTURE_3, S_KEY_NUMBERS),
-      ],
-      ['"Start simple" after the architecture', swapped(S_START, S_ARCHITECTURE_3)],
-      ['two decisions', GOOD_3.replace('## Decision: storage', 'Storage, too:')],
-      [
-        'four decisions',
-        GOOD_3.replace(
-          '## Likely follow-ups',
-          '## Decision: ids\n\nIds.\n\n**Rule of thumb.** Short.\n\n## Likely follow-ups',
-        ),
-      ],
-      [
-        '"Start simple:" with no topic',
-        GOOD_3.replace('## Start simple', '## Start simple:'),
-      ],
-    ])('fails %s on the template-3 heading rule', (_, body) => {
-      expect(body).not.toBe(GOOD_3);
-      expect(structureProblems(body, '3')).toContainEqual(
-        expect.stringContaining(TEMPLATE_3_NEED),
-      );
-    });
-
-    it.each([
-      ['with no code block', `\n\n${START_CODE}`, '', '"Start simple" has no code block'],
-      [
-        'with no paragraph',
-        `${START_PARAGRAPH}\n\n`,
-        '',
-        '"Start simple" has no paragraph',
-      ],
-    ])('fails a "Start simple" section %s', (_, from, to, problem) => {
-      expect(structureProblems(planted3(from, to), '3')).toContainEqual(problem);
-    });
-
-    it('does not count a code block outside "Start simple"', () => {
-      const body = planted3(`\n\n${START_CODE}`, '').replace(
-        ARCHITECTURE_PARAGRAPH,
-        `${ARCHITECTURE_PARAGRAPH}\n\n${START_CODE}`,
-      );
-      expect(structureProblems(body, '3')).toContainEqual(
-        '"Start simple" has no code block',
-      );
-    });
-
-    // Criterion 7: no cross-over between the templates.
-    it('fails a page without template laid out in the template-3 order, on the old heading rule', () => {
-      expect(fileProblems(FILE, withFrontmatter(GOOD_3))).toContainEqual(
-        expect.stringContaining(OLD_NEED),
-      );
-    });
-
-    it('fails a template: 3 page in the old order, on the template-3 heading rule', () => {
-      expect(
-        fileProblems(FILE, withFrontmatter(GOOD, { ...FRONTMATTER, template: '3' })),
-      ).toContainEqual(expect.stringContaining(TEMPLATE_3_NEED));
-    });
+  it('fails a body of 2,301 words, naming the count', () => {
+    const problems = structureProblems(withWords(2301));
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('2301');
   });
 });

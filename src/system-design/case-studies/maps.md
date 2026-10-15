@@ -3,7 +3,6 @@ title: Design a Maps and Navigation Service (like Google Maps)
 summary: Vector map tiles served from a CDN, routing that re-weights a pre-cut road graph every minute, and live traffic built from navigating phones' GPS points, for 350,000 tile requests a second at peak.
 date: 2026-10-05
 order: 12
-template: 3
 ---
 
 You're asked to design a service like Google Maps. A driver types "blue bottle coffee", taps the first result and asks the way there. That is three jobs on one picture of the world: drawing the map, **geocoding** (turning a name or address into a point, and back), and routing with an **ETA** (estimated time of arrival) that reflects current traffic, which comes from the phones being routed.

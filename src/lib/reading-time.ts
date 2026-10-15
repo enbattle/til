@@ -3,8 +3,9 @@
 export const WORDS_PER_MINUTE = 230;
 
 /** The case studies' word budget (the Writing Standard's "Case studies"
- * section): ten minutes' worth of reading, 2,300 words, on either template
- * (docs/specs/case-study-template-3.md). The case-study structure test imports
+ * section): ten minutes' worth of reading, 2,300 words
+ * (docs/specs/case-study-template-3.md; one template since
+ * docs/specs/retire-case-study-template-switch.md). The case-study structure test imports
  * it rather than defining its own. */
 export const WORD_BUDGET = 10 * WORDS_PER_MINUTE;
 

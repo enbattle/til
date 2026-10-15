@@ -314,7 +314,7 @@ Writing Standard, including whether its claims hold, is `content-audit`'s
 single-file scope. The prompt names no specific fix and asks for claims to be
 checked, so the direct-edit carve-out does not apply.
 **Fails if:** rewritten directly in the same session (as SR-11), routed through `add-case-study` (that skill drafts a new file
-and its diagrams, or moves a page to the current template; it has no path for
+and its diagrams, or rewrites a page from scratch; it has no path for
 polishing a published one in place) or `/feature`
 (no app behavior involved).
 
@@ -356,7 +356,7 @@ five-minute format" to `add-case-study`. Every case study was rewritten to that
 format, and `docs/specs/retire-template-switch.md` dropped template rewrites
 from the skills' descriptions, so the scenario no longer has a right answer.
 The ID is kept so past results under `results/` still line up; don't reuse it.
-SR-22 covers the same routing for template 3.
+SR-23 covers routing a case-study rewrite now.
 
 ---
 
@@ -383,7 +383,26 @@ don't reuse it.
 ### SR-22 — retired
 
 This scenario routed "rewrite the URL shortener case study to the new template"
-to `add-case-study`'s rewrite mode. Every case study is now on template 3
+to `add-case-study`'s rewrite mode. Every case study is now on the case-study template
 (batches #142–#145), so no page is left to rewrite and the scenario has no
-right answer. Retiring the `template: 3` switch revisits that rewrite mode.
+right answer. `docs/specs/retire-case-study-template-switch.md` retired the
+switch; rewrite mode stays, for rewriting a case study in general.
 The ID is kept so past results under `results/` still line up; don't reuse it.
+
+---
+
+### SR-23 — rewrite an existing case study from scratch
+
+<!-- premise: src/system-design/case-studies/payment-system.md exists -->
+
+> The payment system case study reads badly. Rewrite it from scratch, keeping
+> what it covers.
+
+**Expected:** `add-case-study`
+**Why:** The skill's rewrite mode covers rewriting an existing case study: it
+keeps the file, slug, `order` and all content, restructures the prose to the
+template, and sends the result through the same independent review as a new
+page.
+**Fails if:** routed to `content-audit` (that skill checks an existing page's
+prose without rewriting it), to `add-topic` (a case study isn't a catalog
+topic), or rewritten directly with no independent review.

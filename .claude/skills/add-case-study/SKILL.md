@@ -1,6 +1,6 @@
 ---
 name: add-case-study
-description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, or rewrite an existing one to the current case-study template, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a collaborative editor case study", "add the next case study") or to move an existing case study to the new template ("rewrite the chat case study to the new template") — not for a catalog topic under src/content/ (that's add-topic), not for checking or revising an existing case study's prose quality without changing its template (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
+description: Add a new System Design case study (a "design X" write-up under src/system-design/case-studies/, with its D2 diagrams) to this til repo, or rewrite an existing one to the case-study template, with an independent review against the Writing Standard and a case-study checklist before it's considered done. Use when the user asks to add, write or draft a System Design case study ("design a news feed", "a collaborative editor case study", "add the next case study") or to rewrite an existing case study ("rewrite the chat case study from scratch") — not for a catalog topic under src/content/ (that's add-topic), not for checking or revising an existing case study's prose quality without rewriting it (content-audit), and not for changes to the case-study page, loader or diagram tooling (that's app code: /feature).
 ---
 
 # Add a case study
@@ -19,8 +19,8 @@ stages every content skill shares and why content gets this lighter process.
 
 ## Stage 0 — Scope check
 
-This skill adds one case study file plus its diagrams, or rewrites one to the
-current template (rewrite mode, below). If the request also
+This skill adds one case study file plus its diagrams, or rewrites an
+existing one (rewrite mode, below). If the request also
 needs a change to the case-study page, the loader, the render or check
 scripts, or anything else under `src/` outside
 `src/system-design/case-studies/` and `src/system-design/diagrams/`, stop:
@@ -38,7 +38,7 @@ installed, say so and give the install command docs/verification.md lists; don't
 Write it yourself, directly, as `add-topic` does. Read
 [checklist.md](checklist.md) before drafting and check the draft against it
 before Stage 2: it lists the problems reviews most often find. Read
-`src/system-design/case-studies/social-feed.md` first: it is template 3's
+`src/system-design/case-studies/social-feed.md` first: it is the template's
 reference example for length, voice, the "Start simple" arithmetic and how
 key numbers are laid out. Read the Writing
 Standard's "Case studies" section too: it sets the budget and
@@ -48,10 +48,10 @@ the voice.
   Frontmatter: `title` ("Design a <Thing> (like <familiar product>)"),
   a one-sentence `summary`, `date` (today), `order` (the next free
   positive integer; `ls src/system-design/case-studies/` and read the
-  existing orders), `template: 3`, and no other key.
-- **Template**: use template 3's `##` headings, with what each section holds,
+  existing orders), and no other key.
+- **Template**: use the template's `##` headings, with what each section holds,
   in [docs/case-studies.md](../../../docs/case-studies.md) ("The template is
-  enforced, per page"); `social-feed.md` shows it. Recompute every key-numbers line
+  enforced"); `social-feed.md` shows it. Recompute every key-numbers line
   before moving on.
 - **Budget**: draft the decisions first (about 150–300 words each), then fit
   the rest around them. Run
@@ -78,9 +78,9 @@ the voice.
   only that. Reference-style images work too: the structure test and
   `check:diagrams` both resolve them.
 
-**Rewrite mode** (moving an existing case study to the current template):
-follow docs/case-studies.md's "Migrating (2026-10)" note. Keep the file, its
-slug, its `order` and all its content; restructure and rewrite the prose
+**Rewrite mode** (rewriting an existing case study): keep the file, its
+slug, its `order` and all its content: every requirement, number, decision,
+rejected alternative and follow-up stays. Restructure and rewrite the prose
 rather than cut it, and adjust its diagrams only where the new structure
 needs it. Stages 2–4 run as for a new page, with review item 8.
 
@@ -110,10 +110,8 @@ Follow [docs/content-review.md](../../../docs/content-review.md) with:
   stated requirements or a stated assumption; (2) check that each decision
   runs simpler option → where it breaks in this design's numbers → the choice
   → its cost → rule of thumb, in about 150–300 words, and that the rule
-  follows from it; flag one that leads with its choice or just announces it
-  (a page still on the old template is checked against its old shape until
-  it's rewritten); (3) on a `template: 3` page, check the rules no test
-  enforces: the intro states the question, a one-sentence overview and the
+  follows from it; flag one that leads with its choice or just announces it;
+  (3) check the rules no test enforces: the intro states the question, a one-sentence overview and the
   route; "Start simple" shows the simple design working, then breaking on the
   page's numbers; the architecture is the diagram plus two or three short
   paragraphs with at most two new terms each; Key numbers size only parts the

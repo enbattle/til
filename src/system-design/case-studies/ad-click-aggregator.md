@@ -3,7 +3,6 @@ title: Design an Ad Click Aggregator (like an ad network's click reporting)
 summary: One billion clicks a day counted per ad per minute, each click once, with versioned counts that make replays harmless and a daily batch that settles billing.
 date: 2026-10-05
 order: 13
-template: 3
 ---
 
 You're asked to design an ad network's click reporting. A visitor clicks an ad, the network's server records the click and redirects to the advertiser's page, and a **dashboard**, a web page of live numbers, shows clicks per ad per minute. Advertisers are billed per click, so a count off by a few percent is an overcharge or a refund.

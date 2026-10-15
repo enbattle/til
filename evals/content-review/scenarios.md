@@ -40,12 +40,13 @@ reviewer rightly flagged the earlier `engineering-practices` placement on
 one on 2026-09-24; the draft now ends with that section, naming only systems
 from docs/content.md's fixed set, so the section's rules are met.
 **Planted violation (the only one; the rest of the draft was corrected on
-2026-09-24 so this one stands out):** never defines "hash function" before
+2026-09-24, and brought to the Writing Standard's Teaching progression rules on
+2026-10-15, so this one stands out):** never defines "hash function" before
 relying on it as load-bearing vocabulary — a reader with zero background has no way
 to know what "hash the item" actually means or why multiple hashes are
 used.
 
-```markdown
+````markdown
 ---
 title: Bloom Filters
 summary: A space-efficient way to check "definitely not present" instantly, at the cost of occasional false positives.
@@ -57,25 +58,50 @@ it's already taken. You have 10 million accounts, and each check is a database
 query that takes a few milliseconds. Most names people try are new, so most of
 those queries come back empty. Could you skip the empty ones?
 
-A **Bloom filter** lets you. It's a small structure kept in memory, in front of
-the database, that answers one question: "could this name already exist?" It
-gives one of two answers. "Definitely not" is always right, so you can tell the
-user the name is free without touching the database. "Possibly" can be wrong,
-so you go and ask the database. The filter never wrongly says no, but it
+This page starts with the obvious fix and where it breaks, builds the structure
+that replaces it, works out how often that structure is wrong and how big it
+must be, and ends with what it can't do.
+
+## Keep every name in memory?
+
+The obvious fix is to hold the whole set of usernames in the app server's
+memory and check it before the database. A name that isn't in the set is free,
+with no query at all.
+
+It works, but it is big. A name takes 10 to 20 bytes, and a typical in-memory
+set adds about 40 to 80 bytes of bookkeeping for each entry:
+
+```text
+10,000,000 names × 50 to 100 bytes = 500 MB to 1 GB
+```
+
+That is a lot of memory for one check, and it grows with every sign-up. The
+question only needs a yes or a no, so storing every name is more than it asks
+for.
+
+## A smaller answer: the Bloom filter
+
+Suppose you keep far less than the names, and accept being wrong in one
+direction only. A small structure in memory answers "could this name already
+exist?" with one of two answers. "Definitely not" is always right, so you tell
+the user the name is free without touching the database. "Possibly" can be
+wrong, so you go and ask the database.
+
+That structure is a **Bloom filter**. It never wrongly says no, but it
 sometimes wrongly says yes, and a wrong yes is called a **false positive**.
 
-## How it works
-
 The filter is a **bit array**: a long row of bits, each 0 or 1, all 0 to start.
-Ours has 100 million of them, which is 12.5 MB.
+Ours has 100 million of them:
 
-To add a username, you hash the item with several different hash functions,
+```text
+100,000,000 bits ÷ 8 bits a byte = 12,500,000 bytes = 12.5 MB
+```
+
+To add a username, you hash the name with several different hash functions,
 say seven, and each one gives you a position in the array. You set those seven
 bits to 1. Adding `alice` might set bits 3, 41206, 9880112 and four others.
-Every new account goes into the filter this way as it's created, and the filter
-must see every one, so with several app servers they share one filter. (If
-each server kept its own copy, a name registered a moment ago on another
-server could get a wrong "definitely not" here.)
+Each new account goes in as it's created, and existing ones are added when the
+filter is built.
 
 To check a name, you hash it the same way and look at the same seven positions.
 If any of them is 0, the name was never added, because adding it would have set
@@ -84,50 +110,70 @@ that bit. If all seven are 1, the name was probably added.
 Why only "probably"? Because the bits are shared. Ten million names have each
 set seven bits, and a name nobody has registered can land on seven bits that
 other names happened to set. The filter says "possibly," you query the
-database, and it comes back empty. That wasted query is the whole cost of a
-false positive: a wrong answer from the filter never reaches the user, because
-the database has the last word. (It has the last word on a "definitely not"
-too: the uniqueness check in the database still runs when the account is
-actually saved, in case two people grab the same free name at once.)
+database, and it comes back empty.
+
+That wasted query is the whole cost of a false positive. The database still has
+the last word, so a wrong "possibly" never reaches the user. So: a 0 anywhere
+proves the name is absent, and all 1s only suggest it's present. How often does
+that suggestion mislead?
 
 ## How wrong, and how big?
 
-So how often does a free name get a "possibly"? It depends on how many bits the
-filter has per item and how many hash functions it uses. Our filter has 10 bits
-per name. With seven hash functions, about 1 in 120 checks for an unused name
-is a false positive, under 1%. Squeeze the same 10 million names into half the
-memory, 5 bits each, and the best you can do is about 1 in 11.
+It depends on the bits per name and the number of hash functions. Ours has 100
+million bits for 10 million names, 10 bits each. With k hash functions, m bits
+and n names, the chance that an unused name finds all its bits set is about
+(1 − e^(−kn/m))^k:
+
+```text
+kn/m       = 7 × 10,000,000 ÷ 100,000,000 = 0.7
+e^(−0.7)   ≈ 0.497, so 1 − 0.497 = 0.503
+0.503^7    ≈ 0.0082, about 1 in 120
+```
+
+Under 1% of checks for a free name waste a query.
 
 Why seven, and not one or fifty? Too few, and each name marks only a bit or
 two, so an unused name has to match very little to slip through. Too many, and
-every name sets so many bits that the array fills up with 1s and nearly
-everything matches. The sweet spot is about 0.7 times the bits per item, which
-for our 10 bits is seven.
+the array fills with 1s and nearly everything matches. The best count is about
+0.7 times the bits per name, which for our 10 bits is seven.
 
-Now compare the obvious alternative: keep the set of usernames itself in
-memory. Ten million names at 10 to 20 bytes each is 100 to 200 MB before any
-overhead, against the filter's 12.5 MB. The filter is smaller because it never
-stores the names, only bits they touched. You give up exact answers to hold a
-fraction of the data.
+Squeeze the same 10 million names into half the memory, 5 bits each, and the
+best count drops to 0.7 × 5 ≈ 3:
+
+```text
+kn/m       = 3 × 10,000,000 ÷ 50,000,000 = 0.6
+e^(−0.6)   ≈ 0.549, so 1 − 0.549 = 0.451
+0.451^3    ≈ 0.092, about 1 in 11
+```
+
+Set against the exact set of names, that is 12.5 MB instead of 500 MB to 1 GB,
+paid for with one wasted query in 120 checks of a free name. The saving comes from never storing the
+names, and so do the filter's limits.
 
 ## What it can't do
 
 Since it never stored the names, a Bloom filter can't list them. It also can't
 forget one. When a user deletes their account, clearing their seven bits could
-clear a bit that some other name relies on, and the filter would start saying
-"definitely not" about a name that exists, the one mistake it promised never to
-make. So a standard filter only grows. If you need deletes, a variant called a
-**counting Bloom filter** keeps a small counter at each position instead of a
-single bit, at several times the memory.
+clear a bit that another name relies on, and the filter would start saying
+"definitely not" about a name that exists. That is the one mistake it promised
+never to make, so a standard filter only grows. If you need deletes, a variant
+called a **counting Bloom filter** keeps a small counter at each position
+instead of a single bit, at several times the memory.
 
-It also gets worse as it fills. The 1-in-120 figure holds for 10 million names;
-at 20 million in the same array, the false-positive rate climbs to roughly
-1 in 7. Size the filter for the count you expect, and rebuild it bigger when
-the sign-ups head past that.
+It also gets worse as it fills. Put 20 million names in the same array:
+
+```text
+kn/m       = 7 × 20,000,000 ÷ 100,000,000 = 1.4
+e^(−1.4)   ≈ 0.247, so 1 − 0.247 = 0.753
+0.753^7    ≈ 0.14, about 1 in 7
+```
+
+That is about 17 times the 1 in 120 it started at. Size the filter for the
+count you expect, and rebuild it bigger when the sign-ups head past that.
 
 **Rule of thumb.** Put a Bloom filter in front of a slow lookup when most
-queries are for things that aren't there and an occasional wasted lookup is
-acceptable.
+queries are for things that aren't there, the exact set is too big to keep in
+memory, and an occasional wasted lookup is acceptable.
 
 ## Where you'll meet this
 
@@ -135,7 +181,7 @@ A URL shortener that generates random short codes can keep a filter of every
 code issued, so most new codes, which are unused, skip the lookup for a clash. A
 notification pipeline can keep one of message IDs already sent, and look up
 only the "possibly" answers before dropping a duplicate.
-```
+````
 
 **Expected finding:** flags that "hash function" (and "hash the item")
 is used as load-bearing vocabulary without ever being defined — a reader
@@ -198,6 +244,7 @@ if (flags.isOn('new-checkout', user)) {
   renderOldCheckout(cart);
 }
 ```
+````
 
 Your team merges new-checkout work into the trunk every day, and it's deployed
 every day, but `new-checkout` is off, so customers keep seeing the old page.
@@ -253,7 +300,8 @@ of feature flags.
 
 **Rule of thumb.** Put a change behind a flag when you want to be able to
 turn it off without a deploy, and remove a release flag once it's fully rolled out.
-````
+
+`````
 
 **Expected finding:** flags the "not just X — it's Y" closer, the
 stacked filler intensifiers ("genuinely, actually," "real, actually
@@ -371,7 +419,7 @@ the fact you were missing.
 
 **Rule of thumb.** When you're stuck, explain the code aloud, line by line,
 before asking anyone for help.
-````
+`````
 
 **Expected finding:** flags the paragraph that opens "To be clear, the duck
 itself has no debugging ability" as over-explaining a
@@ -762,8 +810,8 @@ parenthetical definitions, or names it only as cosmetic or Low.
 ## Case-study scenarios (`add-case-study`)
 
 These test `add-case-study`'s Stage 3 review instead of `add-topic`'s. They
-share one fabricated base draft, a Pastebin case study written to template 3
-(`template: 3`; docs/case-studies.md) and the Writing Standard's "Teaching
+share one fabricated base draft, a Pastebin case study written to the case-study template
+(docs/case-studies.md) and the Writing Standard's "Teaching
 progression" rules, so that each scenario differs from the clean control by
 exactly the planted problem. Its `order` is 99, above every real case study's, so a
 reviewer's uniqueness check stays quiet (it once shared 17 with a real one).
@@ -790,6 +838,8 @@ near-duplicate check, as the skill does.
 <!-- premise: src/content/systems-and-infrastructure/caching.md exists -->
 <!-- premise: src/content/systems-and-infrastructure/rate-limiting.md exists -->
 <!-- premise: src/content/systems-and-infrastructure/database-indexing.md exists -->
+<!-- premise: src/content/computing-fundamentals/load-balancers-and-cdns.md exists -->
+<!-- premise: src/content/systems-and-infrastructure/read-replicas.md exists -->
 
 ### Base draft (the CS-03 control, verbatim)
 
@@ -799,7 +849,6 @@ title: Design a Pastebin (like Pastebin.com)
 summary: A year of text snippets behind links too long to guess in practice, with the text in an object store and expiry checked on every read.
 date: 2026-09-28
 order: 99
-template: 3
 ---
 
 You paste a log excerpt and get back a link like `https://paste.example/aZ3kQ9xT2m`.
@@ -881,13 +930,13 @@ Follow a create. A
 [**load balancer**](/computing-fundamentals/load-balancers-and-cdns) spreads
 requests across interchangeable app servers and hands this one to any of them.
 The app server draws a random ID and writes the text to the **object store**, a
-service that keeps blobs of bytes by key, with the ID as the key. Only then
+service that keeps blobs of bytes by key and copies each across machines, so one failure loses nothing, with the ID as the key. Only then
 does it insert the row, now just the metadata, into the metadata database, so a
 live row never points at missing text.
 
 Now follow a reader opening `aZ3kQ9xT2m`. The app server asks the **cache**
 first ([caching](/systems-and-infrastructure/caching)), memory holding
-recently read pastes. Most reads go to a few popular pastes, so serving those
+recently read pastes. Most reads go to a small share of pastes, so serving those
 from memory spares the database and the object store most of the work. If the
 paste is there and hasn't expired, it answers in a few milliseconds.
 
@@ -967,7 +1016,7 @@ metadata only     = 73 GB ÷ 0.2 GB a second = 365 s ≈ 6 minutes
 downtime allowed  = 0.1% × 8,760 hours a year ≈ 8.8 hours
 ```
 
-One restore with the text would spend most of a year's downtime, and a [replica](/systems-and-infrastructure/read-replicas), a second copy kept in step to switch to, would store the 3.65 TB twice. So the text
+One restore with the text would spend most of a year's downtime, and a [replica](/systems-and-infrastructure/read-replicas), a second copy kept in step to switch to, would keep a second copy of the 3.65 TB on the same costly database disks. So the text
 goes in the object store, under the paste's ID, and the database keeps only the
 metadata.
 
@@ -1014,7 +1063,7 @@ botnet            = 1,000,000 guesses an hour ÷ 9,648 ≈ 104 pastes an hour
 ```
 
 Why would the botnet stay at a million an hour? Once IDs are random, nearly
-every guess is a `404`, and an address (an IPv4 address, or an IPv6 /64 block, since one machine can hold a whole block) with 100 `404`s in an hour is blocked for the rest of it ([rate limiting](/systems-and-infrastructure/rate-limiting)),
+every guess is a `404`, and an address with 100 `404`s in an hour is blocked for the rest of it ([rate limiting](/systems-and-infrastructure/rate-limiting)),
 so 10,000 machines get 10,000 × 100 guesses. At seven characters they would
 still find about a hundred live pastes an hour. Set a target instead: fewer
 than one find a month. Nobody types a paste link, so length is nearly free:
@@ -1029,7 +1078,7 @@ botnet            = 2,300,000,000 ÷ 1,000,000 = 1 find every 2,300 hours ≈ 96
 ```
 
 So an ID is ten characters, the first length that meets the target, drawn from
-a secure random generator, one built so its output can't be predicted. An encrypted counter, like the URL shortener's, would also be unpredictable, but it needs a secret key shared by every app server; a random draw needs nothing shared.
+a secure random generator, one built so its output can't be predicted.
 
 Random IDs can clash, so the app server writes the text only if that key is
 absent from the store (a conditional put), then inserts the row. A clash comes
@@ -1150,7 +1199,7 @@ within the decision it never says why keeping the text in the row loses in
 this design's numbers (it states the 3.65 TB of text and the 73 GB of
 metadata but never argues from them: no "fifty times the data", no cost to
 every backup, copy and restore),
-and it doesn't start from that alternative, contrary to template 3's order
+and it doesn't start from that alternative, contrary to the template's decision order
 (the simpler option, where it breaks in this design's numbers, the choice,
 its cost). Mentions of the row elsewhere on the page don't count: the
 decision has to make the case. Naming either the missing reason or the
@@ -1169,8 +1218,8 @@ other two decisions.
 ### CS-03 — clean case study (false-positive control)
 
 **Reviewed with:** `add-case-study`'s Stage 3 instruction.
-**Planted violation:** none. The base draft, verbatim, with `template: 3` in
-its frontmatter. Its figures are correct and each follows from a stated
+**Planted violation:** none. The base draft, verbatim. Its figures are
+correct and each follows from a stated
 requirement or assumption, with its steps written out ("Start simple":
 1,000,000 a day × 365 days = 365,000,000; 62⁵ = 916,132,832, more than
 365,000,000, so a year of counted IDs fits in five characters; every live paste
@@ -1202,13 +1251,13 @@ a miss) with at most two new terms each, the cache justified by where reads go a
 each decision runs from the option a reader would suggest (the text in the
 row; one daily sweep doing both jobs; the URL shortener's seven characters) to
 where it breaks, in this design's numbers, then the choice, its cost, and a
-`**Rule of thumb.**` paragraph that follows from it. IDs are ten characters from a secure random generator (glossed; an encrypted counter is named after the choice, losing for its shared key), written with a conditional put that
+`**Rule of thumb.**` paragraph that follows from it. IDs are ten characters from a secure random generator (glossed), written with a conditional put that
 refuses an existing key, before the row, so a clash can't overwrite a live
 paste;
 Expiry is checked on cache hits as well as misses; the sweep deletes the object
 before the row; the API says when `410` gives way to `404` and that a blocked
 address gets `429`. Every term is defined at first use (p99, app server,
-metadata, base62, botnet, load balancer, object store, cache, TTL, primary key, replica, lifecycle rule, conditional put; the per-address block keys on an IPv4 address or an IPv6 /64); every catalog link (`load-balancers-and-cdns`, `read-replicas`, `caching`, `rate-limiting`, `database-indexing`,
+metadata, base62, botnet, load balancer, object store, cache, TTL, primary key, replica, lifecycle rule, conditional put); every catalog link (`load-balancers-and-cdns`, `read-replicas`, `caching`, `rate-limiting`, `database-indexing`,
 and the `url-shortener` case study) points to a page that exists and sits
 where its concept is used; the absolute claims hold ("every ID is unique
 without a check" follows from a counter, "never points at missing text" from

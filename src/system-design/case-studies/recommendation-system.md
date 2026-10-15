@@ -3,7 +3,6 @@ title: Design a Recommendation System (like YouTube's home page)
 summary: A two-stage funnel that narrows 50 million videos to 20 for each home-page load in 150 ms, trained on the features it served.
 date: 2026-10-05
 order: 15
-template: 3
 ---
 
 You're asked to design the home page of a video site, like YouTube's. When Maya opens it, she sees 20 videos picked for her out of 50 million, and the page has 150 ms to arrive. How do you pick well, for 100 million people a day?

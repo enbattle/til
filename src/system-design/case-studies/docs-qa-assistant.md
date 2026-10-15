@@ -3,7 +3,6 @@ title: Design a Docs Q&A Assistant (like a help-center chatbot)
 summary: Hybrid search and a reranker to find the passage, a fixed test set that scores search and answer separately, and model routing that roughly halves the bill, for 5 million questions a day.
 date: 2026-10-07
 order: 17
-template: 3
 ---
 
 You're asked to design the assistant on a software company's help center. A customer types "Why does my export fail with error 4012?" and gets an answer written from the help pages, with links to the pages it used.

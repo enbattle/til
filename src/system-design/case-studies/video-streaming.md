@@ -3,7 +3,6 @@ title: Design a Video Streaming Service (like YouTube and Netflix)
 summary: Parallel 60-second encodes, 4-second segments a player chooses among as its connection changes, and an origin shield that cuts object-store egress, for 37.5 Tbit/s at peak.
 date: 2026-10-05
 order: 7
-template: 3
 ---
 
 You're asked to design a service like YouTube or Netflix. A creator uploads a 10-minute phone clip, `Fixing a bike chain`, and millions of people watch it on phones and TVs, over connections from fiber to a train in a tunnel. How does one upload become something every one of those screens plays without freezing, at a cost you can pay?

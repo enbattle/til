@@ -3,7 +3,6 @@ title: Design a Rate Limiter (like an API gateway's)
 summary: A token bucket per API key, counted by one atomic script in a sharded Redis, with a failure policy chosen per endpoint, for 580,000 requests a second at peak.
 date: 2026-10-05
 order: 2
-template: 3
 ---
 
 You're asked to design the rate limiter for a public API. A **rate limiter** decides, for each request, whether its sender is still within an allowance ("20 requests a second for this customer") and answers `429 Too Many Requests` if not. Checking one request is easy. The hard part is doing it correctly across dozens of servers, in under 2 ms, while the counters themselves can fail.

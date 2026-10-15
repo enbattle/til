@@ -28,7 +28,7 @@ cut an exception or a second alternative before cutting a decision's reason.
    peaks, and requests separate from distinct items. Say what each figure
    sizes (the servers, the database, the cache): a bare "40,000 a second"
    leaves a reader asking 40,000 of what, hitting which part.
-3. **Decisions.** Each follows template 3's decision order in
+3. **Decisions.** Each follows the template's decision order in
    docs/case-studies.md: the simpler option, where it breaks in this design's
    numbers, the choice, its cost, the rule of thumb.
    Pick the three decisions that most shape the design; a fourth goes in
