@@ -32,7 +32,7 @@ is eager too (the build-time `?words` view, `proseWordCount` in
 [Writing Standard](writing-standard.md#case-studies)) shows
 before the body loads, on every case study.
 Frontmatter is the usual flat `key: value`, with one more required field,
-`order`, and the optional template switch, `template`:
+`order`:
 
 ```md
 ---
@@ -40,7 +40,6 @@ title: Design a Social Media Feed (like Instagram)
 summary: One plain-text sentence — the hook shown on the landing page and in search.
 date: YYYY-MM-DD
 order: 4
-template: 3
 ---
 ```
 
@@ -49,14 +48,10 @@ template: 3
   throws at load time, naming the file and field, if any of the four fields is
   missing or `order` isn't a positive integer, and `src/lib/system-design.test.ts`
   fails a duplicate `order`.
-- **These four keys, `template`, and no others.** `parseCaseStudy` also
+- **These four keys and no others.** `parseCaseStudy` also
   throws at load time on any other key, naming the file and the key
   (`checkFields` in `src/lib/frontmatter.ts`, shared by both loaders), and
-  `case-study-structure.test.ts` checks the same allowlist. `template` is
-  optional and its only valid value is `3` (the switch below); any other
-  value, an empty one included, throws naming the file and `template`. It
-  picks the template the structure test checks and is not part of the
-  returned metadata.
+  `case-study-structure.test.ts` checks the same allowlist.
 - **A case study is a ten-minute read.** The whole page is the summary a
   reader takes into an interview, with enough reasoning under each decision to
   defend it and to guess well at a question it never asked. It meets the
@@ -65,15 +60,8 @@ template: 3
   code don't count), one rejected alternative per
   decision, and the voice of a good lecturer. Depth beyond that lives in the
   catalog topics it links.
-- **The template is enforced, per page.** A page whose frontmatter has
-  `template: 3` follows template 3; a page without the key follows the old
-  template, which every page is being moved off ("Migrating (2026-10)" below).
-  When the last page is rewritten, a cleanup change removes the switch and
-  the old template, as `docs/specs/retire-template-switch.md` did for the
-  previous one. Both share the word budget and everything after the
-  headings' order below.
-
-  **Template 3** follows the Writing Standard's
+- **The template is enforced.** Every page follows one template,
+  which follows the Writing Standard's
   [Teaching progression](writing-standard.md#teaching-progression). Before
   the first heading, an intro states the interview question, a one-sentence
   overview of the design and the route through the page. The body's `##`
@@ -109,27 +97,15 @@ template: 3
     with a one- or two-sentence answer. A follow-up introduces no new concept
     without a gloss and a catalog link.
 
-  The social feed (`social-feed.md`) is template 3's reference example to
+  The social feed (`social-feed.md`) is the template's reference example to
   copy.
 
-  **The old template** (pages without `template`, being migrated; don't start
-  a new page on it): an intro of two to four sentences (the interview
-  question and what makes it interesting), then `Requirements`,
-  `Key numbers`, `High-level architecture`, `API and data model`, three
-  `Decision: <topic>` and `Likely follow-ups`. Its sections hold what
-  template 3's do, except: there's no `Start simple`; Key numbers come before
-  the architecture, so a figure may name a part with a short gloss and gives
-  a one-line derivation; the architecture is one paragraph that follows a
-  request through the diagram; and each decision is about 100–150 words: the
-  choice, why in this design's numbers, the alternative and why it loses, then
-  the rule of thumb. `url-shortener.md` shows it.
-
-  `src/system-design/case-study-structure.test.ts` enforces the templates'
+  `src/system-design/case-study-structure.test.ts` enforces the template's
   mechanical parts, not their sentence or word counts per section, or the
   order of ideas within a section (the reviewer checks those): a paragraph
-  before the first `##`; the headings of the page's template, in order; on
-  template 3, `Start simple` holding at least one paragraph and at least one
-  code block; `Requirements` as one list of 4–6
+  before the first `##`; the template's headings, in order; `Start simple`
+  holding at least one paragraph and at least one code block;
+  `Requirements` as one list of 4–6
   top-level items; `Key numbers` as a paragraph, then one list of 4–5
   top-level items each opening with a bold `Label:`; each decision ending with
   a `**Rule of thumb.**` paragraph with text after the label; `Likely
@@ -144,15 +120,6 @@ follow-ups` as one list of 4–6 items each opening with bold; the diagram;
   the same tab. The page builds its "On this page" list from these headings,
   parsed with the renderer's own markdown stack and heading-id pass
   (`h2Headings` in `src/lib/headings.ts`), so keep them plain text.
-
-- **Migrating (2026-10).** Pages move to template 3 one at a time, each in
-  `add-case-study`'s rewrite mode. To move one: add `template: 3` to its
-  frontmatter; restructure it to template 3's headings; rewrite its prose to
-  the Teaching progression rules (the route sentence, `Start simple` with its
-  arithmetic, the architecture in short paragraphs, every derivation shown,
-  each decision from the simpler option to the rule); and keep all its
-  content, its slug and its `order`: every requirement, number, decision,
-  rejected alternative and follow-up stays. The social feed was the first.
 
 - **Links are the data.** A case study's catalog links are extracted at build
   time (the `?links` query, running `extractTopicRefs` from

@@ -93,7 +93,7 @@ ones that don't yet.
   struggled has the gist before going on ("So the ring keeps moves small, and
   virtual nodes keep shares even.").
 
-In a case study, template 3 ([docs/case-studies.md](case-studies.md)) fixes
+In a case study, the template ([docs/case-studies.md](case-studies.md)) fixes
 the section order. Its intro holds stages 1 and 2. `Start simple` is stage
 3's simple version: the design a reader would suggest first, shown breaking on
 this design's numbers. The architecture comes before Key numbers, so each
@@ -101,8 +101,7 @@ figure sizes a part the reader has already met, and its derivation writes out
 its steps (`40 million ÷ 86,400 seconds ≈ 460 a second`). Each decision is a
 stage-3 build too: the simpler option, where it breaks in this design's
 numbers, then the choice and its cost, with the rule of thumb as the one-line
-restatement. A page still on the old template follows the old order (Key
-numbers first, no `Start simple`) until it is rewritten.
+restatement.
 
 ## Catalog topics
 
@@ -155,8 +154,7 @@ teach more depth, and they are where these pages send a reader for more.
 - **Why not the obvious alternative?** Interviewers push on this, so every
   decision starts from the alternative a reader would suggest and shows where
   it breaks in this design's numbers before making its choice. One
-  alternative, not a survey of all of them. (A page still on the old template
-  names it after the choice, in a sentence or two, until it is rewritten.)
+  alternative, not a survey of all of them.
 - **The rule behind it.** A decision ends with the general rule it
   illustrates ("read-heavy and fine with slightly stale data: cache in
   front"), since the rule is what transfers to the next question.

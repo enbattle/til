@@ -3,7 +3,6 @@ title: Design a Social Media Feed (like Instagram)
 summary: Home feeds for 500 million daily users, built by pushing posts to ordinary accounts' followers and pulling the posts of accounts with over 100,000 followers at read time.
 date: 2026-10-05
 order: 4
-template: 3
 ---
 
 You're asked to design the home screen of a photo-sharing app, like Instagram's. It's the **feed**, a scrolling list of recent posts from the accounts you follow, your **followees**. "Posts by anyone I follow, newest first" sounds like one query, but at this scale it's the most expensive thing the system does.

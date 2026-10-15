@@ -3,7 +3,6 @@ title: Design an E-Commerce Checkout (like Amazon)
 summary: Stock reserved with a conditional update before the card is touched, a saga that undoes what it started, and an idempotency key so a retried press doesn't charge twice, at 1,200 orders a second.
 date: 2026-10-05
 order: 9
-template: 3
 ---
 
 You're asked to design the checkout for a store like Amazon. A shopper has two blue kettles in the cart and presses "Place order". Browsing is a caching problem; the hard part is what one press has to change.

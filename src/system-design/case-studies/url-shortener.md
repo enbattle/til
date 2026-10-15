@@ -3,7 +3,6 @@ title: Design a URL Shortener (like TinyURL)
 summary: Seven-character codes from pre-allocated ID ranges, a cache that answers nine redirects in ten, and click counting kept off the redirect, for 40,000 redirects a second at peak.
 date: 2026-10-05
 order: 1
-template: 3
 ---
 
 You're asked to design a service like TinyURL. You give it a long link and it hands back `https://sho.rt/x7Kp2Qa`. Anyone who opens that is sent on to the original with a **redirect**, an HTTP response in the 300s whose `Location` header names the destination.

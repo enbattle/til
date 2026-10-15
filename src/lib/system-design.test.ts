@@ -92,29 +92,15 @@ describe('parseCaseStudy (criterion 3)', () => {
     },
   );
 
-  // docs/specs/case-study-template-3.md, criterion 3: `template: 3` is the
-  // per-page switch to template 3; no other value is allowed, and the switch
-  // stays out of the returned metadata.
-  it('accepts template: 3, returning the same metadata as without it', () => {
-    const withSwitch = parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, template: '3' });
-    expect(withSwitch).toEqual(parseCaseStudy(VALID_PATH, VALID_FIELDS));
-    expect(Object.keys(withSwitch).sort()).toEqual([
-      'date',
-      'order',
-      'path',
-      'slug',
-      'summary',
-      'title',
-    ]);
-    expect(withSwitch).not.toHaveProperty('template');
-  });
-
-  it.each(['2', 'three', '', '03', ' 3'])(
-    'throws naming the file and "template" when template is %j',
+  // docs/specs/retire-case-study-template-switch.md, criterion 4: the
+  // `template` switch is retired, so `template` is an unknown key whatever its
+  // value, rejected exactly as `tags` and `kind` are.
+  it.each(['3', '2', ''])(
+    'throws naming the file and the key for template: %j, an unknown frontmatter field',
     (template) => {
-      const data = { ...VALID_FIELDS, template };
-      expect(() => parseCaseStudy(VALID_PATH, data)).toThrow(/my-case\.md/);
-      expect(() => parseCaseStudy(VALID_PATH, data)).toThrow(/template/);
+      expect(() => parseCaseStudy(VALID_PATH, { ...VALID_FIELDS, template })).toThrow(
+        new Error(`${NAME} has an unknown frontmatter field "template"`),
+      );
     },
   );
 

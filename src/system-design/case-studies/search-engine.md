@@ -3,7 +3,6 @@ title: Design a Web Search Engine (like Google Search)
 summary: Splitting a billion-page inverted index by page across 100 shards, ranking in two stages inside each shard, and keeping it fresh with a small live index beside a daily base.
 date: 2026-10-05
 order: 14
-template: 3
 ---
 
 You're asked to design a web search engine. A user types `paris weather` and gets the ten pages most likely to answer, each with a title, a link and a **snippet**, an extract showing the query words in context. A **crawler** downloads pages from across the web, and a separate system answers queries over a billion of them in a fraction of a second.

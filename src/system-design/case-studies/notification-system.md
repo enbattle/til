@@ -3,7 +3,6 @@ title: Design a Notification System (like a push, email and SMS service)
 summary: One request fans out into push, email, SMS and inbox sends on queues split by channel and priority, so a 50-million-user campaign never delays a login code.
 date: 2026-10-05
 order: 3
-template: 3
 ---
 
 A service in your company's backend has just shipped order 83121 and needs to tell user u_4821. You're asked to design the notification system every service calls for that. It picks the channels, among them a **push notification** (the banner a phone shows with the app closed), an email, an SMS and an entry in the app's inbox, and sends on each.

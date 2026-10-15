@@ -3,7 +3,6 @@ title: Design an LLM Chat Service (like ChatGPT or Claude)
 summary: Streaming a language model's replies to 10 million daily users, with batching, cache-aware routing and admission control deciding how many GPUs that takes.
 date: 2026-10-05
 order: 16
-template: 3
 ---
 
 You're asked to design a chat service on a large language model, like ChatGPT or Claude. You send "What causes the seasons?" and the answer streams in word by word, because the model writes its reply one **token** at a time, a token being a word or a piece of one ([tokenization](/ai-and-ml/tokenization)). The **GPUs** that run the model, processors built for matrix arithmetic, are most of the cost, so the question is how to keep them busy without making anyone wait.
