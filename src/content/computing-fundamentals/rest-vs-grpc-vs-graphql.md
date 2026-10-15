@@ -4,7 +4,7 @@ summary: Three common ways to design an API, differing in how the client names w
 date: 2026-10-07
 ---
 
-Say you run a shop, and the page for a mug needs three things: the product, its price and its top three reviews. The browser has to get them from your server somehow. An **API** (application programming interface) is the agreed contract for that conversation: what the client may ask for, what shape the answer takes, and what errors look like. REST, gRPC and GraphQL are three popular contracts. They differ in how the client says what it wants, so you'll see what each costs on this one page.
+Say you run a shop, and the page for a mug needs three things: the product, its price and its top three reviews. The browser has to get them from your server somehow. An **API** (application programming interface) is the agreed contract for that conversation: what the client may ask for, what shape the answer takes, and what errors look like. REST, gRPC and GraphQL are three popular contracts. They differ in how the client says what it wants. You'll build this page with REST first, then see what GraphQL and gRPC change, and finish with which fits where.
 
 ## REST
 
@@ -38,7 +38,32 @@ If the client's problem is choosing fields, why not let it choose? **GraphQL** e
 
 One request, one response, with no forty-field payload and no three round trips. That is why teams with many different clients (a phone app, a website, a partner integration) like it: each asks for its own shape without a new endpoint.
 
-What does it cost? Caching gets harder. Queries usually travel as `POST` requests to a single URL, and a CDN has little to key on, so most of the free caching from REST is gone. The server also does more work. Each field is filled by a **resolver**, a function the server runs for that field. If the query also asked for each review's author, a resolver that fetches it separately runs one database query per review, the [N+1 query](/systems-and-infrastructure/n-plus-one-queries) problem. Batching helps, but you have to build it. And since clients can ask for deeply nested data, servers usually cap query depth and cost.
+What does it cost? Caching gets harder. Queries usually travel as `POST` requests to a single URL, and a CDN has little to key on, so most of the free caching from REST is gone. The second cost is more work on the server, and it takes four steps to see.
+
+First, how does the server fill in the answer? For each field it runs a **resolver**, a small function that returns that one field's value. In the mug query only the product and reviews resolvers query the database, once each; the rest just read fields already fetched.
+
+Now suppose the page also shows who wrote each review, so the client adds `author { name }` inside `reviews`. The reviews table stores only an author's ID, so the author resolver runs once for each review, with a query each time:
+
+```text
+product resolver   1 query
+reviews resolver   1 query
+author resolver    1 query x 3 reviews = 3 queries
+total              5 queries
+```
+
+Five is tolerable. Let the client raise `limit` to 50 and the total becomes 1 + 1 + 50 = 52. This is the [N+1 query](/systems-and-infrastructure/n-plus-one-queries) problem: one query for a list, then one more per row.
+
+The usual fix here is **batching**. The author resolver doesn't query right away. It writes down the author ID it needs and waits until every review's resolver has run, then makes one query for all the IDs together. The 52 queries become 3:
+
+```text
+product 1 + reviews 1 + authors (one batched query) 1 = 3 queries
+```
+
+GraphQL doesn't do this for you, so the server team has to build it.
+
+Last, the client controls the query's shape, which also means it controls the cost. If an author has a `reviews` field too, a query can go product, reviews, author, reviews, author, and each level multiplies the work below it. So servers usually cap **query depth**, rejecting anything nested more than a set number of levels (say 5), and often cap total cost as well. REST never needed this, because each endpoint fixed its own shape.
+
+So GraphQL trades REST's extra round trips for server effort.
 
 ## gRPC
 
@@ -62,6 +87,6 @@ The product page now has three designs:
 | Several client types, each needing different fields | GraphQL    | The client picks the shape      |
 | Service-to-service calls inside your system         | gRPC       | Fast, typed, streaming          |
 
-These mix freely. A common arrangement has the browser talk to a REST or GraphQL layer, which calls internal services over gRPC. If someone suggests "just use GraphQL for everything," the answer is that internal services have one known caller and gain little from client-chosen fields. If someone suggests gRPC for the public site, the answer is the browser proxy and the lost CDN caching.
+These mix freely. A common arrangement has the browser talk to a REST or GraphQL layer, which calls internal services over gRPC. Internal services have one known caller and gain little from client-chosen fields, and gRPC on the public site brings the browser proxy and lost CDN caching.
 
 **Rule of thumb.** Match the API style to the caller: REST where HTTP caching and familiarity matter, GraphQL where varied clients need to choose their own data, gRPC where you control both ends and speed matters.
