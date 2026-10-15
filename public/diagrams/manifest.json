@@ -60,21 +60,21 @@
     }
   },
   "llm-chat-serving/architecture.d2": {
-    "sha256": "3e30969ca10c55c8d7a542d88a5037013dab4095413882d71e5f3752935c98e7",
+    "sha256": "fdf8bf55600fab58532c49e1e1fac961f81a0d738cc40e0fc42f6fd1bf3b609e",
     "width": 610,
     "height": 1093,
     "svgs": {
-      "light": "e275c21603414a315c35cb109804437feef9298086f650a2eccc2fe5b45652dd",
-      "dark": "7cc0ee7936d973c63c10bf4b324d50fbd2363cb33e52140fd1e2a3a1277e66c7"
+      "light": "060ad0f1519b90fc992ff908c03d25800ee359e2a6629522a7807decde9084b2",
+      "dark": "f2ed5040093674c3fc206e8de6c9bb3bb871390960c9d31e96b399e5fb4756a9"
     }
   },
   "maps/architecture.d2": {
-    "sha256": "f29e136739c107eac45ccb5a0a1a63eb7c4ba8c5aeab58807a60706a089946ba",
-    "width": 902,
-    "height": 1011,
+    "sha256": "1384b12f969146043d2b0c3ab1b4c33252014c3453bde14962e469c6fb85e452",
+    "width": 867,
+    "height": 995,
     "svgs": {
-      "light": "f4f2b13b26ea846fc2a651e9add96d4ff9832adfe2944acf9946b8946db1879d",
-      "dark": "6f4f121a61caeb52fe2be5d4e94aa461d1226bba0327897ce482743de6132d67"
+      "light": "919d75b48c24937a4d6b2d67c1b7147a93138d1736a6ad7c5574f902d614dbc3",
+      "dark": "fe627850a16789e647bf92b114fc0f0570e774ed1fc768ee53c4f68cbcd1b3ed"
     }
   },
   "messaging/architecture.d2": {
@@ -96,12 +96,12 @@
     }
   },
   "payment-system/architecture.d2": {
-    "sha256": "9bd3a7484d579f1f4ff92c95c0bca29fdda3d20a0fd48782a1dcd37777acf08a",
-    "width": 823,
-    "height": 1602,
+    "sha256": "9f539050cb8e88b43c91ee6c5f9a18356d7d4c38a1c3879f290cb7e9882450a5",
+    "width": 878,
+    "height": 1586,
     "svgs": {
-      "light": "1c25abbf07ad29043630df81b51cefaf8bfa4ad4d4282cf37bda46f032949699",
-      "dark": "8d831a7d2fc419b379bac37ea949798369d8cfc0b0880b984e45658b5549313f"
+      "light": "e26c539ddefdf1a5f25691d7e920bf9c6e2b6872d32a480742248492a3b8e33b",
+      "dark": "91bf18227d736bf73df805ec7520b5a64240e50acdd4f07083dbe64776c1b577"
     }
   },
   "payment-system/card-payment-sequence.d2": {
