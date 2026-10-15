@@ -4,43 +4,69 @@ summary: The KV cache stores each token's attention keys and values so generatio
 date: 2026-09-14
 ---
 
-Suppose you are chatting with a model, and the conversation so far is 4,000 [tokens](/ai-and-ml/tokenization) long. The model writes its reply one token at a time: it reads everything so far, produces one token, appends it, and reads everything again for the next one. Do that naively and token 4,001 costs a full pass over 4,000 tokens, token 4,002 costs a full pass over 4,001, and so on. Why doesn't a long reply crawl? Because most of that rereading is wasted, and the **KV cache** is how the model skips it. This page follows that one 4,000-token conversation through what the cache saves and what it costs.
+Suppose you are chatting with a model, and the conversation so far is 4,000 [tokens](/ai-and-ml/tokenization) long, the small pieces of text a model reads and writes. You ask a question and the reply streams back, a few tokens at a time. A long reply doesn't crawl, yet the obvious way to generate it would redo almost all of its work at every token. How does the model avoid that?
 
-## What gets reused
+This page covers how a model writes one token at a time, the work that would be repeated if it did nothing about it, the **KV cache** that skips that work, and the memory the cache costs.
 
-Most of today's large language models are **transformers**: a stack of layers, each of which lets every token look at the tokens before it. That looking is called **attention**. In each layer, every token is turned into three vectors (lists of numbers):
+## How a model writes a reply
 
-- A **query**, which says what this token is looking for.
-- A **key**, which says what this token offers to other tokens' searches.
-- A **value**, which is the content passed along if the key matches.
+A model never writes a whole reply in one go. It reads the whole conversation, picks one next token, adds it to the end, and then reads the longer conversation to pick the one after. Your 4,000 tokens become 4,001, then 4,002, and the loop runs until the reply is done.
 
-A token compares its query against the key of every earlier token, then takes a weighted mix of their values, weighted by how well each key matched. A token's key and value depend only on that token and the ones before it. Tokens generated later cannot change them. So when your 4,000-token conversation gets its 4,001st token, the keys and values for the first 4,000 are exactly what they were a step ago.
+Inside the model, the text passes through a stack of **layers**, steps it goes through in turn. In each layer, every token looks back at the tokens before it and pulls in whatever is useful, so that "it" can pick up what "the cat" referred to. This looking back is called **attention**.
 
-The cache is simply that observation put to work. Compute each token's key and value once, in every layer, store them, and on each later step compute only the new token's query, key and value. Compare the new query against the stored keys and read off the stored values.
+Here is how one token looks back. Each earlier token has put out a label, a list of numbers saying what it is about, and a content, another list of numbers holding what it can pass along. The new token makes up a question, a third list, and compares it with every label. The better a label matches, the more of that token's content it takes in. That gives three lists per token, in every layer:
 
-## What the cache saves
+- A **query**: the question this token asks.
+- A **key**: the label other tokens' questions are compared against.
+- A **value**: the content handed over when a key matches.
 
-Without the cache, each step redoes the projections that produce keys and values, and the rest of each layer's per-token work, for every token so far. With it, each step does that work for one token. The expensive work per step stops growing with the length of the history.
+Building these three lists takes computation, and it happens for every token in every layer. That sets up the trouble.
 
-The cache does not make attention free. What disappears is every earlier token's repeated work: its projections and its own attention, recomputed at every step without a cache. Only the new token's comparison against the stored keys remains, and that part still grows with the history, adding up over a whole reply to roughly the square of the conversation's length.
+## The work that gets repeated
 
-One more detail. Before the first new token, the model must process your whole prompt, which fills the cache with the prompt's keys and values. Systems call this **prefill**, and it can run over many prompt tokens at once. After that comes the one-token-at-a-time stage, called **decode**, where the cache pays off on every step.
+Suppose the model keeps nothing between steps. To pick token 4,001, it builds keys and values for all 4,000 earlier tokens, in every layer. To pick token 4,002, it builds them for 4,001 tokens, and so on. For a 500-token reply:
+
+```text
+tokens rebuilt per reply:  500 steps × at least 4,000 tokens = at least 2,000,000
+```
+
+But look at what a key and a value depend on: only their own token and the tokens before it. Tokens added later can't change them. So the keys and values for the first 4,000 tokens are exactly what they were a step ago, and nearly all of those 2,000,000 rebuilds produce a number already known.
+
+## Keeping them
+
+The fix is to store them. Build each token's key and value once, in every layer, and keep them in memory. This store is the **KV cache** (K for key, V for value). Each new step then builds the query, key and value for the new token only, compares the new query against the stored keys, and reads off the stored values.
+
+```text
+tokens rebuilt per reply:  500 steps × 1 token = 500, instead of 2,000,000
+```
+
+So the cache rebuilds nothing old. The comparison of the new query with every stored key still happens, so a step still costs more as the history grows, but that is far cheaper than redoing every token's work.
+
+One more detail. Before the first new token, the model must read your whole prompt, which fills the cache with the prompt's keys and values. This stage is called **prefill**, and it can run over many prompt tokens at once. The one-token-at-a-time stage after it is called **decode**, and the cache pays off on every decode step.
+
+The cache saves computation, but it has to be stored somewhere.
 
 ## What the cache costs
 
-The cache has to sit in memory for as long as the conversation is live. How much? Every token stores one key and one value in every layer. Take a model with these numbers:
+The cache stays in memory as long as the conversation is live, because the next token needs it. Every token stores one key and one value in every layer. Take a model with these numbers:
 
 - 32 layers.
-- 8 key-value heads per layer. A **head** is one of several attention computations run side by side, each with its own keys and values. Some models give several query heads the same key-value head to shrink the cache, which is why this count can be smaller than the model's number of query heads.
-- 128 numbers per key or value in each head, called the head dimension.
+- 8 key-value heads per layer. A **head** is one of several attention computations run side by side, each with its own keys and values. Some models let several question-asking heads share one key-value head to shrink the cache, so this count can be smaller than the model's total number of heads.
+- 128 numbers per key or value in each head (the head dimension).
 - 2 bytes per number, as in a 16-bit format.
 
-One token then needs 2 (a key and a value) × 32 layers × 8 heads × 128 numbers × 2 bytes = 131,072 bytes, which is 128 KiB. Your 4,000-token conversation needs 4,000 × 128 KiB = 500 MiB, and it grows by 128 KiB with every token added.
+```text
+one token:   2 (key and value) × 32 layers × 8 heads × 128 numbers × 2 bytes
+           = 131,072 bytes = 128 KiB
+your chat:   4,000 tokens × 128 KiB = 512,000 KiB, about 500 MiB
+```
 
-Now serve 20 such conversations at once. That is 10,000 MiB, close to 10 GiB, just for caches, on top of the memory holding the model's own weights. The weights are shared by every conversation, but each conversation needs its own cache. This is why serving many users at once is often limited by memory rather than arithmetic speed, and why a longer [context window](/ai-and-ml/context-window) is not free: the cache grows in direct proportion to the tokens held.
+It grows by 128 KiB with every token added.
+
+Now serve 20 such conversations at once: 20 × 500 MiB = 10,000 MiB, close to 10 GiB, just for caches. The model's own weights, the learned numbers that make up the model, are shared by every conversation, but each conversation needs its own cache. This is why serving many users at once is often limited by memory, not arithmetic speed, and why a longer [context window](/ai-and-ml/context-window), the most tokens a model can hold at once, isn't free: the cache grows in direct proportion to the tokens held.
 
 ## How serving systems cope
 
-Several tricks follow from the arithmetic above. You can shrink the per-token cost: fewer key-value heads, as noted earlier, or storing keys and values in fewer bytes per number, which trades a little accuracy for memory. You can stop wasting space: conversations grow unpredictably, so reserving one contiguous block sized for the longest possible reply strands memory, and serving systems instead hand out cache memory in small chunks as it is needed. And you can share: if many requests begin with the same text, such as one long system prompt, the cache for that shared start can be computed once and reused instead of recomputed per request. Some providers expose this as prompt caching, which usually makes a repeated prefix cheaper or faster, though the terms vary by provider.
+Several tricks follow from that arithmetic. Shrink the per-token cost with fewer key-value heads, as above, or by storing numbers in fewer bytes, which trades a little accuracy for memory. Stop wasting space: conversations grow unpredictably, so reserving one contiguous block sized for the longest possible reply strands memory, and serving systems hand out cache memory in small chunks as needed. And share: if many requests begin with the same text, such as the same long instructions sent ahead of every conversation, the cache for that start can be computed once and reused. Some providers offer this as prompt caching, usually at a lower price.
 
-**Rule of thumb.** The cache turns repeated computation into stored memory, so cost scales with tokens held times the number of conversations. To estimate it, multiply two (key and value) by layers, key-value heads, head dimension and bytes per number to get bytes per token, then multiply by tokens, and keep a shared prompt prefix identical across requests so it can be cached once.
+**Rule of thumb.** The cache turns repeated computation into stored memory, so cost scales with tokens held times the number of conversations. Multiply two (key and value) by layers, key-value heads, head dimension and bytes per number to get bytes per token, then multiply by tokens, and keep a shared prompt prefix identical across requests so it can be cached once.
