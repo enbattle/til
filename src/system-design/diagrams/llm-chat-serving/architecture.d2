@@ -26,10 +26,10 @@ replicas: GPU replicas {
 
 clients -> lb: "HTTPS, streamed replies"
 lb -> chat
-chat -> store: "turns, history, outbox"
+chat -> store: "turns, history, token counts"
 chat -> quota: "reserve tokens"
 chat -> router: "generate"
 router -> replicas: "place by conversation"
 replicas -> router: "load reports"
-store -> relay: "outbox rows"
-relay -> quota: "true-ups, refunds"
+store -> relay: "token counts"
+relay -> quota: "actual counts, refunds"

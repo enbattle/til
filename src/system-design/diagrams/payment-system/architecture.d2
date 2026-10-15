@@ -1,9 +1,10 @@
 # High-level architecture of the payment system and wallet: apps hand card
 # numbers straight to the processor for a token; the payment service writes
 # each money movement, and each processor webhook, as one transaction on a
-# ledger shard; outbox events feed the workers that run cross-shard second legs
-# and status checks; the daily reconciliation compares the processor's
-# settlement file with the ledger.
+# ledger shard; outbox rows go through the relay to the queue that feeds the workers,
+# which run cross-shard second legs and status checks; the daily
+# reconciliation compares the processor's daily record of charges with the
+# ledger.
 vars: {
   d2-config: {
     layout-engine: elk
@@ -14,7 +15,7 @@ direction: down
 client: Wallet app and merchant checkouts {
   style.multiple: true
 }
-svc: "Payment service\n(behind a load balancer)" {
+svc: Payment service {
   style.multiple: true
 }
 processor: Payment processor (external)
@@ -38,5 +39,5 @@ relay -> queue: "publish"
 queue -> workers
 workers -> shards: "second legs, fixes"
 workers -> processor: "status checks"
-recon -> processor: "settlement file"
+recon -> processor: "daily record of charges"
 recon -> shards: "read entries"
