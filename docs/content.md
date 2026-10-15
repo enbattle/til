@@ -102,7 +102,10 @@ Every topic is held to the Writing Standard's
 `src/content/topic-structure.test.ts` enforces its mechanical parts on every
 topic, with no exceptions: the word budget, the title pattern, the closing
 rule-of-thumb paragraph, and a `systems-and-infrastructure` topic's closing
-section. The running example and the lecturer voice are checked in review.
+section. It runs the same checks on the content-review eval's drafts in
+`evals/content-review/scenarios.md` (see
+[verification.md](verification.md)). The running example and the lecturer
+voice are checked in review.
 
 ## Moving, merging or renaming a topic
 

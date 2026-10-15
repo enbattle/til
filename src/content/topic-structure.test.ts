@@ -1,8 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Heading, Nodes, Paragraph, Root, RootContent } from 'mdast';
-import { TOPICS, loadAllTopicBodies } from '@/lib/content';
+import { TOPICS, loadAllTopicBodies, parseTopicMeta } from '@/lib/content';
+import { parseFrontmatter } from '@/lib/frontmatter';
 import { markdownParser, proseWordCount } from '@/lib/markdown.mjs';
 import { CATALOG_WORD_BUDGET } from '@/lib/reading-time';
+import contentReviewFixtures, {
+  BASE_HEADING,
+  extractEvalFixtures,
+  scenariosText,
+  type TopicDraft,
+} from '@/test/eval-fixtures';
 import { wordBudgetProblems } from '@/test/structure';
 
 /**
@@ -474,5 +481,408 @@ describe('the real topics (catalog-standard criterion 3)', () => {
         .filter(([, problems]) => problems.length > 0),
     );
     expect(failing).toEqual({});
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The content-review eval's CR drafts (docs/specs/eval-fixture-structure-check.md,
+// criteria 1, 2, 3 and 5): every `### CR-` draft in
+// evals/content-review/scenarios.md passes the same rules as a real topic.
+// ---------------------------------------------------------------------------
+
+/** The draft's frontmatter checked by `parseTopicMeta`, the contract every
+ * published topic meets (required fields, no others), as if the draft were
+ * `src/content/<section>/<id>.md`; [] when it passes, else its error. */
+function draftMetaProblems(draft: TopicDraft, data: Record<string, string>): string[] {
+  try {
+    parseTopicMeta(`/src/content/${draft.section}/${draft.id.toLowerCase()}.md`, data);
+    return [];
+  } catch (error) {
+    return [(error as Error).message];
+  }
+}
+
+/** Every frontmatter and catalog-standard problem with each draft, keyed by
+ * its ID; only the drafts with a problem appear. The title is the draft's
+ * frontmatter title. */
+function draftProblems(drafts: TopicDraft[]): Record<string, string[]> {
+  return Object.fromEntries(
+    drafts
+      .map((draft) => {
+        const { data, content } = parseFrontmatter(draft.raw);
+        const problems = [
+          ...draftMetaProblems(draft, data),
+          ...(data.title === undefined
+            ? []
+            : structureProblems({
+                section: draft.section,
+                title: data.title,
+                body: content,
+              })),
+        ];
+        return [draft.id, problems] as const;
+      })
+      .filter(([, problems]) => problems.length > 0),
+  );
+}
+
+describe('the content-review CR drafts (eval-fixture-structure-check criteria 1, 2, 3 and 5)', () => {
+  const BASE = [
+    `### ${BASE_HEADING}`,
+    '````markdown\n---\ntitle: Design a Demo\n---\n\nA demo.\n````',
+  ].join('\n\n');
+  const DRAFT = [
+    '---',
+    'title: Caching',
+    'summary: A copy of hot data close to the code that reads it.',
+    'date: 2026-10-15',
+    '---',
+    '',
+    'A cache keeps a copy of hot data close to the code that reads it.',
+    '',
+    '## How it works',
+    '',
+    '```ts',
+    'const value = cache.get(key) ?? db.get(key);',
+    '```',
+    '',
+    'A read checks the cache first and falls back to the database on a miss.',
+    '',
+    '**Rule of thumb.** Cache what is read often and changes rarely.',
+  ].join('\n');
+
+  /** One CR scenario block as scenarios.md writes one: the heading, the
+   * `**Section:**` paragraph (unless `section` is null) and the draft fenced
+   * with four backticks (unless `draft` is null). */
+  function scenario(id: string, section: string | null, draft: string | null): string {
+    return [
+      `### ${id} — a planted problem`,
+      ...(section === null
+        ? []
+        : [`**Section:** \`${section}\`\n**Planted violation:** one.`]),
+      ...(draft === null ? [] : [`\`\`\`\`markdown\n${draft}\n\`\`\`\``]),
+      '**Expected finding:** it.',
+    ].join('\n\n');
+  }
+
+  /** A scenarios file: a header, `blocks`, then the case-study base. */
+  function scenariosFile(...blocks: string[]): string {
+    return [
+      '# Content-review scenarios',
+      'Intro.',
+      ...blocks,
+      '## Case-study scenarios',
+      BASE,
+    ].join('\n\n');
+  }
+
+  describe('extraction', () => {
+    it('returns one draft per `### CR-` heading, in file order, with its ID and section', () => {
+      const text = scenariosFile(
+        scenario('CR-01', 'security', DRAFT),
+        scenario('CR-02', 'systems-and-infrastructure', DRAFT),
+      );
+      expect(extractEvalFixtures(text).topics).toEqual([
+        { id: 'CR-01', section: 'security', raw: DRAFT },
+        { id: 'CR-02', section: 'systems-and-infrastructure', raw: DRAFT },
+      ]);
+    });
+
+    it('takes the first inline code of the "Section:" paragraph as the section', () => {
+      const block = scenario('CR-01', 'security', DRAFT).replace(
+        '`security`',
+        '`security`, not `ai-and-ml`',
+      );
+      expect(extractEvalFixtures(scenariosFile(block)).topics[0].section).toBe(
+        'security',
+      );
+    });
+
+    it('takes the first `markdown` block, skipping code in another language', () => {
+      const block = scenario('CR-01', 'security', DRAFT)
+        .replace('````markdown', '```text\nnot a draft\n```\n\n````markdown')
+        .replace(
+          '**Expected finding:**',
+          '```markdown\n---\ntitle: Second\n---\n```\n\n**Expected finding:**',
+        );
+      expect(extractEvalFixtures(scenariosFile(block)).topics[0].raw).toBe(DRAFT);
+    });
+
+    // Review decisions: a `### CR-` heading under a retired block used to be
+    // skipped silently, and the last retired block runs to the end of the
+    // file, so a new scenario appended there dropped out of the check.
+    it('throws, naming it, for a `### CR-` heading under a `##` heading marked retired', () => {
+      const text = scenariosFile(
+        scenario('CR-01', 'security', DRAFT),
+        '## CR-07 — retired',
+        '### CR-07 — the old one',
+        'No draft any more.',
+      );
+      expect(() => extractEvalFixtures(text)).toThrow(/CR-07.*retired/);
+    });
+
+    it('throws for a new CR scenario appended after the last retired block', () => {
+      const text = [
+        scenariosFile(scenario('CR-01', 'security', DRAFT)),
+        '## DS-* — retired',
+        scenario('CR-08', 'security', DRAFT),
+      ].join('\n\n');
+      expect(() => extractEvalFixtures(text)).toThrow(/CR-08.*retired/);
+    });
+
+    it('still extracts a CR scenario after a retired block once a non-retired `##` closes it', () => {
+      const text = scenariosFile(
+        '## DS-* — retired',
+        'Nothing here any more.',
+        '## Topic scenarios',
+        scenario('CR-01', 'security', DRAFT),
+      );
+      expect(extractEvalFixtures(text).topics.map((t) => t.id)).toEqual(['CR-01']);
+    });
+
+    // Criterion 5: a four-backtick fence around an inner triple-backtick block
+    // comes out whole, as CR-01's does.
+    it('extracts a four-backtick draft with an inner triple-backtick block whole', () => {
+      const draft = `${DRAFT}\n\n## Where you'll meet this\n\nAfter the inner block.`;
+      const [topic] = extractEvalFixtures(
+        scenariosFile(scenario('CR-01', 'security', draft)),
+      ).topics;
+      expect(topic.raw).toBe(draft);
+      expect(topic.raw).toContain('```ts\nconst value');
+      expect(topic.raw).toContain('After the inner block.');
+    });
+  });
+
+  // Criterion 2: the helper fails loudly, naming the scenario.
+  describe('loud failures', () => {
+    it('throws, naming the scenario, for a `### CR-` heading with no `markdown` block', () => {
+      expect(() =>
+        extractEvalFixtures(scenariosFile(scenario('CR-09', 'security', null))),
+      ).toThrow(/CR-09.*markdown/);
+    });
+
+    it('throws for a CR scenario whose only code block is not `markdown`', () => {
+      const block = scenario('CR-09', 'security', null).replace(
+        '**Expected finding:**',
+        '```text\nnot a draft\n```\n\n**Expected finding:**',
+      );
+      expect(() => extractEvalFixtures(scenariosFile(block))).toThrow(/CR-09.*markdown/);
+    });
+
+    it("does not borrow the next scenario's draft", () => {
+      const text = scenariosFile(
+        scenario('CR-09', 'security', null),
+        scenario('CR-10', 'security', DRAFT),
+      );
+      expect(() => extractEvalFixtures(text)).toThrow(/CR-09.*markdown/);
+    });
+
+    it('throws, naming the scenario, for a CR scenario with no "Section:" paragraph', () => {
+      expect(() =>
+        extractEvalFixtures(scenariosFile(scenario('CR-09', null, DRAFT))),
+      ).toThrow(/CR-09.*Section:/);
+    });
+
+    it('throws, naming the scenario, for a "Section:" paragraph with no inline code', () => {
+      const block = scenario('CR-09', 'security', DRAFT).replace(
+        '`security`',
+        'security',
+      );
+      expect(() => extractEvalFixtures(scenariosFile(block))).toThrow(/CR-09.*Section:/);
+    });
+
+    // Review decisions: a misspelt or unknown section silently turned off
+    // the systems-and-infrastructure rules.
+    it.each([
+      ['a misspelt section', 'systems-and-infrastucture'],
+      ['a section the registry does not have', 'devops'],
+    ])('throws, naming the scenario and the value, for %s', (_, section) => {
+      expect(() =>
+        extractEvalFixtures(scenariosFile(scenario('CR-09', section, DRAFT))),
+      ).toThrow(new RegExp(`CR-09.*${section}`));
+    });
+  });
+
+  // Criterion 3: the check reports a failing draft under its ID.
+  describe('the check', () => {
+    it('passes a draft on the standard', () => {
+      const { topics } = extractEvalFixtures(
+        scenariosFile(scenario('CR-01', 'security', DRAFT)),
+      );
+      expect(draftProblems(topics)).toEqual({});
+    });
+
+    it('reports a draft with no rule of thumb under its ID', () => {
+      const broken = DRAFT.replace(
+        '\n\n**Rule of thumb.** Cache what is read often and changes rarely.',
+        '',
+      );
+      expect(broken).not.toBe(DRAFT);
+      const { topics } = extractEvalFixtures(
+        scenariosFile(
+          scenario('CR-01', 'security', DRAFT),
+          scenario('CR-02', 'security', broken),
+        ),
+      );
+      expect(draftProblems(topics)).toEqual({
+        'CR-02': [
+          expect.stringContaining('no paragraph opening with bold "Rule of thumb."'),
+        ],
+      });
+    });
+
+    it(`applies the draft's section: a ${SYSTEMS} draft needs "${WHERE}"`, () => {
+      const { topics } = extractEvalFixtures(
+        scenariosFile(scenario('CR-01', SYSTEMS, DRAFT)),
+      );
+      expect(draftProblems(topics)).toEqual({
+        'CR-01': [expect.stringContaining(`0 "## ${WHERE}" sections`)],
+      });
+    });
+
+    it("checks the draft's frontmatter title", () => {
+      const draft = DRAFT.replace('title: Caching', 'title: What is Caching?');
+      const { topics } = extractEvalFixtures(
+        scenariosFile(scenario('CR-01', 'security', draft)),
+      );
+      expect(draftProblems(topics)).toEqual({
+        'CR-01': [expect.stringContaining('starts "What is"')],
+      });
+    });
+
+    // Review decisions: the drafts' frontmatter goes through parseTopicMeta,
+    // the contract every published topic's frontmatter meets.
+    it.each([
+      [
+        'no summary',
+        'summary: A copy of hot data close to the code that reads it.\n',
+        '',
+        'missing required frontmatter field "summary"',
+      ],
+      ['no date', 'date: 2026-10-15\n', '', 'missing required frontmatter field "date"'],
+      ['no title', 'title: Caching\n', '', 'missing required frontmatter field "title"'],
+      [
+        'an extra key',
+        'date: 2026-10-15\n',
+        'date: 2026-10-15\ntags: [caching]\n',
+        'unknown frontmatter field "tags"',
+      ],
+    ])("reports a draft's frontmatter with %s under its ID", (_, from, to, problem) => {
+      expect(DRAFT.split(from)).toHaveLength(2);
+      const draft = DRAFT.replace(from, to);
+      const { topics } = extractEvalFixtures(
+        scenariosFile(
+          scenario('CR-01', 'security', DRAFT),
+          scenario('CR-02', 'security', draft),
+        ),
+      );
+      expect(draftProblems(topics)).toEqual({
+        'CR-02': [expect.stringContaining(problem)],
+      });
+    });
+
+    it('reports a real CR draft with its rule of thumb removed under its ID', () => {
+      const text = scenariosText();
+      const [first] = contentReviewFixtures().topics;
+      const start = first.raw.indexOf('\n\n**Rule of thumb.**');
+      expect(start).toBeGreaterThan(-1);
+      const end = first.raw.indexOf('\n\n', start + 2);
+      const broken = first.raw.slice(0, start) + (end === -1 ? '' : first.raw.slice(end));
+      expect(text.split(first.raw)).toHaveLength(2);
+      const { topics } = extractEvalFixtures(text.replace(first.raw, broken));
+      expect(draftProblems(topics)[first.id]).toContainEqual(
+        expect.stringContaining('no paragraph opening with bold "Rule of thumb."'),
+      );
+    });
+  });
+
+  // Criteria 1, 3 and 5 on the real scenarios file.
+  describe('the real scenarios file', () => {
+    /** The IDs of every line that reads like a CR scenario heading (`##` to
+     * `######`, then `CR-` and a number), except a heading that itself says
+     * "retired" (a `## CR-07 — retired` block). It keeps no "inside a retired
+     * block" state: a draft line containing "retired" would hide every later
+     * scenario, and the helper already throws for a `### CR-` under a retired
+     * `##`. A raw line scan that does not track fences, on purpose: a scan
+     * that reads fences the way the parser does loses the same scenario a
+     * broken fence swallows. No draft holds such a line today. */
+    function headingIds(text: string): string[] {
+      return text
+        .split('\n')
+        .filter((line) => !line.toLowerCase().includes('retired'))
+        .flatMap((line) => /^#{2,6} (CR-\d+)/.exec(line)?.[1] ?? []);
+    }
+
+    it('extracts a draft for every `### CR-` heading, in file order', () => {
+      const ids = headingIds(scenariosText());
+      expect(ids.length).toBeGreaterThan(0);
+      expect(contentReviewFixtures().topics.map((t) => t.id)).toEqual(ids);
+    });
+
+    /** The real scenarios text with `from` (which must occur exactly once)
+     * replaced by `to`. */
+    function plantedScenarios(from: string, to: string): string {
+      const text = scenariosText();
+      expect(text.split(from)).toHaveLength(2);
+      return text.replace(from, to);
+    }
+
+    // Review decisions: one bare four-backtick line right after CR-02's
+    // closing fence swallowed CR-03 into an unclosed fence. The parser and a
+    // fence-tracking scan both lost it, so the IDs still matched and every
+    // test stayed green.
+    it("catches a scenario swallowed by a neighbour's stray fence", () => {
+      const cr02 = contentReviewFixtures().topics.find((t) => t.id === 'CR-02')!;
+      const fenced = `\`\`\`\`markdown\n${cr02.raw}\n\`\`\`\``;
+      const text = plantedScenarios(fenced, `${fenced}\n\`\`\`\``);
+      const extracted = extractEvalFixtures(text).topics.map((t) => t.id);
+      expect(extracted).not.toContain('CR-03');
+      expect(headingIds(text)).toContain('CR-03');
+      expect(extracted).not.toEqual(headingIds(text));
+    });
+
+    // Review decisions, round 2: a draft line containing "retired" used to
+    // switch the scan's retired toggle on, hiding every later scenario behind
+    // an ID mismatch that pointed at the wrong cause.
+    it('gives matching IDs when a draft heading contains "retired"', () => {
+      const text = plantedScenarios('## What flags cost', '## What retired flags cost');
+      expect(headingIds(text)).toContain('CR-03');
+      expect(extractEvalFixtures(text).topics.map((t) => t.id)).toEqual(headingIds(text));
+    });
+
+    it('catches a CR scenario heading at the wrong depth', () => {
+      const text = plantedScenarios('\n### CR-02 ', '\n#### CR-02 ');
+      expect(headingIds(text)).toContain('CR-02');
+      expect(extractEvalFixtures(text).topics.map((t) => t.id)).not.toEqual(
+        headingIds(text),
+      );
+    });
+
+    it('gives every draft a section, a frontmatter title and a body', () => {
+      for (const draft of contentReviewFixtures().topics) {
+        const { data, content } = parseFrontmatter(draft.raw);
+        expect(draft.section, draft.id).not.toBe('');
+        expect(data.title, draft.id).toBeTypeOf('string');
+        expect(content.trim(), draft.id).not.toBe('');
+      }
+    });
+
+    // Criterion 5: CR-01 and the other four-backtick drafts hold inner code
+    // blocks; each comes out as everything between its outer fences.
+    it('extracts each four-backtick draft with inner code blocks whole', () => {
+      const scenarios = scenariosText();
+      const nested = contentReviewFixtures().topics.filter((t) =>
+        t.raw.includes('\n```'),
+      );
+      expect(nested.map((t) => t.id)).toContain('CR-01');
+      for (const draft of nested) {
+        expect(scenarios, draft.id).toContain(`\`\`\`\`markdown\n${draft.raw}\n\`\`\`\``);
+        expect(draft.raw.trimEnd().endsWith('```'), draft.id).toBe(false);
+      }
+    });
+
+    it('passes every check for every CR draft', () => {
+      expect(draftProblems(contentReviewFixtures().topics)).toEqual({});
+    });
   });
 });

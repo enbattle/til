@@ -99,7 +99,9 @@ order: 4
   copy.
 
   `src/system-design/case-study-structure.test.ts` enforces the template's
-  mechanical parts, not their sentence or word counts per section, or the
+  mechanical parts, on every case study and on the content-review eval's
+  drafts in `evals/content-review/scenarios.md` (see
+  [verification.md](verification.md)), not their sentence or word counts per section, or the
   order of ideas within a section (the reviewer checks those): a paragraph
   before the first `##`; the template's headings, in order; `Start simple`
   holding at least one paragraph and at least one code block;
