@@ -31,7 +31,8 @@ const row = (title: string, path: string, label: string) => ({ title, path, labe
 // match only DSA entries, now matches nothing. Each other query below matches
 // a topic and a case study at once, or is the exact title of one kind. A
 // content change that moves these results is a reason to re-record them, not
-// to change search.
+// to change search; "hash" was re-recorded on 2026-10-14 when Virtual Memory
+// was split out of CPU Caches.
 const RECORDED: [string, ReturnType<typeof row>[]][] = [
   [
     'prompt engineering',
@@ -98,6 +99,11 @@ const RECORDED: [string, ReturnType<typeof row>[]][] = [
         'Systems and Infrastructure',
       ),
       row(
+        'Virtual Memory',
+        '/computing-fundamentals/virtual-memory',
+        'Computing Fundamentals',
+      ),
+      row(
         'Git Rebase vs. Merge',
         '/engineering-practices/git-rebase-vs-merge',
         'Engineering Practices',
@@ -111,11 +117,6 @@ const RECORDED: [string, ReturnType<typeof row>[]][] = [
         'Design a Ticket Booking System (like Ticketmaster)',
         '/system-design/ticket-booking',
         'System Design',
-      ),
-      row(
-        'Backpressure',
-        '/systems-and-infrastructure/backpressure',
-        'Systems and Infrastructure',
       ),
     ],
   ],

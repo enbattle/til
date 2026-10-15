@@ -4,9 +4,7 @@ summary: SoC, SOLID, KISS, DRY, YAGNI and TDD are short names for habits that ke
 date: 2026-10-14
 ---
 
-You'll hear experienced developers say "keep it DRY" or "YAGNI" in code review. Each acronym names a habit that prevents one kind of code that is painful to change.
-
-Say you run a small online shop, and checkout is one function. `stripe_api` stands for a card-payment provider's library:
+In code review you'll hear "keep it DRY" or "that's not YAGNI," each shorthand for a habit that keeps code easy to change. Say you run a small online shop, and checkout is one function (`stripe_api` stands for a card-payment provider's library):
 
 ```python
 def checkout(cart, card_number, email, coupon):
@@ -20,13 +18,11 @@ def checkout(cart, card_number, email, coupon):
     smtp.send(email, f"Thanks! You paid {total}")  # email a receipt
 ```
 
-It works. Now apply each principle to it.
+It works. Six habits answer three questions about it: where to cut code apart (SoC, then SOLID, its version for classes), how much to build (KISS and YAGNI say less, DRY says no copies), and in what order to work (TDD).
 
 ## SoC: Separation of Concerns
 
-A **concern** is one job the program has to do. `checkout` does five: it validates the cart, prices it, takes payment, saves the order and sends an email. **Separation of Concerns** says each job should live in its own section of code, so you can change one without touching the others.
-
-Why does that matter here? Suppose marketing wants a new receipt wording. Today you edit the same function that charges cards, and a typo there could break payments. Split it up:
+A **concern** is one job the program has to do, and `checkout` does five. Suppose marketing wants new receipt wording: you'd edit the function that charges cards, and a typo could break payments. So give each job its own function:
 
 ```python
 def checkout(cart, card_number, email, coupon):
@@ -37,13 +33,13 @@ def checkout(cart, card_number, email, coupon):
     send_receipt(email, total)
 ```
 
-Now the receipt wording lives in `send_receipt`, far from the card-charging code.
+The wording now lives in `send_receipt`, far from the card code. That is **Separation of Concerns** (SoC): each job in its own place, so you can change one without touching the others.
 
-## SOLID: five rules for classes
+Next you want to test `checkout` without charging a real card.
 
-Splitting functions is a start. **SOLID** is five rules, collected by Robert C. Martin, for the next level up: **classes**, which bundle data with the functions that act on it (called **methods**).
+## SOLID, one letter at a time
 
-Say you want to test `checkout` without charging a real card. So payment becomes an object (one instance of a class) that `checkout` receives:
+To test without a real card, payment becomes something `checkout` receives. A **class** bundles data with the functions that act on it, called **methods**:
 
 ```python
 class CardPayment:
@@ -51,6 +47,7 @@ class CardPayment:
         self.card_number = card_number
 
     def charge(self, amount):
+        """Charge exactly `amount`, or raise an error."""
         stripe_api.charge(self.card_number, amount)
 
 def checkout(cart, email, coupon, payment):
@@ -60,32 +57,44 @@ def checkout(cart, email, coupon, payment):
     ...
 ```
 
-`checkout` now relies on one promise: `payment` has a `charge(amount)` method. A promise like that is an **interface**, a list of methods a class agrees to provide. Any class that keeps it can stand in, including a fake one in a test. Call this one `Payment`. The five letters:
+`checkout` now relies on one promise: `payment` has a `charge(amount)` method that charges exactly that amount or raises an error. A list of methods a class promises to provide is an **interface**, and we'll call this one `Payment`. Any class that keeps the promise can stand in, including a fake in a test. Five rules, together called **SOLID**, guard that arrangement.
 
-- **S, Single responsibility.** A class should have one reason to change. This is SoC applied to one class: `CardPayment` changes when the card provider does, never when the receipt does.
-- **O, Open/closed.** Code should be open to extension (new behavior added as new code) without edits to code that already works. When the shop adds PayPal, you write a `PayPalPayment` class with its own `charge`, and `checkout` doesn't change.
-- **L, Liskov substitution.** Anything that claims to be a `Payment` must behave like one. If `PayPalPayment.charge` quietly skipped small amounts, `checkout` would ship unpaid orders.
-- **I, Interface segregation.** Code shouldn't have to depend on methods it doesn't use. If `Payment` also required `save_card`, `checkout` would depend on a method it never calls, and cash on delivery would need a fake one. Put `save_card` in a separate, smaller interface.
-- **D, Dependency inversion.** High-level code (what checkout does) shouldn't depend on low-level details (which payment library it calls); both should depend on an interface. `checkout` knows only `Payment`, and only `CardPayment` knows about Stripe. Handing the object in as a parameter is called **dependency injection**, the usual way to apply this rule.
+**Single responsibility.** Suppose `CardPayment` also sent the receipt email. It would change for two reasons, a new card provider and new receipt wording. Keep each class to one reason to change. This is SoC applied to one class.
+
+**Open/closed.** The shop adds PayPal. If `checkout` contained `if method == "paypal"`, every new method would mean editing working code. Instead you write a `PayPalPayment` class with its own `charge`. Code should be open to extension and closed to edits.
+
+**Liskov substitution.** Suppose `PayPalPayment.charge` quietly skipped amounts under 5 dollars. It has the method but breaks the promise, and `checkout` would ship unpaid orders. Anything claiming to be a `Payment` must keep the whole promise.
+
+**Interface segregation.** Suppose `Payment` also required `save_card`. `checkout` never calls it, yet a store-credit payment has no card to save and would need a do-nothing stub. Code shouldn't have to depend on methods it doesn't use, so put `save_card` in a separate, smaller interface.
+
+**Dependency inversion.** At first, `checkout` called Stripe directly. The rule: high-level code (what checkout does) should depend on an interface, not on low-level details (which library it calls). Now `checkout` and `CardPayment` both depend on `Payment`: `checkout` knows only the interface, and only `CardPayment` knows Stripe.
+
+Passing the object in as a parameter is **dependency injection**, one technique for getting there. It is not the rule itself: code that builds a `CardPayment` inside `checkout` breaks the rule, while code that looks its payment up in a **registry**, a shared table of ready-made objects, keeps it.
+
+So SOLID adds structure, and structure has a price.
 
 ## KISS: Keep It Simple, Stupid
 
-SOLID adds structure, so the next acronym is the brake. **KISS** says to pick the simplest design that meets today's need. Suppose you were tempted to replace the coupon `if` with a rules engine that reads discount formulas from a config file. With one coupon, that engine is more code to read, test and debug than the line it replaces.
+Suppose you were tempted to replace the coupon `if` with a rules engine reading discount formulas from a config file. With one coupon, it is more code to read and debug than the line it replaces. **KISS** says to pick the simplest design that meets today's need.
 
 ## DRY: Don't Repeat Yourself
 
-Simple doesn't mean copied, though. Say the cart page computes the total with its own copy of the sum and the 10% coupon. When the sale becomes 15%, someone updates checkout and forgets the cart page, and customers see one price and pay another. **DRY**, from the book _The Pragmatic Programmer_, says each piece of knowledge should live in one place. Make `price(cart, coupon)` the only place that knows the rule, and call it from both.
+Simple doesn't mean copied, though. Say the cart page has its own copy of the sum and the 10% coupon. When the sale becomes 15%, someone updates checkout and forgets the cart page, and customers see one price and pay another.
+
+**DRY**, from the book _The Pragmatic Programmer_, says each piece of knowledge should live in one place. These two copies hold the same knowledge, since the price shown must be the price charged. So make `price(cart, coupon)` the only place that knows the rule, and call it from both.
 
 ## YAGNI: You Aren't Gonna Need It
 
-What about code for tomorrow? You might think "we'll sell in other countries someday" and add currency conversion to `price`. **YAGNI**, from Extreme Programming (a development method built around small, frequent releases), says not to build for a requirement you only imagine. If that day never comes, you maintained unused code for nothing; if it comes, the real requirements will likely differ from your guess. Where KISS asks for the simplest design for a need, YAGNI asks whether the need exists at all.
+What about code for tomorrow? You might add currency conversion to `price` because "we'll sell abroad someday." **YAGNI**, from Extreme Programming (a method built around small, frequent releases), says not to build for a requirement you only imagine. If it never comes, you maintained unused code; if it does, the real need will likely differ from your guess. KISS asks for the simplest design for a need; YAGNI asks whether the need exists.
 
 ## TDD: Test-Driven Development
 
-The last acronym is about order of work. In **TDD**, you write a small failing test for the behavior you want, write just enough code to pass it, then tidy up. Before raising the sale to 15%, you'd write a test that a 100-dollar cart with the coupon costs 85, watch it fail, then change the code. Writing the test first makes you call your code before it exists, which shows early when it is awkward to use, the way a `checkout` you couldn't test without a real card led to the `Payment` interface. The [testing pyramid](/engineering-practices/testing-pyramid) covers which kinds of test to write.
+The last acronym is about order of work. Before raising the sale to 15%, you'd write a test that a 100-dollar cart with the coupon costs 85, watch it fail, change `price` until it passes, then tidy up. Working in that order, a small failing test first, is **TDD**. A test written first shows early when code is awkward to use, as the untestable `checkout` led to `Payment`. The [testing pyramid](/engineering-practices/testing-pyramid) covers which tests to write.
 
 ## Use them with judgment
 
-Each of these can be overused. Suppose the receipt email and the order confirmation page both format the total as money, and you merged them behind one shared helper. Next month the email needs plain text and the page needs the customer's local currency style. The helper grows an extra true/false parameter to switch behavior, then another, until it is harder to change than the two copies were. That merge broke KISS in the name of DRY: the copies looked alike but held different knowledge. Sandi Metz put it as "duplication is far cheaper than the wrong abstraction," an abstraction being shared code like that helper. When you can't yet tell whether two copies share a rule, a common habit is to wait for a third before extracting a helper.
+Each of these can be overused. Suppose the receipt email and the confirmation page both format the total as money, and you merged them behind one shared helper. Next month the email needs plain text and the page needs local currency style. The helper grows true/false switches until it is harder to change than the two copies were. That merge broke KISS in the name of DRY: the copies looked alike but held different knowledge.
 
-**Rule of thumb.** Keep code simple and build only what today needs. Add structure, such as a split, an interface or a shared helper, when you can point to the change or test it makes easier, and write the test before you make that change.
+As Sandi Metz put it, "duplication is far cheaper than the wrong abstraction," an abstraction here being a shared helper like that one. When you can't yet tell whether two copies share a rule, wait for a third before extracting a helper.
+
+**Rule of thumb.** Write the simplest code that meets today's need, with its test first. Add a split, an interface or a shared helper only when you can name the change or test it makes easier, and when you can't tell whether two copies share a rule, wait for a third.

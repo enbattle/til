@@ -4,19 +4,36 @@ summary: Every rule, skill and check added to steer a coding agent costs space a
 date: 2026-09-30
 ---
 
-Suppose an agent pushes a broken change straight to your main branch. Somebody adds a line to the file the agent reads at the start of each session: "Always run the full test suite before committing." That line is the first step of a harness. A **harness** is everything in a repository that steers an AI coding agent without being part of the product: the instruction file, the skills it loads for particular tasks, the hooks that fire on its actions, the checks it must pass, and the [evals](/ai-and-ml/what-are-evals) that test whether the rest still works. [Documentation vs. Skill vs. Hook](/coding-agents/documentation-vs-skill-vs-hook) covers which form a rule should take. This topic is about how many rules there should be.
+Suppose a team uses an AI coding agent on the repository for their web shop, and one day the agent pushes a broken change straight to the main branch. Somebody adds a line to the instruction file, a text file the agent reads at the start of every session: "Always run the full test suite before committing." Fixed. But six months of lines like that later, is the agent better off or worse?
+
+This page follows that file as it grows: the pieces that get built around it, why they keep multiplying, what each one costs, and how to cut them back.
+
+## How the pile builds up
+
+The first line is the whole setup. Next week the agent rounds prices wrongly in the checkout code, so the team writes a longer guide to how the shop handles money. It is too long for the instruction file, so it goes in a separate file that the agent loads only when a task touches payments. That kind of task-specific instruction file is a **skill**.
+
+Then the agent edits a generated file that gets overwritten on the next build. A short script is set up to run automatically whenever the agent tries to edit that folder and to refuse. A script that fires on the agent's actions is a **hook**. Later someone adds a script to the build that fails if a price is ever stored as a floating-point number, which rounds cents. That is a **check**.
+
+Together these pieces, which steer the agent without being part of the shop, are the **harness**, and [Documentation vs. Skill vs. Hook](/coding-agents/documentation-vs-skill-vs-hook) covers which form a given rule should take. This page is about how many pieces there should be.
 
 ## Why does it keep growing?
 
-Each addition is reasonable. A sentence goes in after an agent does something wrong. A review turns up a gap, so a check goes in. After a **run** (one agent session, or one pass of a change through a multi-step pipeline) goes badly, the **retrospective**, a look back at what went wrong, proposes one more step. Every addition is visible work that fixes a problem somebody just saw. Removal feels risky because nobody can be sure what a sentence was preventing, so it stays, and each addition makes the next look normal.
+After every bad week the team adds something that fixes the problem somebody just saw. Removal feels risky, because nobody can say what a sentence was preventing, so it stays. Each addition also makes the next one look normal. By month six the shop's instruction file has 40 rules.
 
 ## What does one line cost?
 
-Models read text in chunks called [tokens](/ai-and-ml/tokenization), and everything the agent reads occupies its [context window](/ai-and-ml/context-window), the limited amount of text it can consider at once. A file loaded at the start of every session sits there on every turn, and again in every **subagent**, a separate agent the main one starts for a subtask, that loads it. Caching, where a provider reuses work on text it has seen before, can make repeat reads cheaper in money, but the space is used either way.
+Models read text in chunks called [tokens](/ai-and-ml/tokenization). Everything the agent reads sits in its [context window](/ai-and-ml/context-window), the limited amount of text it can consider at once. The always-loaded file is in that window on every turn. Work out what the shop's file costs:
 
-Space is the smaller cost. The bigger one is focus: instructions compete. With forty rules, the model has to work out which apply, and the one that matters can get less weight among many that don't, the way a long checklist gets skimmed. Then there is upkeep. A rule has to stay true as the code changes, and one that has quietly become false is worse than none, because the agent follows it. [Keeping Agent Docs Current](/coding-agents/keeping-ai-native-docs-from-going-stale) covers that problem, and fewer rules means less of it.
+```text
+40 rules × 60 words (a rule plus its reason) = 2,400 words
+2,400 words × 4 tokens per 3 words ≈ 3,200 tokens
+```
 
-One project added a fix for each problem it hit and, in under three weeks, had about 52,000 words of process documents (design specs excluded) beside about 144,000 words of published content. Cutting duplicated text, moving explanations out of the files agents work from, and collapsing run logs to a table brought it to about 38,000. One rule went entirely: the plan for every new check on the site's markdown had to list all the ways the markdown could be laid out, and each **review round**, one pass of review and fixes, turned another layout into a test. [Triaging AI code review](/coding-agents/triaging-ai-code-review) covers what replaced it.
+A session often starts **subagents**, separate agents the main one hands a subtask to, and each loads the file again. With three of them, the file takes 3,200 tokens in each of four windows, 4 × 3,200 = 12,800 tokens read before any work starts. Prompt caching, where the provider reuses work on text it has already processed, can make those repeat reads cheaper in money, but each window loses the space either way.
+
+Space is the smaller cost. The bigger one is focus: instructions compete. With 40 rules the model has to work out which apply, and the one that matters can get less weight among many that don't, the way a long checklist gets skimmed. Then there is upkeep. If the team renames a folder, every rule that mentions it is now false, and a false rule is worse than none, because the agent follows it. [Keeping Agent Docs Current](/coding-agents/keeping-ai-native-docs-from-going-stale) covers that problem, and fewer rules means less of it.
+
+So how do you cut the file down without losing what the rules protect?
 
 ## Keeping it lean
 
@@ -25,23 +42,23 @@ Start with the always-loaded file. It should be a router that says where things 
 ```markdown
 | When you are…                | Read first           |
 | ---------------------------- | -------------------- |
-| Adding a topic               | docs/content.md      |
-| Changing UI                  | docs/DESIGN.md       |
+| Touching checkout or prices  | docs/money.md        |
+| Changing the UI              | docs/design.md       |
 | Running or debugging a check | docs/verification.md |
 ```
 
-Detail lives in the file for that task and is read only when the task comes up. A line limit enforced by a check keeps the router from refilling.
+Detail lives in the file for that task and is read only when the task comes up. The shop's 40 rules become a dozen lines and three task files. A line limit enforced by a check keeps the router from refilling.
 
 Before adding anything, ask five questions. What happened that demands it? A problem that occurred counts; "best practice" doesn't. Does it already exist under another name? Who reads it, and when? "Every agent, every session" is a reason for doubt. What keeps it true? What could be removed to make room?
 
-Run the opening rule through them. What happened? An agent committed a change that broke tests. Does it exist? The **pull request**, the step where a change is proposed before merging, already runs the suite and can refuse a failing change. Who reads it? Every agent in every session, including the many that never commit. What keeps it true? Nothing; it's a sentence. What could go? Nothing, it only adds. The gap is that the agent could skip the pull request at all. A branch setting that forbids direct pushes closes it, and nobody has to remember a rule.
+Run the opening line through them. What happened? An agent committed a change that broke tests. Does it exist? The **pull request**, the step where a change is proposed before merging, already runs the test suite and can refuse a failing change. Who reads it? Every agent in every session, including the many that never commit. What keeps it true? Nothing; it's a sentence. The gap is that the agent could skip the pull request altogether. A repository setting that forbids direct pushes to main closes it, and nobody has to remember a rule.
 
-That's the general pattern: a check often beats a sentence. A rule works only if the agent reads and follows it, while a script that fails the build behaves the same way each run and can replace a paragraph instead of adding one. Checks have upkeep too, and a growing pile of them is its own bloat.
+That is the general pattern: a check often beats a sentence. A rule works only if the agent reads and follows it, while a script that fails the build behaves the same way each time and can replace a paragraph instead of adding one. Checks have upkeep too, though, and a growing pile of them is its own bloat.
 
-Deletion has to be scheduled, because nothing in the cycle removes anything on its own. A periodic audit should name at least one thing to delete or merge, and a retrospective should ask what could be removed before it proposes anything new. When a run is expensive, record where the cost went (agent runs, stage, review rounds) before adding steps; without that number, a process change is a guess, and guessing tends toward adding.
+Deletion has to be scheduled, because nothing in the cycle removes anything on its own. Every few months the team audits the harness and must name at least one thing to delete or merge. That raises the opposite worry: can a team cut too much?
 
 ## Is smaller always better?
 
-No. A check that has caught real mistakes, a review that finds real bugs, and an eval that shows the reviewer still works each cost something too, and each has an incident or a result to point to. The goal is a harness where every piece is there for a reason someone can name.
+No. A check that has caught real mistakes costs something, and so does an [eval](/ai-and-ml/what-are-evals), a test of whether the harness still steers the agent as intended, but each has an incident or a result to point to. The goal is a harness where every piece is there for a reason someone can name.
 
 **Rule of thumb.** Before adding a rule to what an agent reads, name the incident behind it and what would remove it; if a check or a setting can enforce it, prefer that, and delete something each time you audit.
