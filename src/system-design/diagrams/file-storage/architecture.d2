@@ -33,11 +33,11 @@ objects: Object store (chunks) {
   shape: cylinder
 }
 
-client -> objects: "chunk bytes"
-client -> api: "check, commit,\nversions, /changes"
-client -> notify: "open stream"
-api -> cache: "memberships"
-api -> db: "commits, reads"
+client -> objects: "chunk bytes\n(presigned URLs)"
+client -> api: "chunk checks, version saves,\nversion fetches,\nchange lists"
+client -> notify: "open connection"
+api -> cache: "members"
+api -> db: "save and read\nversions"
 db -> relay: "journal rows"
 relay -> queue: "publish"
 notify -> queue: "consume"

@@ -1,6 +1,7 @@
 # High-level architecture of the notification system: requests and campaigns
-# fan out into per-channel, per-priority queues; senders call the providers or
-# the in-app inbox; status events flow through a queue into the delivery log.
+# reach router workers, which put sends on per-channel, per-priority queues;
+# sender workers call the providers or the in-app inbox; status events flow
+# through a queue into the delivery log.
 direction: down
 
 services: Calling services {
@@ -8,20 +9,20 @@ services: Calling services {
 }
 campaigns: Campaign scheduler
 api: Notification API
-fanout: Fan-out workers {
+routers: Router workers {
   style.multiple: true
 }
-userdata: "Users, preferences,\ntemplates" {
+userdata: "Users, preferences,\nmessage templates" {
+  shape: cylinder
+}
+state: "Request and\nsend state" {
   shape: cylinder
 }
 channelq: "Channel queues\n(channel × priority)" {
   shape: queue
 }
-senders: Channel senders {
+senders: Sender workers {
   style.multiple: true
-}
-sendstate: Send state {
-  shape: cylinder
 }
 providers: "Providers (push, email,\nSMS) and in-app inbox"
 statusq: Status queue {
@@ -32,13 +33,14 @@ log: Delivery log {
 }
 
 services -> api: "POST /v1/notifications"
-api -> fanout: "request queues"
-campaigns -> fanout: "paced batches"
-fanout -> userdata: "read (cached)"
-fanout -> channelq
-fanout -> statusq: "queued,\nskipped"
+api -> state: "save request"
+api -> routers: "request queues"
+campaigns -> routers: "paced batches"
+routers -> userdata: "read (cached)"
+routers -> channelq
+routers -> statusq: "queued,\nskipped"
 channelq -> senders
-senders -> sendstate: "claim, mark sent"
+senders -> state: "claim, mark sent"
 senders -> providers
 senders -> statusq: "sent"
 providers -> statusq: "receipts"

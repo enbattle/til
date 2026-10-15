@@ -11,7 +11,7 @@ rules: Rules config {
 gw: "API gateway nodes\n(limiter library)" {
   style.multiple: true
 }
-store: "Counter store\n(Redis shards + replicas)" {
+store: "Counter store\n(shards + backup copies)" {
   shape: cylinder
 }
 svc: Backend services {
@@ -22,6 +22,6 @@ metrics: Metrics
 client -> lb: "API requests"
 lb -> gw
 rules -> gw: "rules, pushed on change"
-gw -> store: "atomic bucket scripts"
+gw -> store: "one call per check"
 gw -> svc: "allowed requests"
 gw -> metrics: "decisions, 429s"
