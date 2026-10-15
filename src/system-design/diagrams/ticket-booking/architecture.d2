@@ -1,6 +1,7 @@
 # High-level architecture of the ticket booking system: the CDN and waiting
-# room absorb the on-sale crowd, the booking service makes conditional writes
-# to the sharded inventory database, and confirmed orders leave via an outbox.
+# room absorb the on-sale crowd, the booking service claims seats
+# to the inventory database (one slice per event), and confirmed orders leave
+# via an outbox.
 vars: {
   d2-config: {
     layout-engine: elk
@@ -9,14 +10,14 @@ vars: {
 direction: down
 
 client: Browser
-cdn: CDN
+cdn: "CDN\n(caches near users)"
 wr: Waiting room
-gw: "API gateway\n(admission token,\nrate limits)"
+gw: "API gateway\n(checks admission\ntoken, rate limits)"
 booking: Booking service {
   style.multiple: true
 }
 seatmap: Seat map service
-db: "Inventory DB\n(shards by event:\nprimary, standby,\nreplicas)" {
+db: "Inventory database\n(one slice\nper event)" {
   shape: cylinder
 }
 sweeper: Hold sweeper
@@ -27,15 +28,15 @@ queue: Order events queue {
 }
 
 client -> cdn: "layout, availability,\nqueue status"
-client -> wr: "join, admit"
+client -> wr: "join,\nadmission token"
 client -> gw: "holds, confirm"
-cdn -> seatmap: "availability\non miss, 1 s TTL"
+cdn -> seatmap: "availability on miss,\ncached 1 s"
 cdn -> wr: "queue status\non miss"
 gw -> booking
-booking -> db: "conditional writes"
+booking -> db: "claim seats"
 booking -> pay: "charge\n(key: hold ID)"
 booking -> wr: "load, seats left"
-seatmap -> db: "replica read,\n1/s per event"
+seatmap -> db: "reads a copy,\n1/s per event"
 sweeper -> db: "release\nexpired holds"
 sweeper -> pay: "status of\nstuck payments"
 db -> relay: "outbox rows"

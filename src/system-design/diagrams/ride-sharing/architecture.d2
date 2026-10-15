@@ -1,11 +1,11 @@
 # High-level architecture of the ride-sharing service. Driver pings flow
 # through the gateways to the location service, which keeps the latest
 # position in the in-memory index and appends every ping to the event log,
-# which also carries the trip service's ride requests for the surge job. The
-# trip service tells the location service which rider follows which driver.
-# Rides go through the trip service; matching workers find, rank and claim
-# drivers and send offers through the gateways. Arrows point from the side
-# that starts the call or sends the data.
+# which also carries the trip service's ride requests. The trip service
+# tells the location service which rider follows which driver. Rides go
+# through the trip service; matching workers find, rank and claim drivers
+# and send offers through the gateways. Arrows point from the side that
+# starts the call or sends the data.
 direction: down
 vars: {
   d2-config: {
@@ -16,7 +16,6 @@ vars: {
 apps: Rider and driver apps {
   style.multiple: true
 }
-lb: Load balancer
 gw: "Connection\ngateways" {
   style.multiple: true
 }
@@ -27,7 +26,6 @@ index: "Location index\n(in memory)" {
 log: "Event log" {
   shape: queue
 }
-jobs: "Surge and\narchive jobs"
 trip: Trip service
 match: "Matching\nworkers" {
   style.multiple: true
@@ -37,22 +35,19 @@ store: "Trip and\ndriver store" {
   shape: cylinder
 }
 
-apps -> lb: "HTTPS,\nWebSocket"
-lb -> gw: "WebSocket"
-lb -> trip: "HTTPS"
+apps -> gw: "long-lived\nconnection"
+apps -> trip: "HTTPS"
 gw -> loc: "driver\npings"
 loc -> index: "latest\nposition"
 loc -> log: "every\nping"
 loc -> gw: "on-trip\npositions"
-log -> jobs
-jobs -> trip: "surge\nmultipliers"
-gw <-> trip: "accept, decline;\ntrip updates"
-trip -> store: "conditional\nwrites"
+gw <-> trip: "accepts, declines;\ntrip updates"
+trip -> store: "writes"
 trip -> match: "match\njobs"
-trip -> routing: "quote\nETAs"
+trip -> routing: "pickup\ntimes"
 trip -> loc: "rider follows\ndriver"
 trip -> log: "ride\nrequests"
 match -> index: "who is\nnear?"
-match -> routing: "ETAs"
+match -> routing: "driving\ntimes"
 match -> store: "claim\ndriver"
 match -> gw: "offers"

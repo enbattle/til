@@ -1,8 +1,8 @@
 # High-level architecture of the recommendation system. The serving path
-# retrieves candidates from the ANN index and candidate lists, ranks them with
-# features from the online feature store, and logs what it served. The
-# learning path turns logged events into fresh features, offline history,
-# retrained models and rebuilt indexes.
+# retrieves candidates from the neighbor index and the candidate lists, ranks
+# them with features from the online feature store, and logs what it served.
+# The learning path turns logged events into fresh features, retrained models
+# and rebuilt indexes; the upload job adds new videos to the index.
 vars: {
   d2-config: {
     layout-engine: elk
@@ -14,7 +14,7 @@ client: Web or mobile app
 svc: Recommendation service {
   style.multiple: true
 }
-ann: ANN index {
+index: Neighbor index {
   style.multiple: true
 }
 rank: Ranking service {
@@ -23,35 +23,27 @@ rank: Ranking service {
 fs: "Online feature store\n+ candidate lists" {
   shape: cylinder
 }
-collector: Event collector
 log: Event log {
   shape: queue
 }
 stream: Stream jobs
-lake: "Data lake\n(offline store)" {
-  shape: cylinder
-}
-batch: "Batch and\ntraining jobs"
-registry: Model registry
+batch: Batch job
 upload: Upload job
 catalog: Catalog
 
 client -> svc: "GET /recommendations"
-client -> collector: "POST /events"
+client -> log: "POST /events"
 svc -> fs: "user features,\nlists"
-svc -> ann: "user embedding"
+svc -> index: "user embedding"
 svc -> rank: "500 candidates"
 rank -> fs: "video features"
 svc -> log: "served records"
-collector -> log: "client events"
 log -> stream
+log -> batch: "30 days of\nrecords"
 stream -> fs: "fresh features"
-stream -> lake: "archive"
-lake -> batch
 batch -> fs: "batch features,\nlists"
-batch -> registry: "models,\nembeddings"
-registry -> rank: "ranking model"
-registry -> ann: "index build"
-registry -> svc: "user tower,\nserving pointer"
-upload -> ann: "new-video\nembeddings"
+batch -> rank: "ranking model"
+batch -> index: "index build"
+batch -> svc: "user model,\nversions"
+upload -> index: "new-video\nembeddings"
 catalog -> svc: "ineligible IDs"

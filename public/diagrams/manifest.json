@@ -123,30 +123,30 @@
     }
   },
   "recommendation-system/architecture.d2": {
-    "sha256": "f8d81b4129aef1f394539ab6ba4a0bb348393f7e7b8ebe7624e5d888933e7e3a",
-    "width": 946,
-    "height": 2170,
+    "sha256": "39ef171e7614521f1c316ed0ad84a6004bce6e7a6fe6a5a1220d3fe732e16638",
+    "width": 821,
+    "height": 1740,
     "svgs": {
-      "light": "6c1e8397d57dca6d091d078a6e4a6d08671ee41b17be608a418d15f1e9cb5f28",
-      "dark": "e2503d54da065d16a18e97b9e000c89c6c16438c4326dbf79b0984994c347e76"
+      "light": "d32d1ac8771f9974a4d8709cd22f3b80cba6367553ab17e9566c0c02fefa93c7",
+      "dark": "386c272ad10d655a1585af0d7bd713c24d70b84319e45979032aa0e3158955e1"
     }
   },
   "ride-sharing/architecture.d2": {
-    "sha256": "f1a71cb986e0e29e6dd94ef620aaf30568d2c7fe07c294d5614b480615420602",
-    "width": 879,
-    "height": 2121,
+    "sha256": "3ab380bae30db6453d68e4d001e9fb0655eb1b875a46198fad9d7d669de8c075",
+    "width": 804,
+    "height": 1716,
     "svgs": {
-      "light": "800b112185846e4b52bf0a2962d9aa55f9e92526df5345294275fa4795873cc4",
-      "dark": "dcaf1c88299ab41c323e437cf10af25bef5eaced1767e81550e988d09f76dbe7"
+      "light": "fca9327387fb65d145106e1552c427889c50ffb79ccc649571e564e6f6f23f09",
+      "dark": "ab44e4d758e49f20e0d227c943dfb249f730ce6327d3f2828bf79c5968a0ce04"
     }
   },
   "search-engine/architecture.d2": {
-    "sha256": "77a4a29428b9fe2d7080bd3ba73f7abbafd20c7f3183d8ac41084db8f2f27563",
-    "width": 920,
+    "sha256": "f5c9fd8c6ba9b9a7c96c7ba9d75b49e0e50091ced621a3740735b8a41e3dd39f",
+    "width": 867,
     "height": 1577,
     "svgs": {
-      "light": "f48658063980de515188f9079f3d469a4b51c1fa399d0a079a01d890b2c2e12b",
-      "dark": "9006614177a1bf6ec557b1fa00649c5624032eee07d7da58939239c4cfcae3bc"
+      "light": "f1c2c4b68abfa13a37f2c4f27041285f7b335c96d8720bf8ca0e7ca336b76061",
+      "dark": "a626129f666135053a8564d0c002833ddde2cdd38fc4a96ab06ebfa3a4ba45c9"
     }
   },
   "social-feed/architecture.d2": {
@@ -168,12 +168,12 @@
     }
   },
   "ticket-booking/architecture.d2": {
-    "sha256": "6f73a4ed7c15dca56961fe664b43462e69e739cbcf11e5a9575082dab9e3a179",
-    "width": 914,
-    "height": 1599,
+    "sha256": "d01cf7c59b553b6e5475d52132a49d8296be820ea6799399db9abde75b16921c",
+    "width": 896,
+    "height": 1583,
     "svgs": {
-      "light": "646932f19c4a8ffc58dac78c8fd3b6e106edbb1535e3f632233845901d525e01",
-      "dark": "4613e43b192994250f401795181dd58c73ccdfe9b4df8e3b580b144e99ff915c"
+      "light": "9251a774f884d44f2c6d59a9f0fdcd6419ff8d34c0be8b99483797a35ae32892",
+      "dark": "10c612bafb51851d69f2d1f828da083440bf82f833f819404efa0de53b9c70af"
     }
   },
   "url-shortener/architecture.d2": {
@@ -186,12 +186,12 @@
     }
   },
   "video-streaming/architecture.d2": {
-    "sha256": "c08f64113f85b4baa2ac0f217c40edd268bf832605cde8741aabc6d96799ac86",
+    "sha256": "d30b70af0a9ce5fcdbcd83fdf63e68df0c7b622d15f12fe2304ec11d8f8867b3",
     "width": 757,
     "height": 1561,
     "svgs": {
-      "light": "3067ae0f73fdc4800105a76bafa895a5a596551ba4128dcde18049d8f0e00f2c",
-      "dark": "65b482cdb47ee4ffa10a9be9182e8b6422e0301279ff98ca728199a2a2331185"
+      "light": "1d0adf7da97eac2a9d34c781e0c7d1880ab78a1a0dc563ae5d3471940995b3dc",
+      "dark": "2760d6203176909d7eafbc2467696720380d00b63b019befb4b07b0744580082"
     }
   }
 }

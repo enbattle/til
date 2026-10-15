@@ -60,6 +60,7 @@ older logs, including the dated files this folder held until 2026-09-29.
 | 2026-10-13 | Dedupes and docs audit after #132-#134 (CLAUDE.md sentence, add-case-study checklist, docs-audit Stage 1)                                                    | 4    | 0    | 0         | Scoped run.                                                  |
 | 2026-10-14 | Case-study template 3: add-case-study description and rewrite mode, content-audit description; SR-22 added                                                   | 4    | 0    | 0         | SR-15, 16, 17, 22.                                           |
 | 2026-10-14 | case-study-template-3 retro: /feature Stage 4a narrow re-review after a prose-only round                                                                     | 4    | 0    | 0         | SR-01, 05, 07, 17.                                           |
+| 2026-10-15 | SR-22 premise repointed from ride-sharing (now on template 3) to url-shortener                                                                               | 1    | 0    | 0         | SR-22 only; still routes to `add-case-study` rewrite mode.   |
 
 ## Latest run: 2026-10-14, case-study-template-3 retro
 

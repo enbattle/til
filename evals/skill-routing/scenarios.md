@@ -382,10 +382,10 @@ don't reuse it.
 
 ### SR-22 — rewriting a case study to the new template
 
-<!-- premise: src/system-design/case-studies/ride-sharing.md exists -->
-<!-- premise: src/system-design/case-studies/ride-sharing.md lacks "template: 3" -->
+<!-- premise: src/system-design/case-studies/url-shortener.md exists -->
+<!-- premise: src/system-design/case-studies/url-shortener.md lacks "template: 3" -->
 
-> Rewrite the ride-sharing case study to the new template.
+> Rewrite the URL shortener case study to the new template.
 
 **Expected:** `add-case-study`, in its rewrite mode
 **Why:** Moving an existing case study to the current template (template 3,

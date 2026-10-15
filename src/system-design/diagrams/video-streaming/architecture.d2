@@ -48,6 +48,6 @@ api -> stores: "resume, counts"
 meta -> wf: "outbox: start"
 wf -> workers: "tasks"
 wf -> meta: "status"
-workers -> objects: "read original,\nwrite renditions"
+workers -> objects: "read original,\nwrite segments"
 log -> stream
 stream -> stores
