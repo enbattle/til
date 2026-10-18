@@ -11,14 +11,18 @@ import { h2Headings } from '@/lib/headings';
 import { readingMinutes } from '@/lib/reading-time';
 import { rawTopic } from '@/test/content';
 import { caseStudiesForTopic } from '@/lib/system-design';
+import type { Topic } from '@/types';
 import App from '@/App';
 import { TopicPage } from './TopicPage';
 
 // `loadTopicBody` is swappable per test; by default it is the real one. A fake
 // must hand back the same promise on every call, as the real loader does
-// (TopicPage keys its suspense on the memoized promise).
+// (TopicPage keys its suspense on the memoized promise). `topicsInSection` is
+// swappable too, so a test can stage a one-topic section without relying on
+// the catalog having one.
 const state = vi.hoisted(() => ({
   override: null as null | ((section: string, slug: string) => Promise<string>),
+  sectionOverride: null as null | ((section: string) => Topic[]),
 }));
 
 vi.mock('@/lib/content', async () => {
@@ -29,6 +33,10 @@ vi.mock('@/lib/content', async () => {
       state.override
         ? state.override(section, slug)
         : actual.loadTopicBody(section, slug),
+    topicsInSection: (section: string) =>
+      state.sectionOverride
+        ? state.sectionOverride(section)
+        : actual.topicsInSection(section),
   };
 });
 
@@ -90,6 +98,7 @@ function deferred() {
 
 beforeEach(() => {
   state.override = null;
+  state.sectionOverride = null;
 });
 
 afterEach(() => {
@@ -439,15 +448,13 @@ describe('TopicPage on the shared header and prev/next nav (dedupe criterion 5)'
   });
 
   it('renders no prev/next nav for the only topic in its section', async () => {
-    const counts = new Map<string, number>();
-    for (const t of TOPICS) counts.set(t.section, (counts.get(t.section) ?? 0) + 1);
-    const only = TOPICS.find((t) => counts.get(t.section) === 1);
-    expect(only, 'a section with exactly one topic').toBeDefined();
-    await renderLoaded(only!);
+    const only = getTopic(SECTION, SLUG)!;
+    state.sectionOverride = (section) => (section === SECTION ? [only] : []);
+    await renderLoaded(only);
 
     expect(pagerNavs()).toHaveLength(0);
     expect(
-      screen.queryByRole('navigation', { name: `More in ${labelOf(only!)}` }),
+      screen.queryByRole('navigation', { name: `More in ${labelOf(only)}` }),
     ).not.toBeInTheDocument();
   });
 });
